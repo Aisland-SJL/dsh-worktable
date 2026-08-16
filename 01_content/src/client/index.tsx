@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
+import { splitStore, SplitWorkspace, type LayoutSpec } from './split'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -272,6 +273,11 @@ function WorktableSection(props: any) {
     })
   }, [])
 
+  /** 分栏工作区入口（M1 引擎）：项目卡片调用 openSplit(spec) 打开声明式布局 */
+  const openSplit = useCallback((spec: LayoutSpec) => {
+    splitStore.open(spec)
+  }, [])
+
   // ── 有效排序 ──
   // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 追加尾部；
   // 最近：有 lastUsed 的按时间降序在前，其余按手动序在后。
@@ -298,6 +304,7 @@ function WorktableSection(props: any) {
     nameOverrides: projects.nameOverrides,
     reportMeta,
     reportUsed,
+    openSplit,
   }
 
   // ── 拖动（≡ 手柄，与 v1 相同）──
@@ -719,6 +726,13 @@ export function apply(ctx: any) {
   const disposeSubscribe = ctx.slots.subscribe('sidebar.worktable.project', syncIds)
   syncIds()
   ctx.effect(() => disposeSubscribe, 'dsh-worktable: project registry watch')
+
+  // 分栏工作区浮层（M1 通用引擎，shell.overlay 座位）
+  ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+    name: 'shell.overlay',
+    id: 'dsh-worktable-split',
+    order: 100,
+  }, SplitWorkspace), 'dsh-worktable: split workspace overlay')
 
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({
     name: 'sidebar.footer.action',

@@ -212,3 +212,22 @@
 - 落地：PRD §13 设计定稿（13.1–13.9：目标/硬约束/分割树/内容协议/+面板改版/持久化/
   可行性记录/里程碑 M1-M3/协议关系）；§12 并入 §13 引擎；§11 状态表同步；
   代码按用户选择暂不实现。
+
+## 补记（M1 布局引擎实现 + dsh-planreview 测试车）
+
+- 用户指令：不动 travelatlas；新建「建筑审图」项目作为 M1 测试车，开始实现。
+- 新建 dsh-planreview（E:\AI_Workspace\DeepseekHarness\Projects\dsh-planreview）：
+  工作台项目模板结构（00_index/01_content/02_process/03_local/04_test + AGENTS/README/.gitignore）；
+  服务端托管 /planreview/drawing/ 与 /planreview/spec/ 占位页 + /api/planreview/health；
+  客户端工作台卡片（协议 v2：📐 报到/埋点/隐藏/排序/改名）+ openSplit 三窗声明
+  （main=[图纸,规范] + 聊天，chatWidth 240–600）+ 工作台缺席降级提示入口。
+- 工作台 M1 引擎：新增 01_content/src/client/split.tsx（splitStore + SplitWorkspace）——
+  布局模型 = 标题栏 + 顶部通栏行(可选) + 主行内容窗 + 右下聊天窗；聊天窗 = marginLeft+marginTop
+  组合挤法（官方会话视图区整体）；会话切换重锚定不关闭（复用 §12.4 方案）；
+  chat/top/pane/topPane 四类分隔线拖拽；dsh.worktable.split.v1 按 layoutId 持久化各宽度；
+  Esc/✕ 退出。owner props 新增 openSplit(spec)；shell.overlay 注册 dsh-worktable-split。
+- 构建与注册：两插件构建 + node --check 通过；profile packages.json 增加
+  dsh-planreview（link + bundles，位于 worktable 之后 travelatlas 之前）；
+  node_modules/dsh-planreview junction 已建；服务端已实时下发新 worktable bundle
+  （served len=59982，含 SplitWorkspace/splitStore/openSplit）。
+- 待验证：重启 dsh web 后 GUI 验收（见 dsh-planreview PRD §4 清单）。

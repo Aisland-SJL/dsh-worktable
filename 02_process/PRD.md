@@ -230,7 +230,7 @@ ctx.slots.register({
 | 视图菜单去分组、编辑模式、添加面板、快捷方式、埋点、i18n | ✅ 本窗口（v2）已实现并验收 | `01_content/src/client/`（§5.3–§5.7） |
 | travelatlas 卡片协议 v2 | ✅ 本窗口已实现并构建（并行重写覆盖后已重新应用） | `dsh-travelatlas/src/client/index.tsx` |
 | 多项目分栏框架（openSplit 声明式多栏） | 📝 设计定案（§12），并入 §13 框架引擎 | PRD §12 |
-| 乐高式工作区框架（tiling + 内容插件） | 📝 设计定案（§13），M1–M3 待实现 | PRD §13 |
+| 乐高式工作区框架（tiling + 内容插件） | 🚧 M1 引擎已实现（openSplit/split.tsx）；+ 面板拓扑选择器与 M2/M3 待实现 | `01_content/src/client/split.tsx`（§13） |
 
 ## 12. 多项目分栏框架（v3 设计，已定案、待实现）
 
@@ -355,7 +355,10 @@ type SplitPane = {
 
 ### 13.8 里程碑
 
-- **M1 布局引擎**：分割树 + 拓扑预设选择器 + 聊天重锚定（§12.4 已有参考实现）+ 浏览器窗 + 布局持久化；
+- **M1 布局引擎**：✅ 核心已实现（2026-08-16）——`01_content/src/client/split.tsx` 通用分栏引擎
+  （本版布局模型 = 标题栏 + 顶部通栏行(可选) + 主行内容窗 + 右下聊天窗；聊天窗 marginLeft+marginTop
+  组合挤法；会话切换重锚定不关闭；chat/top/pane 三级分隔线拖拽；`dsh.worktable.split.v1` 持久化），
+  owner props 新增 `openSplit(spec)`；⬜ 待做：拓扑预设选择器与「+」面板「新建工作区」UI；
 - **M2 内容插件协议**：PaneProvider 三态接口；travelatlas 图鉴作为第一个内容窗迁入验证；
 - **M3 内容插件库**：资源管理器 / 终端 / 任务管理逐个接入；SCM 视 API 情况；自定义 vibe 闭环。
 
