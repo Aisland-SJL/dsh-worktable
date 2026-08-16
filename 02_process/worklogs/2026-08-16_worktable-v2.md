@@ -246,3 +246,17 @@
   （覆盖「先开审图再点旅行」的反向场景）。
 - 验证：构建 + node --check 通过；服务端实时下发（含 split-claim/yieldObserver/ta_splitClose
   标记）；待用户刷新后实测两个方向与反选。
+
+## 补记（卡片选中效果 + 埋点收敛）
+
+- 用户反馈：① 建筑审图打开后卡片无「选中」效果（旅行 Atlas 有）；② 「最近」排序下每次点击
+  都置顶，体验差——应只在工作区真正打开（有改动）时计一次使用。
+- 实现：
+  ① owner props 新增 activeSplitId（工作台订阅 splitStore 激活态下发）；planreview 卡片
+  data-on=active 高亮（蓝边 + 名称高亮），样式与旅行 Atlas 同类；
+  ② 埋点收敛（worktable reportUsed 过滤）：引擎项目（调用过 openSplit 的 id）仅在本次点击
+  导致工作区打开时计使用，关闭/重复点击不计；遗留自带分栏的项目（travelatlas，不改其代码）
+  用 15s 冷却去重；无判定依据的普通项目保持原行为；
+  ③ planreview 无需改埋点逻辑（引擎内统一过滤）。
+- 验证：两插件构建 + node --check 通过；服务端实时下发（含 activeSplitId/
+  LEGACY_BUMP_COOLDOWN 标记）；待用户刷新实测。

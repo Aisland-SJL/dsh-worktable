@@ -53,6 +53,10 @@ const SNAP_PX = 32
 const MARKET_URL = 'https://github.com/hikariming/dshfind'
 /** 已报到卡片的 CSS order 偏移：未上报（order=0）的 v1 卡片永远排在已上报卡片之前。 */
 const ORDER_OFFSET = 1000
+/** 自带分栏实现的遗留项目（如 travelatlas，未接入 openSplit 引擎）：埋点用冷却去重，避免每次点击置顶 */
+const LEGACY_SPLIT_IDS = new Set(['travelatlas'])
+/** 遗留项目埋点冷却（毫秒）：同 id 两次计使用的最小间隔 */
+const LEGACY_BUMP_COOLDOWN = 15000
 /** 落点判定余量：松手时指针越出有效落点区（超出底部/顶部/侧边）即视为「无有效落点」。 */
 const OVER_BOTTOM_PX = 24
 const OVER_TOP_PX = 24
@@ -168,6 +172,9 @@ function WorktableSection(props: any) {
   const [bottomInset, setBottomInset] = useState(0)
   const bottomInsetRef = useRef(0)
   const [floatGeo, setFloatGeo] = useState<{ left: number; width: number | null } | null>(null)
+  const [activeSplitId, setActiveSplitId] = useState<string | null>(() =>
+    splitStore.active && splitStore.spec ? splitStore.spec.id : null,
+  )
   const floatRef = useRef<FloatRect | null>(null)
 
   const persistView = (patch: Partial<ViewState>) => {
@@ -192,6 +199,11 @@ function WorktableSection(props: any) {
     registryStore.listeners.add(sync)
     return () => { registryStore.listeners.delete(sync) }
   }, [])
+
+  // 分栏引擎激活态 → activeSplitId（卡片据此显示选中效果）
+  useEffect(() => splitStore.subscribe(() => {
+    setActiveSplitId(splitStore.active && splitStore.spec ? splitStore.spec.id : null)
+  }), [])
 
   // 侧边栏折叠/展开：保持原停靠位置（不再回弹 footer）；折叠态由项目图标框承载。
   // 折叠且浮动时：等折叠动画结束（320/750ms 双次重测，取收敛后的几何）再以 fixed 定位
@@ -264,17 +276,40 @@ function WorktableSection(props: any) {
     })
   }, [])
 
+  const engineIdsRef = useRef<Set<string>>(new Set())
+  const lastLegacyBumpRef = useRef<Record<string, number>>({})
+
+  /** 使用埋点：仅「工作区真正打开」计一次使用；点击关闭/重复点击不计（避免每次点击置顶） */
   const reportUsed = useCallback((id: string) => {
     if (typeof id !== 'string' || !id) return
     const now = Date.now()
-    persistProjects((prev) => {
-      if (prev.lastUsed[id] === now) return prev
-      return { ...prev, lastUsed: { ...prev.lastUsed, [id]: now } }
-    })
+    const bump = () => {
+      persistProjects((prev) => {
+        if (prev.lastUsed[id] === now) return prev
+        return { ...prev, lastUsed: { ...prev.lastUsed, [id]: now } }
+      })
+    }
+    const engineOpen = splitStore.active && splitStore.spec?.id === id
+    const knownEngine = engineIdsRef.current.has(id)
+    if (engineOpen) {
+      bump() // 引擎项目：本次点击打开了工作区 → 计一次使用
+    } else if (knownEngine) {
+      // 引擎项目：本次是关闭/重复点击 → 不计
+      return
+    } else if (LEGACY_SPLIT_IDS.has(id)) {
+      // 遗留自带分栏的项目：冷却去重（打开计一次；快速开关/关闭点击不重复计）
+      if (now - (lastLegacyBumpRef.current[id] ?? 0) > LEGACY_BUMP_COOLDOWN) {
+        lastLegacyBumpRef.current[id] = now
+        bump()
+      }
+    } else {
+      bump() // 无判定依据的普通项目：保持原行为
+    }
   }, [])
 
   /** 分栏工作区入口（M1 引擎）：项目卡片调用 openSplit(spec) 打开声明式布局 */
   const openSplit = useCallback((spec: LayoutSpec) => {
+    engineIdsRef.current.add(spec.id)
     splitStore.open(spec)
   }, [])
 
@@ -305,6 +340,7 @@ function WorktableSection(props: any) {
     reportMeta,
     reportUsed,
     openSplit,
+    activeSplitId,
   }
 
   // ── 拖动（≡ 手柄，与 v1 相同）──
