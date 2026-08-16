@@ -231,3 +231,18 @@
   node_modules/dsh-planreview junction 已建；服务端已实时下发新 worktable bundle
   （served len=59982，含 SplitWorkspace/splitStore/openSplit）。
 - 待验证：重启 dsh web 后 GUI 验收（见 dsh-planreview PRD §4 清单）。
+
+## 补记（反选 + 项目互斥规则）
+
+- 用户反馈：① 建筑审图卡片没有反选（再点应关闭，travelatlas 有）；② 项目间应互斥——
+  选 B 关 A，网页窗口同一时刻只容纳一个项目；多项目并行应靠多开浏览器窗口。
+- 实现（工作台 split.tsx，不动 travelatlas）：
+  ① 反选：open(spec) 若同 id 已激活 → close 并返回；
+  ② 替换：开前先关旧（引擎内天然互斥）；
+  ③ 共享协议：打开时广播 window CustomEvent 'dsh:split-claim'，并监听让位（其他接入
+  协议的分栏引擎据此互斥——未来项目默认继承）；
+  ④ 未接入协议的引擎兼容：打开前运行时点击 .ta_splitClose 关闭 travelatlas 分栏
+  （不改其代码，迁入引擎后移除）；另设让位观察器——视图区 margin 被外部改写即关闭自身
+  （覆盖「先开审图再点旅行」的反向场景）。
+- 验证：构建 + node --check 通过；服务端实时下发（含 split-claim/yieldObserver/ta_splitClose
+  标记）；待用户刷新后实测两个方向与反选。

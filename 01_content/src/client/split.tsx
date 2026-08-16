@@ -40,6 +40,9 @@ type SplitState = {
   savedMarginTop: string
   observer: ResizeObserver | null
   fallback: MutationObserver | null
+  yieldObserver: MutationObserver | null
+  lastMarginLeft: string
+  lastMarginTop: string
   listeners: Set<() => void>
   open(spec: LayoutSpec): boolean
   close(): void
@@ -95,6 +98,12 @@ function persistSaved(layoutId: string, s: { chatW: number; topH: number; paneWs
   } catch {}
 }
 
+/** 共享互斥协议：其他接入本协议的分栏引擎声明占用时，本引擎让位（同一时刻仅一个分栏工作区） */
+window.addEventListener('dsh:split-claim', ((e: any) => {
+  const id = e?.detail?.id
+  if (splitStore.active && id && id !== splitStore.spec?.id) splitStore.close()
+}) as EventListener)
+
 export const splitStore: SplitState = {
   active: false,
   spec: null,
@@ -110,10 +119,29 @@ export const splitStore: SplitState = {
   savedMarginTop: '',
   observer: null,
   fallback: null,
+  yieldObserver: null,
+  lastMarginLeft: '',
+  lastMarginTop: '',
   listeners: new Set(),
 
   open(spec) {
-    if (this.active) this.close()
+    if (this.active) {
+      // 反选：同一布局再点 = 关闭；不同布局 = 替换（先关旧的）
+      if (this.spec?.id === spec.id) {
+        this.close()
+        return true
+      }
+      this.close()
+    }
+    // 兼容桥：travelatlas 尚未接入共享引擎（不改动其代码），打开本引擎布局前运行时点击其关闭按钮
+    try {
+      const taClose = document.querySelector<HTMLElement>('.ta_splitClose')
+      taClose?.click()
+    } catch {}
+    // 声明占用：接入共享协议的其他引擎收到后让位
+    try {
+      window.dispatchEvent(new CustomEvent('dsh:split-claim', { detail: { id: spec.id } }))
+    } catch {}
     const root = findConversationRoot()
     if (!root || root.dataset.phase !== 'active') return false
     const header = root.children[0] as HTMLElement | undefined
@@ -152,6 +180,14 @@ export const splitStore: SplitState = {
       this.syncAnchor()
     })
     this.fallback.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-phase'] })
+    // 让位观察器：会话视图区 margin 被外部改写（其他未接入协议的分栏引擎接管）时关闭自身
+    this.yieldObserver = new MutationObserver(() => {
+      if (!this.active || !this.viewArea) return
+      if (this.viewArea.style.marginLeft !== this.lastMarginLeft || this.viewArea.style.marginTop !== this.lastMarginTop) {
+        this.close()
+      }
+    })
+    this.yieldObserver.observe(viewArea, { attributes: true, attributeFilter: ['style'] })
     this.active = true
     this.notify()
     return true
@@ -216,8 +252,12 @@ export const splitStore: SplitState = {
     const topH = hasTop
       ? clamp(this.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
       : 0
-    viewArea.style.marginLeft = Math.max(0, colW - chatW) + 'px'
-    viewArea.style.marginTop = (BAR_H + topH) + 'px'
+    const ml = Math.max(0, colW - chatW) + 'px'
+    const mt = (BAR_H + topH) + 'px'
+    this.lastMarginLeft = ml
+    this.lastMarginTop = mt
+    viewArea.style.marginLeft = ml
+    viewArea.style.marginTop = mt
   },
 
   setChatW(w) {
@@ -297,6 +337,8 @@ export const splitStore: SplitState = {
     this.observer = null
     this.fallback?.disconnect()
     this.fallback = null
+    this.yieldObserver?.disconnect()
+    this.yieldObserver = null
     this.root = null
     this.header = null
     this.viewArea = null
