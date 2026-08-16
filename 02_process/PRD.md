@@ -1,6 +1,6 @@
 # dsh-worktable（工作台）PRD
 
-> 版本：v0.2 草案 · 日期：2026-08-16 · 状态：v1 原型已上线；§10 待设计内容已定案并实现（v2，代码完成、待重启后 GUI 验收）
+> 版本：v0.2 草案 · 日期：2026-08-16 · 状态：v2 已实现并验收；§12 多项目分栏框架（v3）设计定案、待新项目开工时实现
 > 关联项目：dsh-travelatlas（第一个入驻项目）、上游参考 dsh-reminder（文件夹结构）
 
 ## 1. 项目定位
@@ -227,6 +227,63 @@ ctx.slots.register({
 | 侧边栏区块 + 三按钮 + ≡ 拖动 | ✅ v1 已实现 | `01_content/src/client/` |
 | 项目子座位协议 + travelatlas 入驻 | ✅ v1 已实现 | 同上 + dsh-travelatlas/src/client |
 | 服务端健康路由 | ✅ 已实现 | `01_content/src/index.ts` |
-| 视图菜单去分组、编辑模式、添加面板、快捷方式、埋点、i18n | ✅ 本窗口（v2）已实现并构建，待重启后 GUI 验收 | `01_content/src/client/`（§5.3–§5.7） |
+| 视图菜单去分组、编辑模式、添加面板、快捷方式、埋点、i18n | ✅ 本窗口（v2）已实现并验收 | `01_content/src/client/`（§5.3–§5.7） |
 | travelatlas 卡片协议 v2 | ✅ 本窗口已实现并构建（并行重写覆盖后已重新应用） | `dsh-travelatlas/src/client/index.tsx` |
+| 多项目分栏框架（openSplit 声明式多栏） | 📝 设计定案（§12），代码待新项目开工时实现 | PRD §12 |
+
+## 12. 多项目分栏框架（v3 设计，已定案、待实现）
+
+> 状态：设计定案（2026-08-16 与用户讨论确认）。代码待第一个新项目（如建筑审图）开工时实现，
+> travelatlas 可顺带迁入验证。本节为设计规格，不属于 v2 已实现范围。
+
+### 12.1 背景与目标
+
+- 用户后续项目（建筑审图 / 网页动画生成 / 机器人工作台等）都将以「内容栏并置 + 右侧对话」的
+  形式入驻工作台，栏数 1..n 各异（审图 3 栏、动画 4+ 栏、机器人 2 栏）；
+- 把 travelatlas 的分栏几何逻辑抽为工作台统一能力：**框架管几何，项目管声明**；
+- 目标：新项目接入成本 ≈ 声明一个 SplitSpec（约 20 行），不复制任何几何代码。
+
+### 12.2 openSplit 协议（owner props 扩展，向后兼容）
+
+- owner props v2 增加可选回调 `openSplit(spec: SplitSpec)`（引用稳定）；
+- 项目卡片 onClick 时调用（与 `reportUsed(id)` 并列）；
+- 不调用 openSplit 的项目不受框架约束（路线 A 逃生舱）：可自行注册 `shell.overlay`
+  实现任意自定义布局（travelatlas 现行分栏即属此类）。两条路线并存，互不排斥。
+
+### 12.3 SplitSpec 声明
+
+```ts
+type SplitSpec = {
+  id: string                    // 项目 id（用于宽度持久化）
+  title: string                 // 分栏标题（左上角）
+  panes: SplitPane[]            // 内容栏，从左到右 1..n
+}
+
+type SplitPane = {
+  id: string
+  title: string
+  width: { default: number; min: number; max: number }
+  content:
+    | { kind: 'iframe'; url: string }          // 主推：同源站点路由（/xxx/site/）
+    | { kind: 'component'; component: any }    // 预留：项目打包的 React 组件（实现时验证跨插件引用可行性）
+}
+```
+
+示例（建筑审图 3 栏）：`panes: [图纸, 规范]` + 自动对话栏。
+
+### 12.4 框架职责
+
+- 几何：查找会话根（`[data-phase]` 探测 + 结构化甄别，与 travelatlas 现行 hack 一致，
+  集中一处维护）、marginLeft 右挤对话区、分隔线拖宽（逐栏 width 约束）、Esc/✕ 退出、
+  会话关闭或结构变化自动退出；
+- 对话栏：固定最右，宽度 240–480 可拖；
+- 持久化：`dsh.worktable.split.v1` = `{ [projectId]: { [paneId]: width, chat: width } }`；
+- iframe 内容：同源路由约定 `/<project>/site/`（项目服务端自行托管，travelatlas 模式），
+  URL 校验 http/https，新标签打开入口同 travelatlas；
+- 内容形式：`iframe` 为主；`component` 预留位，待深度交互项目出现时验证并实现。
+
+### 12.5 实施时机
+
+- 待第一个新项目开工时在本窗口实现；travelatlas 迁入（改为声明式）作为验证用例；
+- 实现不改动 §5.3 卡片协议既有字段，仅新增 openSplit；v2 卡片与老项目不受影响。
 

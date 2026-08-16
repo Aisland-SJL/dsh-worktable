@@ -154,3 +154,25 @@
 - 备注 3（验证教训）：esbuild 默认 ascii charset，非 ASCII 字符在 bundle 里以 \u{...} 转义
   输出，且 pwsh Get-Content/IWR 按 ANSI 解码 UTF-8——校验 emoji 需用 read 工具读 UTF-8
   或直接查转义序列（如 1F30F）。
+
+## 补记（checkpoint + GitHub 推送）
+
+- 用户确认效果稳定，执行 checkpoint：dsh-worktable 建 git 仓库（branch main），
+  本地身份 Aisland <eechaoserebus@gmail.com>，首次提交 d58cbc5（20 文件；
+  node_modules/lib/03_local/日志按根 .gitignore 排除）；README「当前状态」段同步为 v2。
+- 推送到 GitHub 私有仓库 https://github.com/Aisland-SJL/dsh-worktable：
+  安装 gh CLI（winget，v2.97.0）；设备授权流程首次因网络超时失败——根因为系统代理
+  （127.0.0.1:7890）只作用于 WinINET，gh CLI 需显式 HTTPS_PROXY 环境变量；
+  带上代理重试成功，账号为 Aisland-SJL，创建私有仓库并推送 main=d58cbc5，已验证同步。
+- 遗留：lib/ 未入库（clone 后需 npm install && npm run build）；
+  01_content 内缺 README.md/LICENSE（开源独立发布前补）；版本号仍 0.1.0（开源前升 0.2.0）。
+
+## 补记（多项目分栏框架设计定案）
+
+- 用户规划后续项目：建筑审图工作台（图纸+规范+对话 3 栏）、网页动画生成工作台（4+ 栏）、
+  机器人工作台（2 栏）等，均以「内容栏并置 + 右侧对话」形式入驻工作台。
+- 讨论结论（用户确认）：路线 B——工作台内置「声明式多栏」分栏框架（openSplit(spec) 回调），
+  框架管几何（会话根探测/挤右栏/拖分隔线/Esc/宽度持久化），项目管声明（panes 数组 + iframe URL
+  为主、component 预留位）；路线 A（项目自带 overlay）作为逃生舱并存。
+- 落地：PRD §12 写入设计规格（SplitSpec/框架职责/实施时机），代码待第一个新项目开工时实现；
+  §11 状态表同步；本窗口暂不写代码（用户选择「先落设计」）。
