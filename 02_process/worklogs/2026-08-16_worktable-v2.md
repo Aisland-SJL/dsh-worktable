@@ -260,3 +260,12 @@
   ③ planreview 无需改埋点逻辑（引擎内统一过滤）。
 - 验证：两插件构建 + node --check 通过；服务端实时下发（含 activeSplitId/
   LEGACY_BUMP_COOLDOWN 标记）；待用户刷新实测。
+
+## 补记（排序默认改为「手动」）
+
+- 用户反馈：最近排序下点击仍有反复置顶，体验差 → 定案：默认「手动」排序，
+  喜欢「最近」的用户自行切换。
+- 实现：loadView 一次性迁移（sortMigratedV2 标记）——旧存「最近」自动回落「手动」；
+  用户此后手动选择「最近」会写入标记并被尊重；persistView 统一写入标记。
+  fresh 状态默认本就 manual（DEFAULTS.orderBy='manual'）。
+- 验证：构建 + node --check 通过；服务端实时下发（含 sortMigratedV2）；待用户刷新确认。

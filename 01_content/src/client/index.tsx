@@ -84,10 +84,15 @@ function loadView(): ViewState {
     if (!raw) return { ...DEFAULT_VIEW }
     const p = JSON.parse(raw)
     // 显式挑字段：旧版遗留的 groupBy 等未知字段直接忽略。
+    // 一次性迁移：v2 起默认「手动」排序（最近排序点击即置顶、体验差），旧存「最近」回落为「手动」；
+    // 之后用户手动选择「最近」会写入 sortMigratedV2 标记并被尊重。
+    const orderBy = p.sortMigratedV2 === true
+      ? (p.orderBy === 'recent' ? 'recent' : 'manual')
+      : 'manual'
     return {
       query: typeof p.query === 'string' ? p.query : '',
       searchOpen: p.searchOpen === true,
-      orderBy: p.orderBy === 'recent' ? 'recent' : 'manual',
+      orderBy,
       dock: p.dock === 'float' ? 'float' : 'footer',
       floatTop: typeof p.floatTop === 'number' ? p.floatTop : null,
     }
@@ -180,7 +185,7 @@ function WorktableSection(props: any) {
   const persistView = (patch: Partial<ViewState>) => {
     setView((prev) => {
       const next = { ...prev, ...patch }
-      try { localStorage.setItem(PERSIST_KEY, JSON.stringify(next)) } catch {}
+      try { localStorage.setItem(PERSIST_KEY, JSON.stringify({ ...next, sortMigratedV2: true })) } catch {}
       return next
     })
   }
