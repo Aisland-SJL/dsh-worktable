@@ -43,6 +43,8 @@ type ProjectsState = {
   nameOverrides: Record<string, string>
   /** 本地快捷方式条目。 */
   shortcuts: Shortcut[]
+  /** 用户自建的布局条目（「+」新建工作区保存的 LayoutSpec）。 */
+  layouts: LayoutSpec[]
 }
 
 const PERSIST_KEY = 'dsh.worktable.view.v1'
@@ -62,6 +64,38 @@ const OVER_BOTTOM_PX = 24
 const OVER_TOP_PX = 24
 const OVER_SIDE_PX = 80
 
+/** 拓扑预设（聊天窗恒贴右，PRD §13.2 硬约束）：左右/三栏/上一下二/井字 */
+const PRESET_DEFS = [
+  { id: '2h', topCount: 0, contentCount: 1 },
+  { id: '3h', topCount: 0, contentCount: 2 },
+  { id: 't2', topCount: 1, contentCount: 1 },
+  { id: 'grid', topCount: 2, contentCount: 1 },
+] as const
+
+function presetTotal(def: { topCount: number; contentCount: number }): number {
+  return def.topCount + def.contentCount
+}
+
+function buildLayout(presetId: string, name: string, urls: string[]): LayoutSpec {
+  const def = PRESET_DEFS.find((d) => d.id === presetId) ?? PRESET_DEFS[0]
+  const mk = (i: number, url: string) => ({
+    id: 'p' + (i + 1),
+    title: '内容' + (i + 1),
+    min: 200,
+    content: { kind: 'iframe' as const, url },
+  })
+  const top = Array.from({ length: def.topCount }, (_, i) => mk(i, urls[i] ?? 'about:blank'))
+  const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.topCount + i, urls[def.topCount + i] ?? 'about:blank'))
+  return {
+    id: 'layout-' + Date.now().toString(36),
+    title: name,
+    top: top.length > 0 ? top : null,
+    main,
+    chatWidth: { default: 360, min: 240, max: 600 },
+    topHeight: { default: 200, min: 120, max: 480 },
+  }
+}
+
 const DEFAULT_VIEW: ViewState = {
   query: '',
   searchOpen: false,
@@ -76,6 +110,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   hidden: [],
   nameOverrides: {},
   shortcuts: [],
+  layouts: [],
 }
 
 function loadView(): ViewState {
@@ -113,6 +148,9 @@ function loadProjects(): ProjectsState {
       nameOverrides: p.nameOverrides && typeof p.nameOverrides === 'object' ? p.nameOverrides : {},
       shortcuts: Array.isArray(p.shortcuts)
         ? p.shortcuts.filter((s: any) => s && typeof s.id === 'string' && typeof s.name === 'string' && typeof s.href === 'string')
+        : [],
+      layouts: Array.isArray(p.layouts)
+        ? p.layouts.filter((l: any) => l && typeof l.id === 'string' && typeof l.title === 'string' && Array.isArray(l.main))
         : [],
     }
   } catch {
@@ -167,6 +205,10 @@ function WorktableSection(props: any) {
   const [scIcon, setScIcon] = useState('')
   const [scHref, setScHref] = useState('')
   const [scError, setScError] = useState(false)
+  const [wsPreset, setWsPreset] = useState<string>('2h')
+  const [wsName, setWsName] = useState('')
+  const [wsUrls, setWsUrls] = useState<string[]>(['', '', ''])
+  const [wsError, setWsError] = useState(false)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
   )
@@ -319,12 +361,14 @@ function WorktableSection(props: any) {
   }, [])
 
   // ── 有效排序 ──
-  // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 追加尾部；
+  // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 与布局 id 追加尾部；
   // 最近：有 lastUsed 的按时间降序在前，其余按手动序在后。
+  const layoutIds = useMemo(() => projects.layouts.map((l) => l.id), [projects.layouts])
+  const allIds = useMemo(() => [...registeredIds, ...layoutIds], [registeredIds, layoutIds])
   const effectiveOrder = useMemo(() => {
-    const known = new Set(registeredIds)
+    const known = new Set(allIds)
     const stored = projects.order.filter((id) => known.has(id))
-    const rest = registeredIds.filter((id) => !stored.includes(id))
+    const rest = allIds.filter((id) => !stored.includes(id))
     let list = [...stored, ...rest]
     if (view.orderBy === 'recent') {
       const hot = list.filter((id) => projects.lastUsed[id] != null)
@@ -333,7 +377,7 @@ function WorktableSection(props: any) {
       list = [...hot, ...cold]
     }
     return list
-  }, [registeredIds, projects.order, projects.lastUsed, view.orderBy])
+  }, [allIds, projects.order, projects.lastUsed, view.orderBy])
 
   const ownerProps = {
     query: view.query.trim(),
@@ -466,11 +510,36 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, shortcuts: prev.shortcuts.filter((s) => s.id !== id) }))
   }
 
+  // ── 布局（新建工作区） ──
+  const saveLayout = () => {
+    const name = wsName.trim()
+    const def = PRESET_DEFS.find((d) => d.id === wsPreset) ?? PRESET_DEFS[0]
+    const total = presetTotal(def)
+    const urls = wsUrls.slice(0, total).map((u) => u.trim())
+    if (!name || urls.some((u) => !/^(\/|https?:\/\/)/i.test(u))) { setWsError(true); return }
+    const layout = buildLayout(wsPreset, name, urls)
+    persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout] }))
+    setWsName(''); setWsUrls(['', '', '']); setWsError(false)
+    setAddOpen(false)
+    openSplit(layout)
+    reportUsed(layout.id)
+  }
+
+  const removeLayout = (id: string) => {
+    persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
+  }
+
   const query = view.query.trim()
   const queryLower = query.toLowerCase()
   const visibleShortcuts = projects.shortcuts.filter((s) =>
     !queryLower || (s.name + ' ' + s.href).toLowerCase().includes(queryLower),
   )
+  const visibleLayouts = projects.layouts.filter((l) => {
+    if (projects.hidden.includes(l.id)) return false
+    if (!queryLower) return true
+    const paneTitles = [...(l.top ?? []), ...l.main].map((p) => p.title).join(' ')
+    return (l.title + ' ' + paneTitles).toLowerCase().includes(queryLower)
+  })
 
   const isFloat = float != null
   const floatStyle = isFloat
@@ -536,10 +605,12 @@ function WorktableSection(props: any) {
   if (!wide) {
     const projectIcons = registeredIds.map((id) => metas[id]?.icon ?? '📦')
     const shortcutIcons = projects.shortcuts.map((s) => s.icon)
-    const icons = [...projectIcons, ...shortcutIcons]
+    const layoutIcons = projects.layouts.map(() => '🧱')
+    const icons = [...projectIcons, ...shortcutIcons, ...layoutIcons]
     const railNames = [
       ...registeredIds.map((id) => projects.nameOverrides[id] ?? metas[id]?.name ?? id),
       ...projects.shortcuts.map((s) => s.name),
+      ...projects.layouts.map((l) => projects.nameOverrides[l.id] ?? l.title),
     ]
     // 浮动态：fixed 定位到拖前高度（左/宽取折叠列实测几何）；停靠态：文档流原位
     const railStyle = isFloat && railRect
@@ -641,6 +712,40 @@ function WorktableSection(props: any) {
             <button type="button" className="dsh-wt_addBtn" onClick={addShortcut}>{t('add.shortcutAdd')}</button>
           </div>
           {scError && <p className="dsh-wt_addError">{t('add.shortcutInvalid')}</p>}
+          <div className="dsh-wt_menuSep" />
+          <span className="dsh-wt_menuLabel">{t('add.workspaceTitle')}</span>
+          <p className="dsh-wt_addText">{t('add.workspaceDesc')}</p>
+          <div className="dsh-wt_presets">
+            {PRESET_DEFS.map((def) => (
+              <button
+                key={def.id}
+                type="button"
+                className="dsh-wt_preset"
+                data-on={wsPreset === def.id ? 'true' : 'false'}
+                onClick={() => { setWsPreset(def.id); setWsError(false) }}
+              >
+                {t('preset.' + def.id)}
+              </button>
+            ))}
+          </div>
+          <div className="dsh-wt_addForm">
+            <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
+              onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
+            {Array.from({ length: presetTotal(PRESET_DEFS.find((d) => d.id === wsPreset) ?? PRESET_DEFS[0]) }, (_, i) => (
+              <input
+                key={i}
+                type="text"
+                placeholder={t('add.paneUrlPh')}
+                value={wsUrls[i] ?? ''}
+                onChange={(e) => {
+                  setWsUrls((prev) => { const next = [...prev]; next[i] = e.target.value; return next })
+                  setWsError(false)
+                }}
+              />
+            ))}
+            <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
+          </div>
+          {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
         </div>
       )}
 
@@ -665,7 +770,8 @@ function WorktableSection(props: any) {
           </div>
           {effectiveOrder.map((id) => {
             const meta = metas[id]
-            const display = projects.nameOverrides[id] ?? meta?.name ?? id
+            const layout = projects.layouts.find((l) => l.id === id)
+            const display = projects.nameOverrides[id] ?? layout?.title ?? meta?.name ?? id
             const isHidden = projects.hidden.includes(id)
             return (
               <div
@@ -682,7 +788,7 @@ function WorktableSection(props: any) {
                 onDragEnd={() => { dragIdRef.current = null }}
               >
                 <span className="dsh-wt_manageGrip" aria-hidden>≡</span>
-                <span className="dsh-wt_manageIcon" aria-hidden>{meta?.icon ?? '📦'}</span>
+                <span className="dsh-wt_manageIcon" aria-hidden>{layout ? '🧱' : (meta?.icon ?? '📦')}</span>
                 <input
                   className="dsh-wt_manageInput"
                   value={display}
@@ -694,6 +800,9 @@ function WorktableSection(props: any) {
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
                   {isHidden ? '🙈' : '👁'}
                 </button>
+                {layout && (
+                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteLayout')} onClick={() => removeLayout(id)}>✕</button>
+                )}
               </div>
             )
           })}
@@ -713,6 +822,27 @@ function WorktableSection(props: any) {
         {renderProjectSlot
           ? renderProjectSlot('sidebar.worktable.project', ownerProps)
           : <div className="dsh-wt_empty">{t('empty')}</div>}
+        {visibleLayouts.map((l) => {
+          const paneCount = [...(l.top ?? []), ...l.main].length
+          return (
+            <button
+              key={l.id}
+              type="button"
+              className="dsh-wt_layout"
+              data-on={activeSplitId === l.id ? 'true' : 'false'}
+              style={{ order: effectiveOrder.indexOf(l.id) + 1000 }}
+              onClick={() => { openSplit(l); reportUsed(l.id) }}
+            >
+              <span className="dsh-wt_layoutIcon" aria-hidden>🧱</span>
+              <span className="dsh-wt_layoutText">
+                <span className="dsh-wt_layoutName">{projects.nameOverrides[l.id] ?? l.title}</span>
+                <span className="dsh-wt_layoutDesc">{t('layout.desc', { n: String(paneCount) })}</span>
+              </span>
+              <span className="dsh-wt_layoutBadge">{t('layout.badge')}</span>
+              <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
+            </button>
+          )
+        })}
       </div>
 
       {visibleShortcuts.length > 0 && (

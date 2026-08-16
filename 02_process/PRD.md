@@ -358,7 +358,10 @@ type SplitPane = {
 - **M1 布局引擎**：✅ 核心已实现（2026-08-16）——`01_content/src/client/split.tsx` 通用分栏引擎
   （本版布局模型 = 标题栏 + 顶部通栏行(可选) + 主行内容窗 + 右下聊天窗；聊天窗 marginLeft+marginTop
   组合挤法；会话切换重锚定不关闭；chat/top/pane 三级分隔线拖拽；`dsh.worktable.split.v1` 持久化），
-  owner props 新增 `openSplit(spec)`；⬜ 待做：拓扑预设选择器与「+」面板「新建工作区」UI；
+  owner props 新增 `openSplit(spec)`；
+  ✅ 「+」面板「新建工作区」（2026-08-16）：拓扑预设选择（左右/三栏横排/上一下二/井字，聊天恒贴右）→
+  布局名称 + 各窗 URL → 保存并打开；布局条目进入项目区（🧱 卡片、选中态、搜索、隐藏/改名/↑↓ 排序/
+  删除、折叠图标框），存 `dsh.worktable.projects.v1.layouts`；
 - **互斥规则（2026-08-16 用户反馈定案）**：同一时刻仅一个分栏工作区——
   ① 反选：同一项目卡片再点 = 关闭；② 替换：不同项目互斥（选 B 关 A）；
   ③ 实现：引擎内开前先关旧；对外广播 `dsh:split-claim` 共享协议并监听让位；

@@ -269,3 +269,15 @@
   用户此后手动选择「最近」会写入标记并被尊重；persistView 统一写入标记。
   fresh 状态默认本就 manual（DEFAULTS.orderBy='manual'）。
 - 验证：构建 + node --check 通过；服务端实时下发（含 sortMigratedV2）；待用户刷新确认。
+
+## 补记（「+」新建工作区：拓扑预设 + 布局条目）
+
+- 完成 M1 剩余项（PRD §13.5/§13.8）：
+  ① 「+」面板新增「新建工作区」区：四个拓扑预设（左右两栏/三栏横排/上一下二/井字四栏，
+  聊天窗恒贴右）+ 布局名称 + 各内容窗 URL（校验 / 或 http(s) 开头）→ 保存并直接打开；
+  ② 布局条目 = 一等公民：进入项目区（🧱 卡片 + 布局角标 + N 窗描述），参与搜索/隐藏/改名/
+  ↑↓ 与拖拽排序/「最近」排序（打开计使用）/选中态（activeSplitId）/折叠图标框；管理条内可删除；
+  ③ 持久化进 dsh.worktable.projects.v1.layouts（LayoutSpec 数组）。
+- 词典新增 12 键（zh/en）；样式新增预设按钮与布局卡片。
+- 验证：构建 + node --check 通过；服务端实时下发（含 PRESET_DEFS/saveLayout/dsh-wt_layout）；
+  待用户刷新实测。
