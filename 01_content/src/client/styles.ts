@@ -122,4 +122,7 @@ export const css = [
   '.dsh-wt_paneWipText{font-size:11px}',
   '.dsh-wt_splitFlip{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:none;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:13px;cursor:pointer}',
   '.dsh-wt_splitFlip:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
+  // + 右侧弹出面板
+  '.dsh-wt_popBackdrop{position:fixed;left:0;top:0;right:0;bottom:0;z-index:79;background:transparent}',
+  '.dsh-wt_pop{max-height:min(540px,calc(100vh - 32px));overflow:auto;box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
 ].join('\n')

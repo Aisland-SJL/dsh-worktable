@@ -301,3 +301,12 @@
   ⑤ 引擎 UI 文案经 setSplitT 注入 locale（zh/en 新增 15 键）。
 - 验证：构建 + node --check 通过；服务端实时下发（含 presetThumb/PanePicker/setChatSide/swapPanes）；
   待用户刷新实测。
+
+## 补记（+ 面板改为右侧弹出悬浮窗）
+
+- 用户要求：+ 点击后向右弹出窗口（非展开下拉），窗口比例适配内容；不安排自动重启（其他窗口仍在工作）。
+- 实现：addOpen 时渲染透明全屏遮罩（点击关闭）+ fixed 弹出面板：宽 320px、
+  left = sidebar 右边缘 + 8（视口内钳制，sidebar 右边缘由既有 ResizeObserver 测量维护）、
+  top = 工作台区块顶部（钳制 56..视口-540）；内容不变（布局缩略图 → 名称 → 进入 /
+  快捷方式表单）；样式 .dsh-wt_pop 限高滚动 + 阴影。
+- 构建 + node --check 通过；服务端实时下发（含 popBackdrop/dsh-wt_pop），无需重启，用户刷新生效。

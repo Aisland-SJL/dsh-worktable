@@ -242,6 +242,7 @@ function WorktableSection(props: any) {
   const [bottomInset, setBottomInset] = useState(0)
   const bottomInsetRef = useRef(0)
   const [floatGeo, setFloatGeo] = useState<{ left: number; width: number | null } | null>(null)
+  const [sidebarRight, setSidebarRight] = useState<number | null>(null)
   const [activeSplitId, setActiveSplitId] = useState<string | null>(() =>
     splitStore.active && splitStore.spec ? splitStore.spec.id : null,
   )
@@ -325,6 +326,7 @@ function WorktableSection(props: any) {
     const padRight = parseFloat(cs.paddingRight) || 0
     const margin = 20
     const width = rect.width - padLeft - padRight - margin * 2
+    setSidebarRight(Math.round(rect.right))
     if (width > 0) {
       setFloatGeo({ left: Math.round(rect.left + padLeft + margin), width: Math.round(width) })
     } else {
@@ -636,6 +638,13 @@ function WorktableSection(props: any) {
 
   const dockedStyle = !isFloat && bottomInset > 0 ? { marginBottom: bottomInset } : undefined
 
+  // + 弹窗：向右弹出、锚定 sidebar 右边缘与工作台区块顶部（视口内钳制）
+  const sectionTop = rootRef.current?.getBoundingClientRect().top ?? 100
+  const popLeft = sidebarRight != null
+    ? Math.min(sidebarRight + 8, Math.max(16, window.innerWidth - 344))
+    : 16
+  const popTop = clamp(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540))
+
   if (!wide) {
     const projectIcons = registeredIds.map((id) => metas[id]?.icon ?? '📦')
     const shortcutIcons = projects.shortcuts.map((s) => s.icon)
@@ -727,8 +736,9 @@ function WorktableSection(props: any) {
         </div>
       )}
 
+      {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => setAddOpen(false)} />}
       {addOpen && (
-        <div className="dsh-wt_menu dsh-wt_add">
+        <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 320, zIndex: 80 }}>
           <span className="dsh-wt_menuLabel">{t('add.chooseLayout')}</span>
           <div className="dsh-wt_presets">
             {PRESET_DEFS.map((def) => (
