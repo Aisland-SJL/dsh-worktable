@@ -1,0 +1,7 @@
+node_modules/
+lib/
+*.log
+03_local/
+.DS_Store
+Thumbs.db
+
