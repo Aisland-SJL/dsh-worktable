@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
-import { splitStore, SplitWorkspace, type LayoutSpec } from './split'
+import { splitStore, SplitWorkspace, setSplitT, type LayoutSpec, type SplitPane } from './split'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -72,20 +72,16 @@ const PRESET_DEFS = [
   { id: 'grid', topCount: 2, contentCount: 1 },
 ] as const
 
-function presetTotal(def: { topCount: number; contentCount: number }): number {
-  return def.topCount + def.contentCount
-}
-
-function buildLayout(presetId: string, name: string, urls: string[]): LayoutSpec {
+function buildLayout(presetId: string, name: string): LayoutSpec {
   const def = PRESET_DEFS.find((d) => d.id === presetId) ?? PRESET_DEFS[0]
-  const mk = (i: number, url: string) => ({
+  const mk = (i: number): SplitPane => ({
     id: 'p' + (i + 1),
     title: '内容' + (i + 1),
     min: 200,
-    content: { kind: 'iframe' as const, url },
+    content: null,
   })
-  const top = Array.from({ length: def.topCount }, (_, i) => mk(i, urls[i] ?? 'about:blank'))
-  const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.topCount + i, urls[def.topCount + i] ?? 'about:blank'))
+  const top = Array.from({ length: def.topCount }, (_, i) => mk(i))
+  const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.topCount + i))
   return {
     id: 'layout-' + Date.now().toString(36),
     title: name,
@@ -93,7 +89,35 @@ function buildLayout(presetId: string, name: string, urls: string[]): LayoutSpec
     main,
     chatWidth: { default: 360, min: 240, max: 600 },
     topHeight: { default: 200, min: 120, max: 480 },
+    chatSide: 'right',
   }
+}
+
+/** 布局缩略图（迷你窗格示意；聊天窗蓝色 💬） */
+function presetThumb(defId: string) {
+  const cell = (chat: boolean, key: string) => (
+    <span key={key} className={'dsh-wt_thumbCell' + (chat ? ' dsh-wt_thumbChat' : '')}>{chat ? '💬' : ''}</span>
+  )
+  if (defId === '2h') {
+    return <span className="dsh-wt_thumb"><span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(true, 'b')}</span></span>
+  }
+  if (defId === '3h') {
+    return <span className="dsh-wt_thumb"><span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}{cell(true, 'c')}</span></span>
+  }
+  if (defId === 't2') {
+    return (
+      <span className="dsh-wt_thumb">
+        <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
+        <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(true, 'c')}</span>
+      </span>
+    )
+  }
+  return (
+    <span className="dsh-wt_thumb">
+      <span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}</span>
+      <span className="dsh-wt_thumbRow">{cell(false, 'c')}{cell(true, 'd')}</span>
+    </span>
+  )
 }
 
 const DEFAULT_VIEW: ViewState = {
@@ -207,7 +231,6 @@ function WorktableSection(props: any) {
   const [scError, setScError] = useState(false)
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
-  const [wsUrls, setWsUrls] = useState<string[]>(['', '', ''])
   const [wsError, setWsError] = useState(false)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
@@ -251,6 +274,20 @@ function WorktableSection(props: any) {
   useEffect(() => splitStore.subscribe(() => {
     setActiveSplitId(splitStore.active && splitStore.spec ? splitStore.spec.id : null)
   }), [])
+
+  // 引擎内 spec 变更（窗内容/聊天位置/窗位互换）→ 回写布局条目持久化
+  useEffect(() => {
+    splitStore.onSpecMutated = (spec) => {
+      persistProjects((prev) => ({ ...prev, layouts: prev.layouts.map((l) => (l.id === spec.id ? spec : l)) }))
+    }
+    return () => { splitStore.onSpecMutated = null }
+  }, [])
+
+  // 分栏引擎 UI 文案（窗选择器等）
+  useEffect(() => {
+    setSplitT((k) => t(k as WorktableKey))
+    return () => setSplitT(null)
+  }, [t])
 
   // 侧边栏折叠/展开：保持原停靠位置（不再回弹 footer）；折叠态由项目图标框承载。
   // 折叠且浮动时：等折叠动画结束（320/750ms 双次重测，取收敛后的几何）再以 fixed 定位
@@ -513,13 +550,10 @@ function WorktableSection(props: any) {
   // ── 布局（新建工作区） ──
   const saveLayout = () => {
     const name = wsName.trim()
-    const def = PRESET_DEFS.find((d) => d.id === wsPreset) ?? PRESET_DEFS[0]
-    const total = presetTotal(def)
-    const urls = wsUrls.slice(0, total).map((u) => u.trim())
-    if (!name || urls.some((u) => !/^(\/|https?:\/\/)/i.test(u))) { setWsError(true); return }
-    const layout = buildLayout(wsPreset, name, urls)
+    if (!name) { setWsError(true); return }
+    const layout = buildLayout(wsPreset, name)
     persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout] }))
-    setWsName(''); setWsUrls(['', '', '']); setWsError(false)
+    setWsName(''); setWsError(false)
     setAddOpen(false)
     openSplit(layout)
     reportUsed(layout.id)
@@ -695,11 +729,28 @@ function WorktableSection(props: any) {
 
       {addOpen && (
         <div className="dsh-wt_menu dsh-wt_add">
-          <span className="dsh-wt_menuLabel">{t('add.guideTitle')}</span>
-          <p className="dsh-wt_addText">{t('add.guideBody')}</p>
-          <a className="dsh-wt_menuItem dsh-wt_addLink" href={MARKET_URL} target="_blank" rel="noreferrer noopener">
-            {t('add.market')} ↗
-          </a>
+          <span className="dsh-wt_menuLabel">{t('add.chooseLayout')}</span>
+          <div className="dsh-wt_presets">
+            {PRESET_DEFS.map((def) => (
+              <button
+                key={def.id}
+                type="button"
+                className="dsh-wt_preset"
+                data-on={wsPreset === def.id ? 'true' : 'false'}
+                onClick={() => { setWsPreset(def.id); setWsError(false) }}
+              >
+                {presetThumb(def.id)}
+                <span className="dsh-wt_presetLabel">{t('preset.' + def.id)}</span>
+              </button>
+            ))}
+          </div>
+          <div className="dsh-wt_addForm">
+            <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
+              onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
+            <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
+          </div>
+          {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
+          <div className="dsh-wt_menuSep" />
           <span className="dsh-wt_menuLabel">{t('add.shortcutTitle')}</span>
           <p className="dsh-wt_addText">{t('add.shortcutDesc')}</p>
           <div className="dsh-wt_addForm">
@@ -712,40 +763,6 @@ function WorktableSection(props: any) {
             <button type="button" className="dsh-wt_addBtn" onClick={addShortcut}>{t('add.shortcutAdd')}</button>
           </div>
           {scError && <p className="dsh-wt_addError">{t('add.shortcutInvalid')}</p>}
-          <div className="dsh-wt_menuSep" />
-          <span className="dsh-wt_menuLabel">{t('add.workspaceTitle')}</span>
-          <p className="dsh-wt_addText">{t('add.workspaceDesc')}</p>
-          <div className="dsh-wt_presets">
-            {PRESET_DEFS.map((def) => (
-              <button
-                key={def.id}
-                type="button"
-                className="dsh-wt_preset"
-                data-on={wsPreset === def.id ? 'true' : 'false'}
-                onClick={() => { setWsPreset(def.id); setWsError(false) }}
-              >
-                {t('preset.' + def.id)}
-              </button>
-            ))}
-          </div>
-          <div className="dsh-wt_addForm">
-            <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
-              onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
-            {Array.from({ length: presetTotal(PRESET_DEFS.find((d) => d.id === wsPreset) ?? PRESET_DEFS[0]) }, (_, i) => (
-              <input
-                key={i}
-                type="text"
-                placeholder={t('add.paneUrlPh')}
-                value={wsUrls[i] ?? ''}
-                onChange={(e) => {
-                  setWsUrls((prev) => { const next = [...prev]; next[i] = e.target.value; return next })
-                  setWsError(false)
-                }}
-              />
-            ))}
-            <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
-          </div>
-          {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
         </div>
       )}
 

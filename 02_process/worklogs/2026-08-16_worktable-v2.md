@@ -281,3 +281,23 @@
 - 词典新增 12 键（zh/en）；样式新增预设按钮与布局卡片。
 - 验证：构建 + node --check 通过；服务端实时下发（含 PRESET_DEFS/saveLayout/dsh-wt_layout）；
   待用户刷新实测。
+
+## 补记（+ 面板改版：可视化布局选择 + 窗内 6 选 1 + 聊天左右切换）
+
+- 用户定案（参照 better-sidebar 交互）：
+  ① + 面板移除「接入新项目」说明，第一步 = 可视化布局缩略图选择（画出来的窗格示意，
+  聊天窗蓝色 💬）；② 选完只填一个布局名称即可进入，不再填内容地址；
+  ③ 进入后每个窗内 6 选 1 内容（浏览器/资源管理器/源代码管理/任务管理/终端 + 自定义；
+  better-sidebar 是 5 项，我们多一个自定义）；④ 窗位可调整（标题栏拖拽换位），
+  聊天窗可切左下/右下。
+- 实现（工作台 split.tsx 重写 + index.tsx/locales/styles）：
+  ① LayoutSpec 增加 chatSide('left'|'right')；聊天居左 = marginRight 挤法（新），
+  居右 = marginLeft（原有）；工具栏 ⇄ 翻转按钮；
+  ② SplitContent 三态扩展：null（未指派）/iframe/builtin(browser|explorer|scm|tasks|terminal)；
+  未指派窗渲染 6 选 1 网格；浏览器内置窗带地址栏；其余内置窗显示「开发中」占位；自定义 = URL 输入；
+  ③ swapPanes 拖拽换位（同行交换 + 跨行互换，宽度跟随）；setPaneContent/setChatSide/
+  swapPanes 变更经 splitStore.onSpecMutated 回调回写 projects.v1.layouts（持久化）；
+  ④ + 面板：缩略图预设（presetThumb 纯 CSS 窗格图）+ 名称输入 +「进入工作区」；
+  ⑤ 引擎 UI 文案经 setSplitT 注入 locale（zh/en 新增 15 键）。
+- 验证：构建 + node --check 通过；服务端实时下发（含 presetThumb/PanePicker/setChatSide/swapPanes）；
+  待用户刷新实测。

@@ -2,28 +2,36 @@ import { useEffect, useState } from 'react'
 
 /**
  * dsh-worktable 乐高式工作区 M1：通用分栏引擎（PRD §13）。
- * 布局模型：标题栏 + 顶部通栏行（可选）+ 主行（内容窗，从左到右）+ 右下聊天窗（官方会话视图区整体）。
- * 聊天窗几何 = marginLeft + marginTop 组合挤法；会话切换重新锚定（§12.4，切会话不关闭）。
- * 宽度持久化：dsh.worktable.split.v1 = { [layoutId]: { chatW, topH, paneWs, topWs } }。
+ * 布局模型：标题栏 + 顶部通栏行(可选) + 主行内容窗 + 聊天窗（官方会话视图区整体，
+ * 贴右或贴左，由 chatSide 决定；marginLeft/marginRight + marginTop 组合挤法）。
+ * 内容三态：null（未指派 → 6 选 1 选择器）/ iframe / builtin（浏览器/资源管理器/SCM/任务/终端）。
+ * 窗位调整：标题栏拖拽换位（同行或跨行）；工具栏 ⇄ 切换聊天窗左右。
+ * 会话切换重新锚定不关闭；宽度按 layoutId 持久化 dsh.worktable.split.v1；
+ * 内容与 chatSide 的变更经 onSpecMutated 回调交给工作台持久化（布局条目）。
  */
 
-export type SplitContent = { kind: 'iframe'; url: string }
+export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal'
 
-export type SplitPane = { id: string; title: string; min: number; content: SplitContent }
+export type SplitContent =
+  | { kind: 'iframe'; url: string }
+  | { kind: 'builtin'; type: BuiltinType }
+
+export type SplitPane = { id: string; title: string; min: number; content: SplitContent | null }
 
 export type LayoutSpec = {
   id: string
   title: string
-  /** 顶部通栏行（可选；每项为内容窗，横跨整列宽） */
   top: SplitPane[] | null
-  /** 主行内容窗（从左到右；聊天窗恒在最后、由引擎自动追加） */
   main: SplitPane[]
   chatWidth: { default: number; min: number; max: number }
-  /** 顶部行高度（存在 top 行时生效） */
   topHeight?: { default: number; min: number; max: number }
+  /** 聊天窗贴边位置：'right'（右列/右下，默认）| 'left'（左列/左下） */
+  chatSide?: 'left' | 'right'
 }
 
 type Geom = { left: number; top: number; right: number; bottom: number }
+
+type PaneRow = 'top' | 'main'
 
 type SplitState = {
   active: boolean
@@ -37,12 +45,15 @@ type SplitState = {
   header: HTMLElement | null
   viewArea: HTMLElement | null
   savedMarginLeft: string
+  savedMarginRight: string
   savedMarginTop: string
   observer: ResizeObserver | null
   fallback: MutationObserver | null
   yieldObserver: MutationObserver | null
   lastMarginLeft: string
+  lastMarginRight: string
   lastMarginTop: string
+  onSpecMutated: ((spec: LayoutSpec) => void) | null
   listeners: Set<() => void>
   open(spec: LayoutSpec): boolean
   close(): void
@@ -53,6 +64,9 @@ type SplitState = {
   setTopH(h: number): void
   setPaneW(i: number, w: number): void
   setTopW(i: number, w: number): void
+  setPaneContent(row: PaneRow, i: number, content: SplitContent | null): void
+  swapPanes(aRow: PaneRow, aI: number, bRow: PaneRow, bI: number): void
+  setChatSide(side: 'left' | 'right'): void
   persist(): void
   subscribe(fn: () => void): () => void
   notify(): void
@@ -62,6 +76,25 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), h
 const DIVIDER = 6
 const BAR_H = 26
 const PERSIST_KEY = 'dsh.worktable.split.v1'
+
+/** 内置内容窗图标 */
+const BUILTIN_ICONS: Record<BuiltinType, string> = {
+  browser: '🌐',
+  explorer: '📁',
+  scm: '🔀',
+  tasks: '✅',
+  terminal: '▸_',
+}
+
+/** 分栏 UI 文案提供者（由工作台注入 locale t） */
+let uiT: ((key: string) => string) | null = null
+export function setSplitT(fn: ((key: string) => string) | null) {
+  uiT = fn
+}
+const T = (key: string): string => (uiT ? uiT(key) : key)
+
+/** 拖拽换位暂存 */
+let dragPane: { row: PaneRow; index: number } | null = null
 
 /** 找到会话根容器：data-phase 元素中排除输入框、取含子元素者；优先 phase=active；无活动会话返回 null */
 function findConversationRoot(): HTMLElement | null {
@@ -116,12 +149,15 @@ export const splitStore: SplitState = {
   header: null,
   viewArea: null,
   savedMarginLeft: '',
+  savedMarginRight: '',
   savedMarginTop: '',
   observer: null,
   fallback: null,
   yieldObserver: null,
   lastMarginLeft: '',
+  lastMarginRight: '',
   lastMarginTop: '',
+  onSpecMutated: null,
   listeners: new Set(),
 
   open(spec) {
@@ -147,7 +183,7 @@ export const splitStore: SplitState = {
     const header = root.children[0] as HTMLElement | undefined
     const viewArea = root.children[1] as HTMLElement | undefined
     if (!header || !viewArea) return false
-    this.spec = spec
+    this.spec = { ...spec, chatSide: spec.chatSide === 'left' ? 'left' : 'right' }
     const main = spec.main ?? []
     const top = spec.top ?? []
     const saved = loadSaved(spec.id)
@@ -159,6 +195,7 @@ export const splitStore: SplitState = {
     this.header = header
     this.viewArea = viewArea
     this.savedMarginLeft = viewArea.style.marginLeft
+    this.savedMarginRight = viewArea.style.marginRight
     this.savedMarginTop = viewArea.style.marginTop
     this.refreshGeom()
     this.applyMargin()
@@ -183,7 +220,9 @@ export const splitStore: SplitState = {
     // 让位观察器：会话视图区 margin 被外部改写（其他未接入协议的分栏引擎接管）时关闭自身
     this.yieldObserver = new MutationObserver(() => {
       if (!this.active || !this.viewArea) return
-      if (this.viewArea.style.marginLeft !== this.lastMarginLeft || this.viewArea.style.marginTop !== this.lastMarginTop) {
+      if (this.viewArea.style.marginLeft !== this.lastMarginLeft
+        || this.viewArea.style.marginRight !== this.lastMarginRight
+        || this.viewArea.style.marginTop !== this.lastMarginTop) {
         this.close()
       }
     })
@@ -217,12 +256,14 @@ export const splitStore: SplitState = {
     // 恢复旧视图区 margin（若仍连接），锚定到新会话根
     if (this.viewArea && this.viewArea.isConnected && this.viewArea !== viewArea) {
       this.viewArea.style.marginLeft = this.savedMarginLeft
+      this.viewArea.style.marginRight = this.savedMarginRight
       this.viewArea.style.marginTop = this.savedMarginTop
     }
     this.root = next
     this.header = header
     this.viewArea = viewArea
     this.savedMarginLeft = viewArea.style.marginLeft
+    this.savedMarginRight = viewArea.style.marginRight
     this.savedMarginTop = viewArea.style.marginTop
     this.observer?.disconnect()
     this.observer.observe(next)
@@ -252,11 +293,14 @@ export const splitStore: SplitState = {
     const topH = hasTop
       ? clamp(this.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
       : 0
-    const ml = Math.max(0, colW - chatW) + 'px'
+    const gap = Math.max(0, colW - chatW) + 'px'
     const mt = (BAR_H + topH) + 'px'
-    this.lastMarginLeft = ml
+    const chatLeft = spec.chatSide === 'left'
+    this.lastMarginLeft = chatLeft ? '' : gap
+    this.lastMarginRight = chatLeft ? gap : ''
     this.lastMarginTop = mt
-    viewArea.style.marginLeft = ml
+    viewArea.style.marginLeft = this.lastMarginLeft
+    viewArea.style.marginRight = this.lastMarginRight
     viewArea.style.marginTop = mt
   },
 
@@ -323,6 +367,62 @@ export const splitStore: SplitState = {
     this.notify()
   },
 
+  setPaneContent(row, i, content) {
+    const spec = this.spec
+    if (!spec) return
+    const top = [...(spec.top ?? [])]
+    const main = [...spec.main]
+    const arr = row === 'top' ? top : main
+    if (!arr[i]) return
+    arr[i] = { ...arr[i], content }
+    this.spec = { ...spec, top: top.length > 0 ? top : null, main }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
+  swapPanes(aRow, aI, bRow, bI) {
+    const spec = this.spec
+    if (!spec) return
+    const top = [...(spec.top ?? [])]
+    const main = [...spec.main]
+    const arrA = aRow === 'top' ? top : main
+    const arrB = bRow === 'top' ? top : main
+    const a = arrA[aI]
+    const b = arrB[bI]
+    if (!a || !b) return
+    arrA[aI] = b
+    arrB[bI] = a
+    if (aRow === bRow) {
+      const ws = aRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
+      const t = ws[aI]; ws[aI] = ws[bI]; ws[bI] = t
+      if (aRow === 'top') this.topWs = ws
+      else this.paneWs = ws
+    } else {
+      const aWs = aRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
+      const bWs = bRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
+      const ta = aWs[aI]; const tb = bWs[bI]
+      aWs[aI] = tb
+      bWs[bI] = ta
+      if (aRow === 'top') { this.topWs = aWs; this.paneWs = bWs }
+      else { this.topWs = bWs; this.paneWs = aWs }
+    }
+    this.spec = { ...spec, top: top.length > 0 ? top : null, main }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
+  setChatSide(side) {
+    const spec = this.spec
+    if (!spec) return
+    this.spec = { ...spec, chatSide: side }
+    this.onSpecMutated?.(this.spec)
+    this.applyMargin()
+    this.persist()
+    this.notify()
+  },
+
   persist() {
     if (!this.spec) return
     persistSaved(this.spec.id, { chatW: this.chatW, topH: this.topH, paneWs: this.paneWs, topWs: this.topWs })
@@ -331,6 +431,7 @@ export const splitStore: SplitState = {
   close() {
     if (this.viewArea) {
       this.viewArea.style.marginLeft = this.savedMarginLeft
+      this.viewArea.style.marginRight = this.savedMarginRight
       this.viewArea.style.marginTop = this.savedMarginTop
     }
     this.observer?.disconnect()
@@ -404,6 +505,100 @@ function makeDividerHandler(kind: 'chat' | 'top' | 'pane' | 'topPane', index?: n
   }
 }
 
+/** 浏览器内置窗：地址栏 + iframe */
+function BrowserPane() {
+  const [url, setUrl] = useState('https://www.bing.com')
+  const [src, setSrc] = useState('https://www.bing.com')
+  const go = () => {
+    const u = url.trim()
+    setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
+  }
+  return (
+    <>
+      <div className="dsh-wt_browserBar">
+        <input
+          className="dsh-wt_browserInput"
+          value={url}
+          placeholder="https://"
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') go() }}
+        />
+        <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
+      </div>
+      <iframe className="dsh-wt_paneFrame" src={src} title="browser" />
+    </>
+  )
+}
+
+/** 窗内容三态渲染 */
+function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
+  const { pane, row, index } = props
+  const content = pane.content
+  if (content && content.kind === 'iframe') {
+    return <iframe className="dsh-wt_paneFrame" src={content.url} title={pane.title} />
+  }
+  if (content && content.kind === 'builtin' && content.type === 'browser') {
+    return <BrowserPane />
+  }
+  if (content && content.kind === 'builtin') {
+    return (
+      <div className="dsh-wt_paneWip">
+        <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>
+        <span className="dsh-wt_paneWipText">{T('pane.wip')}</span>
+      </div>
+    )
+  }
+  return <PanePicker row={row} index={index} />
+}
+
+/** 未指派内容：6 选 1 选择器（better-sidebar 风格 5 项 + 自定义） */
+function PanePicker(props: { row: PaneRow; index: number }) {
+  const [custom, setCustom] = useState(false)
+  const [url, setUrl] = useState('')
+  const pick = (content: SplitContent) => splitStore.setPaneContent(props.row, props.index, content)
+  const applyCustom = () => {
+    const u = url.trim()
+    if (/^(\/|https?:\/\/)/i.test(u)) pick({ kind: 'iframe', url: u })
+  }
+  if (custom) {
+    return (
+      <div className="dsh-wt_paneCustom">
+        <input
+          autoFocus
+          type="text"
+          placeholder={T('pane.customUrlPh')}
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') applyCustom() }}
+        />
+        <button type="button" className="dsh-wt_paneCustomGo" onClick={applyCustom}>{T('pane.open')}</button>
+      </div>
+    )
+  }
+  return (
+    <div className="dsh-wt_panePicker">
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
+        <span aria-hidden>🌐</span>{T('pane.browser')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
+        <span aria-hidden>📁</span>{T('pane.explorer')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'scm' })}>
+        <span aria-hidden>🔀</span>{T('pane.scm')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'tasks' })}>
+        <span aria-hidden>✅</span>{T('pane.tasks')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
+        <span aria-hidden>▸_</span>{T('pane.terminal')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => setCustom(true)}>
+        <span aria-hidden>✨</span>{T('pane.custom')}
+      </button>
+    </div>
+  )
+}
+
 /** 分栏工作区浮层（shell.overlay 座位；订阅 splitStore 快照渲染） */
 function SplitWorkspace() {
   const [snap, setSnap] = useState({
@@ -443,6 +638,7 @@ function SplitWorkspace() {
   const top = spec.top ?? []
   const main = spec.main ?? []
   const hasTop = top.length > 0
+  const chatLeft = spec.chatSide === 'left'
   const colW = g.right - g.left
   const rowH = g.bottom - g.top
   const chatW = clamp(snap.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
@@ -450,6 +646,7 @@ function SplitWorkspace() {
     ? clamp(snap.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
     : 0
   const contentW = Math.max(0, colW - chatW)
+  const contentX = chatLeft ? g.left + chatW : g.left
 
   const topItems = allocate(top, snap.topWs, colW)
   const mainItems = allocate(main, snap.paneWs, contentW)
@@ -460,27 +657,45 @@ function SplitWorkspace() {
   const mainH = paneBottom - bodyTop
   const topY = barTop + BAR_H
 
+  const renderPane = (it: { pane: SplitPane; left: number; width: number }, row: PaneRow, index: number, x: number, y: number, h: number) => (
+    <div key={it.pane.id} className="dsh-wt_pane" style={{ position: 'fixed', left: x + it.left, top: y, width: it.width, height: h, zIndex: 68 }}>
+      <div
+        className="dsh-wt_paneBar"
+        title={T('split.dragSwap')}
+        draggable
+        onDragStart={(e: any) => { dragPane = { row, index }; try { e.dataTransfer.effectAllowed = 'move' } catch {} }}
+        onDragOver={(e: any) => e.preventDefault()}
+        onDrop={(e: any) => {
+          e.preventDefault()
+          const s = dragPane
+          if (s && (s.row !== row || s.index !== index)) splitStore.swapPanes(s.row, s.index, row, index)
+          dragPane = null
+        }}
+        onDragEnd={() => { dragPane = null }}
+      >
+        <span className="dsh-wt_paneTitle">{it.pane.title}</span>
+      </div>
+      <PaneBody pane={it.pane} row={row} index={index} />
+    </div>
+  )
+
   return (
     <>
       {/* 标题栏 */}
-      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: g.left, top: barTop, width: hasTop ? colW : contentW, zIndex: 70 }}>
+      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: contentX, top: barTop, width: hasTop ? colW : contentW, zIndex: 70 }}>
         <span className="dsh-wt_splitTitle">{spec.title}</span>
+        <button
+          type="button"
+          className="dsh-wt_splitFlip"
+          title={T('split.flip')}
+          onClick={() => splitStore.setChatSide(chatLeft ? 'right' : 'left')}
+        >⇄</button>
         <button type="button" className="dsh-wt_splitClose" aria-label="退出分栏（Esc）" onClick={() => splitStore.close()}>✕</button>
       </div>
       {/* 顶部通栏行 */}
-      {hasTop && topItems.map((it) => (
-        <div key={it.pane.id} className="dsh-wt_pane" style={{ position: 'fixed', left: g.left + it.left, top: topY, width: it.width, height: topH, zIndex: 68 }}>
-          <div className="dsh-wt_paneBar"><span className="dsh-wt_paneTitle">{it.pane.title}</span></div>
-          <iframe className="dsh-wt_paneFrame" src={it.pane.content.url} title={it.pane.title} />
-        </div>
-      ))}
+      {hasTop && topItems.map((it, i) => renderPane(it, 'top', i, g.left, topY, topH))}
       {/* 主行内容窗 */}
-      {mainItems.map((it) => (
-        <div key={it.pane.id} className="dsh-wt_pane" style={{ position: 'fixed', left: g.left + it.left, top: bodyTop, width: it.width, height: mainH, zIndex: 68 }}>
-          <div className="dsh-wt_paneBar"><span className="dsh-wt_paneTitle">{it.pane.title}</span></div>
-          <iframe className="dsh-wt_paneFrame" src={it.pane.content.url} title={it.pane.title} />
-        </div>
-      ))}
+      {mainItems.map((it, i) => renderPane(it, 'main', i, contentX, bodyTop, mainH))}
       {/* 顶部/主行水平分隔线 */}
       {hasTop && (
         <div
@@ -509,7 +724,7 @@ function SplitWorkspace() {
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: g.left + it.left + it.width + DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
+          style={{ position: 'fixed', left: contentX + it.left + it.width + DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('pane', i)}
         />
       ))}
@@ -518,7 +733,7 @@ function SplitWorkspace() {
         className="dsh-wt_splitDivider"
         role="separator"
         title="拖动调整聊天宽度"
-        style={{ position: 'fixed', left: g.right - chatW - DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
+        style={{ position: 'fixed', left: (chatLeft ? g.left + chatW : g.right - chatW) - DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
         onPointerDown={makeDividerHandler('chat')}
       />
     </>
