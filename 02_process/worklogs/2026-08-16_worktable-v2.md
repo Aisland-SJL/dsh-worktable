@@ -389,3 +389,22 @@
   ③ 任务窗数据源不变（jobsBySession，无后台任务时显示空态文案）。
 - 验证：构建 + node --check 通过；headless Chrome 回归零报错、区块正常渲染。
 - 注意：服务端 cwd 解析需**重启 dsh web 后生效**；标签页模型为客户端改动、刷新即生效。
+
+## 补记（对照 better-sidebar 源码重做：树形资源管理器 / 子代理任务窗 / 终端依赖解析）
+
+- 用户反馈：① 资源管理器刷新/后退按钮失效（只有上一级能用）；② 终端空白；③ 任务窗
+  没有 Agent 情况；④ 要求对照 better-sidebar 源码重做（树形展开 + 重绘图标）。
+- 调研：better-sidebar 客户端 16px 描边 SVG 图标 + 子代理树（aria-expanded、缩进、当前高亮）；
+  服务端 inject ['webServer','sessions','webRuntime','tools']。
+- 实现：
+  ① 资源管理器重写为树形：懒加载子目录（缓存 + 展开集）、▸/▾ 旋转箭头、重绘文件夹/文件
+  SVG 图标、缩进层级；刷新（清缓存重载根）与上一级（根上移）修复可用（旧版在 setState
+  更新器里做副作用导致按钮失效，已避免）。
+  ② 任务窗增加「子代理」区（sessions 快照 subagentsByParent[current]，防御式取数，
+  状态圆点 + 缩进），与后台任务并列。
+  ③ 终端空白根因：服务端 import('node-pty')/import('ws') 失败——本包经 junction 链接，
+  模块真实路径在工作区，向上找不到 profile 级依赖。修复：loadPkg 沿「junction 路径 +
+  realpath」两条祖先链 createRequire 查找并加载；已本地验证 junction 路径可解析
+  node-pty/ws。**需重启 dsh web 后终端路由才注册。**
+- 验证：构建 + node --check 通过；headless Chrome 回归零报错；依赖解析测试通过。
+- 差距（M3 待续）：文件打开/编辑器、SCM diff/暂存/提交、任务输出回放。

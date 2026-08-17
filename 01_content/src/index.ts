@@ -1,7 +1,9 @@
 import { Context } from '@deepseek-ai/cordis'
 import { execFile } from 'node:child_process'
-import { readdir } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
+import { readdir, realpathSync } from 'node:fs'
+import { dirname, resolve as pathResolve, sep } from 'node:path'
+import { createRequire } from 'node:module'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 /**
  * dsh-worktable 服务端：健康路由 + 工作区内容窗的数据路由。
@@ -18,6 +20,28 @@ export const inject = ['webServer', 'sessions']
 export const HEALTH_PATH = '/api/worktable/health'
 
 const MAX_ENTRIES = 500
+
+/**
+ * 从本插件模块位置向祖先方向查找并加载 node_modules 包（如 ws / node-pty）。
+ * 本包经 junction 链接进 profile，普通 import 可能解析不到 profile 级依赖；
+ * 同时尝试 junction 路径与 realpath 两条祖先链。
+ */
+function loadPkg(pkg: string): any | null {
+  const starts = new Set<string>()
+  try { starts.add(dirname(fileURLToPath(import.meta.url))) } catch {}
+  try { starts.add(realpathSync(dirname(fileURLToPath(import.meta.url)))) } catch {}
+  for (const start of starts) {
+    let dir: string | null = start
+    while (dir && dir !== pathResolve(dir, '..')) {
+      try {
+        const req = createRequire(pathToFileURL(pathResolve(dir, '__wt_probe__.js')).href)
+        return req(pkg)
+      } catch {}
+      dir = pathResolve(dir, '..')
+    }
+  }
+  return null
+}
 
 /** 解析会话工作目录：服务端 header.cwd 优先，其次客户端传入 cwd，最后进程 cwd */
 function serverCwd(ctx: any, sessionId?: string, clientCwd?: string): string {
@@ -89,7 +113,12 @@ async function setupTerminal(webServer: any, ctx: any) {
   let ptyMod: any = null
   try { wsMod = await import('ws') } catch {}
   try { ptyMod = await import('node-pty') } catch {}
-  if (!wsMod || !ptyMod) return
+  if (!wsMod) wsMod = loadPkg('ws')
+  if (!ptyMod) ptyMod = loadPkg('node-pty')
+  if (!wsMod || !ptyMod) {
+    ctx.logger?.warn('[dsh-worktable] 终端路由未注册：ws/node-pty 均不可用')
+    return
+  }
   const WebSocketServer = wsMod.WebSocketServer ?? wsMod.default?.WebSocketServer
   if (!WebSocketServer) return
   const pty = ptyMod.default ?? ptyMod

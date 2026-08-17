@@ -231,7 +231,7 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 
 /** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
 const sessionScopeStore: {
-  snapshot: { sessionId: string; cwd: string; jobs: any[] } | null
+  snapshot: { sessionId: string; cwd: string; jobs: any[]; subagents: any[] } | null
 } = { snapshot: null }
 
 function syncSessionScope(list: any) {
@@ -239,13 +239,20 @@ function syncSessionScope(list: any) {
     const snap = list.getSnapshot()
     const current: string = snap?.current ?? ''
     const entry = snap?.items?.find((it: any) => it.sessionId === current) ?? null
+    const cat = snap?.subagentsByParent?.[current]
+    let subagents: any[] = []
+    if (Array.isArray(cat)) subagents = cat
+    else if (cat && Array.isArray(cat.entries)) subagents = cat.entries
+    else if (cat && Array.isArray(cat.items)) subagents = cat.items
+    else if (cat && Array.isArray(cat.children)) subagents = cat.children
     sessionScopeStore.snapshot = {
       sessionId: current,
       cwd: entry?.cwd ?? '',
       jobs: (snap?.jobsBySession?.[current] ?? []) as any[],
+      subagents,
     }
   } catch {
-    sessionScopeStore.snapshot = { sessionId: '', cwd: '', jobs: [] }
+    sessionScopeStore.snapshot = { sessionId: '', cwd: '', jobs: [], subagents: [] }
   }
 }
 
@@ -301,6 +308,7 @@ function WorktableSection(props: any) {
         return s ? { sessionId: s.sessionId, cwd: s.cwd } : null
       },
       getJobs: () => sessionScopeStore.snapshot?.jobs ?? [],
+      getSubagents: () => sessionScopeStore.snapshot?.subagents ?? [],
     })
     return () => setSplitEnv(null)
   }, [])

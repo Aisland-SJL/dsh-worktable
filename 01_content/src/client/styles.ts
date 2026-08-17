@@ -160,4 +160,12 @@ export const css = [
   '.dsh-wt_tabTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_tabClose{flex:none;width:14px;height:14px;padding:0;border:none;border-radius:3px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:9px;line-height:1;cursor:pointer}',
   '.dsh-wt_tabClose:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
+  // 树形资源管理器
+  '.dsh-wt_treeRow{display:flex;align-items:center;gap:5px;width:100%;box-sizing:border-box;padding:3px 6px;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:11px;line-height:16px;cursor:pointer;text-align:left}',
+  '.dsh-wt_treeRow:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_treeArrow{flex:none;width:10px;font-size:8px;color:var(--dsw-alias-label-tertiary,#6e7683);transition:transform .12s ease}',
+  '.dsh-wt_treeArrowOpen{transform:rotate(90deg)}',
+  '.dsh-wt_treeIcon{flex:none}',
+  '.dsh-wt_treeName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.dsh-wt_subSection{flex:none;padding:6px 8px 2px;font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683)}',
 ].join('\n')

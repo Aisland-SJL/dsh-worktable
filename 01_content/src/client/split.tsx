@@ -151,6 +151,7 @@ export type SplitJob = {
 type SplitEnv = {
   getScope: () => SplitScope | null
   getJobs: () => SplitJob[]
+  getSubagents: () => any[]
 }
 let splitEnv: SplitEnv | null = null
 export function setSplitEnv(env: SplitEnv | null) {
@@ -722,63 +723,122 @@ function BrowserPane() {
   )
 }
 
-/** 资源管理器窗（服务端 /api/worktable/fs） */
+/** 文件夹图标（重绘 SVG，与 better-sidebar 同款风格） */
+function FolderIcon() {
+  return (
+    <svg className="dsh-wt_treeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M1.75 3.25A1.75 1.75 0 0 1 3.5 1.5h2.63a1.75 1.75 0 0 1 1.34.66l.62.79a1.75 1.75 0 0 0 1.34.66H12.5a1.75 1.75 0 0 1 1.75 1.75v7.39A1.75 1.75 0 0 1 12.5 14.5h-9a1.75 1.75 0 0 1-1.75-1.75V3.25Z" fill="var(--dsw-alias-state-accent-primary,#4f8ef7)" opacity="0.9" />
+      <path d="M1.75 5.75h12.5v7a1.75 1.75 0 0 1-1.75 1.75h-9a1.75 1.75 0 0 1-1.75-1.75v-7Z" fill="var(--dsw-alias-state-accent-primary,#4f8ef7)" opacity="0.4" />
+    </svg>
+  )
+}
+
+/** 文件图标（重绘 SVG） */
+function FileIcon() {
+  return (
+    <svg className="dsh-wt_treeIcon" width="13" height="13" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M4 1.5h5.25a1 1 0 0 1 .71.29l3.25 3.25a1 1 0 0 1 .29.71V13.5a1 1 0 0 1-1 1h-8.5a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Z" fill="var(--dsw-alias-fill-l1,rgba(255,255,255,.06))" stroke="var(--dsw-alias-label-secondary,#9aa4b2)" strokeWidth="1.1" />
+      <path d="M9.25 1.5V4.75h3.25" fill="none" stroke="var(--dsw-alias-label-secondary,#9aa4b2)" strokeWidth="1.1" />
+    </svg>
+  )
+}
+
+/** 资源管理器窗：树形展开（懒加载子目录；刷新/上一级均可用） */
 function ExplorerPane() {
-  const [path, setPath] = useState('')
-  const [entries, setEntries] = useState<any[]>([])
+  const cacheRef = useRef<Record<string, any[]>>({})
+  const expandedRef = useRef<Set<string>>(new Set())
+  const [rootPath, setRootPath] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [history, setHistory] = useState<string[]>([])
-  const load = useCallback((p: string, push: boolean) => {
-    setLoading(true)
-    postJson('/api/worktable/fs', {
-      path: p,
-      sessionId: splitEnv?.getScope()?.sessionId ?? '',
-      cwd: splitEnv?.getScope()?.cwd ?? '',
-    })
-      .then((d) => {
-        setPath(d.path ?? p)
-        setEntries(d.entries ?? [])
-        setError('')
-        setHistory((h) => (push && p !== d.path ? [...h, p] : h))
+  const [, setTick] = useState(0)
+  const rerender = () => setTick((t) => t + 1)
+
+  const fetchDir = useCallback(async (path: string, force = false) => {
+    if (!force && cacheRef.current[path]) return { path, entries: cacheRef.current[path] }
+    try {
+      const d = await postJson('/api/worktable/fs', {
+        path,
+        sessionId: splitEnv?.getScope()?.sessionId ?? '',
+        cwd: splitEnv?.getScope()?.cwd ?? '',
       })
-      .catch((e) => setError(String(e)))
-      .finally(() => setLoading(false))
+      const entries: any[] = d.entries ?? []
+      cacheRef.current[d.path] = entries
+      setError(d.error ? String(d.error) : '')
+      return { path: d.path, entries }
+    } catch (e) {
+      setError(String(e))
+      return { path, entries: [] }
+    } finally {
+      rerender()
+    }
   }, [])
-  useEffect(() => {
-    load(splitEnv?.getScope()?.cwd ?? '', false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-  const back = () => {
-    setHistory((h) => {
-      if (h.length === 0) return h
-      const prev = h[h.length - 1]
-      load(prev, false)
-      return h.slice(0, -1)
-    })
+
+  const initRoot = useCallback(async () => {
+    const r = await fetchDir(splitEnv?.getScope()?.cwd ?? '')
+    setRootPath(r.path)
+    rerender()
+  }, [fetchDir])
+
+  useEffect(() => { initRoot() }, [initRoot])
+
+  const toggle = (path: string) => {
+    if (expandedRef.current.has(path)) expandedRef.current.delete(path)
+    else { expandedRef.current.add(path); fetchDir(path) }
+    rerender()
   }
+
+  const refresh = () => {
+    cacheRef.current = {}
+    expandedRef.current.clear()
+    setError('')
+    initRoot()
+  }
+
+  const goUp = () => {
+    if (!rootPath) return
+    const parent = parentPathOf(rootPath)
+    if (parent === rootPath) return
+    cacheRef.current = {}
+    expandedRef.current.clear()
+    setError('')
+    fetchDir(parent).then((r) => { setRootPath(r.path); rerender() })
+  }
+
+  const renderLevel = (path: string, depth: number): any[] => {
+    const entries = cacheRef.current[path]
+    if (!entries) return []
+    const nodes: any[] = []
+    for (const e of entries) {
+      const isOpen = expandedRef.current.has(e.path)
+      nodes.push(
+        <div key={e.path}>
+          <button
+            type="button"
+            className="dsh-wt_treeRow"
+            style={{ paddingLeft: 8 + depth * 14 }}
+            onClick={() => (e.isDir ? toggle(e.path) : setError(T('pane.openLater')))}
+          >
+            <span className={'dsh-wt_treeArrow' + (e.isDir && isOpen ? ' dsh-wt_treeArrowOpen' : '')} aria-hidden>{e.isDir ? '▸' : ''}</span>
+            {e.isDir ? <FolderIcon /> : <FileIcon />}
+            <span className="dsh-wt_treeName">{e.name}</span>
+          </button>
+          {e.isDir && isOpen && renderLevel(e.path, depth + 1)}
+        </div>,
+      )
+    }
+    return nodes
+  }
+
   return (
     <>
       <div className="dsh-wt_subBar">
-        <button type="button" className="dsh-wt_subBtn" title="上一级" onClick={() => load(parentPathOf(path), true)}>⬆</button>
-        <button type="button" className="dsh-wt_subBtn" title="后退" onClick={back}>↩</button>
-        <button type="button" className="dsh-wt_subBtn" title="刷新" onClick={() => load(path, false)}>↻</button>
-        <span className="dsh-wt_subPath">{path || '…'}</span>
+        <button type="button" className="dsh-wt_subBtn" title="上一级" onClick={goUp}>⬆</button>
+        <button type="button" className="dsh-wt_subBtn" title="刷新" onClick={refresh}>↻</button>
+        <span className="dsh-wt_subPath">{rootPath || '…'}</span>
       </div>
       <div className="dsh-wt_subList">
         {error && <div className="dsh-wt_subEmpty">{error}</div>}
-        {!error && !loading && entries.length === 0 && <div className="dsh-wt_subEmpty">—</div>}
-        {entries.map((e) => (
-          <button
-            key={e.path}
-            type="button"
-            className="dsh-wt_subRow"
-            onClick={() => (e.isDir ? load(e.path, true) : setError(T('pane.openLater')))}
-          >
-            <span className="dsh-wt_subIcon" aria-hidden>{e.isDir ? '📁' : '📄'}</span>
-            <span className="dsh-wt_subName">{e.name}</span>
-          </button>
-        ))}
+        {!error && cacheRef.current[rootPath]?.length === 0 && <div className="dsh-wt_subEmpty">—</div>}
+        {renderLevel(rootPath, 0)}
       </div>
     </>
   )
@@ -818,7 +878,7 @@ function GitPane() {
   )
 }
 
-/** 任务管理窗（客户端 sessions 快照 jobsBySession；2s 刷新） */
+/** 任务管理窗：后台任务 + 子代理（Agent 情况；2s 刷新） */
 function JobsPane() {
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -826,14 +886,25 @@ function JobsPane() {
     return () => window.clearInterval(timer)
   }, [])
   const jobs = splitEnv?.getJobs?.() ?? []
+  const subagents = splitEnv?.getSubagents?.() ?? []
   return (
     <div className="dsh-wt_subList">
+      <div className="dsh-wt_subSection">{T('pane.jobsTitle')}</div>
       {jobs.length === 0 && <div className="dsh-wt_subEmpty">{T('pane.jobsEmpty')}</div>}
       {jobs.map((j) => (
         <div key={j.id} className="dsh-wt_subRow dsh-wt_subRowStatic">
           <span className={'dsh-wt_jobDot dsh-wt_jobDot-' + j.status} aria-hidden>●</span>
           <span className="dsh-wt_subName">{j.label}</span>
           <span className="dsh-wt_subTag">{j.kind}</span>
+        </div>
+      ))}
+      <div className="dsh-wt_subSection">{T('pane.subagents')}</div>
+      {subagents.length === 0 && <div className="dsh-wt_subEmpty">{T('pane.subagentsEmpty')}</div>}
+      {subagents.map((s: any, i: number) => (
+        <div key={s?.id ?? i} className="dsh-wt_subRow dsh-wt_subRowStatic" style={{ paddingLeft: 8 + (s?.depth ?? 0) * 12 }}>
+          <span className={'dsh-wt_jobDot dsh-wt_jobDot-' + (s?.status ?? 'stopping')} aria-hidden>●</span>
+          <span className="dsh-wt_subName">{s?.label ?? s?.title ?? s?.name ?? '—'}</span>
+          {s?.status && <span className="dsh-wt_subTag">{s.status}</span>}
         </div>
       ))}
     </div>
