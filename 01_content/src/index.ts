@@ -244,7 +244,7 @@ export function apply(ctx: Context) {
         if (req.method !== 'GET') { res.writeHead(405); res.end(); return }
         const pathname = new URL(req.url ?? '/', 'http://dsh.internal').pathname
         const segs = pathname.slice(SITE_PREFIX.length).split('/').filter(Boolean)
-        const rootToken = segs.shift() ?? ''
+        const rootToken = decodeURIComponent(segs.shift() ?? '')
         const rel = segs.map((s) => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
         if (!rootToken) { json(res, 400, { error: 'missing root' }); return }
         const root = pathResolve(rootToken)

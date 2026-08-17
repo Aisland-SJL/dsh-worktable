@@ -639,18 +639,12 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（本地站点目录级托管：资源管理器点 index.html 完整渲染相对资源）
+## 补记（site 路由 rootToken 未解码修复）
 
-- 用户问题：AI 乐（静态内容 HTML）点 index.html 能渲染，旅行 Atlas（JS 单页应用）白屏。
-- 根因：旧预览走 /api/worktable/file 单文件直读，页内相对引用（./assets/...）解析到错误目录 404；
-  AI 乐 HTML 自带静态内容所以仍可见，旅行 Atlas 只有空 root + JS 注入所以白屏。
-- 处理（用户确认方案 1）：
-  ① 服务端新增前缀路由 /api/worktable/site（kind:'prefix'，模式照搬 better-sidebar）：
-  URL = /site/<encodeURIComponent(目录)>/<相对路径>，逐段 decode，root 目录内沙箱（.. 越界 403），
-  目录访问回退 index.html；40MB 上限；FILE_TYPES 共享 MIME 表扩充（字体/wasm/音视频/avif 等）；
-  ② 客户端资源管理器点 .html/.htm 改开 site URL（root=所在目录，rel=文件名），标签标题=文件名
-  （SplitContent iframe 增加可选 title 字段）；单文件预览（md/txt/pdf/图片）不变。
-- 验证（functional-diag STEP12 + 04_test/fixture-site 夹具：index.html + assets/app.js/style.css）：
-  预检路由存在才断言（appText=SITE_OK + CSS 颜色注入）。当前运行中的服务器未加载新路由 →
-  routeReady=false（404 已过滤，ERRORS_COUNT: 0），其余 STEP1-11 全绿。
-- 备注：含服务端路由，**需手动重启一次 dsh web** 后 STEP12 完整验证与旅行 Atlas dist 实测。
+- 用户重启后实测：点 index.html 返回 {"error":"not found"}（路由已生效，文件解析失败）。
+- 根因：rootToken（encodeURIComponent 编码的目录）直接 pathResolve，未 decodeURIComponent，
+  解析成带 %3A%5C 字面量的错误路径 → stat 空 → not found。rel 段当时有 decode，root 段漏了。
+- 修复：rootToken = decodeURIComponent(segs.shift())。
+- 验证：node 单测模拟解析逻辑——旅行 Atlas dist/index.html、dist/assets/index-*.js、
+  fixture-site/index.html、fixture-site/assets/app.js 四条全部命中真实文件且沙箱判定 inside=true。
+- 备注：服务端改动，需用户再重启一次 dsh web 生效。
