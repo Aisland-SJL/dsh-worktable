@@ -152,4 +152,12 @@ export const css = [
   '.dsh-wt_jobDot-stopping{color:#9aa4b2}',
   '.dsh-wt_termHost{flex:1;min-height:0;padding:6px 2px 2px 8px;background:#010409;overflow:hidden}',
   '.dsh-wt_termHost .xterm{height:100%}',
+  // 窗内标签页
+  '.dsh-wt_tabBar{flex:none;display:flex;align-items:center;gap:3px;padding:3px 5px 0;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));overflow-x:auto}',
+  '.dsh-wt_tab{flex:none;display:flex;align-items:center;gap:5px;max-width:150px;padding:3px 8px;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:10.5px;line-height:16px;cursor:pointer;user-select:none;-webkit-user-select:none}',
+  '.dsh-wt_tab:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.04))}',
+  '.dsh-wt_tabOn{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-bg-base,#0b0e14);border-color:var(--dsw-alias-border-l1,#262b36)}',
+  '.dsh-wt_tabTitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.dsh-wt_tabClose{flex:none;width:14px;height:14px;padding:0;border:none;border-radius:3px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:9px;line-height:1;cursor:pointer}',
+  '.dsh-wt_tabClose:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
 ].join('\n')

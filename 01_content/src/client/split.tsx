@@ -18,7 +18,20 @@ export type SplitContent =
   | { kind: 'iframe'; url: string }
   | { kind: 'builtin'; type: BuiltinType }
 
-export type SplitPane = { id: string; title: string; min: number; content: SplitContent | null }
+/** 一个内容标签页 */
+export type PaneTab = { id: string; title: string; content: SplitContent }
+
+export type SplitPane = {
+  id: string
+  title: string
+  min: number
+  /** 向后兼容：单内容声明（打开时归一化为一个标签页） */
+  content?: SplitContent | null
+  /** 标签页模型：内容标签列表（空 = 未指派，显示 6 选 1 选择器） */
+  tabs?: PaneTab[]
+  /** 激活的标签下标 */
+  active?: number
+}
 
 export type LayoutSpec = {
   id: string
@@ -75,6 +88,9 @@ type SplitState = {
   setPaneW(i: number, w: number): void
   setTopW(i: number, w: number): void
   setPaneContent(row: PaneRow, i: number, content: SplitContent | null): void
+  openTab(row: PaneRow, i: number, content: SplitContent): void
+  closeTab(row: PaneRow, i: number, tabId: string): void
+  setActiveTab(row: PaneRow, i: number, tabId: string): void
   swapPanes(aRow: PaneRow, aI: number, bRow: PaneRow, bI: number): void
   setChatSide(side: 'left' | 'right'): void
   persist(): void
@@ -94,6 +110,24 @@ const BUILTIN_ICONS: Record<BuiltinType, string> = {
   scm: '🔀',
   tasks: '✅',
   terminal: '▸_',
+}
+
+const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
+  browser: 'pane.browser',
+  explorer: 'pane.explorer',
+  scm: 'pane.scm',
+  tasks: 'pane.tasks',
+  terminal: 'pane.terminal',
+}
+
+function tabTitleOf(content: SplitContent): string {
+  if (content.kind === 'builtin') return T(BUILTIN_LABEL_KEYS[content.type])
+  try {
+    const u = new URL(content.url)
+    return u.hostname || content.url
+  } catch {
+    return content.url
+  }
 }
 
 /** 分栏 UI 文案提供者（由工作台注入 locale t） */
@@ -236,7 +270,18 @@ export const splitStore: SplitState = {
     const viewArea = root.children[1] as HTMLElement | undefined
     if (!header || !viewArea) return false
     this.spec = { ...spec, chatSide: spec.chatSide === 'left' ? 'left' : 'right' }
-    const main = spec.main ?? []
+    // 向后兼容归一化：单内容声明 → 一个标签页
+    const normalize = (p: SplitPane): SplitPane => {
+      if (p.tabs && p.tabs.length > 0) return p
+      if (p.content) {
+        return { ...p, content: null, tabs: [{ id: 't1', title: tabTitleOf(p.content), content: p.content }], active: 0 }
+      }
+      return { ...p, content: null, tabs: [], active: 0 }
+    }
+    if (spec.top) this.spec.top = spec.top.map(normalize)
+    if (spec.left) this.spec.left = normalize(spec.left)
+    this.spec.main = (spec.main ?? []).map(normalize)
+    const main = this.spec.main ?? []
     const top = spec.top ?? []
     const left = spec.left ?? null
     const saved = loadSaved(spec.id)
@@ -441,23 +486,85 @@ export const splitStore: SplitState = {
   },
 
   setPaneContent(row, i, content) {
+    if (content) this.openTab(row, i, content)
+  },
+
+  openTab(row, i, content) {
     const spec = this.spec
     if (!spec) return
+    const mutate = (pane: SplitPane): SplitPane => {
+      const tabs = [...(pane.tabs ?? [])]
+      const tab: PaneTab = { id: 't' + Date.now().toString(36), title: tabTitleOf(content), content }
+      tabs.push(tab)
+      return { ...pane, content: null, tabs, active: tabs.length - 1 }
+    }
     if (row === 'left') {
       if (!spec.left || i !== 0) return
-      this.spec = { ...spec, left: { ...spec.left, content } }
-      this.onSpecMutated?.(this.spec)
-      this.persist()
-      this.notify()
-      return
+      this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (!top[i]) return
+      top[i] = mutate(top[i])
+      this.spec = { ...spec, top }
+    } else {
+      const main = [...spec.main]
+      if (!main[i]) return
+      main[i] = mutate(main[i])
+      this.spec = { ...spec, main }
     }
-    const top = [...(spec.top ?? [])]
-    const main = [...spec.main]
-    const arr = row === 'top' ? top : main
-    if (!arr[i]) return
-    arr[i] = { ...arr[i], content }
-    this.spec = { ...spec, top: top.length > 0 ? top : null, main }
     this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
+  closeTab(row, i, tabId) {
+    const spec = this.spec
+    if (!spec) return
+    const mutate = (pane: SplitPane): SplitPane => {
+      const tabs = (pane.tabs ?? []).filter((t) => t.id !== tabId)
+      return { ...pane, tabs, active: 0 }
+    }
+    if (row === 'left') {
+      if (!spec.left || i !== 0) return
+      this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (!top[i]) return
+      top[i] = mutate(top[i])
+      this.spec = { ...spec, top }
+    } else {
+      const main = [...spec.main]
+      if (!main[i]) return
+      main[i] = mutate(main[i])
+      this.spec = { ...spec, main }
+    }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
+  setActiveTab(row, i, tabId) {
+    const spec = this.spec
+    if (!spec) return
+    const mutate = (pane: SplitPane): SplitPane => {
+      const idx = (pane.tabs ?? []).findIndex((t) => t.id === tabId)
+      if (idx < 0) return pane
+      return { ...pane, active: idx }
+    }
+    if (row === 'left') {
+      if (!spec.left || i !== 0) return
+      this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (!top[i]) return
+      top[i] = mutate(top[i])
+      this.spec = { ...spec, top }
+    } else {
+      const main = [...spec.main]
+      if (!main[i]) return
+      main[i] = mutate(main[i])
+      this.spec = { ...spec, main }
+    }
     this.persist()
     this.notify()
   },
@@ -623,9 +730,12 @@ function ExplorerPane() {
   const [loading, setLoading] = useState(false)
   const [history, setHistory] = useState<string[]>([])
   const load = useCallback((p: string, push: boolean) => {
-    if (!p) { setError(T('pane.explorerNoCwd')); return }
     setLoading(true)
-    postJson('/api/worktable/fs', { path: p })
+    postJson('/api/worktable/fs', {
+      path: p,
+      sessionId: splitEnv?.getScope()?.sessionId ?? '',
+      cwd: splitEnv?.getScope()?.cwd ?? '',
+    })
       .then((d) => {
         setPath(d.path ?? p)
         setEntries(d.entries ?? [])
@@ -679,9 +789,10 @@ function GitPane() {
   const [snap, setSnap] = useState<{ isRepo: boolean; branch?: string; entries: any[] } | null>(null)
   const [error, setError] = useState('')
   const load = useCallback(() => {
-    const cwd = splitEnv?.getScope()?.cwd ?? ''
-    if (!cwd) { setError(T('pane.explorerNoCwd')); return }
-    postJson('/api/worktable/git', { cwd })
+    postJson('/api/worktable/git', {
+      sessionId: splitEnv?.getScope()?.sessionId ?? '',
+      cwd: splitEnv?.getScope()?.cwd ?? '',
+    })
       .then(setSnap)
       .catch((e) => setError(String(e)))
   }, [])
@@ -754,7 +865,7 @@ function TerminalPane() {
     term.open(el)
     const scope = splitEnv?.getScope?.()
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const url = proto + '//' + location.host + '/api/worktable/term?cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
+    const url = proto + '//' + location.host + '/api/worktable/term?sessionId=' + encodeURIComponent(scope?.sessionId ?? '') + '&cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
     try {
       ws = new WebSocket(url)
     } catch {
@@ -786,34 +897,63 @@ function TerminalPane() {
   return <div ref={hostRef} className="dsh-wt_termHost" />
 }
 
-/** 窗内容三态渲染 */
+/** 单个标签页的内容渲染 */
+function PaneTabBody(props: { tab: PaneTab }) {
+  const content = props.tab.content
+  if (content.kind === 'iframe') {
+    return <iframe className="dsh-wt_paneFrame" src={content.url} title={props.tab.title} />
+  }
+  if (content.type === 'browser') return <BrowserPane />
+  if (content.type === 'explorer') return <ExplorerPane />
+  if (content.type === 'scm') return <GitPane />
+  if (content.type === 'tasks') return <JobsPane />
+  if (content.type === 'terminal') return <TerminalPane />
+  return (
+    <div className="dsh-wt_paneWip">
+      <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>
+      <span className="dsh-wt_paneWipText">{T('pane.wip')}</span>
+    </div>
+  )
+}
+
+/** 窗内容：标签页模型（无标签 = 6 选 1 选择器；标签可切换/关闭，关完回到选择器） */
 function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   const { pane, row, index } = props
-  const content = pane.content
-  if (content && content.kind === 'iframe') {
-    return <iframe className="dsh-wt_paneFrame" src={content.url} title={pane.title} />
+  const tabs = pane.tabs ?? []
+  const active = Math.min(pane.active ?? 0, Math.max(0, tabs.length - 1))
+  if (tabs.length === 0) {
+    return <PanePicker row={row} index={index} />
   }
-  if (content && content.kind === 'builtin') {
-    if (content.type === 'browser') return <BrowserPane />
-    if (content.type === 'explorer') return <ExplorerPane />
-    if (content.type === 'scm') return <GitPane />
-    if (content.type === 'tasks') return <JobsPane />
-    if (content.type === 'terminal') return <TerminalPane />
-    return (
-      <div className="dsh-wt_paneWip">
-        <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>
-        <span className="dsh-wt_paneWipText">{T('pane.wip')}</span>
+  return (
+    <>
+      <div className="dsh-wt_tabBar">
+        {tabs.map((t, i) => (
+          <span
+            key={t.id}
+            className={'dsh-wt_tab' + (i === active ? ' dsh-wt_tabOn' : '')}
+            title={t.title}
+            onClick={() => splitStore.setActiveTab(row, index, t.id)}
+          >
+            <span className="dsh-wt_tabTitle">{t.title}</span>
+            <button
+              type="button"
+              className="dsh-wt_tabClose"
+              title={T('pane.closeTab')}
+              onClick={(e) => { e.stopPropagation(); splitStore.closeTab(row, index, t.id) }}
+            >✕</button>
+          </span>
+        ))}
       </div>
-    )
-  }
-  return <PanePicker row={row} index={index} />
+      <PaneTabBody tab={tabs[active]} />
+    </>
+  )
 }
 
 /** 未指派内容：6 选 1 选择器（better-sidebar 风格 5 项 + 自定义） */
 function PanePicker(props: { row: PaneRow; index: number }) {
   const [custom, setCustom] = useState(false)
   const [url, setUrl] = useState('')
-  const pick = (content: SplitContent) => splitStore.setPaneContent(props.row, props.index, content)
+  const pick = (content: SplitContent) => splitStore.openTab(props.row, props.index, content)
   const applyCustom = () => {
     const u = url.trim()
     if (/^(\/|https?:\/\/)/i.test(u)) pick({ kind: 'iframe', url: u })

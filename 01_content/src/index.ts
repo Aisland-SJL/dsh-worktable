@@ -13,11 +13,23 @@ import { resolve, sep } from 'node:path'
  */
 
 export const name = 'dsh-worktable'
-export const inject = ['webServer']
+export const inject = ['webServer', 'sessions']
 
 export const HEALTH_PATH = '/api/worktable/health'
 
 const MAX_ENTRIES = 500
+
+/** 解析会话工作目录：服务端 header.cwd 优先，其次客户端传入 cwd，最后进程 cwd */
+function serverCwd(ctx: any, sessionId?: string, clientCwd?: string): string {
+  if (sessionId) {
+    try {
+      const headerCwd = ctx.sessions?.get?.(sessionId)?.header?.cwd
+      if (typeof headerCwd === 'string' && headerCwd) return headerCwd
+    } catch {}
+  }
+  if (typeof clientCwd === 'string' && clientCwd) return clientCwd
+  return process.cwd()
+}
 
 function json(res: any, status: number, body: unknown) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
@@ -71,7 +83,7 @@ async function gitStatus(cwd: string) {
 }
 
 /** 终端 WebSocket 升级路由（node-pty 缺失时不注册，终端窗降级为提示） */
-async function setupTerminal(webServer: any) {
+async function setupTerminal(webServer: any, ctx: any) {
   if (typeof webServer.registerUpgrade !== 'function') return
   let wsMod: any = null
   let ptyMod: any = null
@@ -91,7 +103,7 @@ async function setupTerminal(webServer: any) {
     handler: (req: any, socket: any, head: any) => {
       wss.handleUpgrade(req, socket, head, (ws: any) => {
         const u = new URL(req.url ?? '/', 'http://dsh.internal')
-        const cwd = u.searchParams.get('cwd') || process.cwd()
+        const cwd = serverCwd(ctx, u.searchParams.get('sessionId') || undefined, u.searchParams.get('cwd') || undefined)
         const cols = clampDim(Number(u.searchParams.get('cols')), 80)
         const rows = clampDim(Number(u.searchParams.get('rows')), 24)
         let term: any = null
@@ -142,7 +154,9 @@ export function apply(ctx: Context) {
     handler: async (req: any, res: any) => {
       try {
         const body = await readJsonBody(req)
-        const path = typeof body.path === 'string' && body.path ? body.path : process.cwd()
+        const path = typeof body.path === 'string' && body.path
+          ? body.path
+          : serverCwd(ctx, body.sessionId, body.cwd)
         json(res, 200, await listDirectory(path))
       } catch (err) {
         json(res, 500, { path: '', entries: [], truncated: false, error: String(err) })
@@ -155,10 +169,10 @@ export function apply(ctx: Context) {
     path: '/api/worktable/git',
     handler: async (req: any, res: any) => {
       const body = await readJsonBody(req)
-      const cwd = typeof body.cwd === 'string' && body.cwd ? body.cwd : process.cwd()
+      const cwd = serverCwd(ctx, body.sessionId, body.cwd)
       json(res, 200, await gitStatus(cwd))
     },
   })
 
-  setupTerminal(webServer).catch(() => {})
+  setupTerminal(webServer, ctx).catch(() => {})
 }

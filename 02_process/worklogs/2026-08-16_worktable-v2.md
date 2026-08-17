@@ -373,3 +373,19 @@
 - 回归验证：headless Chrome 重跑——wtSection/railBox 渲染正常、ERRORS_COUNT=0；
   用户刷新即恢复（客户端实时下发，无需重启）。
 - 工具沉淀：04_test/headless-diag.cjs（headless Chrome + CDP 页面诊断，可复用）。
+
+## 补记（功能窗标签页模型 + 数据层修复）
+
+- 用户反馈：① 窗口内容一旦选定就无法更换/回退；② 资源管理器、后台任务没有内容；
+  ③ 交互形态与 better-sidebar 差异大、不可用。
+- 实现：
+  ① 标签页模型（split.tsx）：SplitPane 增加 tabs[]/active（兼容旧 content 字段，打开时
+  归一化为单标签）；openTab/closeTab/setActiveTab 三个变更方法；窗内标签栏（多标签可切换、
+  ✕ 关闭；关完回到 6 选 1 选择器）；标签标题 = 内置类型名或 URL 主机名；变更经
+  onSpecMutated 回写持久化。
+  ② 数据层（服务端）：inject 增加 'sessions'（better-sidebar 同款），serverCwd 解析 =
+  header.cwd → 客户端 cwd → process.cwd()；fs/git/term 三路由全部走该解析；
+  客户端请求带 sessionId。解决「资源管理器没有内容」（此前仅依赖客户端列表 cwd，缺失时空白）。
+  ③ 任务窗数据源不变（jobsBySession，无后台任务时显示空态文案）。
+- 验证：构建 + node --check 通过；headless Chrome 回归零报错、区块正常渲染。
+- 注意：服务端 cwd 解析需**重启 dsh web 后生效**；标签页模型为客户端改动、刷新即生效。
