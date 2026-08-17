@@ -72,7 +72,7 @@ const OVER_SIDE_PX = 80
 const PRESET_DEFS = [
   { id: '2h', leftCount: 0, topCount: 0, contentCount: 1, chatFull: false },
   { id: '3h', leftCount: 0, topCount: 0, contentCount: 2, chatFull: false },
-  { id: 'l2', leftCount: 1, topCount: 1, contentCount: 0, chatFull: false },
+  { id: 'l2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: true },
   { id: 't2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: false },
   { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1, chatFull: false },
   { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
@@ -153,13 +153,14 @@ function presetThumb(defId: string) {
     )
   }
   if (defId === 'l2') {
+    // 左二右一：左侧上下两个内容窗，右侧整列对话（💬）
     return (
       <span className="dsh-wt_thumb dsh-wt_thumbCols">
-        <span className="dsh-wt_thumbCol">{cell(false, 'a')}</span>
         <span className="dsh-wt_thumbCol">
+          <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
           <span className="dsh-wt_thumbRow">{cell(false, 'b')}</span>
-          <span className="dsh-wt_thumbRow">{cell(true, 'c')}</span>
         </span>
+        <span className="dsh-wt_thumbCol">{cell(true, 'c')}</span>
       </span>
     )
   }

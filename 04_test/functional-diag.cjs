@@ -250,6 +250,28 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP10:', JSON.stringify(step10));
 
+  // 文件预览：MD 渲染 / TXT 文本 / 标签去重
+  const step11 = await evaluate(`(async function(){
+    var out={};
+    var st=window.__dshWorktable.splitStore;
+    st.open({id:'t-file',title:'file',top:null,main:[{id:'f1',title:'f',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+    await new Promise(function(r){setTimeout(r,400)});
+    st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\02_process\\\\PRD.md'});
+    await new Promise(function(r){setTimeout(r,1200)});
+    out.mdTitle=st.spec.main[0].tabs[0].title;
+    out.mdView=!!document.querySelector('.dsh-wt_md');
+    out.mdText=document.querySelector('.dsh-wt_md')?String(document.querySelector('.dsh-wt_md').textContent).slice(0,50):null;
+    st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\02_process\\\\PRD.md'});
+    out.tabsAfterDup=st.spec.main[0].tabs.length;
+    st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\package.json'});
+    await new Promise(function(r){setTimeout(r,900)});
+    out.txtView=!!document.querySelector('.dsh-wt_txt');
+    out.tabsNow=st.spec.main[0].tabs.length;
+    st.close();
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP11:', JSON.stringify(step11));
+
   const errors = events.filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||

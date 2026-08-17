@@ -597,3 +597,21 @@
 - 打点：git tag checkpoint-2026-08-17-pre-fileviewer（已推远端，b22cd6b）。
 - 状态：工作台 UI/交互（卡片统一、图标、弹窗、删除确认、互斥、预设均衡、picker 自适应、
   分隔线居中）全部完成并验证；下一个大块 = 文件预览（MD/TXT/PDF 等自定义开发）。
+## 补记（文件预览 MD/TXT/PDF/图片 + 预设三改左二右一）
+
+- 用户确认默认方案开工 + 第 3 个预设（左一右二）改为「左边两个 + 右边一个对话」。
+- 文件预览实现：
+  ① SplitContent 新增 kind:'file'（path）；tabTitleOf 取 basename；openTab 去重
+  （同内容已有标签 → 直接激活，sameContent 判定）；
+  ② FileViewer：pdf → iframe 原生渲染（服务端 MIME application/pdf）；图片 → 居中 img；
+  md/markdown → markdown-it（打进 client.js，linkify 开、内嵌 HTML 关闭，链接点击新标签外开）；
+  其余 → 等宽 <pre> 纯文本；fetch 失败/加载中文案（file.fail/file.loading）；
+  ③ 资源管理器点击 .md/.markdown/.mdown/.txt/.log/.pdf/图片 开预览标签（.html 行为不变，
+  其他类型提示不支持）；服务端 file 路由 MIME 补 pdf/markdown/log/bmp/ico；
+  ④ 全套暗色 MD 排版样式（标题/代码块/引用/表格/列表/分割线）。
+- 预设 l2 改造：PRESET_DEFS l2 → {top:1, content:1, chatFull:true}（左列上下两内容窗 + 右列通高聊天），
+  缩略图改为左 2 右 1；PRD §13 预设说明同步更新。
+- 验证（functional-diag STEP11）：openTab kind:file PRD.md → 标签名 PRD.md、.dsh-wt_md 渲染出
+  PRD 开头文本；同路径再开 tabsAfterDup=1（去重）；package.json → .dsh-wt_txt 展示；
+  全 STEP 回归 ERROR_COUNT: 0。bundle-eval 补 atob/btoa 桩后 PASS（markdown-it 引入）。
+- 备注：客户端改动 F5 生效；服务端 pdf MIME 需手动重启 dsh web 一次后 PDF 预览才生效。

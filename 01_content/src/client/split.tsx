@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
+import MarkdownIt from 'markdown-it'
 
 /**
  * dsh-worktable 乐高式工作区 M1：通用分栏引擎（PRD §13）。
@@ -17,6 +18,7 @@ export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal'
 export type SplitContent =
   | { kind: 'iframe'; url: string }
   | { kind: 'builtin'; type: BuiltinType }
+  | { kind: 'file'; path: string }
 
 /** 一个内容标签页 */
 export type PaneTab = { id: string; title: string; content: SplitContent }
@@ -125,12 +127,27 @@ const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
 
 function tabTitleOf(content: SplitContent): string {
   if (content.kind === 'builtin') return T(BUILTIN_LABEL_KEYS[content.type])
+  if (content.kind === 'file') return basenameOf(content.path)
   try {
     const u = new URL(content.url)
     return u.hostname || content.url
   } catch {
     return content.url
   }
+}
+
+/** 取路径最后一段作为标签标题 */
+function basenameOf(p: string): string {
+  const parts = String(p).replace(/[\\/]+$/, '').split(/[\\/]/)
+  return parts[parts.length - 1] || String(p)
+}
+
+/** 内容同一性（openTab 去重：同窗内同内容只保留一个标签，再次打开切过去） */
+function sameContent(a: SplitContent, b: SplitContent): boolean {
+  if (a.kind === 'iframe' && b.kind === 'iframe') return a.url === b.url
+  if (a.kind === 'file' && b.kind === 'file') return a.path === b.path
+  if (a.kind === 'builtin' && b.kind === 'builtin') return a.type === b.type
+  return false
 }
 
 /** 分栏 UI 文案提供者（由工作台注入 locale t） */
@@ -546,6 +563,9 @@ export const splitStore: SplitState = {
     if (!spec) return
     const mutate = (pane: SplitPane): SplitPane => {
       const tabs = [...(pane.tabs ?? [])]
+      // 去重：同内容已有标签 → 直接激活
+      const existing = tabs.findIndex((t) => sameContent(t.content, content))
+      if (existing >= 0) return { ...pane, content: null, tabs, active: existing }
       const tab: PaneTab = { id: 't' + Date.now().toString(36), title: tabTitleOf(content), content }
       tabs.push(tab)
       return { ...pane, content: null, tabs, active: tabs.length - 1 }
@@ -910,6 +930,8 @@ function ExplorerPane(props: { row: PaneRow; index: number }) {
               if (e.isDir) { toggle(e.path); return }
               if (/\.html?$/i.test(e.name)) {
                 splitStore.openTab(props.row, props.index, { kind: 'iframe', url: '/api/worktable/file?path=' + encodeURIComponent(e.path) })
+              } else if (/\.(md|markdown|mdown|txt|log|pdf|png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(e.name)) {
+                splitStore.openTab(props.row, props.index, { kind: 'file', path: e.path })
               } else {
                 setError(T('pane.openLater'))
               }
@@ -1070,11 +1092,79 @@ function TerminalPane() {
   return <div ref={hostRef} className="dsh-wt_termHost" />
 }
 
+const mdRenderer = new MarkdownIt({ linkify: true })
+
+const IMAGE_EXTS = /[.](png|jpe?g|gif|webp|svg|bmp|ico)$/i
+const MD_EXTS = /[.](md|markdown|mdown)$/i
+
+/** 本地文件预览：PDF 走原生 iframe、图片居中展示、MD 渲染预览、其余按纯文本 */
+function FileViewer(props: { path: string }) {
+  const ext = (props.path.split('.').pop() || '').toLowerCase()
+  const fileUrl = '/api/worktable/file?path=' + encodeURIComponent(props.path)
+  if (ext === 'pdf') {
+    return <iframe className="dsh-wt_paneFrame" src={fileUrl} title={basenameOf(props.path)} />
+  }
+  if (IMAGE_EXTS.test('.' + ext)) {
+    return (
+      <div className="dsh-wt_imgView">
+        <img src={fileUrl} alt={basenameOf(props.path)} />
+      </div>
+    )
+  }
+  return <TextViewer path={props.path} fileUrl={fileUrl} isMd={MD_EXTS.test('.' + ext)} />
+}
+
+/** MD/TXT 文本预览（fetch 原文 → MD 渲染或 <pre> 等宽展示） */
+function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
+  const [text, setText] = useState<string | null>(null)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    let dead = false
+    setText(null)
+    setError('')
+    fetch(props.fileUrl)
+      .then((r) => {
+        if (!r.ok) throw new Error('HTTP ' + r.status)
+        return r.text()
+      })
+      .then((t) => { if (!dead) setText(t) })
+      .catch((e) => { if (!dead) setError(String(e)) })
+    return () => { dead = true }
+  }, [props.fileUrl])
+  if (error) {
+    return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{T('file.fail')}：{error}</span></div>
+  }
+  if (text == null) {
+    return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{T('file.loading')}</span></div>
+  }
+  if (props.isMd) {
+    return (
+      <div className="dsh-wt_fileView">
+        <div
+          className="dsh-wt_md"
+          dangerouslySetInnerHTML={{ __html: mdRenderer.render(text) }}
+          onClick={(e: any) => {
+            const a = e.target && e.target.closest ? (e.target.closest('a') as HTMLAnchorElement | null) : null
+            if (!a) return
+            e.preventDefault()
+            const href = a.getAttribute('href') || ''
+            if (/^(https?:|mailto:)/i.test(href)) window.open(href, '_blank', 'noopener')
+          }}
+        />
+      </div>
+    )
+  }
+  return <div className="dsh-wt_fileView"><pre className="dsh-wt_txt">{text}</pre></div>
+}
+
 /** 单个标签页的内容渲染 */
 function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
   const content = props.tab.content
   if (content.kind === 'iframe') {
     return <iframe className="dsh-wt_paneFrame" src={content.url} title={props.tab.title} />
+  }
+  if (content.kind === 'file') {
+    return <FileViewer path={content.path} />
   }
   if (content.type === 'browser') return <BrowserPane />
   if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
