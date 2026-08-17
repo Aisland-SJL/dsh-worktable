@@ -134,8 +134,10 @@ function setupTerminal(webServer: any, ctx: any) {
   if (!WebSocketServer) return
   const pty = ptyMod.default ?? ptyMod
   const wss = new WebSocketServer({ noServer: true })
-  const spawnShell = (): string =>
-    process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : (process.env.SHELL || '/bin/bash')
+  const spawnShell = (): { cmd: string; args: string[] } =>
+    process.platform === 'win32'
+      ? { cmd: 'powershell.exe', args: ['-NoLogo'] }
+      : { cmd: process.env.SHELL || '/bin/bash', args: [] }
   const clampDim = (v: number, fallback: number) => Math.min(1024, Math.max(2, Number.isFinite(v) ? v : fallback))
 
   ctx.effect(() => webServer.registerUpgrade({
@@ -148,7 +150,8 @@ function setupTerminal(webServer: any, ctx: any) {
         const rows = clampDim(Number(u.searchParams.get('rows')), 24)
         let term: any = null
         try {
-          term = pty.spawn(spawnShell(), [], { name: 'xterm-256color', cols, rows, cwd, env: process.env })
+          const shell = spawnShell()
+          term = pty.spawn(shell.cmd, shell.args, { name: 'xterm-256color', cols, rows, cwd, env: process.env })
         } catch (err) {
           try { ws.send('\r\n[worktable] 终端启动失败：' + String(err)) } catch {}
           try { ws.close() } catch {}

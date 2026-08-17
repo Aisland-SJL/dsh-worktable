@@ -741,8 +741,8 @@ function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', 
 
 /** 浏览器内置窗：地址栏 + iframe */
 function BrowserPane() {
-  const [url, setUrl] = useState('https://www.bing.com')
-  const [src, setSrc] = useState('https://www.bing.com')
+  const [url, setUrl] = useState('https://example.com')
+  const [src, setSrc] = useState('https://example.com')
   const go = () => {
     const u = url.trim()
     setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')

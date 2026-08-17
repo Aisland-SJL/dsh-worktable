@@ -40,12 +40,12 @@ const WebSocket = require('ws');
   await new Promise((r) => server.listen(19088, '127.0.0.1', r));
   const ws = new WebSocket('ws://127.0.0.1:19088/api/worktable/term?cwd=' + encodeURIComponent(process.cwd()) + '&cols=80&rows=24');
   const timer = setTimeout(() => { console.log('RESULT: FAIL 超时'); process.exit(1); }, 10000);
-  ws.on('open', () => ws.send('pwd\r'));
+  ws.on('open', () => ws.send('echo __WT_E2E_MARKER__\r'));
   ws.on('message', (d) => {
     const t = String(d);
-    if (t.length > 3 && /[A-Za-z]:[\\\/]/.test(t)) {
+    if (t.includes('__WT_E2E_MARKER__')) {
       clearTimeout(timer);
-      console.log('RESULT: PASS pwd 回显正常: ' + t.slice(0, 90).replace(/\r?\n/g, ' | '));
+      console.log('RESULT: PASS 命令回显正常: ' + t.slice(0, 120).replace(/\r?\n/g, ' | '));
       ws.close(); server.close(); process.exit(0);
     }
   });

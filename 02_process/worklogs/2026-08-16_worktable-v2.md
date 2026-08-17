@@ -455,3 +455,15 @@
   RESULT: PASS（cmd.exe 真实回显 E:\AI_Workspace）——服务端已通！用户侧「敲不了」
   定位为客户端焦点问题：TerminalPane 增加 open 后自动 focus + 点击聚焦 + ws.onopen 聚焦；
   ③ 客户端焦点修复实时下发（F5 生效）；file 路由修复需再重启一次。
+
+## 补记（终端 shell 换 PowerShell + 浏览器默认页 + 标记回显验证）
+
+- 用户反馈：终端报 'pwd' is not recognized（说明终端已通，但 shell 是 cmd.exe——
+  pwd/ls 是 PowerShell/bash 命令）；浏览器标签页打不开。
+- 处理：① 服务端 spawnShell Windows 改 powershell.exe -NoLogo（pwd/ls 等可用）；
+  ② 浏览器默认页 bing.com → example.com（bing 带 X-Frame-Options 禁止 iframe 嵌入，
+  是「打不开」的另一半原因）；③ E2E 改为 marker echo 验证（此前 PASS 被 shell banner
+  误判）；④ 实机验证：对运行中服务器 echo 回显 OK（输入链路确认通）。
+- 验证：harness（PowerShell 壳）marker 回显 PASS（含 PSReadLine 着色码，确认 PowerShell）；
+  实机 cmd 壳 marker 回显 PASS；file 路由直调 200。
+- 生效：终端 shell 与 file 路由 = 服务端，**需重启 dsh web**；浏览器默认页 = 客户端，F5 即生效。

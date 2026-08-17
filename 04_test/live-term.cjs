@@ -3,14 +3,14 @@ const WebSocket = require('ws');
 const ws = new WebSocket('ws://127.0.0.1:3080/api/worktable/term?cwd=' + encodeURIComponent('E:/AI_Workspace') + '&cols=80&rows=24');
 const received = [];
 const timer = setTimeout(() => { console.log('RESULT: FAIL 15s 无任何输出'); process.exit(1); }, 15000);
-ws.on('open', () => { console.log('WS_OPEN'); setTimeout(() => { console.log('SEND pwd'); ws.send('pwd\r'); }, 1500); });
+ws.on('open', () => { console.log('WS_OPEN'); setTimeout(() => { console.log('SEND echo'); ws.send('echo __WT_LIVE_MARKER__\r'); }, 1500); });
 ws.on('message', (d) => {
   const t = String(d);
   received.push(t);
   console.log('FRAME[' + received.length + ']:', JSON.stringify(t.slice(0, 100)));
-  if (t.includes('E:\\AI_Workspace') || /[A-Za-z]:[\\/]/.test(t)) {
+  if (t.includes('__WT_LIVE_MARKER__')) {
     clearTimeout(timer);
-    console.log('RESULT: PASS pwd 真实回显 OK');
+    console.log('RESULT: PASS 实机命令回显 OK');
     ws.close(); process.exit(0);
   }
 });
