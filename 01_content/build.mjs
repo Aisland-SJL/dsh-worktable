@@ -14,15 +14,8 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 mkdirSync(join(here, 'lib'), { recursive: true })
 
-// pdf.js 工作线程源码（legacy ESM 构建）注入客户端全局，避免任何服务端依赖
-const pdfWorkerSrc = readFileSync(
-  join(here, 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.min.mjs'),
-  'utf8',
-)
-
 const clientBanner = {
-  js: "var __WT_PDF_WORKER__ = " + JSON.stringify(pdfWorkerSrc) + ";\n" +
-    "window.__ModuleLoader__.load({ id: 'dsh-worktable', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
+  js: "window.__ModuleLoader__.load({ id: 'dsh-worktable', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
 }
 const clientFooter = { js: 'return module.exports; } });' }
 

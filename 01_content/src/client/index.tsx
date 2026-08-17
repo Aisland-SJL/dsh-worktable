@@ -308,7 +308,6 @@ function WorktableSection(props: any) {
   const [projects, setProjects] = useState<ProjectsState>(loadProjects)
   const [metas, setMetas] = useState<Record<string, ProjectMeta>>({})
   const [registeredIds, setRegisteredIds] = useState<string[]>(() => [...registryStore.ids])
-  const [managing, setManaging] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false)
   const [wsPreset, setWsPreset] = useState<string>('2h')
@@ -318,6 +317,8 @@ function WorktableSection(props: any) {
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   /** 删除二次确认：kind + 目标 id + 显示名 */
   const [requestDelete, setRequestDelete] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; name: string } | null>(null)
+  /** 变更视图：正在挑选新拓扑的布局 id */
+  const [viewPickFor, setViewPickFor] = useState<string | null>(null)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
   )
@@ -526,7 +527,7 @@ function WorktableSection(props: any) {
   const ownerProps = {
     query: view.query.trim(),
     wide,
-    managing,
+    managing: viewOptionsOpen,
     order: effectiveOrder,
     hidden: [...projects.hidden, ...projects.removed],
     nameOverrides: projects.nameOverrides,
@@ -667,6 +668,57 @@ function WorktableSection(props: any) {
 
   const removeLayout = (id: string) => {
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
+  }
+
+  // ── 变更视图：按预设重建布局拓扑，现有窗内容（标签）按序迁入，不丢失 ──
+  const applyLayoutChange = (id: string, presetId: string) => {
+    const layout = projects.layouts.find((l) => l.id === id)
+    if (!layout) return
+    const sources = [...(layout.top ?? []), ...layout.main]
+      .map((pp) => pp.tabs ?? [])
+      .filter((tabs) => tabs.length > 0)
+    const next = buildLayout(presetId, layout.title)
+    next.id = layout.id
+    next.icon = layout.icon
+    const targets = [...(next.left ? [next.left] : []), ...(next.top ?? []), ...next.main]
+    let si = 0
+    for (const pane of targets) {
+      if (si < sources.length) {
+        pane.tabs = sources[si]
+        pane.active = 0
+        pane.content = null
+        si++
+      }
+    }
+    const overflow = sources.slice(si).flat()
+    if (overflow.length > 0 && targets.length > 0) {
+      const last = targets[targets.length - 1]
+      last.tabs = [...(last.tabs ?? []), ...overflow]
+      last.active = 0
+    }
+    persistProjects((prev) => ({
+      ...prev,
+      layouts: prev.layouts.map((l) => (l.id === id ? next : l)),
+    }))
+    // 该布局当前打开时：关旧开新，工作区即时变为新视图
+    const wasOpen = splitStore.active && splitStore.spec?.id === id
+    if (wasOpen) {
+      splitStore.close()
+      openSplit(next)
+    }
+    setViewPickFor(null)
+  }
+
+  /** 布局当前拓扑对应的预设 id（用于视图选择器高亮） */
+  const presetOf = (l: LayoutSpec): string => {
+    const leftCount = l.left ? 1 : 0
+    const topCount = (l.top ?? []).length
+    const contentCount = l.main.length
+    const chatFull = l.chatFullHeight === true
+    const def = PRESET_DEFS.find((d) =>
+      d.leftCount === leftCount && d.topCount === topCount && d.contentCount === contentCount && d.chatFull === chatFull,
+    )
+    return def ? def.id : '2h'
   }
 
   // ── 删除（全部走二次确认；常驻项目 = 移出工作台，插件不卸载） ──
@@ -983,24 +1035,16 @@ function WorktableSection(props: any) {
 
       {viewOptionsOpen && <div className="dsh-wt_popBackdrop" onClick={() => setViewOptionsOpen(false)} />}
       {viewOptionsOpen && (
-        <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 200, zIndex: 80 }}>
+        <div className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: popTop, width: 316, zIndex: 80 }}>
           <span className="dsh-wt_menuLabel">{t('sort.label')}</span>
           <button type="button" className="dsh-wt_menuItem" data-on={view.orderBy === 'manual'}
-            onClick={() => { persistView({ orderBy: 'manual' }); setViewOptionsOpen(false) }}>{t('sort.manual')}</button>
+            onClick={() => persistView({ orderBy: 'manual' })}>{t('sort.manual')}</button>
           <button type="button" className="dsh-wt_menuItem" data-on={view.orderBy === 'recent'}
-            onClick={() => { persistView({ orderBy: 'recent' }); setViewOptionsOpen(false) }}>{t('sort.recent')}</button>
+            onClick={() => persistView({ orderBy: 'recent' })}>{t('sort.recent')}</button>
           <div className="dsh-wt_menuSep" />
-          <button type="button" className="dsh-wt_menuItem"
-            onClick={() => { setManaging(true); setViewOptionsOpen(false) }}>{t('menu.manage')}</button>
-        </div>
-      )}
-
-      {managing && <div className="dsh-wt_popBackdrop" onClick={() => setManaging(false)} />}
-      {managing && (
-        <div className="dsh-wt_manage dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 316, zIndex: 80 }}>
           <div className="dsh-wt_manageHead">
             <span className="dsh-wt_manageTitle">{t('manage.title')}</span>
-            <button type="button" className="dsh-wt_manageDone" onClick={() => setManaging(false)}>{t('manage.done')}</button>
+            <button type="button" className="dsh-wt_manageDone" onClick={() => setViewOptionsOpen(false)}>{t('manage.done')}</button>
           </div>
           {effectiveOrder.map((id) => {
             const meta = metas[id]
@@ -1048,6 +1092,9 @@ function WorktableSection(props: any) {
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
                   {isHidden ? '🙈' : '👁'}
                 </button>
+                {layout && (
+                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.changeView')} onClick={() => setViewPickFor(id)}>🧩</button>
+                )}
                 <button
                   type="button"
                   className="dsh-wt_manageBtn"
@@ -1075,6 +1122,29 @@ function WorktableSection(props: any) {
         </div>
       )}
 
+      {viewPickFor && <div className="dsh-wt_popBackdrop" style={{ zIndex: 81 }} onClick={() => setViewPickFor(null)} />}
+      {viewPickFor && (
+        <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 320, zIndex: 82 }}>
+          <span className="dsh-wt_menuLabel">{t('viewPick.title')}</span>
+          <div className="dsh-wt_presets">
+            {PRESET_DEFS.map((def) => {
+              const cur = projects.layouts.find((l) => l.id === viewPickFor)
+              return (
+                <button
+                  key={def.id}
+                  type="button"
+                  className="dsh-wt_preset"
+                  data-on={cur && presetOf(cur) === def.id ? 'true' : 'false'}
+                  onClick={() => applyLayoutChange(viewPickFor, def.id)}
+                >
+                  {presetThumb(def.id)}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {requestDelete && <div className="dsh-wt_confirmBackdrop" onClick={() => setRequestDelete(null)} />}
       {requestDelete && (
         <div className="dsh-wt_confirm" role="alertdialog">
@@ -1093,7 +1163,7 @@ function WorktableSection(props: any) {
         </div>
       )}
 
-      <div className="dsh-wt_projects" data-managing={managing ? 'true' : undefined}>
+      <div className="dsh-wt_projects" data-managing={viewOptionsOpen ? 'true' : undefined}>
         {renderProjectSlot
           ? renderProjectSlot('sidebar.worktable.project', ownerProps)
           : <div className="dsh-wt_empty">{t('empty')}</div>}

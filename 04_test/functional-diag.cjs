@@ -48,7 +48,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await send('Log.enable');
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:[],lastUsed:{},hidden:[],nameOverrides:{},shortcuts:[{id:'t-sc',name:'\u6d4b\u8bd5\u5feb\u6377',icon:'\ud83d\udd17',href:'https://example.com'}],layouts:[{id:'t-layout',title:'\u6d4b\u8bd5\u5e03\u5c40',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}]})); } }catch(e){}",
+    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:[],lastUsed:{},hidden:[],nameOverrides:{},shortcuts:[{id:'t-sc',name:'\u6d4b\u8bd5\u5feb\u6377',icon:'\ud83d\udd17',href:'https://example.com'}],layouts:[{id:'t-layout',title:'\u6d4b\u8bd5\u5e03\u5c40',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null,tabs:[{id:'t1',title:'Browser',content:{kind:'builtin',type:'browser'}}],active:0}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}]})); } }catch(e){}",
   });
   await send('Page.navigate', { url: 'http://127.0.0.1:3080/' });
   await sleep(11000);
@@ -150,39 +150,48 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP7:', JSON.stringify(step7));
 
-  // 视图选项：右侧 fixed 弹窗（对齐 + 弹窗），不再下方内联展开
+  // 设置弹窗：右侧 fixed，直接内嵌「排序方式 + 管理项目（展开列表）」
   const step8 = await evaluate(`(async function(){
     var out={};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
-    await new Promise(function(r){setTimeout(r,250)});
-    var menu=document.querySelector('.dsh-wt_menu.dsh-wt_pop');
-    if(menu){ var cs=getComputedStyle(menu); out.menuPos=cs.position; out.menuLeft=menu.getBoundingClientRect().left; }
+    await new Promise(function(r){setTimeout(r,300)});
+    var sp=document.querySelector('.dsh-wt_settings');
+    if(sp){ var cs=getComputedStyle(sp); out.pos=cs.position; out.left=sp.getBoundingClientRect().left; out.sortItems=sp.querySelectorAll('.dsh-wt_menuItem').length; out.rows=sp.querySelectorAll('.dsh-wt_manageRow').length; }
     out.backdrop=!!document.querySelector('.dsh-wt_popBackdrop');
     var bd=document.querySelector('.dsh-wt_popBackdrop');
     if(bd){ bd.click(); }
     await new Promise(function(r){setTimeout(r,200)});
-    out.closedAfterBackdrop=!document.querySelector('.dsh-wt_menu.dsh-wt_pop');
+    out.closedAfterBackdrop=!document.querySelector('.dsh-wt_settings');
     return JSON.stringify(out);
   })()`);
   console.log('STEP8:', JSON.stringify(step8));
 
-  // 管理项目：从视图选项弹窗同锚点往下展开为 fixed 面板（不再内联展开）
+  // 变更视图：布局行 🧩 → 选择新预设 → 拓扑重建 + 内容标签自动迁入
   const step9 = await evaluate(`(async function(){
     var out={};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
-    await new Promise(function(r){setTimeout(r,250)});
-    var items=document.querySelectorAll('.dsh-wt_menu.dsh-wt_pop .dsh-wt_menuItem');
-    var manageItem=items[items.length-1];
-    if(manageItem){ manageItem.click(); }
     await new Promise(function(r){setTimeout(r,300)});
-    var mp=document.querySelector('.dsh-wt_manage.dsh-wt_pop');
-    if(mp){ var cs=getComputedStyle(mp); out.managePos=cs.position; out.manageLeft=mp.getBoundingClientRect().left; out.manageTop=mp.getBoundingClientRect().top; out.rows=mp.querySelectorAll('.dsh-wt_manageRow').length; }
+    var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
+    var layoutRow=rows[rows.length-1];
+    if(layoutRow){ out.layoutRowBtns=layoutRow.querySelectorAll('.dsh-wt_manageBtn').length; }
+    var puzzle=layoutRow&&layoutRow.querySelectorAll('.dsh-wt_manageBtn')[layoutRow.querySelectorAll('.dsh-wt_manageBtn').length-2];
+    if(puzzle){ puzzle.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    out.viewPicker=!!document.querySelector('.dsh-wt_pop .dsh-wt_presets');
+    out.presetCount=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset').length;
+    var presets=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset');
+    if(presets[2]){ presets[2].click(); }
+    await new Promise(function(r){setTimeout(r,400)});
+    try{
+      var lay=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts[0];
+      out.newTop=(lay.top||[]).length; out.newMain=lay.main.length; out.chatFull=lay.chatFullHeight===true;
+      out.migrated=(lay.top&&lay.top[0]&&lay.top[0].tabs||[]).length; out.mainTabs=lay.main[0].tabs?lay.main[0].tabs.length:0;
+    }catch(e){ out.savedErr=String(e) }
     var bd=document.querySelector('.dsh-wt_popBackdrop');
     if(bd){ bd.click(); }
     await new Promise(function(r){setTimeout(r,200)});
-    out.closedAfterBackdrop=!document.querySelector('.dsh-wt_manage.dsh-wt_pop');
     return JSON.stringify(out);
   })()`);
   console.log('STEP9:', JSON.stringify(step9));
@@ -207,11 +216,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     out.cardsBefore={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
-    await new Promise(function(r){setTimeout(r,250)});
-    var items=document.querySelectorAll('.dsh-wt_menu.dsh-wt_pop .dsh-wt_menuItem');
-    if(items.length){ items[items.length-1].click(); }
     await new Promise(function(r){setTimeout(r,300)});
-    var rows=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow');
     out.rows0=rows.length;
     if(rows[0]) out.row0BtnCount=rows[0].querySelectorAll('.dsh-wt_manageBtn').length;
     var xBtn=rows[0]&&rows[0].querySelectorAll('.dsh-wt_manageBtn')[rows[0].querySelectorAll('.dsh-wt_manageBtn').length-1];
@@ -223,7 +229,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await new Promise(function(r){setTimeout(r,200)});
     out.confirmGoneAfterCancel=!document.querySelector('.dsh-wt_confirm');
     out.taStillThere=!!document.querySelector('.dsh-wt_projects .ta_card');
-    var rows2=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    var rows2=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow');
     var xBtn2=rows2[0]&&rows2[0].querySelectorAll('.dsh-wt_manageBtn')[rows2[0].querySelectorAll('.dsh-wt_manageBtn').length-1];
     if(xBtn2){ xBtn2.click(); }
     await new Promise(function(r){setTimeout(r,250)});
@@ -232,8 +238,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await new Promise(function(r){setTimeout(r,300)});
     out.cardsAfter={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     try{ out.removed=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removed='ERR' }
-    out.rowsAfterDelete=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow').length;
-    var rows3=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
+    out.rowsAfterDelete=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow').length;
+    var rows3=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
     var lastRow=rows3[rows3.length-1];
     var xBtn3=lastRow&&lastRow.querySelectorAll('.dsh-wt_manageBtn')[lastRow.querySelectorAll('.dsh-wt_manageBtn').length-1];
     if(xBtn3){ xBtn3.click(); }
@@ -272,55 +278,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP11:', JSON.stringify(step11));
 
-  // PDF 阅读器：自绘渲染 + 抓手（H 切换/空格临时/拖拽平移）+ 缩放
-  const step12 = await evaluate(`(async function(){
-    var out={};
-    try{
-      var st=window.__dshWorktable.splitStore;
-      st.open({id:'t-pdf',title:'pdf',top:null,main:[{id:'q1',title:'q',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
-      await new Promise(function(r){setTimeout(r,400)});
-      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture.pdf'});
-      await new Promise(function(r){setTimeout(r,6500)});
-      out.bar=!!document.querySelector('.dsh-wt_pdfBar');
-      out.pages=document.querySelectorAll('.dsh-wt_pdfPage canvas').length;
-      out.iframeFallback=!!document.querySelector('.dsh-wt_paneFrame');
-      var c=document.querySelector('.dsh-wt_pdfPage canvas');
-      out.canvasW=c?c.width:0;
-      var pdfEl=document.querySelector('.dsh-wt_pdf');
-      if(pdfEl){
-        // 空格临时抓手
-        window.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',bubbles:true}));
-        await new Promise(function(r){setTimeout(r,200)});
-        out.panClassAfterSpace=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
-        window.dispatchEvent(new KeyboardEvent('keyup',{key:' ',code:'Space',bubbles:true}));
-        await new Promise(function(r){setTimeout(r,200)});
-        out.panClassAfterSpaceUp=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
-        // H 常开抓手
-        window.dispatchEvent(new KeyboardEvent('keydown',{key:'h',code:'KeyH',bubbles:true}));
-        await new Promise(function(r){setTimeout(r,200)});
-        out.panClassAfterH=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
-        // 放大到内容溢出（可滚动；btns 顺序：抓手/缩小/放大/适应宽度）
-        var btns=document.querySelectorAll('.dsh-wt_pdfBtn');
-        for(var z=0;z<6 && btns[2];z++){ btns[2].click(); }
-        await new Promise(function(r){setTimeout(r,1200)});
-        out.pct=document.querySelector('.dsh-wt_pdfPct')?document.querySelector('.dsh-wt_pdfPct').textContent:null;
-        out.scrollable=pdfEl.scrollHeight>pdfEl.clientHeight;
-        var r0=pdfEl.getBoundingClientRect();
-        var x=r0.left+r0.width/2, y=r0.top+r0.height/2;
-        pdfEl.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
-        pdfEl.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y-140,bubbles:true,pointerId:1}));
-        pdfEl.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y-140,bubbles:true,pointerId:1}));
-        await new Promise(function(r){setTimeout(r,300)});
-        out.scrollTopAfterDrag=pdfEl.scrollTop;
-        window.dispatchEvent(new KeyboardEvent('keydown',{key:'h',code:'KeyH',bubbles:true}));
-        await new Promise(function(r){setTimeout(r,200)});
-        out.panClassAfterH2=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
-      }
-      st.close();
-    }catch(err){ out.err=String(err) }
-    return JSON.stringify(out);
-  })()`);
-  console.log('STEP12:', JSON.stringify(step12));
 
   const errors = events.filter((e) => {
   }).filter((e) =>

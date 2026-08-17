@@ -100,17 +100,7 @@ export const css = [
   '.dsh-wt_md img{max-width:100%}',
   '.dsh-wt_imgView{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;padding:10px;background:var(--dsw-alias-bg-base,#0b0e14)}',
   '.dsh-wt_imgView img{max-width:100%;max-height:100%;object-fit:contain}',
-  // PDF 阅读器：工具栏 + 滚动容器 + 抓手光标
-  '.dsh-wt_pdfBar{flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
-  '.dsh-wt_pdfBtn{flex:none;display:flex;align-items:center;justify-content:center;width:24px;height:22px;padding:0;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:13px;line-height:1;cursor:pointer}',
-  '.dsh-wt_pdfBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
-  '.dsh-wt_pdfBtnOn{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
-  '.dsh-wt_pdfPct{font-size:11px;color:var(--dsw-alias-label-secondary,#9aa4b2);min-width:42px;text-align:center}',
-  '.dsh-wt_pdf{flex:1;min-height:0;overflow:auto;padding:12px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03))}',
-  '.dsh-wt_pdfPan{cursor:grab}',
-  '.dsh-wt_pdfPan:active{cursor:grabbing}',
-  '.dsh-wt_pdfPage{margin:0 auto 14px;width:max-content;background:#fff;box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
-  '.dsh-wt_pdfPage canvas{display:block}',
+
   '.dsh-wt_pane[data-drop-hover=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);box-shadow:0 0 0 2px rgba(79,142,247,.4),var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4));transform:scale(1.012)}',
   '.dsh-wt_paneBar{flex:none;display:flex;align-items:center;height:22px;padding:0 8px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
   '.dsh-wt_paneTitle{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
