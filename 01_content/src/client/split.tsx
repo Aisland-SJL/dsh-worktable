@@ -91,6 +91,7 @@ type SplitState = {
   openTab(row: PaneRow, i: number, content: SplitContent): void
   closeTab(row: PaneRow, i: number, tabId: string): void
   setActiveTab(row: PaneRow, i: number, tabId: string): void
+  moveTab(fromRow: PaneRow, fromI: number, tabId: string, toRow: PaneRow, toI: number): void
   swapPanes(aRow: PaneRow, aI: number, bRow: PaneRow, bI: number): void
   setChatSide(side: 'left' | 'right'): void
   persist(): void
@@ -178,6 +179,16 @@ function parentPathOf(p: string): string {
 
 /** 拖拽换位暂存 */
 let dragPane: { row: PaneRow; index: number } | null = null
+/** 标签拖拽暂存（跨窗移动） */
+let dragTab: { row: PaneRow; index: number; tabId: string } | null = null
+/** 标签拖放目标（吸附高亮；模块级，PaneBody 与窗容器共用） */
+let dropTarget: { row: PaneRow; index: number } | null = null
+let dropTargetListeners: Set<() => void> = new Set()
+function setDropTarget(t: { row: PaneRow; index: number } | null) {
+  if (dropTarget === t) return
+  dropTarget = t
+  for (const fn of dropTargetListeners) fn()
+}
 
 /** 找到会话根容器：data-phase 元素中排除输入框、取含子元素者；优先 phase=active；无活动会话返回 null */
 function findConversationRoot(): HTMLElement | null {
@@ -266,7 +277,7 @@ export const splitStore: SplitState = {
       window.dispatchEvent(new CustomEvent('dsh:split-claim', { detail: { id: spec.id } }))
     } catch {}
     const root = findConversationRoot()
-    if (!root || root.dataset.phase !== 'active') return false
+    if (!root) return false
     const header = root.children[0] as HTMLElement | undefined
     const viewArea = root.children[1] as HTMLElement | undefined
     if (!header || !viewArea) return false
@@ -544,6 +555,36 @@ export const splitStore: SplitState = {
     this.notify()
   },
 
+  moveTab(fromRow, fromI, tabId, toRow, toI) {
+    const spec = this.spec
+    if (!spec) return
+    if (fromRow === toRow && fromI === toI) return
+    const top = [...(spec.top ?? [])]
+    const main = [...spec.main]
+    const left = spec.left ? { ...spec.left } : null
+    const arrOf = (row: PaneRow): SplitPane[] => (row === 'left' ? (left ? [left] : []) : row === 'top' ? top : main)
+    const fromArr = arrOf(fromRow)
+    const toArr = arrOf(toRow)
+    const fromPane = fromArr[fromI]
+    const toPane = toArr[toI]
+    if (!fromPane || !toPane) return
+    const tab = (fromPane.tabs ?? []).find((t) => t.id === tabId)
+    if (!tab) return
+    const fromTabs = (fromPane.tabs ?? []).filter((t) => t.id !== tabId)
+    const toTabs = [...(toPane.tabs ?? []), tab]
+    const setPane = (row: PaneRow, i: number, pane: SplitPane) => {
+      if (row === 'left') spec.left = pane
+      else if (row === 'top') top[i] = pane
+      else main[i] = pane
+    }
+    setPane(fromRow, fromI, { ...fromPane, tabs: fromTabs, active: 0 })
+    setPane(toRow, toI, { ...toPane, tabs: toTabs, active: toTabs.length - 1 })
+    this.spec = { ...spec, left: left ?? null, top: top.length > 0 ? top : null, main }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
   setActiveTab(row, i, tabId) {
     const spec = this.spec
     if (!spec) return
@@ -743,8 +784,8 @@ function FileIcon() {
   )
 }
 
-/** 资源管理器窗：树形展开（懒加载子目录；刷新/上一级均可用） */
-function ExplorerPane() {
+/** 资源管理器窗：树形展开（懒加载子目录；刷新/上一级均可用；.html 点击开浏览器标签） */
+function ExplorerPane(props: { row: PaneRow; index: number }) {
   const cacheRef = useRef<Record<string, any[]>>({})
   const expandedRef = useRef<Set<string>>(new Set())
   const [rootPath, setRootPath] = useState('')
@@ -815,7 +856,14 @@ function ExplorerPane() {
             type="button"
             className="dsh-wt_treeRow"
             style={{ paddingLeft: 8 + depth * 14 }}
-            onClick={() => (e.isDir ? toggle(e.path) : setError(T('pane.openLater')))}
+            onClick={() => {
+              if (e.isDir) { toggle(e.path); return }
+              if (/\.html?$/i.test(e.name)) {
+                splitStore.openTab(props.row, props.index, { kind: 'iframe', url: '/api/worktable/file?path=' + encodeURIComponent(e.path) })
+              } else {
+                setError(T('pane.openLater'))
+              }
+            }}
           >
             <span className={'dsh-wt_treeArrow' + (e.isDir && isOpen ? ' dsh-wt_treeArrowOpen' : '')} aria-hidden>{e.isDir ? '▸' : ''}</span>
             {e.isDir ? <FolderIcon /> : <FileIcon />}
@@ -969,13 +1017,13 @@ function TerminalPane() {
 }
 
 /** 单个标签页的内容渲染 */
-function PaneTabBody(props: { tab: PaneTab }) {
+function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
   const content = props.tab.content
   if (content.kind === 'iframe') {
     return <iframe className="dsh-wt_paneFrame" src={content.url} title={props.tab.title} />
   }
   if (content.type === 'browser') return <BrowserPane />
-  if (content.type === 'explorer') return <ExplorerPane />
+  if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
   if (content.type === 'terminal') return <TerminalPane />
@@ -1003,6 +1051,9 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
             key={t.id}
             className={'dsh-wt_tab' + (i === active ? ' dsh-wt_tabOn' : '')}
             title={t.title}
+            draggable
+            onDragStart={(e: any) => { dragTab = { row, index, tabId: t.id }; try { e.dataTransfer.effectAllowed = 'move' } catch {} }}
+            onDragEnd={() => { dragTab = null; setDropTarget(null) }}
             onClick={() => splitStore.setActiveTab(row, index, t.id)}
           >
             <span className="dsh-wt_tabTitle">{t.title}</span>
@@ -1015,7 +1066,7 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
           </span>
         ))}
       </div>
-      <PaneTabBody tab={tabs[active]} />
+      <PaneTabBody tab={tabs[active]} row={row} index={index} />
     </>
   )
 }
@@ -1051,12 +1102,6 @@ function PanePicker(props: { row: PaneRow; index: number }) {
       </button>
       <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
         <span aria-hidden>📁</span>{T('pane.explorer')}
-      </button>
-      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'scm' })}>
-        <span aria-hidden>🔀</span>{T('pane.scm')}
-      </button>
-      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'tasks' })}>
-        <span aria-hidden>✅</span>{T('pane.tasks')}
       </button>
       <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
         <span aria-hidden>▸_</span>{T('pane.terminal')}
@@ -1101,6 +1146,14 @@ function SplitWorkspace() {
     return () => window.removeEventListener('keydown', onKey)
   }, [snap.active])
 
+  // 标签拖放高亮 → 重渲染
+  const [, setDropTick] = useState(0)
+  useEffect(() => {
+    const fn = () => setDropTick((t) => t + 1)
+    dropTargetListeners.add(fn)
+    return () => { dropTargetListeners.delete(fn) }
+  }, [])
+
   if (!snap.active || !snap.spec || !snap.geom) return null
   const g = snap.geom
   const spec = snap.spec
@@ -1135,7 +1188,29 @@ function SplitWorkspace() {
   const topY = barTop + BAR_H
 
   const renderPane = (it: { pane: SplitPane; left: number; width: number }, row: PaneRow, index: number, x: number, y: number, h: number) => (
-    <div key={it.pane.id} className="dsh-wt_pane" style={{ position: 'fixed', left: x + it.left, top: y, width: it.width, height: h, zIndex: 68 }}>
+    <div
+      key={it.pane.id}
+      className="dsh-wt_pane"
+      data-drop-hover={dropTarget && dropTarget.row === row && dropTarget.index === index ? 'true' : undefined}
+      style={{ position: 'fixed', left: x + it.left, top: y, width: it.width, height: h, zIndex: 68 }}
+      onDragOver={(e: any) => {
+        if (!dragTab) return
+        e.preventDefault()
+        setDropTarget({ row, index })
+      }}
+      onDragLeave={(e: any) => {
+        if (e.currentTarget && !e.currentTarget.contains(e.relatedTarget)) setDropTarget(null)
+      }}
+      onDrop={(e: any) => {
+        e.preventDefault()
+        const s = dragTab
+        dragTab = null
+        setDropTarget(null)
+        if (s && (s.row !== row || s.index !== index)) {
+          splitStore.moveTab(s.row, s.index, s.tabId, row, index)
+        }
+      }}
+    >
       <div
         className="dsh-wt_paneBar"
         title={T('split.dragSwap')}
@@ -1227,5 +1302,8 @@ function SplitWorkspace() {
     </>
   )
 }
+
+/** 调试出口（自动化验证用；必须在 store 定义之后） */
+try { (window as any).__dshWorktable = { splitStore } } catch {}
 
 export { SplitWorkspace }

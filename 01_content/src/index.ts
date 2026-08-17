@@ -1,8 +1,10 @@
 import { Context } from '@deepseek-ai/cordis'
 import { execFile } from 'node:child_process'
-import { readdir, realpathSync } from 'node:fs'
+import { readdirSync, readFile, realpathSync } from 'node:fs'
+import { readdir } from 'node:fs/promises'
 import { dirname, resolve as pathResolve, sep } from 'node:path'
 import { createRequire } from 'node:module'
+import { homedir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 /**
@@ -40,6 +42,18 @@ function loadPkg(pkg: string): any | null {
       dir = pathResolve(dir, '..')
     }
   }
+  // 兜底：DSH 标准目录 ~/.dsh/profiles/*/node_modules（宿主按 realpath 加载时前两条链都找不到）
+  try {
+    const profilesDir = pathResolve(homedir(), '.dsh', 'profiles')
+    for (const profile of readdirSync(profilesDir, { withFileTypes: true })) {
+      if (!profile.isDirectory() && !profile.isSymbolicLink()) continue
+      const nm = pathResolve(profilesDir, profile.name, 'node_modules')
+      try {
+        const req = createRequire(pathToFileURL(pathResolve(nm, '__wt_probe__.js')).href)
+        return req(pkg)
+      } catch {}
+    }
+  } catch {}
   return null
 }
 
@@ -115,6 +129,7 @@ async function setupTerminal(webServer: any, ctx: any) {
   try { ptyMod = await import('node-pty') } catch {}
   if (!wsMod) wsMod = loadPkg('ws')
   if (!ptyMod) ptyMod = loadPkg('node-pty')
+  ctx.logger?.info?.('[dsh-worktable] term deps: ws=' + (wsMod ? 'ok' : 'MISSING') + ' node-pty=' + (ptyMod ? 'ok' : 'MISSING'))
   if (!wsMod || !ptyMod) {
     ctx.logger?.warn('[dsh-worktable] 终端路由未注册：ws/node-pty 均不可用')
     return
@@ -174,6 +189,34 @@ export function apply(ctx: Context) {
     path: HEALTH_PATH,
     handler: (_req: any, res: any) => {
       json(res, 200, { plugin: 'dsh-worktable', version: '0.2.0', ok: true })
+    },
+  })
+
+  // 本地文件读取（资源管理器点击 .html 后浏览器标签内打开）
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/file',
+    handler: async (req: any, res: any) => {
+      try {
+        const u = new URL(req.url ?? '/', 'http://dsh.internal')
+        const p = u.searchParams.get('path') || ''
+        if (!p) { json(res, 400, { error: 'missing path' }); return }
+        const abs = resolve(p)
+        const stat = await import('node:fs/promises').then((m) => m.stat(abs))
+        if (stat.size > 20 * 1024 * 1024) { json(res, 413, { error: 'file too large' }); return }
+        const data = await readFile(abs)
+        const ext = (abs.split('.').pop() || '').toLowerCase()
+        const types: Record<string, string> = {
+          html: 'text/html; charset=utf-8', htm: 'text/html; charset=utf-8',
+          css: 'text/css; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
+          json: 'application/json; charset=utf-8', md: 'text/plain; charset=utf-8', txt: 'text/plain; charset=utf-8',
+          svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp',
+        }
+        res.writeHead(200, { 'content-type': types[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
+        res.end(data)
+      } catch (err) {
+        json(res, 404, { error: String(err) })
+      }
     },
   })
 

@@ -408,3 +408,23 @@
   node-pty/ws。**需重启 dsh web 后终端路由才注册。**
 - 验证：构建 + node --check 通过；headless Chrome 回归零报错；依赖解析测试通过。
 - 差距（M3 待续）：文件打开/编辑器、SCM diff/暂存/提交、任务输出回放。
+
+## 补记（内容窗收敛为 4 项 + 终端修复验证 + 标签跨窗拖动）
+
+- 用户定案：内容窗收敛为 4 项（浏览器/资源管理器/终端/自定义），源代码管理与任务管理
+  暂砍（非重点）；重点修终端并验证浏览器。
+- 实现：
+  ① 选择器砍为 4 项（SCM/Tasks 移除）；
+  ② 终端修复：loadPkg 沿「junction 路径 + realpath + ~/.dsh/profiles/*/node_modules」
+  三链解析 ws/node-pty（此前 import 直接失败）；修 readdir 误用（回调版→readdirSync）；
+  新增 04_test/term-e2e.cjs 端到端测试（模拟宿主经 junction 加载 bundle，真实 ws 客户端 +
+  真实 node-pty shell）→ **RESULT: PASS（echo 回显正常）**；
+  ③ 资源管理器点击 .html/.htm → 自动开浏览器标签（/api/worktable/file 服务端文件路由，
+  内容类型按扩展名，20MB 上限）；
+  ④ 标签跨窗拖动：标签 draggable + 窗容器接收（dragOver/drop）+ 吸附动画
+  （data-drop-hover 边框辉光 + scale 过渡）+ moveTab（源移除/目标追加/激活末位/持久化）；
+  ⑤ 调试出口 window.__dshWorktable={splitStore} + 04_test/functional-diag.cjs
+  （headless Chrome 分步自动化：打开布局→2 选择器×4 选项→开浏览器/资源管理器标签→
+  跨窗移动标签→关闭）→ **全绿、零报错**。
+- 注意：服务端改动（file 路由 + 终端 loadPkg）需**重启 dsh web 生效**；
+  客户端改动（4 选项/HTML 点击开标签/拖动吸附）刷新即生效。
