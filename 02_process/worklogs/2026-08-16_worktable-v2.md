@@ -639,14 +639,17 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（卡片选中态统一判定）
+## 补记（工作台状态持久化修复 + tsx/css 代码预览）
 
-- 用户反馈：旅行 Atlas 卡片选中后没有高亮边（其他 3 个项目都有）；新建项目也要有。
-- 根因：ta_card 的 data-on 由它自己插件控制（自有引擎状态）；用视图覆盖走工作台引擎打开时
-  两边状态对不上 → 不高亮。
-- 处理：DOM 桥 sync 里选中态统一由工作台判定——activeSplitId===id → data-on=true；
-  引擎开着别的 → false；引擎空闲（activeSplitId=null）→ 不动（保留卡片自带状态，
-  兼容自带分栏插件的打开态）。通用规则覆盖所有注册项目与新建项目。
-- 验证（functional-diag STEP13）：布局打开时 ta/pr 卡 false；旅行设置视图覆盖后点卡片 →
-  engineSpecId=travelatlas 且 taOnAfterOpen=true；全 STEP 回归 ERROR_COUNT: 0。
+- 用户反馈：① 项目里布置好的窗口内容（如上面浏览器/下面终端）切换项目再切回就变回默认，
+  每个项目的工作台应保持上一次的样子；② 资源管理器要能点开 tsx/css 文件预览（同 MD）。
+- 根因：onSpecMutated 回写只写 layouts 条目，漏了 views（视图覆盖工作区）→ 常驻项目
+  内容丢失；布局路径本身正常（实测确认）。
+- 处理：① onSpecMutated 按 spec.id 分流：layouts 里有该 id → 更新布局条目；否则写回
+  views[id]（入驻项目工作区）。所有变更（开标签/关标签/换聊天边/换位）都会触发；
+  ② 资源管理器文件匹配加 tsx/ts/jsx/js/css/json → kind:file 预览（等宽文本展示，同 TXT 模式）。
+- 验证（functional-diag 重排 STEP14/15 到 STEP10 前 + STEP9 改查 planreview 键 +
+  恢复误删的 STEP13 打印行）：STEP14 布局 layoutSavedTabs=1/layoutRestoredTabs=1、
+  视图覆盖 taSavedTabs=1/taRestoredTabs=1（切换回来内容保持）；STEP15 tsx/css 双标签预览
+  且内容含 WorktableSection；全 15 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。

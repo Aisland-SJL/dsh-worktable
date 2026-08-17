@@ -186,7 +186,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     try{
       var vv=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).views||{};
       out.viewsKeys=Object.keys(vv);
-      var rv=vv[out.viewsKeys[0]];
+      var rv=vv['planreview'];
       if(rv){ out.resTop=(rv.top||[]).length; out.resMain=rv.main.length; out.resChatFull=rv.chatFullHeight===true; out.resId=rv.id; }
     }catch(e){ out.resErr=String(e) }
     var rows2=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
@@ -210,6 +210,84 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return JSON.stringify(out);
   })()`);
   console.log('STEP9:', JSON.stringify(step9));
+
+  // 工作台状态持久化：布局项目与视图覆盖项目切换回来都保持上一次内容
+  const step14 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      // A) 布局项目：卡片打开 → 加终端标签 → 关闭 → 再开 → 标签还在
+      var layCard=document.querySelector('.dsh-wt_layout');
+      if(layCard){ layCard.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.layoutOpenId=st.spec?st.spec.id:null;
+      st.openTab('main',0,{kind:'builtin',type:'terminal'});
+      await new Promise(function(r){setTimeout(r,300)});
+      try{ out.layoutSavedTabs=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts[0].main[0].tabs.length }catch(e){ out.layoutSavedTabs='ERR' }
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      layCard=document.querySelector('.dsh-wt_layout');
+      if(layCard){ layCard.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.layoutRestoredTabs=st.spec?st.spec.main[0].tabs.length:null;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      // B) 视图覆盖项目（旅行）：先经 UI 设置视图 → 卡片打开 → 加资源管理器标签 → 关闭 → 再开 → 标签还在
+      var btnS=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+      if(btnS){ btnS.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc):not(.dsh-wt_manageRowRemoved)');
+      var taRow=rows[1];
+      var puzzle=taRow&&taRow.querySelectorAll('.dsh-wt_manageBtn')[taRow.querySelectorAll('.dsh-wt_manageBtn').length-2];
+      if(puzzle){ puzzle.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var presets=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset');
+      if(presets[0]){ presets[0].click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      var bd=document.querySelector('.dsh-wt_popBackdrop');
+      if(bd){ bd.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var ta=document.querySelector('.dsh-wt_projects .ta_card');
+      if(ta){ ta.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.taOpenId=st.spec?st.spec.id:null;
+      st.openTab('main',0,{kind:'builtin',type:'explorer'});
+      await new Promise(function(r){setTimeout(r,300)});
+      try{ out.taSavedTabs=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).views['travelatlas'].main[0].tabs.length }catch(e){ out.taSavedTabs='ERR' }
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      ta=document.querySelector('.dsh-wt_projects .ta_card');
+      if(ta){ ta.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.taRestoredTabs=(st.spec&&st.spec.id==='travelatlas')?st.spec.main[0].tabs.length:null;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP14:', JSON.stringify(step14));
+
+  // tsx/css 代码文件预览：点击后新标签页显示内容（同 MD 模式）
+  const step15 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      st.open({id:'t-code',title:'code',top:null,main:[{id:'c1',title:'c',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await new Promise(function(r){setTimeout(r,400)});
+      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\index.tsx'});
+      await new Promise(function(r){setTimeout(r,1200)});
+      out.tsxTab=st.spec.main[0].tabs[0].title;
+      out.tsxView=!!document.querySelector('.dsh-wt_txt');
+      out.tsxHasText=document.querySelector('.dsh-wt_txt')?String(document.querySelector('.dsh-wt_txt').textContent).indexOf('WorktableSection')>=0:false;
+      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\styles.ts'});
+      await new Promise(function(r){setTimeout(r,900)});
+      out.cssTab=st.spec.main[0].tabs[1].title;
+      out.tabsCount=st.spec.main[0].tabs.length;
+      st.close();
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP15:', JSON.stringify(step15));
 
   // 删除二次确认：常驻项目/布局 ✕ → 警告弹窗 → 取消不删 / 确认删除；emoji 字号与名称字重统一
   const step10 = await evaluate(`(async function(){

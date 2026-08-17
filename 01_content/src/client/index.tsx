@@ -380,10 +380,16 @@ function WorktableSection(props: any) {
     setActiveSplitId(splitStore.active && splitStore.spec ? splitStore.spec.id : null)
   }), [])
 
-  // 引擎内 spec 变更（窗内容/聊天位置/窗位互换）→ 回写布局条目持久化
+  // 引擎内 spec 变更（窗内容/聊天位置/窗位互换）→ 回写持久化：
+  // 布局项目写 layouts 条目；入驻项目（视图覆盖工作区）写 views[id]。每个项目都保持上一次的样子。
   useEffect(() => {
     splitStore.onSpecMutated = (spec) => {
-      persistProjects((prev) => ({ ...prev, layouts: prev.layouts.map((l) => (l.id === spec.id ? spec : l)) }))
+      persistProjects((prev) => {
+        if (prev.layouts.some((l) => l.id === spec.id)) {
+          return { ...prev, layouts: prev.layouts.map((l) => (l.id === spec.id ? spec : l)) }
+        }
+        return { ...prev, views: { ...prev.views, [spec.id]: spec } }
+      })
     }
     return () => { splitStore.onSpecMutated = null }
   }, [])

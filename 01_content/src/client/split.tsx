@@ -937,7 +937,7 @@ function ExplorerPane(props: { row: PaneRow; index: number }) {
                   url: '/api/worktable/site/' + encodeURIComponent(dir) + '/' + encodeURIComponent(e.name),
                   title: e.name,
                 })
-              } else if (/\.(md|markdown|mdown|txt|log|pdf|png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(e.name)) {
+              } else if (/\.(md|markdown|mdown|txt|log|tsx|ts|jsx|js|css|json|pdf|png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(e.name)) {
                 splitStore.openTab(props.row, props.index, { kind: 'file', path: e.path })
               } else {
                 setError(T('pane.openLater'))
