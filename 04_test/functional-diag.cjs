@@ -282,12 +282,24 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\index.tsx'});
       await new Promise(function(r){setTimeout(r,1200)});
       out.tsxTab=st.spec.main[0].tabs[0].title;
-      out.tsxView=!!document.querySelector('.dsh-wt_txt');
-      out.tsxHasText=document.querySelector('.dsh-wt_txt')?String(document.querySelector('.dsh-wt_txt').textContent).indexOf('WorktableSection')>=0:false;
+      out.tsxView=!!document.querySelector('.dsh-wt_code');
+      out.tsxHljs=document.querySelectorAll('.dsh-wt_code .hljs-keyword').length;
+      out.tsxHasText=document.querySelector('.dsh-wt_code')?String(document.querySelector('.dsh-wt_code').textContent).indexOf('WorktableSection')>=0:false;
       st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\styles.ts'});
       await new Promise(function(r){setTimeout(r,900)});
       out.cssTab=st.spec.main[0].tabs[1].title;
       out.tabsCount=st.spec.main[0].tabs.length;
+      // 代码文件编辑模式（tsx/css/txt 通用）
+      var ebtn=document.querySelectorAll('.dsh-wt_mdBtn')[1];
+      if(ebtn){ ebtn.click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var ta=document.querySelector('.dsh-wt_mdEdit');
+      out.editArea=!!ta;
+      out.editHasText=ta?ta.value.indexOf('dsh-wt_')>=0:false;
+      var pbtn=document.querySelectorAll('.dsh-wt_mdBtn')[0];
+      if(pbtn){ pbtn.click(); }
+      await new Promise(function(r){setTimeout(r,200)});
+      out.previewBack=!!document.querySelector('.dsh-wt_code');
       st.close();
     }catch(err){ out.err=String(err) }
     return JSON.stringify(out);
@@ -377,7 +389,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     out.tabsAfterDup=st.spec.main[0].tabs.length;
     st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\package.json'});
     await new Promise(function(r){setTimeout(r,900)});
-    out.txtView=!!document.querySelector('.dsh-wt_txt');
+    out.jsonView=!!document.querySelector('.dsh-wt_code');
+    out.jsonHljs=document.querySelectorAll('.dsh-wt_code .hljs-keyword, .dsh-wt_code .hljs-string').length;
     out.tabsNow=st.spec.main[0].tabs.length;
     st.close();
     return JSON.stringify(out);

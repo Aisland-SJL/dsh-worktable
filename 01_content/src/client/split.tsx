@@ -2,6 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
 import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js/lib/core'
+import hljsTypescript from 'highlight.js/lib/languages/typescript'
+import hljsJavascript from 'highlight.js/lib/languages/javascript'
+import hljsCss from 'highlight.js/lib/languages/css'
+import hljsJson from 'highlight.js/lib/languages/json'
+
+hljs.registerLanguage('typescript', hljsTypescript)
+hljs.registerLanguage('javascript', hljsJavascript)
+hljs.registerLanguage('css', hljsCss)
+hljs.registerLanguage('json', hljsJson)
 
 /**
  * dsh-worktable 乐高式工作区 M1：通用分栏引擎（PRD §13）。
@@ -1121,7 +1131,23 @@ function FileViewer(props: { path: string }) {
   return <TextViewer path={props.path} fileUrl={fileUrl} isMd={MD_EXTS.test('.' + ext)} />
 }
 
-/** MD/TXT 文本预览（fetch 原文 → MD 渲染或 <pre> 等宽展示）；MD 支持编辑/预览自由切换并可保存回磁盘 */
+/** 代码文件语言映射（预览语法着色） */
+const CODE_LANGS: Record<string, string> = { ts: 'typescript', tsx: 'typescript', js: 'javascript', jsx: 'javascript', css: 'css', json: 'json' }
+const CODE_EXTS = /[.](tsx|ts|jsx|js|css|json)$/i
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function codeHtml(text: string, ext: string): string {
+  const lang = CODE_LANGS[ext] ?? ''
+  if (lang) {
+    try { return hljs.highlight(text, { language: lang }).value } catch { return escapeHtml(text) }
+  }
+  return escapeHtml(text)
+}
+
+/** 文本预览（fetch 原文 → MD 渲染 / 代码高亮 / <pre> 等宽展示）；全部文本类型支持编辑/预览切换并可保存回磁盘 */
 function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   const [text, setText] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -1167,20 +1193,22 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   if (text == null) {
     return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{T('file.loading')}</span></div>
   }
-  if (props.isMd) {
-    return (
-      <>
-        <div className="dsh-wt_mdBar">
-          <button type="button" className={'dsh-wt_mdBtn' + (mode === 'preview' ? ' dsh-wt_mdBtnOn' : '')} onClick={() => setMode('preview')}>{T('file.preview')}</button>
-          <button type="button" className={'dsh-wt_mdBtn' + (mode === 'edit' ? ' dsh-wt_mdBtnOn' : '')} onClick={enterEdit}>{T('file.edit')}</button>
-          {mode === 'edit' && (
-            <button type="button" className="dsh-wt_mdSave" disabled={saving} onClick={save}>{saving ? '…' : T('file.save')}</button>
-          )}
-          {saveFail && <span className="dsh-wt_mdMsg">{T('file.saveFail')}</span>}
-        </div>
-        {mode === 'edit'
-          ? <textarea className="dsh-wt_mdEdit" value={draft} spellCheck={false} onChange={(e) => setDraft(e.target.value)} />
-          : (
+  const ext = (props.path.split('.').pop() || '').toLowerCase()
+  const isCode = CODE_EXTS.test('.' + ext)
+  return (
+    <>
+      <div className="dsh-wt_mdBar">
+        <button type="button" className={'dsh-wt_mdBtn' + (mode === 'preview' ? ' dsh-wt_mdBtnOn' : '')} onClick={() => setMode('preview')}>{T('file.preview')}</button>
+        <button type="button" className={'dsh-wt_mdBtn' + (mode === 'edit' ? ' dsh-wt_mdBtnOn' : '')} onClick={enterEdit}>{T('file.edit')}</button>
+        {mode === 'edit' && (
+          <button type="button" className="dsh-wt_mdSave" disabled={saving} onClick={save}>{saving ? '…' : T('file.save')}</button>
+        )}
+        {saveFail && <span className="dsh-wt_mdMsg">{T('file.saveFail')}</span>}
+      </div>
+      {mode === 'edit'
+        ? <textarea className="dsh-wt_mdEdit" value={draft} spellCheck={false} onChange={(e) => setDraft(e.target.value)} />
+        : props.isMd
+          ? (
             <div className="dsh-wt_fileView">
               <div
                 className="dsh-wt_md"
@@ -1194,11 +1222,16 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
                 }}
               />
             </div>
-          )}
-      </>
-    )
-  }
-  return <div className="dsh-wt_fileView"><pre className="dsh-wt_txt">{text}</pre></div>
+          )
+          : isCode
+            ? (
+              <div className="dsh-wt_fileView">
+                <pre className="dsh-wt_code"><code dangerouslySetInnerHTML={{ __html: codeHtml(text, ext) }} /></pre>
+              </div>
+            )
+            : <div className="dsh-wt_fileView"><pre className="dsh-wt_txt">{text}</pre></div>}
+    </>
+  )
 }
 
 /** 单个标签页的内容渲染 */

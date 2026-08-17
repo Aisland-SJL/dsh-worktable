@@ -639,17 +639,16 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（MD 编辑模式：预览/编辑自由切换 + 保存回磁盘）
+## 补记（txt/tsx/css 编辑开启 + 代码语法着色）
 
-- 用户需求：MD 文件加编辑模式，可在编辑与预览之间自由切换。
+- 用户需求：① txt/tsx/css 也开编辑模式；② 代码文件要有颜色（考虑开源后程序员使用）。
 - 处理：
-  ① 服务端新增 POST /api/worktable/write（{path,content}，20MB 上限，writeFile utf8）；
-  ② 客户端 TextViewer（MD 分支）加工具栏：预览 | 编辑 切换按钮（当前态描边高亮），
-  编辑态出现 保存 按钮（保存成功切回预览，失败红字提示）；编辑区等宽 textarea 暗色；
-  保存内容即时成为新预览内容（无需重新 fetch）；txt/tsx/css 等保持只读不变；
-  ③ locale file.preview/edit/save/saveFail（zh/en）。
-- 验证（functional-diag STEP16 + 临时夹具 wt-edit-test.md）：探针检测写路由；
-  就绪后：编辑按钮 → textarea 出现且含原文 → 原生 setter 写入 '# EDITED_OK' → 保存 →
-  预览回归 + file 路由回读含 EDITED_OK；跑完还原夹具。当前运行中服务器无写路由 →
-  writeRouteReady=false（404 已过滤），其余 15 STEP 全绿。
-- 备注：服务端新增写路由，**需重启一次 dsh web** 后编辑保存生效。
+  ① TextViewer 编辑/预览工具栏对所有文本类型通用（md/txt/log/tsx/ts/jsx/js/css/json），
+  保存走既有 /api/worktable/write 路由；
+  ② 语法着色：highlight.js（只打包 core + typescript/javascript/css/json 四种语言），
+  代码预览渲染成 .dsh-wt_code（token class 配色采用 GitHub Dark 风格自写 CSS，无主题依赖）；
+  无语言映射时 HTML 转义兜底；bundle 859KB。
+- 验证（functional-diag）：STEP15 tsx 预览 hljs-keyword 493 个 token + 编辑区出现/含原文/切回预览；
+  STEP11 package.json 改断言 json 高亮 31 个 token；其余全绿 ERROR_COUNT: 0；
+  STEP16 写路由仍 writeRouteReady=false（等用户重启后验证保存闭环）。
+- 备注：客户端 F5 生效；保存写盘需重启一次 dsh web（上次已提示）。
