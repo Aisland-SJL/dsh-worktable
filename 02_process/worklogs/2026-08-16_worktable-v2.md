@@ -487,3 +487,27 @@
   {w:92,h:78}；STEP3-5 回归不变；ERRORS_COUNT: 0。bundle-eval 补桩
   （navigator.userAgent/platform、canvas getContext）后 PASS。
 - 备注：本次为纯客户端改动，F5 即生效，无需重启 dsh web。
+## 补记（项目卡片统一加框 + 小字精简 + 图标可选 + 新建布局唯一性互斥）
+
+- 用户反馈（四条命令合并执行）：
+  ① 加号新建的项目侧栏卡片有框、两个入驻项目（建筑审图/旅行 Atlas）没框 → 统一加框；
+  ② 新建布局与旅行 Atlas 可同时打开 → 全部项目共用唯一互斥（开一个关前一个）；
+  ③ 项目标签只留名字一行，去掉描述小字（建筑审图/旅行 Atlas）；
+  ④ 左侧 emoji 要能点开一套完整图标列表换选（新项目一直是砖墙 🧱 换不了）。
+- 处理（不改动 travelatlas/building-agent 代码，全部在本插件侧）：
+  ① styles.ts：.dsh-wt_projects 内 .ta_card/.pr_card 静止态常显边框+底色（与布局卡同款），
+  静止态带框 + hover 高亮；同时 .ta_cardDesc/.pr_cardDesc display:none（小字去掉）；
+  ② split.tsx：新增 MutationObserver——.ta_split 浮层（travelatlas 引擎打开）出现即 close() 本引擎；
+  反向（本引擎打开 → 点旅行 Atlas）沿用既有 .ta_splitClose 桥；互斥全项目（含 + 新建布局）成立；
+  ③ EMOJI_SET 18 项图标集（🧱🏠🎓🚗✈️🌍🏥📚✏️⚙️🎨🎮🌏📐🧪🤖📦💬）；
+  布局卡/管理行/快捷方式的图标都变可点（stopPropagation，不触发卡片本身），
+  弹固定定位图标选择器（6 列网格、当前项高亮）；选中持久化到 projects.v1（LayoutSpec 加 icon 字段；
+  快捷方式复用 icon 字段）；rail 图标同步使用所选 emoji；locale 加 icons.title/icons.change。
+- 验证（04_test/functional-diag.cjs 扩展：--window-size=1440,900 + dsf=1 + 新 Chrome profile +
+  Page.addScriptToEvaluateOnNewDocument 种子测试布局 + 点击展开侧栏）：
+  STEP6 图标链路：icon0=🧱 → 点图标 popup=true(18 cells) → 点🏠 → icon1=🏠 且 projects.v1
+  saved=🏠；ta/pr 边框色 rgba(255,255,255,.06)（非 transparent）+ desc display:none；
+  STEP7 互斥：本引擎打开时合成挂 .ta_split → engineClosedByFakeTa=true（观察器关闭引擎）。
+  （travelatlas 在无会话 headless 页面不自开分栏，taSplitPresent=false 属预期，改合成验证。）
+  STEP1-5 回归不变（paneWs 均分、picker 自适应、拖标签）；ERRORS_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。

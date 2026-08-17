@@ -45,6 +45,8 @@ export type LayoutSpec = {
   topHeight?: { default: number; min: number; max: number }
   /** 聊天窗贴边位置：'right'（右列/右下，默认）| 'left'（左列/左下） */
   chatSide?: 'left' | 'right'
+  /** 布局条目图标（emoji；工作台侧栏展示，点击可换） */
+  icon?: string
   /** 聊天窗通高（整列）：为 true 时聊天占整条右/左列，内容区（含 top 行）全部排在其另一侧 */
   chatFullHeight?: boolean
 }
@@ -727,6 +729,16 @@ export const splitStore: SplitState = {
   notify() {
     for (const fn of this.listeners) fn()
   },
+}
+
+/** 兼容桥：travelatlas 分栏浮层（.ta_split）出现 = 其引擎打开 → 本引擎让位。
+ * 不改动 travelatlas 代码，仅在 DOM 层观察其浮层挂载。 */
+if (typeof document !== 'undefined' && document.body) {
+  const taObserver = new MutationObserver(() => {
+    if (!splitStore.active) return
+    if (document.querySelector('.ta_split')) splitStore.close()
+  })
+  taObserver.observe(document.body, { childList: true, subtree: true })
 }
 
 /** 分配各窗宽度（最后一个拿余量） */

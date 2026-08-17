@@ -107,6 +107,22 @@ export const css = [
   '.dsh-wt_layoutDesc{font-size:10px;line-height:14px;color:var(--dsw-alias-label-tertiary,#6e7683);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_layoutBadge{flex:none;font-size:9px;line-height:14px;padding:0 5px;border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06));color:var(--dsw-alias-label-tertiary,#6e7683)}',
   '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
+  // 项目卡片统一：入驻插件卡片（travelatlas/planreview）与布局卡片同款常显框（静止态可见边框+底）
+  '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
+  '.dsh-wt_projects .ta_card:hover,.dsh-wt_projects .pr_card:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_projects .ta_card[data-on=true],.dsh-wt_projects .pr_card[data-on=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  // 标签精简：项目卡片只留名称一行，小字描述行去掉
+  '.dsh-wt_projects .ta_cardDesc,.dsh-wt_projects .pr_cardDesc{display:none}',
+  // 图标选择弹窗（固定定位，点击项目/布局/快捷方式的图标唤出）
+  '.dsh-wt_iconPop{position:fixed;z-index:81;width:256px;padding:8px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
+  '.dsh-wt_iconPopTitle{font-size:10px;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683);padding:1px 4px 6px}',
+  '.dsh-wt_iconGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}',
+  '.dsh-wt_iconCell{display:flex;align-items:center;justify-content:center;aspect-ratio:1;border:1px solid transparent;border-radius:6px;background:transparent;font-size:17px;line-height:1;cursor:pointer;padding:0}',
+  '.dsh-wt_iconCell:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05));border-color:var(--dsw-alias-border-l2,#3a4150)}',
+  '.dsh-wt_iconCell[data-on=true]{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08));border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  // 可点图标（布局卡 / 管理行 / 快捷方式上的图标，点击换 emoji）
+  '.dsh-wt_iconPick{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:1px;border:none;background:transparent;font:inherit;cursor:pointer;border-radius:4px}',
+  '.dsh-wt_iconPick:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
   // 窗内容：选择器 / 自定义 / 浏览器 / 占位
   '.dsh-wt_panePicker{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;overflow:auto}',
   '.dsh-wt_panePicker-row{flex-direction:row;flex-wrap:wrap}',

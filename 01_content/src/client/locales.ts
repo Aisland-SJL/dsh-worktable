@@ -67,6 +67,8 @@ export const zh = {
   'pane.subagentsEmpty': '当前会话暂无子代理',
   'split.flip': '切换对话窗位置（左⇄右）',
   'split.dragSwap': '拖动标题栏与其他窗交换位置',
+  'icons.title': '选择图标',
+  'icons.change': '更换图标',
   'empty': '暂无项目',
 } satisfies Record<string, string>
 
@@ -136,6 +138,8 @@ export const en = {
   'pane.subagentsEmpty': 'No subagents in the current session',
   'split.flip': 'Flip chat side (left ⇄ right)',
   'split.dragSwap': 'Drag the title bar to swap panes',
+  'icons.title': 'Pick an icon',
+  'icons.change': 'Change icon',
   'empty': 'No projects yet',
 } satisfies Record<WorktableKey, string>
 

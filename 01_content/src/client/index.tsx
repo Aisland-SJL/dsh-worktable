@@ -74,6 +74,9 @@ const PRESET_DEFS = [
   { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
 ] as const
 
+/** 侧栏图标备选集（emoji）：布局/快捷方式的图标，点击可换（首项 🧱 为布局默认） */
+const EMOJI_SET = ['🧱', '🏠', '🎓', '🚗', '✈️', '🌍', '🏥', '📚', '✏️', '⚙️', '🎨', '🎮', '🌏', '📐', '🧪', '🤖', '📦', '💬']
+
 function buildLayout(presetId: string, name: string): LayoutSpec {
   const def = PRESET_DEFS.find((d) => d.id === presetId) ?? PRESET_DEFS[0]
   const mk = (i: number): SplitPane => ({
@@ -283,6 +286,8 @@ function WorktableSection(props: any) {
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
+  /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
+  const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut'; id: string; x: number; y: number } | null>(null)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
   )
@@ -622,6 +627,28 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
   }
 
+  // ── 图标选择器（布局 / 快捷方式的侧栏 emoji 点击可换） ──
+  const openIconPick = (kind: 'layout' | 'shortcut', id: string, e: any) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = Math.min(r.right + 8, Math.max(16, window.innerWidth - 284))
+    const y = Math.max(MIN_TOP, Math.min(r.top - 4, window.innerHeight - 316))
+    setIconPick({ kind, id, x, y })
+  }
+  const setLayoutIcon = (id: string, icon: string) => {
+    persistProjects((prev) => ({
+      ...prev,
+      layouts: prev.layouts.map((l) => (l.id === id ? { ...l, icon } : l)),
+    }))
+  }
+  const setShortcutIcon = (id: string, icon: string) => {
+    persistProjects((prev) => ({
+      ...prev,
+      shortcuts: prev.shortcuts.map((s) => (s.id === id ? { ...s, icon } : s)),
+    }))
+  }
+
   const query = view.query.trim()
   const queryLower = query.toLowerCase()
   const visibleShortcuts = projects.shortcuts.filter((s) =>
@@ -705,7 +732,7 @@ function WorktableSection(props: any) {
   if (!wide) {
     const projectIcons = registeredIds.map((id) => metas[id]?.icon ?? '📦')
     const shortcutIcons = projects.shortcuts.map((s) => s.icon)
-    const layoutIcons = projects.layouts.map(() => '🧱')
+    const layoutIcons = projects.layouts.map((l) => l.icon ?? '🧱')
     const icons = [...projectIcons, ...shortcutIcons, ...layoutIcons]
     const railNames = [
       ...registeredIds.map((id) => projects.nameOverrides[id] ?? metas[id]?.name ?? id),
@@ -819,6 +846,35 @@ function WorktableSection(props: any) {
         </div>
       )}
 
+      {iconPick && (
+        <>
+          <div className="dsh-wt_popBackdrop" onClick={() => setIconPick(null)} />
+          <div className="dsh-wt_iconPop" style={{ left: iconPick.x, top: iconPick.y }}>
+            <div className="dsh-wt_iconPopTitle">{t('icons.title')}</div>
+            <div className="dsh-wt_iconGrid">
+              {EMOJI_SET.map((em) => {
+                const cur = iconPick.kind === 'layout'
+                  ? (projects.layouts.find((l) => l.id === iconPick.id)?.icon ?? '🧱')
+                  : (projects.shortcuts.find((s) => s.id === iconPick.id)?.icon ?? '🔗')
+                return (
+                  <button
+                    key={em}
+                    type="button"
+                    className="dsh-wt_iconCell"
+                    data-on={cur === em ? 'true' : 'false'}
+                    onClick={() => {
+                      if (iconPick.kind === 'layout') setLayoutIcon(iconPick.id, em)
+                      else setShortcutIcon(iconPick.id, em)
+                      setIconPick(null)
+                    }}
+                  >{em}</button>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
       {viewOptionsOpen && (
         <div className="dsh-wt_menu">
           <span className="dsh-wt_menuLabel">{t('sort.label')}</span>
@@ -858,7 +914,15 @@ function WorktableSection(props: any) {
                 onDragEnd={() => { dragIdRef.current = null }}
               >
                 <span className="dsh-wt_manageGrip" aria-hidden>≡</span>
-                <span className="dsh-wt_manageIcon" aria-hidden>{layout ? '🧱' : (meta?.icon ?? '📦')}</span>
+                {layout
+                  ? <span
+                      className="dsh-wt_manageIcon dsh-wt_iconPick"
+                      role="button"
+                      tabIndex={0}
+                      title={t('icons.change')}
+                      onClick={(e) => openIconPick('layout', id, e)}
+                    >{layout.icon ?? '🧱'}</span>
+                  : <span className="dsh-wt_manageIcon" aria-hidden>{meta?.icon ?? '📦'}</span>}
                 <input
                   className="dsh-wt_manageInput"
                   value={display}
@@ -879,7 +943,13 @@ function WorktableSection(props: any) {
           {projects.shortcuts.map((s) => (
             <div key={s.id} className="dsh-wt_manageRow dsh-wt_manageRowSc">
               <span className="dsh-wt_manageGrip" aria-hidden>🔗</span>
-              <span className="dsh-wt_manageIcon" aria-hidden>{s.icon}</span>
+              <span
+                className="dsh-wt_manageIcon dsh-wt_iconPick"
+                role="button"
+                tabIndex={0}
+                title={t('icons.change')}
+                onClick={(e) => openIconPick('shortcut', s.id, e)}
+              >{s.icon}</span>
               <span className="dsh-wt_manageScName">{s.name}</span>
               <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => removeShortcut(s.id)}>✕</button>
             </div>
@@ -903,7 +973,13 @@ function WorktableSection(props: any) {
               style={{ order: effectiveOrder.indexOf(l.id) + 1000 }}
               onClick={() => { openSplit(l); reportUsed(l.id) }}
             >
-              <span className="dsh-wt_layoutIcon" aria-hidden>🧱</span>
+              <span
+                className="dsh-wt_layoutIcon dsh-wt_iconPick"
+                role="button"
+                tabIndex={0}
+                title={t('icons.change')}
+                onClick={(e) => openIconPick('layout', l.id, e)}
+              >{l.icon ?? '🧱'}</span>
               <span className="dsh-wt_layoutText">
                 <span className="dsh-wt_layoutName">{projects.nameOverrides[l.id] ?? l.title}</span>
                 <span className="dsh-wt_layoutDesc">{t('layout.desc', { n: String(paneCount) })}</span>
@@ -926,7 +1002,13 @@ function WorktableSection(props: any) {
               rel="noreferrer noopener"
               title={s.href}
             >
-              <span className="dsh-wt_shortcutIcon" aria-hidden>{s.icon}</span>
+              <span
+                className="dsh-wt_shortcutIcon dsh-wt_iconPick"
+                role="button"
+                tabIndex={0}
+                title={t('icons.change')}
+                onClick={(e) => openIconPick('shortcut', s.id, e)}
+              >{s.icon}</span>
               <span className="dsh-wt_shortcutName">{s.name}</span>
               <span className="dsh-wt_shortcutBadge">{t('shortcut.badge')}</span>
             </a>
