@@ -66,10 +66,12 @@ const OVER_SIDE_PX = 80
 
 /** 拓扑预设（聊天窗恒贴右，PRD §13.2 硬约束）：左右/三栏/上一下二/井字 */
 const PRESET_DEFS = [
-  { id: '2h', topCount: 0, contentCount: 1 },
-  { id: '3h', topCount: 0, contentCount: 2 },
-  { id: 't2', topCount: 1, contentCount: 1 },
-  { id: 'grid', topCount: 2, contentCount: 1 },
+  { id: '2h', leftCount: 0, topCount: 0, contentCount: 1 },
+  { id: '3h', leftCount: 0, topCount: 0, contentCount: 2 },
+  { id: 'l2', leftCount: 1, topCount: 1, contentCount: 0 },
+  { id: 't2', leftCount: 0, topCount: 1, contentCount: 1 },
+  { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1 },
+  { id: 't3', leftCount: 0, topCount: 1, contentCount: 2 },
 ] as const
 
 function buildLayout(presetId: string, name: string): LayoutSpec {
@@ -80,13 +82,16 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
     min: 200,
     content: null,
   })
-  const top = Array.from({ length: def.topCount }, (_, i) => mk(i))
-  const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.topCount + i))
+  const left = def.leftCount > 0 ? mk(0) : null
+  const top = Array.from({ length: def.topCount }, (_, i) => mk(def.leftCount + i))
+  const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.leftCount + def.topCount + i))
   return {
     id: 'layout-' + Date.now().toString(36),
     title: name,
+    left: left ?? null,
     top: top.length > 0 ? top : null,
     main,
+    leftWidth: { default: 260, min: 160, max: 480 },
     chatWidth: { default: 360, min: 240, max: 600 },
     topHeight: { default: 200, min: 120, max: 480 },
     chatSide: 'right',
@@ -112,10 +117,29 @@ function presetThumb(defId: string) {
       </span>
     )
   }
+  if (defId === 'grid') {
+    return (
+      <span className="dsh-wt_thumb">
+        <span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}</span>
+        <span className="dsh-wt_thumbRow">{cell(false, 'c')}{cell(true, 'd')}</span>
+      </span>
+    )
+  }
+  if (defId === 'l2') {
+    return (
+      <span className="dsh-wt_thumb dsh-wt_thumbCols">
+        <span className="dsh-wt_thumbCol">{cell(false, 'a')}</span>
+        <span className="dsh-wt_thumbCol">
+          <span className="dsh-wt_thumbRow">{cell(false, 'b')}</span>
+          <span className="dsh-wt_thumbRow">{cell(true, 'c')}</span>
+        </span>
+      </span>
+    )
+  }
   return (
     <span className="dsh-wt_thumb">
-      <span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}</span>
-      <span className="dsh-wt_thumbRow">{cell(false, 'c')}{cell(true, 'd')}</span>
+      <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
+      <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(false, 'c')}{cell(true, 'd')}</span>
     </span>
   )
 }
@@ -225,10 +249,6 @@ function WorktableSection(props: any) {
   const [managing, setManaging] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false)
-  const [scName, setScName] = useState('')
-  const [scIcon, setScIcon] = useState('')
-  const [scHref, setScHref] = useState('')
-  const [scError, setScError] = useState(false)
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
@@ -535,16 +555,7 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, order: [], hidden: [], nameOverrides: {} }))
   }
 
-  // ── 快捷方式 ──
-  const addShortcut = () => {
-    const name = scName.trim()
-    const href = scHref.trim()
-    if (!name || !/^https?:\/\//i.test(href)) { setScError(true); return }
-    const shortcut: Shortcut = { id: 'sc-' + Date.now().toString(36), name, icon: scIcon.trim() || '🔗', href }
-    persistProjects((prev) => ({ ...prev, shortcuts: [...prev.shortcuts, shortcut] }))
-    setScName(''); setScIcon(''); setScHref(''); setScError(false)
-  }
-
+  // ── 快捷方式（表单已移除，仅保留存量条目的删除能力） ──
   const removeShortcut = (id: string) => {
     persistProjects((prev) => ({ ...prev, shortcuts: prev.shortcuts.filter((s) => s.id !== id) }))
   }
@@ -760,19 +771,6 @@ function WorktableSection(props: any) {
             <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
           </div>
           {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
-          <div className="dsh-wt_menuSep" />
-          <span className="dsh-wt_menuLabel">{t('add.shortcutTitle')}</span>
-          <p className="dsh-wt_addText">{t('add.shortcutDesc')}</p>
-          <div className="dsh-wt_addForm">
-            <input type="text" placeholder={t('add.shortcutNamePh')} value={scName}
-              onChange={(e) => { setScName(e.target.value); setScError(false) }} />
-            <input type="text" className="dsh-wt_addIcon" placeholder={t('add.shortcutIcon')} value={scIcon} maxLength={4}
-              onChange={(e) => setScIcon(e.target.value)} />
-            <input type="text" placeholder={t('add.shortcutHref')} value={scHref}
-              onChange={(e) => { setScHref(e.target.value); setScError(false) }} />
-            <button type="button" className="dsh-wt_addBtn" onClick={addShortcut}>{t('add.shortcutAdd')}</button>
-          </div>
-          {scError && <p className="dsh-wt_addError">{t('add.shortcutInvalid')}</p>}
         </div>
       )}
 

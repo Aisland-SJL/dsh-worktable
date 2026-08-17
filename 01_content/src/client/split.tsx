@@ -23,6 +23,9 @@ export type LayoutSpec = {
   title: string
   top: SplitPane[] | null
   main: SplitPane[]
+  /** 左列整高内容窗（可选；存在时右侧列 = top 行 + 底部聊天，chatSide 固定 right） */
+  left?: SplitPane | null
+  leftWidth?: { default: number; min: number; max: number }
   chatWidth: { default: number; min: number; max: number }
   topHeight?: { default: number; min: number; max: number }
   /** 聊天窗贴边位置：'right'（右列/右下，默认）| 'left'（左列/左下） */
@@ -31,7 +34,7 @@ export type LayoutSpec = {
 
 type Geom = { left: number; top: number; right: number; bottom: number }
 
-type PaneRow = 'top' | 'main'
+type PaneRow = 'left' | 'top' | 'main'
 
 type SplitState = {
   active: boolean
@@ -39,8 +42,10 @@ type SplitState = {
   geom: Geom | null
   chatW: number
   topH: number
+  leftW: number
   paneWs: number[]
   topWs: number[]
+  leftWs: number[]
   root: HTMLElement | null
   header: HTMLElement | null
   viewArea: HTMLElement | null
@@ -62,6 +67,7 @@ type SplitState = {
   applyMargin(): void
   setChatW(w: number): void
   setTopH(h: number): void
+  setLeftW(w: number): void
   setPaneW(i: number, w: number): void
   setTopW(i: number, w: number): void
   setPaneContent(row: PaneRow, i: number, content: SplitContent | null): void
@@ -105,7 +111,7 @@ function findConversationRoot(): HTMLElement | null {
     ?? null
 }
 
-function loadSaved(layoutId: string): { chatW: number; topH: number; paneWs: number[]; topWs: number[] } | null {
+function loadSaved(layoutId: string): { chatW: number; topH: number; leftW: number; paneWs: number[]; topWs: number[]; leftWs: number[] } | null {
   try {
     const raw = localStorage.getItem(PERSIST_KEY)
     if (!raw) return null
@@ -114,15 +120,17 @@ function loadSaved(layoutId: string): { chatW: number; topH: number; paneWs: num
     return {
       chatW: Number.isFinite(s.chatW) ? s.chatW : -1,
       topH: Number.isFinite(s.topH) ? s.topH : -1,
+      leftW: Number.isFinite(s.leftW) ? s.leftW : -1,
       paneWs: Array.isArray(s.paneWs) ? s.paneWs : [],
       topWs: Array.isArray(s.topWs) ? s.topWs : [],
+      leftWs: Array.isArray(s.leftWs) ? s.leftWs : [],
     }
   } catch {
     return null
   }
 }
 
-function persistSaved(layoutId: string, s: { chatW: number; topH: number; paneWs: number[]; topWs: number[] }) {
+function persistSaved(layoutId: string, s: { chatW: number; topH: number; leftW: number; paneWs: number[]; topWs: number[]; leftWs: number[] }) {
   try {
     const raw = localStorage.getItem(PERSIST_KEY)
     const all = raw ? JSON.parse(raw) : {}
@@ -143,8 +151,10 @@ export const splitStore: SplitState = {
   geom: null,
   chatW: 320,
   topH: 200,
+  leftW: 260,
   paneWs: [],
   topWs: [],
+  leftWs: [],
   root: null,
   header: null,
   viewArea: null,
@@ -186,11 +196,14 @@ export const splitStore: SplitState = {
     this.spec = { ...spec, chatSide: spec.chatSide === 'left' ? 'left' : 'right' }
     const main = spec.main ?? []
     const top = spec.top ?? []
+    const left = spec.left ?? null
     const saved = loadSaved(spec.id)
     this.chatW = saved && saved.chatW >= 0 ? saved.chatW : spec.chatWidth.default
     this.topH = saved && saved.topH >= 0 ? saved.topH : (spec.topHeight?.default ?? 200)
+    this.leftW = saved && saved.leftW >= 0 ? saved.leftW : (spec.leftWidth?.default ?? 260)
     this.paneWs = saved && saved.paneWs.length === main.length ? [...saved.paneWs] : main.map((p) => p.min)
     this.topWs = saved && saved.topWs.length === top.length ? [...saved.topWs] : top.map((p) => p.min)
+    this.leftWs = saved && saved.leftWs.length === (left ? 1 : 0) ? [...saved.leftWs] : (left ? [left.min] : [])
     this.root = root
     this.header = header
     this.viewArea = viewArea
@@ -288,16 +301,20 @@ export const splitStore: SplitState = {
     if (!viewArea || !g || !spec) return
     const colW = g.right - g.left
     const rowH = g.bottom - g.top
+    const hasLeft = !!spec.left
     const hasTop = !!(spec.top && spec.top.length > 0)
     const chatW = clamp(this.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
     const topH = hasTop
       ? clamp(this.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
       : 0
+    const leftW = hasLeft
+      ? clamp(this.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
+      : 0
     const gap = Math.max(0, colW - chatW) + 'px'
     const mt = (BAR_H + topH) + 'px'
-    const chatLeft = spec.chatSide === 'left'
-    this.lastMarginLeft = chatLeft ? '' : gap
-    this.lastMarginRight = chatLeft ? gap : ''
+    const chatLeft = !hasLeft && spec.chatSide === 'left'
+    this.lastMarginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
+    this.lastMarginRight = hasLeft ? '' : (chatLeft ? gap : '')
     this.lastMarginTop = mt
     viewArea.style.marginLeft = this.lastMarginLeft
     viewArea.style.marginRight = this.lastMarginRight
@@ -326,6 +343,19 @@ export const splitStore: SplitState = {
     const lo = spec.topHeight?.min ?? 80
     const hi = Math.max(lo, rowH - BAR_H - 80)
     this.topH = clamp(Math.round(h), lo, hi)
+    this.applyMargin()
+    this.persist()
+    this.notify()
+  },
+
+  setLeftW(w) {
+    const g = this.geom
+    const spec = this.spec
+    if (!g || !spec || !spec.left) return
+    const colW = g.right - g.left
+    const lo = spec.leftWidth?.min ?? 160
+    const hi = Math.max(lo, colW - 260)
+    this.leftW = clamp(Math.round(w), lo, hi)
     this.applyMargin()
     this.persist()
     this.notify()
@@ -370,6 +400,14 @@ export const splitStore: SplitState = {
   setPaneContent(row, i, content) {
     const spec = this.spec
     if (!spec) return
+    if (row === 'left') {
+      if (!spec.left || i !== 0) return
+      this.spec = { ...spec, left: { ...spec.left, content } }
+      this.onSpecMutated?.(this.spec)
+      this.persist()
+      this.notify()
+      return
+    }
     const top = [...(spec.top ?? [])]
     const main = [...spec.main]
     const arr = row === 'top' ? top : main
@@ -386,28 +424,29 @@ export const splitStore: SplitState = {
     if (!spec) return
     const top = [...(spec.top ?? [])]
     const main = [...spec.main]
-    const arrA = aRow === 'top' ? top : main
-    const arrB = bRow === 'top' ? top : main
-    const a = arrA[aI]
-    const b = arrB[bI]
-    if (!a || !b) return
-    arrA[aI] = b
-    arrB[bI] = a
-    if (aRow === bRow) {
-      const ws = aRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
-      const t = ws[aI]; ws[aI] = ws[bI]; ws[bI] = t
-      if (aRow === 'top') this.topWs = ws
-      else this.paneWs = ws
-    } else {
-      const aWs = aRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
-      const bWs = bRow === 'top' ? this.topWs.slice() : this.paneWs.slice()
-      const ta = aWs[aI]; const tb = bWs[bI]
-      aWs[aI] = tb
-      bWs[bI] = ta
-      if (aRow === 'top') { this.topWs = aWs; this.paneWs = bWs }
-      else { this.topWs = bWs; this.paneWs = aWs }
+    const left = spec.left ? { ...spec.left } : null
+    const arrOf = (row: PaneRow): SplitPane[] => (row === 'left' ? (left ? [left] : []) : row === 'top' ? top : main)
+    const setOf = (row: PaneRow, i: number, pane: SplitPane) => {
+      if (row === 'left') spec.left = pane
+      else if (row === 'top') top[i] = pane
+      else main[i] = pane
     }
-    this.spec = { ...spec, top: top.length > 0 ? top : null, main }
+    const a = arrOf(aRow)[aI]
+    const b = arrOf(bRow)[bI]
+    if (!a || !b) return
+    setOf(aRow, aI, b)
+    setOf(bRow, bI, a)
+    const wsOf = (row: PaneRow): number[] => (row === 'left' ? this.leftWs : row === 'top' ? this.topWs : this.paneWs)
+    const setWs = (row: PaneRow, i: number, v: number) => {
+      if (row === 'left') { const n = this.leftWs.slice(); n[i] = v; this.leftWs = n }
+      else if (row === 'top') { const n = this.topWs.slice(); n[i] = v; this.topWs = n }
+      else { const n = this.paneWs.slice(); n[i] = v; this.paneWs = n }
+    }
+    const aW = wsOf(aRow)[aI]
+    const bW = wsOf(bRow)[bI]
+    setWs(aRow, aI, bW)
+    setWs(bRow, bI, aW)
+    this.spec = { ...spec, left: left ?? null, top: top.length > 0 ? top : null, main }
     this.onSpecMutated?.(this.spec)
     this.persist()
     this.notify()
@@ -416,6 +455,7 @@ export const splitStore: SplitState = {
   setChatSide(side) {
     const spec = this.spec
     if (!spec) return
+    if (spec.left) return // 左列布局：聊天固定右下
     this.spec = { ...spec, chatSide: side }
     this.onSpecMutated?.(this.spec)
     this.applyMargin()
@@ -425,7 +465,7 @@ export const splitStore: SplitState = {
 
   persist() {
     if (!this.spec) return
-    persistSaved(this.spec.id, { chatW: this.chatW, topH: this.topH, paneWs: this.paneWs, topWs: this.topWs })
+    persistSaved(this.spec.id, { chatW: this.chatW, topH: this.topH, leftW: this.leftW, paneWs: this.paneWs, topWs: this.topWs, leftWs: this.leftWs })
   },
 
   close() {
@@ -474,7 +514,7 @@ function allocate(panes: SplitPane[], ws: number[], total: number) {
 }
 
 /** 通用分隔线拖拽（chat/top/pane/topPane） */
-function makeDividerHandler(kind: 'chat' | 'top' | 'pane' | 'topPane', index?: number) {
+function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', index?: number) {
   return (e: any) => {
     e.preventDefault()
     const target = e.currentTarget as HTMLElement
@@ -482,7 +522,9 @@ function makeDividerHandler(kind: 'chat' | 'top' | 'pane' | 'topPane', index?: n
     const onMove = (ev: PointerEvent) => {
       const g = splitStore.geom
       if (!g) return
-      if (kind === 'chat') {
+      if (kind === 'left') {
+        splitStore.setLeftW(ev.clientX - g.left)
+      } else if (kind === 'chat') {
         splitStore.setChatW(g.right - ev.clientX)
       } else if (kind === 'top') {
         splitStore.setTopH(ev.clientY - g.top - BAR_H)
@@ -637,19 +679,26 @@ function SplitWorkspace() {
   const spec = snap.spec
   const top = spec.top ?? []
   const main = spec.main ?? []
+  const hasLeft = !!spec.left
   const hasTop = top.length > 0
-  const chatLeft = spec.chatSide === 'left'
+  const chatLeft = !hasLeft && spec.chatSide === 'left'
   const colW = g.right - g.left
   const rowH = g.bottom - g.top
   const chatW = clamp(snap.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
   const topH = hasTop
     ? clamp(snap.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
     : 0
+  const leftW = hasLeft
+    ? clamp(snap.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
+    : 0
   const contentW = Math.max(0, colW - chatW)
-  const contentX = chatLeft ? g.left + chatW : g.left
+  const contentX = hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.left)
+  const topRowX = hasLeft ? g.left + leftW : g.left
+  const topRowW = hasLeft ? Math.max(0, colW - leftW) : colW
 
-  const topItems = allocate(top, snap.topWs, colW)
+  const topItems = allocate(top, snap.topWs, topRowW)
   const mainItems = allocate(main, snap.paneWs, contentW)
+  const leftItem = spec.left ? { pane: spec.left, left: 0, width: leftW } : null
 
   const barTop = g.top
   const bodyTop = barTop + BAR_H + topH
@@ -682,18 +731,22 @@ function SplitWorkspace() {
   return (
     <>
       {/* 标题栏 */}
-      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: contentX, top: barTop, width: hasTop ? colW : contentW, zIndex: 70 }}>
+      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: g.left, top: barTop, width: hasLeft ? colW : (hasTop ? colW : contentW), zIndex: 70 }}>
         <span className="dsh-wt_splitTitle">{spec.title}</span>
-        <button
-          type="button"
-          className="dsh-wt_splitFlip"
-          title={T('split.flip')}
-          onClick={() => splitStore.setChatSide(chatLeft ? 'right' : 'left')}
-        >⇄</button>
+        {!hasLeft && (
+          <button
+            type="button"
+            className="dsh-wt_splitFlip"
+            title={T('split.flip')}
+            onClick={() => splitStore.setChatSide(chatLeft ? 'right' : 'left')}
+          >⇄</button>
+        )}
         <button type="button" className="dsh-wt_splitClose" aria-label="退出分栏（Esc）" onClick={() => splitStore.close()}>✕</button>
       </div>
-      {/* 顶部通栏行 */}
-      {hasTop && topItems.map((it, i) => renderPane(it, 'top', i, g.left, topY, topH))}
+      {/* 左列整高内容窗 */}
+      {leftItem && renderPane(leftItem, 'left', 0, g.left, barTop + BAR_H, g.bottom - barTop - BAR_H)}
+      {/* 顶部通栏行（左列布局时为右侧列顶行） */}
+      {hasTop && topItems.map((it, i) => renderPane(it, 'top', i, topRowX, topY, topH))}
       {/* 主行内容窗 */}
       {mainItems.map((it, i) => renderPane(it, 'main', i, contentX, bodyTop, mainH))}
       {/* 顶部/主行水平分隔线 */}
@@ -702,7 +755,7 @@ function SplitWorkspace() {
           className="dsh-wt_splitDivider dsh-wt_splitDividerH"
           role="separator"
           title="拖动调整上下分区"
-          style={{ position: 'fixed', left: g.left, top: bodyTop - DIVIDER / 2, width: colW, height: DIVIDER, zIndex: 72 }}
+          style={{ position: 'fixed', left: topRowX, top: bodyTop - DIVIDER / 2, width: topRowW, height: DIVIDER, zIndex: 72 }}
           onPointerDown={makeDividerHandler('top')}
         />
       )}
@@ -713,7 +766,7 @@ function SplitWorkspace() {
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: g.left + it.left + it.width + DIVIDER / 2, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
+          style={{ position: 'fixed', left: topRowX + it.left + it.width + DIVIDER / 2, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('topPane', i)}
         />
       ))}
@@ -728,13 +781,20 @@ function SplitWorkspace() {
           onPointerDown={makeDividerHandler('pane', i)}
         />
       ))}
-      {/* 聊天分隔线（主行内容与聊天窗之间） */}
+      {/* 聊天分隔线（左列布局 = 左/右列边界；其余 = 内容与聊天之间） */}
       <div
         className="dsh-wt_splitDivider"
         role="separator"
-        title="拖动调整聊天宽度"
-        style={{ position: 'fixed', left: (chatLeft ? g.left + chatW : g.right - chatW) - DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
-        onPointerDown={makeDividerHandler('chat')}
+        title={hasLeft ? '拖动调整左右列宽' : '拖动调整聊天宽度'}
+        style={{
+          position: 'fixed',
+          left: (hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.right - chatW)) - DIVIDER / 2,
+          top: hasLeft ? barTop + BAR_H : bodyTop,
+          width: DIVIDER,
+          height: hasLeft ? g.bottom - barTop - BAR_H : mainH,
+          zIndex: 72,
+        }}
+        onPointerDown={makeDividerHandler(hasLeft ? 'left' : 'chat')}
       />
     </>
   )

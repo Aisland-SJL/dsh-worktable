@@ -310,3 +310,17 @@
   top = 工作台区块顶部（钳制 56..视口-540）；内容不变（布局缩略图 → 名称 → 进入 /
   快捷方式表单）；样式 .dsh-wt_pop 限高滚动 + 阴影。
 - 构建 + node --check 通过；服务端实时下发（含 popBackdrop/dsh-wt_pop），无需重启，用户刷新生效。
+
+## 补记（+ 弹窗精简 + 布局扩为 6 个 + 左列布局引擎支持）
+
+- 用户定案：① + 弹窗去掉「本地快捷方式」表单（只留布局选择 + 名称；存量快捷方式条目仍保留）；
+  ② 布局扩为 6 个：新增「左一右二」（左侧一个整高窗，右侧竖排两个，右下为聊天）与
+  「上一下三」（上面一个通栏，下面横分三个，最右为聊天）；6 个布局 2 行 × 3 列排布。
+- 引擎（split.tsx）：LayoutSpec 新增 left（左列整高内容窗，可选）+ leftWidth；左列布局下
+  聊天固定右下（marginLeft=leftW + marginTop 组合挤法），⇄ 翻转按钮隐藏；新增 setLeftW 与
+  'left' 分隔线（左/右列边界拖拽）；setPaneContent/swapPanes 泛化支持 left 行；leftW 持久化。
+- 预设与 UI（index.tsx/locales/styles）：PRESET_DEFS 增 leftCount 字段与 l2/t3 两项；
+  缩略图新增左列样式（thumbCols/thumbCol）；预设网格 3 列；弹窗移除快捷方式表单及对应状态/函数
+  （removeShortcut 保留）；词典新增 preset.l2/preset.t3。
+- 验证：构建 + node --check 通过；服务端实时下发（含 preset.l2/leftWidth/setLeftW）；
+  待用户刷新实测。
