@@ -554,3 +554,19 @@
   项目卡区 data-managing 弱化保持。
 - 验证：functional-diag STEP9 managePos=fixed、manageLeft=288（同弹窗锚点）、rows=3、
   遮罩关闭 PASS；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。
+## 补记（删除二次确认 + 常驻项目可删 + 字号/字重统一）
+
+- 用户反馈（四条）：① 常驻两项目也要删除 ✕；② 删除（常驻/新建/快捷方式）都要二次确认警告弹窗；
+  ③ 常驻项目 emoji 字号与新建项目不一致；④ 所有项目名改为不加粗。
+- 处理：
+  ① projects.v1 新增 removed 列表：删除常驻项目 = 移出工作台（插件不卸载），
+  卡片/管理行/rail 全部隐藏（ownerProps.hidden 并入 removed）；「恢复默认」清空 removed/iconOverrides 找回；
+  管理面板全部行（常驻/布局/快捷方式）都有 ✕。
+  ② 删除统一走 askDelete → fixed 居中警告弹窗（⚠️ 标题 + 按类型文案 + 取消/红色删除），
+  遮罩 81/弹窗 82 压在管理弹窗之上；取消不动、确认执行（布局删条目/常驻进 removed）。
+  ③ 常驻卡片 emoji 统一 13px（含 data-wt-icon ::before 15px→13px）；
+  ④ ta/pr 卡片名 font-weight 400，.dsh-wt_layoutName 600→400。
+- 验证（functional-diag STEP10）：prIconSize=13px、taIconBeforeSize=13px、taNameWeight/laNameWeight=400；
+  管理行 ✕ → confirmShown=true → 取消（卡片仍在）→ 再 ✕ 删除 → cardsAfter pr:0 + removed=['planreview']；
+  布局 ✕ 确认后 layoutsLeft=0；rowsAfterDelete=2；全 STEP 回归 ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。

@@ -187,6 +187,63 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP9:', JSON.stringify(step9));
 
+  // 删除二次确认：常驻项目/布局 ✕ → 警告弹窗 → 取消不删 / 确认删除；emoji 字号与名称字重统一
+  const step10 = await evaluate(`(async function(){
+    var out={};
+    var prIcon=document.querySelector('.dsh-wt_projects .pr_cardIcon');
+    var taIcon=document.querySelector('.dsh-wt_projects .ta_cardIcon');
+    var taName=document.querySelector('.dsh-wt_projects .ta_cardName');
+    var laName=document.querySelector('.dsh-wt_layoutName');
+    if(prIcon) out.prIconSize=getComputedStyle(prIcon).fontSize;
+    if(taIcon) out.taIconBeforeSize=getComputedStyle(taIcon,'::before').fontSize;
+    if(taName) out.taNameWeight=getComputedStyle(taName).fontWeight;
+    if(laName) out.laNameWeight=getComputedStyle(laName).fontWeight;
+    out.cardsBefore={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
+    var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+    if(btn){ btn.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    var items=document.querySelectorAll('.dsh-wt_menu.dsh-wt_pop .dsh-wt_menuItem');
+    if(items.length){ items[items.length-1].click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    var rows=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    out.rows0=rows.length;
+    if(rows[0]) out.row0BtnCount=rows[0].querySelectorAll('.dsh-wt_manageBtn').length;
+    var xBtn=rows[0]&&rows[0].querySelectorAll('.dsh-wt_manageBtn')[rows[0].querySelectorAll('.dsh-wt_manageBtn').length-1];
+    if(xBtn){ xBtn.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    out.confirmShown=!!document.querySelector('.dsh-wt_confirm');
+    var cancel=document.querySelector('.dsh-wt_confirmCancel');
+    if(cancel){ cancel.click(); }
+    await new Promise(function(r){setTimeout(r,200)});
+    out.confirmGoneAfterCancel=!document.querySelector('.dsh-wt_confirm');
+    out.taStillThere=!!document.querySelector('.dsh-wt_projects .ta_card');
+    var rows2=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    var xBtn2=rows2[0]&&rows2[0].querySelectorAll('.dsh-wt_manageBtn')[rows2[0].querySelectorAll('.dsh-wt_manageBtn').length-1];
+    if(xBtn2){ xBtn2.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    var del=document.querySelector('.dsh-wt_confirmDelete');
+    if(del){ del.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    out.cardsAfter={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
+    try{ out.removed=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removed='ERR' }
+    out.rowsAfterDelete=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow').length;
+    var rows3=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    var lastRow=rows3[rows3.length-1];
+    var xBtn3=lastRow&&lastRow.querySelectorAll('.dsh-wt_manageBtn')[lastRow.querySelectorAll('.dsh-wt_manageBtn').length-1];
+    if(xBtn3){ xBtn3.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    var del2=document.querySelector('.dsh-wt_confirmDelete');
+    if(del2){ del2.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_layout');
+    try{ out.layoutsLeft=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts.length }catch(e){ out.layoutsLeft='ERR' }
+    var done=document.querySelector('.dsh-wt_manageDone');
+    if(done){ done.click(); }
+    await new Promise(function(r){setTimeout(r,200)});
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP10:', JSON.stringify(step10));
+
   const errors = events.filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||

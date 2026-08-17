@@ -43,6 +43,8 @@ type ProjectsState = {
   nameOverrides: Record<string, string>
   /** 图标覆盖（点图标换 emoji；含入驻插件项目 id → emoji）。 */
   iconOverrides: Record<string, string>
+  /** 已从工作台删除的入驻项目 id（插件不卸载，仅不再展示；恢复默认找回）。 */
+  removed: string[]
   /** 本地快捷方式条目。 */
   shortcuts: Shortcut[]
   /** 用户自建的布局条目（「+」新建工作区保存的 LayoutSpec）。 */
@@ -186,6 +188,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   hidden: [],
   nameOverrides: {},
   iconOverrides: {},
+  removed: [],
   shortcuts: [],
   layouts: [],
 }
@@ -224,6 +227,7 @@ function loadProjects(): ProjectsState {
       hidden: Array.isArray(p.hidden) ? p.hidden.filter((x: unknown): x is string => typeof x === 'string') : [],
       nameOverrides: p.nameOverrides && typeof p.nameOverrides === 'object' ? p.nameOverrides : {},
       iconOverrides: p.iconOverrides && typeof p.iconOverrides === 'object' ? p.iconOverrides : {},
+      removed: Array.isArray(p.removed) ? p.removed.filter((x: unknown): x is string => typeof x === 'string') : [],
       shortcuts: Array.isArray(p.shortcuts)
         ? p.shortcuts.filter((s: any) => s && typeof s.id === 'string' && typeof s.name === 'string' && typeof s.href === 'string')
         : [],
@@ -311,6 +315,8 @@ function WorktableSection(props: any) {
   const [wsError, setWsError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
+  /** 删除二次确认：kind + 目标 id + 显示名 */
+  const [requestDelete, setRequestDelete] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; name: string } | null>(null)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
   )
@@ -497,7 +503,11 @@ function WorktableSection(props: any) {
   // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 与布局 id 追加尾部；
   // 最近：有 lastUsed 的按时间降序在前，其余按手动序在后。
   const layoutIds = useMemo(() => projects.layouts.map((l) => l.id), [projects.layouts])
-  const allIds = useMemo(() => [...registeredIds, ...layoutIds], [registeredIds, layoutIds])
+  const aliveRegisteredIds = useMemo(
+    () => registeredIds.filter((id) => !projects.removed.includes(id)),
+    [registeredIds, projects.removed],
+  )
+  const allIds = useMemo(() => [...aliveRegisteredIds, ...layoutIds], [aliveRegisteredIds, layoutIds])
   const effectiveOrder = useMemo(() => {
     const known = new Set(allIds)
     const stored = projects.order.filter((id) => known.has(id))
@@ -517,7 +527,7 @@ function WorktableSection(props: any) {
     wide,
     managing,
     order: effectiveOrder,
-    hidden: projects.hidden,
+    hidden: [...projects.hidden, ...projects.removed],
     nameOverrides: projects.nameOverrides,
     iconOverrides: projects.iconOverrides,
     reportMeta,
@@ -627,7 +637,14 @@ function WorktableSection(props: any) {
   }
 
   const resetProjects = () => {
-    persistProjects((prev) => ({ ...prev, order: [], hidden: [], nameOverrides: {} }))
+    persistProjects((prev) => ({
+      ...prev,
+      order: [],
+      hidden: [],
+      nameOverrides: {},
+      iconOverrides: {},
+      removed: [],
+    }))
   }
 
   // ── 快捷方式（表单已移除，仅保留存量条目的删除能力） ──
@@ -649,6 +666,26 @@ function WorktableSection(props: any) {
 
   const removeLayout = (id: string) => {
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
+  }
+
+  // ── 删除（全部走二次确认；常驻项目 = 移出工作台，插件不卸载） ──
+  const removeProject = (id: string) => {
+    persistProjects((prev) => ({
+      ...prev,
+      removed: prev.removed.includes(id) ? prev.removed : [...prev.removed, id],
+      hidden: prev.hidden.filter((x) => x !== id),
+    }))
+  }
+  const askDelete = (kind: 'layout' | 'shortcut' | 'project', id: string, name: string) => {
+    setRequestDelete({ kind, id, name })
+  }
+  const doDelete = () => {
+    const r = requestDelete
+    if (!r) return
+    if (r.kind === 'layout') removeLayout(r.id)
+    else if (r.kind === 'shortcut') removeShortcut(r.id)
+    else removeProject(r.id)
+    setRequestDelete(null)
   }
 
   // ── 图标选择器（布局 / 快捷方式 / 入驻项目的侧栏 emoji 点击可换） ──
@@ -795,12 +832,12 @@ function WorktableSection(props: any) {
   const popTop = clamp(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540))
 
   if (!wide) {
-    const projectIcons = registeredIds.map((id) => projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦')
+    const projectIcons = aliveRegisteredIds.map((id) => projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦')
     const shortcutIcons = projects.shortcuts.map((s) => s.icon)
     const layoutIcons = projects.layouts.map((l) => l.icon ?? '🧱')
     const icons = [...projectIcons, ...shortcutIcons, ...layoutIcons]
     const railNames = [
-      ...registeredIds.map((id) => projects.nameOverrides[id] ?? metas[id]?.name ?? id),
+      ...aliveRegisteredIds.map((id) => projects.nameOverrides[id] ?? metas[id]?.name ?? id),
       ...projects.shortcuts.map((s) => s.name),
       ...projects.layouts.map((l) => projects.nameOverrides[l.id] ?? l.title),
     ]
@@ -1010,9 +1047,12 @@ function WorktableSection(props: any) {
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
                   {isHidden ? '🙈' : '👁'}
                 </button>
-                {layout && (
-                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteLayout')} onClick={() => removeLayout(id)}>✕</button>
-                )}
+                <button
+                  type="button"
+                  className="dsh-wt_manageBtn"
+                  title={layout ? t('manage.deleteLayout') : t('manage.deleteProject')}
+                  onClick={() => askDelete(layout ? 'layout' : 'project', id, display)}
+                >✕</button>
               </div>
             )
           })}
@@ -1027,10 +1067,28 @@ function WorktableSection(props: any) {
                 onClick={(e) => { e.stopPropagation(); openIconPick('shortcut', s.id, e.currentTarget as HTMLElement) }}
               >{s.icon}</span>
               <span className="dsh-wt_manageScName">{s.name}</span>
-              <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => removeShortcut(s.id)}>✕</button>
+              <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => askDelete('shortcut', s.id, s.name)}>✕</button>
             </div>
           ))}
           <button type="button" className="dsh-wt_manageReset" onClick={resetProjects}>{t('manage.reset')}</button>
+        </div>
+      )}
+
+      {requestDelete && <div className="dsh-wt_confirmBackdrop" onClick={() => setRequestDelete(null)} />}
+      {requestDelete && (
+        <div className="dsh-wt_confirm" role="alertdialog">
+          <div className="dsh-wt_confirmTitle">⚠️ {t('confirm.title')}</div>
+          <div className="dsh-wt_confirmBody">
+            {requestDelete.kind === 'layout'
+              ? t('confirm.layoutBody', { name: requestDelete.name })
+              : requestDelete.kind === 'shortcut'
+                ? t('confirm.shortcutBody', { name: requestDelete.name })
+                : t('confirm.projectBody', { name: requestDelete.name })}
+          </div>
+          <div className="dsh-wt_confirmActions">
+            <button type="button" className="dsh-wt_confirmCancel" onClick={() => setRequestDelete(null)}>{t('confirm.cancel')}</button>
+            <button type="button" className="dsh-wt_confirmDelete" onClick={doDelete}>{t('confirm.delete')}</button>
+          </div>
         </div>
       )}
 

@@ -103,7 +103,7 @@ export const css = [
   '.dsh-wt_layout[data-on=true] .dsh-wt_layoutName{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_layoutIcon{flex:none;font-size:13px}',
   '.dsh-wt_layoutText{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}',
-  '.dsh-wt_layoutName{font-size:12px;font-weight:600;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.dsh-wt_layoutName{font-size:12px;font-weight:400;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
   // 项目卡片统一：入驻插件卡片（travelatlas/planreview）与布局卡片同款常显框（静止态可见边框+底）
   '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
@@ -123,7 +123,10 @@ export const css = [
   '.dsh-wt_iconPick:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
   // 入驻项目卡片图标覆盖：data-wt-icon 存在时用 attr() 替换显示（原字符字号压到 0）
   '.dsh-wt_projects .ta_cardIcon[data-wt-icon],.dsh-wt_projects .pr_cardIcon[data-wt-icon]{font-size:0;line-height:20px}',
-  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:15px;line-height:20px}',
+  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:13px;line-height:20px}',
+  // 常驻项目卡片与新建项目统一：emoji 字号 13px、名称不加粗
+  '.dsh-wt_projects .ta_cardIcon,.dsh-wt_projects .pr_cardIcon{font-size:13px;line-height:20px}',
+  '.dsh-wt_projects .ta_cardName,.dsh-wt_projects .pr_cardName{font-weight:400}',
   // 头部按钮内的官方 SVG 图标
   '.dsh-wt_iconBtn svg{display:block}',
   // 窗内容：选择器 / 自定义 / 浏览器 / 占位
@@ -149,6 +152,16 @@ export const css = [
   '.dsh-wt_splitFlip:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
   // + 右侧弹出面板
   '.dsh-wt_popBackdrop{position:fixed;left:0;top:0;right:0;bottom:0;z-index:79;background:transparent}',
+  // 删除二次确认（fixed 居中模态，压在弹窗之上）
+  '.dsh-wt_confirmBackdrop{position:fixed;left:0;top:0;right:0;bottom:0;z-index:81;background:rgba(0,0,0,.35)}',
+  '.dsh-wt_confirm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:82;width:292px;display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
+  '.dsh-wt_confirmTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_confirmBody{font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
+  '.dsh-wt_confirmActions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}',
+  '.dsh-wt_confirmCancel{padding:5px 12px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:12px;cursor:pointer}',
+  '.dsh-wt_confirmCancel:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_confirmDelete{padding:5px 12px;border:none;border-radius:6px;background:var(--dsw-alias-state-danger,#e5484d);color:#fff;font:inherit;font-size:12px;cursor:pointer}',
+  '.dsh-wt_confirmDelete:hover{filter:brightness(1.1)}',
   '.dsh-wt_pop{max-height:min(540px,calc(100vh - 32px));overflow:auto;box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
   // 功能窗（资源管理器/SCM/任务/终端）
   '.dsh-wt_subBar{flex:none;display:flex;align-items:center;gap:4px;padding:3px 6px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
