@@ -982,6 +982,9 @@ function TerminalPane() {
       return
     }
     term.open(el)
+    const focusTerm = () => { try { term.focus() } catch {} }
+    focusTerm()
+    el.addEventListener('pointerdown', focusTerm)
     const scope = splitEnv?.getScope?.()
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = proto + '//' + location.host + '/api/worktable/term?sessionId=' + encodeURIComponent(scope?.sessionId ?? '') + '&cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
@@ -992,6 +995,7 @@ function TerminalPane() {
       setFailed(T('pane.termFail'))
       return
     }
+    ws.onopen = () => { focusTerm() }
     ws.onmessage = (ev) => { try { term.write(String(ev.data)) } catch {} }
     ws.onclose = () => { if (!disposed) { try { term.write('\r\n[连接已关闭]') } catch {} } }
     ws.onerror = () => { if (!disposed) setFailed(T('pane.termFail')) }

@@ -443,3 +443,15 @@
   （better-sidebar 同款生命周期）。
 - 验证（04_test/term-e2e.cjs 扩展）：fs handler 直调 200 + 真实条目；终端 E2E
   RESULT: PASS（真实 cmd.exe shell，pwd 回显正常）。**需再重启一次 dsh web 生效。**
+
+## 补记（浏览器 file 路由 readFile 坑 + 终端实机验证 + 客户端焦点）
+
+- 用户反馈：① 浏览器打不开（错误 JSON = file 路由抛
+  ERR_INVALID_ARG_TYPE cb must be function——readFile 用了 node:fs 回调版，
+  与 readdir 同一类坑）；② 终端仍无法敲命令。
+- 处理：
+  ① readFile 改 node:fs/promises（file 路由本地直调 200 + README 内容，已验证）；
+  ② 终端**实机验证**：直接对用户运行中的服务器（20:40:44 启动）跑 ws + pwd →
+  RESULT: PASS（cmd.exe 真实回显 E:\AI_Workspace）——服务端已通！用户侧「敲不了」
+  定位为客户端焦点问题：TerminalPane 增加 open 后自动 focus + 点击聚焦 + ws.onopen 聚焦；
+  ③ 客户端焦点修复实时下发（F5 生效）；file 路由修复需再重启一次。

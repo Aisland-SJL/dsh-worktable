@@ -22,6 +22,13 @@ const WebSocket = require('ws');
   const fakeReq = { [Symbol.asyncIterator]() { let done = false; return { next: () => (done ? Promise.resolve({ done: true }) : (done = true, Promise.resolve({ done: false, value: Buffer.from('{"path":"E:/AI_Workspace"}') }))) }; } };
   await fsRoute.handler(fakeReq, fakeRes);
   console.log('fs direct:', captured && captured.status, captured && captured.body ? captured.body.slice(0, 160) : '');
+  // file 路由直调（真实 README.md）
+  const fileRoute = routes.find((r) => r.path === '/api/worktable/file');
+  let fc = null;
+  const fRes = { writeHead: (s) => { fc = { status: s }; }, end: (b) => { fc.body = String(b); } };
+  const fReq = { url: '/api/worktable/file?path=' + encodeURIComponent('E:/AI_Workspace/DeepseekHarness/Projects/dsh-worktable/README.md') };
+  await fileRoute.handler(fReq, fRes);
+  console.log('file direct:', fc && fc.status, fc && fc.body ? fc.body.slice(0, 60) : '');
   if (upgrades.length === 0) { console.log('RESULT: NO_TERMINAL_ROUTE'); process.exit(1); }
   const server = http.createServer((req, res) => { res.writeHead(404); res.end(); });
   server.on('upgrade', (req, socket, head) => {
