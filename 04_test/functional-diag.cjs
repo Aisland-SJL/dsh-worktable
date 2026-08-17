@@ -1,6 +1,11 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
+const fs = require('fs');
+
+// MD 编辑模式的临时夹具（保存测试写这个文件，跑完还原，不动仓库文件）
+const TEMP_MD = 'C:\\Users\\SJL\\AppData\\Local\\Temp\\wt-edit-test.md';
+fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8');
 
 const PORT = 9335;
 const proc = spawn('C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', [
@@ -454,7 +459,53 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP13:', JSON.stringify(step13));
 
+  // MD 编辑模式：预览/编辑切换 + 保存回磁盘
+  const step16 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      var probe=await fetch('/api/worktable/write',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).catch(function(){return null;});
+      out.writeRouteReady=!!(probe&&probe.status===400);
+      if(out.writeRouteReady){
+        st.open({id:'t-mdedit',title:'md',top:null,main:[{id:'m1',title:'m',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+        await new Promise(function(r){setTimeout(r,400)});
+        st.openTab('main',0,{kind:'file',path:'C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md'});
+        await new Promise(function(r){setTimeout(r,1200)});
+        out.bar=!!document.querySelector('.dsh-wt_mdBar');
+        var btns=document.querySelectorAll('.dsh-wt_mdBtn');
+        if(btns[1]){ btns[1].click(); }
+        await new Promise(function(r){setTimeout(r,250)});
+        var ta=document.querySelector('.dsh-wt_mdEdit');
+        out.editArea=!!ta;
+        out.draft0=ta?ta.value.slice(0,8):null;
+        if(ta){
+          var setter=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value').set;
+          setter.call(ta,'# EDITED_OK');
+          ta.dispatchEvent(new Event('input',{bubbles:true}));
+        }
+        await new Promise(function(r){setTimeout(r,250)});
+        var saveBtn=document.querySelector('.dsh-wt_mdSave');
+        if(saveBtn){ saveBtn.click(); }
+        await new Promise(function(r){setTimeout(r,900)});
+        out.previewBack=!!document.querySelector('.dsh-wt_md');
+        var chk=await fetch('/api/worktable/file?path='+encodeURIComponent('C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md')).then(function(r){return r.text()}).catch(function(){return null});
+        out.savedContent=chk?String(chk).indexOf('EDITED_OK')>=0:false;
+        st.close();
+      }
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP16:', JSON.stringify(step16));
+
+  // 还原临时夹具
+  try { fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8') } catch {}
+
   const errors = events.filter((e) => {
+    const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
+    const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';
+    if (txt.indexOf('/api/worktable/write') >= 0) return false;
+    return true;
+  }).filter((e) => {
     // 站点路由属新增服务端能力：运行中的服务器未重启前该 404 属预期（重启后移除本过滤）
     const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
     const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';

@@ -284,6 +284,27 @@ export function apply(ctx: Context) {
     },
   })
 
+  // 本地文件写入（MD 编辑模式保存回磁盘）
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/write',
+    handler: async (req: any, res: any) => {
+      try {
+        if (req.method !== 'POST') { res.writeHead(405); res.end(); return }
+        const body = await readJsonBody(req)
+        const p = typeof body.path === 'string' ? body.path : ''
+        const content = typeof body.content === 'string' ? body.content : ''
+        if (!p) { json(res, 400, { error: 'missing path' }); return }
+        if (content.length > 20 * 1024 * 1024) { json(res, 413, { error: 'content too large' }); return }
+        const abs = pathResolve(p)
+        await import('node:fs/promises').then((m) => m.writeFile(abs, content, 'utf8'))
+        json(res, 200, { ok: true })
+      } catch (err) {
+        json(res, 500, { error: String(err) })
+      }
+    },
+  })
+
   webServer.register({
     kind: 'exact',
     path: '/api/worktable/git',

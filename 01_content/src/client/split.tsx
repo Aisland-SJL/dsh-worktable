@@ -1121,10 +1121,14 @@ function FileViewer(props: { path: string }) {
   return <TextViewer path={props.path} fileUrl={fileUrl} isMd={MD_EXTS.test('.' + ext)} />
 }
 
-/** MD/TXT 文本预览（fetch 原文 → MD 渲染或 <pre> 等宽展示） */
+/** MD/TXT 文本预览（fetch 原文 → MD 渲染或 <pre> 等宽展示）；MD 支持编辑/预览自由切换并可保存回磁盘 */
 function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   const [text, setText] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [mode, setMode] = useState<'preview' | 'edit'>('preview')
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveFail, setSaveFail] = useState(false)
   useEffect(() => {
     let dead = false
     setText(null)
@@ -1138,6 +1142,25 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
       .catch((e) => { if (!dead) setError(String(e)) })
     return () => { dead = true }
   }, [props.fileUrl])
+  const enterEdit = () => { setDraft(text ?? ''); setSaveFail(false); setMode('edit') }
+  const save = async () => {
+    setSaving(true)
+    setSaveFail(false)
+    try {
+      const r = await fetch('/api/worktable/write', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ path: props.path, content: draft }),
+      })
+      if (!r.ok) throw new Error('HTTP ' + r.status)
+      setText(draft)
+      setMode('preview')
+    } catch {
+      setSaveFail(true)
+    } finally {
+      setSaving(false)
+    }
+  }
   if (error) {
     return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{T('file.fail')}：{error}</span></div>
   }
@@ -1146,19 +1169,33 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   }
   if (props.isMd) {
     return (
-      <div className="dsh-wt_fileView">
-        <div
-          className="dsh-wt_md"
-          dangerouslySetInnerHTML={{ __html: mdRenderer.render(text) }}
-          onClick={(e: any) => {
-            const a = e.target && e.target.closest ? (e.target.closest('a') as HTMLAnchorElement | null) : null
-            if (!a) return
-            e.preventDefault()
-            const href = a.getAttribute('href') || ''
-            if (/^(https?:|mailto:)/i.test(href)) window.open(href, '_blank', 'noopener')
-          }}
-        />
-      </div>
+      <>
+        <div className="dsh-wt_mdBar">
+          <button type="button" className={'dsh-wt_mdBtn' + (mode === 'preview' ? ' dsh-wt_mdBtnOn' : '')} onClick={() => setMode('preview')}>{T('file.preview')}</button>
+          <button type="button" className={'dsh-wt_mdBtn' + (mode === 'edit' ? ' dsh-wt_mdBtnOn' : '')} onClick={enterEdit}>{T('file.edit')}</button>
+          {mode === 'edit' && (
+            <button type="button" className="dsh-wt_mdSave" disabled={saving} onClick={save}>{saving ? '…' : T('file.save')}</button>
+          )}
+          {saveFail && <span className="dsh-wt_mdMsg">{T('file.saveFail')}</span>}
+        </div>
+        {mode === 'edit'
+          ? <textarea className="dsh-wt_mdEdit" value={draft} spellCheck={false} onChange={(e) => setDraft(e.target.value)} />
+          : (
+            <div className="dsh-wt_fileView">
+              <div
+                className="dsh-wt_md"
+                dangerouslySetInnerHTML={{ __html: mdRenderer.render(text) }}
+                onClick={(e: any) => {
+                  const a = e.target && e.target.closest ? (e.target.closest('a') as HTMLAnchorElement | null) : null
+                  if (!a) return
+                  e.preventDefault()
+                  const href = a.getAttribute('href') || ''
+                  if (/^(https?:|mailto:)/i.test(href)) window.open(href, '_blank', 'noopener')
+                }}
+              />
+            </div>
+          )}
+      </>
     )
   }
   return <div className="dsh-wt_fileView"><pre className="dsh-wt_txt">{text}</pre></div>

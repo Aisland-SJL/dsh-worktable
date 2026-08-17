@@ -84,6 +84,15 @@ export const css = [
   // 文件预览：文本/MD 滚动容器 + MD 排版 + 图片居中
   '.dsh-wt_fileView{flex:1;min-height:0;overflow:auto;padding:12px 14px;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:12.5px;line-height:1.7}',
   '.dsh-wt_txt{margin:0;font-family:var(--dsw-font-mono,Consolas,Menlo,monospace);font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word}',
+  // MD 编辑/预览切换工具栏
+  '.dsh-wt_mdBar{flex:none;display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
+  '.dsh-wt_mdBtn{flex:none;padding:3px 10px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_mdBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
+  '.dsh-wt_mdBtnOn{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_mdSave{margin-left:auto;padding:3px 12px;border:none;border-radius:5px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);color:#fff;font:inherit;font-size:11px;cursor:pointer}',
+  '.dsh-wt_mdSave:disabled{opacity:.6;cursor:default}',
+  '.dsh-wt_mdMsg{font-size:11px;color:var(--dsw-alias-state-danger,#e5484d)}',
+  '.dsh-wt_mdEdit{flex:1;min-height:0;width:100%;box-sizing:border-box;padding:12px 14px;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);border:none;outline:none;resize:none;font-family:var(--dsw-font-mono,Consolas,Menlo,monospace);font-size:12px;line-height:1.7}',
   '.dsh-wt_md h1,.dsh-wt_md h2,.dsh-wt_md h3,.dsh-wt_md h4{margin:14px 0 8px;line-height:1.3;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_md h1{font-size:20px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);padding-bottom:6px}',
   '.dsh-wt_md h2{font-size:16.5px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);padding-bottom:5px}',

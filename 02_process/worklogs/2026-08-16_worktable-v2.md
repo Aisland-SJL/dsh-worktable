@@ -639,20 +639,17 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（反选修复 + 设置面板五项微调）
+## 补记（MD 编辑模式：预览/编辑自由切换 + 保存回磁盘）
 
-- 用户反馈（五项）：① 旅行 Atlas 卡片再点一次应反选（取消选中），现在做不到；
-  ② 「排序方式」与「管理项目」应同级别同字体（按管理项目样式）；③ 设置弹窗宽度略宽；
-  ④ 排序方式两行字改成一左一右两个选择按钮（手动/最近）；⑤ 去掉「恢复默认」按钮。
+- 用户需求：MD 文件加编辑模式，可在编辑与预览之间自由切换。
 - 处理：
-  ① 根因：引擎其实已关，但 DOM 同步写入的 data-on=true 在引擎空闲时从不还原 → 高亮残留。
-  修正规则：有视图覆盖的项目高亮完全跟随 activeSplitId（关闭即 false）；无覆盖项目引擎空闲时
-  保留卡片自带状态；
-  ② 「排序方式」标签改用 manageHead/manageTitle（与管理项目同款 11px/600）；
-  ③ 设置弹窗 316 → 280px；
-  ④ 排序改为 .dsh-wt_sortRow 一左一右两个 .dsh-wt_sortBtn（选中态描边高亮）；
-  ⑤ 删除恢复默认按钮与 resetProjects 函数、locale manage.reset（zh/en）。
-- 验证（functional-diag）：STEP13 增反选断言 activeAfterSecondClick=false +
-  taOnAfterSecondClick='false'；STEP8 sortItems=2；STEP10 resetBtnGone=true 且删除/重新添加
-  流程保持；全 15 STEP ERROR_COUNT: 0。
-- 备注：纯客户端改动，F5 即生效。
+  ① 服务端新增 POST /api/worktable/write（{path,content}，20MB 上限，writeFile utf8）；
+  ② 客户端 TextViewer（MD 分支）加工具栏：预览 | 编辑 切换按钮（当前态描边高亮），
+  编辑态出现 保存 按钮（保存成功切回预览，失败红字提示）；编辑区等宽 textarea 暗色；
+  保存内容即时成为新预览内容（无需重新 fetch）；txt/tsx/css 等保持只读不变；
+  ③ locale file.preview/edit/save/saveFail（zh/en）。
+- 验证（functional-diag STEP16 + 临时夹具 wt-edit-test.md）：探针检测写路由；
+  就绪后：编辑按钮 → textarea 出现且含原文 → 原生 setter 写入 '# EDITED_OK' → 保存 →
+  预览回归 + file 路由回读含 EDITED_OK；跑完还原夹具。当前运行中服务器无写路由 →
+  writeRouteReady=false（404 已过滤），其余 15 STEP 全绿。
+- 备注：服务端新增写路由，**需重启一次 dsh web** 后编辑保存生效。
