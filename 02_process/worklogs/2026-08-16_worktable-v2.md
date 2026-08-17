@@ -615,3 +615,21 @@
   PRD 开头文本；同路径再开 tabsAfterDup=1（去重）；package.json → .dsh-wt_txt 展示；
   全 STEP 回归 ERROR_COUNT: 0。bundle-eval 补 atob/btoa 桩后 PASS（markdown-it 引入）。
 - 备注：客户端改动 F5 生效；服务端 pdf MIME 需手动重启 dsh web 一次后 PDF 预览才生效。
+## 补记（PDF 自绘阅读器：抓手/空格拖拽/H 切换/缩放）
+
+- 用户需求：PDF 阅读器加抓手工具——顶部 ✋ 按钮；按住空格期间鼠标变抓手、左键拖动平移、
+  松开空格取消；快捷键 H 一键切换抓手；抓手态下拖动即可移动页面。
+- 关键决策：原生 Chrome PDF 视图（iframe）内部无法拦截鼠标 → 改用 pdf.js 自绘渲染
+  （画布多页纵向 + 视口按需渲染 + DPR≤2）。
+- 实现：
+  ① PdfViewer 组件：工具栏 [✋抓手][−][百分比][＋][⤢适应宽度]；缩放 0.2~5；
+  抓手三入口——空格按住（输入框不劫持、松开取消）/ H 常开切换 / 顶部按钮；
+  抓手态 cursor grab/grabbing，pointer 捕获拖拽改 scrollLeft/Top；
+  ② worker 零服务端依赖：build.mjs 改 esbuild JS API，把 pdf.worker.min.mjs 源码以
+  __WT_PDF_WORKER__ 字符串注入 client banner（bundle 2.6MB），运行时 Blob URL 起 module worker；
+  失败自动回退原生 iframe（服务端 MIME 已补 application/pdf 备用）；
+  ③ 服务端 file 路由 MIME 补 pdf/markdown/log/bmp/ico。
+- 验证（functional-diag STEP12 + 04_test/fixture.pdf 夹具）：canvasW=439 自绘渲染；
+  空格按住 panClass=true/松开 false；H 开/关正确；放大至 281% 溢出后合成指针拖拽
+  scrollTopAfterDrag=140（平移生效）；全 STEP 回归 ERROR_COUNT: 0。
+- 备注：全部客户端改动，F5 即生效，无需重启 dsh web。

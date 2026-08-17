@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
 import MarkdownIt from 'markdown-it'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.min.mjs'
 
 /**
  * dsh-worktable 乐高式工作区 M1：通用分栏引擎（PRD §13）。
@@ -1097,12 +1098,201 @@ const mdRenderer = new MarkdownIt({ linkify: true })
 const IMAGE_EXTS = /[.](png|jpe?g|gif|webp|svg|bmp|ico)$/i
 const MD_EXTS = /[.](md|markdown|mdown)$/i
 
-/** 本地文件预览：PDF 走原生 iframe、图片居中展示、MD 渲染预览、其余按纯文本 */
+/** 自绘 PDF 阅读器：pdf.js 画布渲染 + 抓手（空格按住临时 / H 切换常开 / 顶部按钮） */
+function PdfViewer(props: { path: string }) {
+  const fileUrl = '/api/worktable/file?path=' + encodeURIComponent(props.path)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  const canvasesRef = useRef<Record<number, HTMLCanvasElement | null>>({})
+  const tasksRef = useRef<Record<number, any>>({})
+  const rafRef = useRef(0)
+  const [failed, setFailed] = useState(false)
+  const [doc, setDoc] = useState<any | null>(null)
+  const [pageCount, setPageCount] = useState(0)
+  const [scale, setScale] = useState(1)
+  const [fitScale, setFitScale] = useState<number | null>(null)
+  const [panOn, setPanOn] = useState(false)
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const dragRef = useRef<{ x: number; y: number; sl: number; st: number; active: boolean } | null>(null)
+
+  // 载入文档（失败回退原生 iframe）
+  useEffect(() => {
+    let dead = false
+    ;(async () => {
+      try {
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+          // worker 源码由构建时注入（__WT_PDF_WORKER__），Blob URL 起 module worker，零服务端依赖
+          const code = (window as any).__WT_PDF_WORKER__
+          if (code) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(
+              new Blob([code], { type: 'text/javascript' }),
+            )
+          }
+        }
+        const d: any = await pdfjsLib.getDocument({ url: fileUrl }).promise
+        if (dead) { try { d.destroy() } catch {}; return }
+        setDoc(d)
+        setPageCount(d.numPages)
+        const p0 = await d.getPage(1)
+        const vp = p0.getViewport({ scale: 1 })
+        if (!dead) setFitScale(vp.width)
+      } catch {
+        if (!dead) setFailed(true)
+      }
+    })()
+    return () => { dead = true; tasksRef.current = {} }
+  }, [fileUrl])
+
+  // 首次按容器宽度自适应
+  useEffect(() => {
+    if (fitScale == null || scale !== 1 || !doc) return
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const w = wrap.clientWidth - 24
+    if (w > 80) setScale(Math.max(0.2, Math.min(3, w / fitScale)))
+  }, [fitScale, doc, scale])
+
+  // 渲染一页（canvas 尺寸随缩放，DPR 上限 2）
+  const renderPage = useCallback(async (n: number, pageScale: number) => {
+    const canvas = canvasesRef.current[n]
+    const d = doc
+    if (!canvas || !d) return
+    const pending = tasksRef.current[n]
+    if (pending) { try { pending.cancel() } catch {} }
+    try {
+      const page = await d.getPage(n)
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const vp = page.getViewport({ scale: pageScale * dpr })
+      canvas.width = Math.floor(vp.width)
+      canvas.height = Math.floor(vp.height)
+      canvas.style.width = Math.floor(vp.width / dpr) + 'px'
+      canvas.style.height = Math.floor(vp.height / dpr) + 'px'
+      const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: vp })
+      tasksRef.current[n] = task
+      await task.promise.catch(() => {})
+      tasksRef.current[n] = null
+    } catch {}
+  }, [doc])
+
+  // 视口按需渲染（滚动节流 rAF）
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap || !doc) return
+    const visible = () => {
+      const top = wrap.scrollTop - 420
+      const bottom = wrap.scrollTop + wrap.clientHeight + 420
+      const phs = Array.from(wrap.querySelectorAll<HTMLElement>('[data-page]'))
+      for (const el of phs) {
+        const n = Number(el.getAttribute('data-page'))
+        const y = el.offsetTop
+        const h = el.offsetHeight
+        if (y + h >= top && y <= bottom) renderPage(n, scale)
+      }
+    }
+    const onScroll = () => {
+      cancelAnimationFrame(rafRef.current)
+      rafRef.current = requestAnimationFrame(visible)
+    }
+    wrap.addEventListener('scroll', onScroll, { passive: true })
+    visible()
+    return () => {
+      wrap.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(rafRef.current)
+    }
+  }, [doc, scale, renderPage])
+
+  // 键盘：空格按住临时抓手 / H 常开抓手（输入框内不劫持）
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && (t.isContentEditable || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        setSpaceHeld(true)
+      } else if (e.key === 'h' || e.key === 'H') {
+        setPanOn((v) => !v)
+      }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setSpaceHeld(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
+  }, [])
+
+  const panActive = panOn || spaceHeld
+
+  const onPointerDown = (e: any) => {
+    if (!panActive) return
+    const wrap = wrapRef.current
+    if (!wrap) return
+    e.preventDefault()
+    dragRef.current = { x: e.clientX, y: e.clientY, sl: wrap.scrollLeft, st: wrap.scrollTop, active: true }
+    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch {}
+  }
+  const onPointerMove = (e: any) => {
+    const p = dragRef.current
+    const wrap = wrapRef.current
+    if (!p || !p.active || !wrap) return
+    wrap.scrollLeft = p.sl - (e.clientX - p.x)
+    wrap.scrollTop = p.st - (e.clientY - p.y)
+  }
+  const onPointerUp = () => {
+    if (dragRef.current) dragRef.current.active = false
+  }
+
+  const zoom = (factor: number) => setScale((s) => Math.max(0.2, Math.min(5, Math.round(s * factor * 100) / 100)))
+  const fitWidth = () => {
+    const wrap = wrapRef.current
+    if (!wrap || fitScale == null) return
+    const w = wrap.clientWidth - 24
+    if (w > 80) setScale(Math.max(0.2, Math.min(3, w / fitScale)))
+  }
+
+  if (failed) {
+    return <iframe className="dsh-wt_paneFrame" src={fileUrl} title={basenameOf(props.path)} />
+  }
+  return (
+    <>
+      <div className="dsh-wt_pdfBar">
+        <button
+          type="button"
+          className={'dsh-wt_pdfBtn' + (panOn ? ' dsh-wt_pdfBtnOn' : '')}
+          title={T('pdf.pan')}
+          onClick={() => setPanOn((v) => !v)}
+        >✋</button>
+        <button type="button" className="dsh-wt_pdfBtn" title={T('pdf.zoomOut')} onClick={() => zoom(1 / 1.25)}>−</button>
+        <span className="dsh-wt_pdfPct">{Math.round(scale * 100)}%</span>
+        <button type="button" className="dsh-wt_pdfBtn" title={T('pdf.zoomIn')} onClick={() => zoom(1.25)}>＋</button>
+        <button type="button" className="dsh-wt_pdfBtn" title={T('pdf.fit')} onClick={fitWidth}>⤢</button>
+      </div>
+      <div
+        ref={wrapRef}
+        className={'dsh-wt_pdf' + (panActive ? ' dsh-wt_pdfPan' : '')}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      >
+        {Array.from({ length: pageCount }, (_, i) => (
+          <div key={i} className="dsh-wt_pdfPage" data-page={i + 1}>
+            <canvas ref={(el) => { canvasesRef.current[i + 1] = el }} />
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 本地文件预览：PDF 自绘阅读器（抓手）、图片居中、MD 渲染、其余纯文本 */
 function FileViewer(props: { path: string }) {
   const ext = (props.path.split('.').pop() || '').toLowerCase()
   const fileUrl = '/api/worktable/file?path=' + encodeURIComponent(props.path)
   if (ext === 'pdf') {
-    return <iframe className="dsh-wt_paneFrame" src={fileUrl} title={basenameOf(props.path)} />
+    return <PdfViewer path={props.path} />
   }
   if (IMAGE_EXTS.test('.' + ext)) {
     return (

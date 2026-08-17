@@ -272,7 +272,58 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP11:', JSON.stringify(step11));
 
-  const errors = events.filter((e) =>
+  // PDF 阅读器：自绘渲染 + 抓手（H 切换/空格临时/拖拽平移）+ 缩放
+  const step12 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      st.open({id:'t-pdf',title:'pdf',top:null,main:[{id:'q1',title:'q',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await new Promise(function(r){setTimeout(r,400)});
+      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture.pdf'});
+      await new Promise(function(r){setTimeout(r,6500)});
+      out.bar=!!document.querySelector('.dsh-wt_pdfBar');
+      out.pages=document.querySelectorAll('.dsh-wt_pdfPage canvas').length;
+      out.iframeFallback=!!document.querySelector('.dsh-wt_paneFrame');
+      var c=document.querySelector('.dsh-wt_pdfPage canvas');
+      out.canvasW=c?c.width:0;
+      var pdfEl=document.querySelector('.dsh-wt_pdf');
+      if(pdfEl){
+        // 空格临时抓手
+        window.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',bubbles:true}));
+        await new Promise(function(r){setTimeout(r,200)});
+        out.panClassAfterSpace=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
+        window.dispatchEvent(new KeyboardEvent('keyup',{key:' ',code:'Space',bubbles:true}));
+        await new Promise(function(r){setTimeout(r,200)});
+        out.panClassAfterSpaceUp=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
+        // H 常开抓手
+        window.dispatchEvent(new KeyboardEvent('keydown',{key:'h',code:'KeyH',bubbles:true}));
+        await new Promise(function(r){setTimeout(r,200)});
+        out.panClassAfterH=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
+        // 放大到内容溢出（可滚动；btns 顺序：抓手/缩小/放大/适应宽度）
+        var btns=document.querySelectorAll('.dsh-wt_pdfBtn');
+        for(var z=0;z<6 && btns[2];z++){ btns[2].click(); }
+        await new Promise(function(r){setTimeout(r,1200)});
+        out.pct=document.querySelector('.dsh-wt_pdfPct')?document.querySelector('.dsh-wt_pdfPct').textContent:null;
+        out.scrollable=pdfEl.scrollHeight>pdfEl.clientHeight;
+        var r0=pdfEl.getBoundingClientRect();
+        var x=r0.left+r0.width/2, y=r0.top+r0.height/2;
+        pdfEl.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,bubbles:true,pointerId:1}));
+        pdfEl.dispatchEvent(new PointerEvent('pointermove',{clientX:x,clientY:y-140,bubbles:true,pointerId:1}));
+        pdfEl.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y-140,bubbles:true,pointerId:1}));
+        await new Promise(function(r){setTimeout(r,300)});
+        out.scrollTopAfterDrag=pdfEl.scrollTop;
+        window.dispatchEvent(new KeyboardEvent('keydown',{key:'h',code:'KeyH',bubbles:true}));
+        await new Promise(function(r){setTimeout(r,200)});
+        out.panClassAfterH2=pdfEl.className.indexOf('dsh-wt_pdfPan')>=0;
+      }
+      st.close();
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP12:', JSON.stringify(step12));
+
+  const errors = events.filter((e) => {
+  }).filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||
     (e.method === 'Runtime.consoleAPICalled' && e.params.type === 'error'),
