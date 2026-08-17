@@ -1,10 +1,11 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const vm = require("vm");
 const code = fs.readFileSync("E:/AI_Workspace/DeepseekHarness/Projects/dsh-worktable/01_content/lib/client.js", "utf8");
 function makeEl() {
   return {
     setAttribute(){}, removeAttribute(){}, appendChild(){}, remove(){}, addEventListener(){},
     removeEventListener(){}, classList: { add(){}, remove(){}, contains(){ return false } },
+    getContext(){ return null }, getBoundingClientRect(){ return { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0 } },
     style: {}, dataset: {}, textContent: "", children: [],
   };
 }
@@ -29,7 +30,7 @@ const sandbox = { self: null,
   CustomEvent: class { constructor(t, o){ this.type = t; this.detail = o && o.detail } },
   ResizeObserver: class { observe(){} disconnect(){} },
   MutationObserver: class { observe(){} disconnect(){} },
-  navigator: {}, location: { protocol: "http:", host: "127.0.0.1:3080" },
+  navigator: { userAgent: "bundle-eval/1.0", platform: "Win32" }, location: { protocol: "http:", host: "127.0.0.1:3080" },
   fetch: async () => { throw new Error("no fetch") },
   WebSocket: class {},
   URL: require("url").URL, URLSearchParams: require("url").URLSearchParams,

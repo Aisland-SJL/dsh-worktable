@@ -467,3 +467,23 @@
 - 验证：harness（PowerShell 壳）marker 回显 PASS（含 PSReadLine 着色码，确认 PowerShell）；
   实机 cmd 壳 marker 回显 PASS；file 路由直调 200。
 - 生效：终端 shell 与 file 路由 = 服务端，**需重启 dsh web**；浏览器默认页 = 客户端，F5 即生效。
+## 补记（6 预设默认比例均衡化 + 窗内 4 按钮居中自适应）
+
+- 用户反馈：① 6 个布局预设默认窗格比例失衡（最后一个窗吃掉全部余量，其余全贴 min）；
+  ② 空窗里的 4 个内容选项（浏览器/资源管理器/终端/自定义）贴顶部且按钮拉伸，要求：
+  按钮固定大小、整体居中，并按窗位形状自适应排列（宽窗横排 / 方窗 2×2 / 竖窗竖排）。
+- 处理：
+  ① 均衡默认（split.tsx open()）：无存档尺寸时不再 panes.map(p => p.min)，
+  而是按当前几何均分：内容窗宽度均分、顶行均分、左列 38%、顶行高 35%、聊天 30%
+  （全部按各自 min/max 夹取）。根因是 allocate() 最后一个窗拿余量的退化模型。
+  ② 持久化键 dsh.worktable.split.v1 → v2：旧存档里全是失衡宽度，升级键位让新默认生效
+  （用户手调过的宽度一次性重置，属预期）。
+  ③ Picker 自适应（split.tsx PanePicker + styles.ts）：容器 flex 居中，
+  ResizeObserver 按宽高比切换三态：aspect>1.4 → row（横排）/ 0.72~1.4 → grid（2×2）/
+  <0.72 → col（竖排）；按钮固定 92×78 圆角卡片（图标 22px + 标签），不再拉伸铺满；
+  自定义表单同步居中（max-width 320px）。
+- 验证（04_test/functional-diag.cjs 扩展断言）：STEP1 paneWs=[228,228] 均分
+  （旧逻辑为 [200,262]）；STEP2 pickerModes 均为 -col（无头视口竖窗）+ pickSize
+  {w:92,h:78}；STEP3-5 回归不变；ERRORS_COUNT: 0。bundle-eval 补桩
+  （navigator.userAgent/platform、canvas getContext）后 PASS。
+- 备注：本次为纯客户端改动，F5 即生效，无需重启 dsh web。

@@ -55,11 +55,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return r.result && r.result.result ? r.result.result.value : undefined;
   };
 
-  const step1 = await evaluate("(function(){ var out={}; out.debugExport=!!window.__dshWorktable; var st=window.__dshWorktable&&window.__dshWorktable.splitStore; if(!st) return JSON.stringify(out); out.openResult=st.open({id:'t-diag',title:'diag',top:null,main:[{id:'p1',title:'1',min:200,content:null},{id:'p2',title:'2',min:200,content:null}],chatWidth:{default:320,min:240,max:600}}); out.afterOpen={active:st.active,spec:st.spec&&st.spec.id}; return JSON.stringify(out) })()");
+  const step1 = await evaluate("(function(){ var out={}; out.debugExport=!!window.__dshWorktable; var st=window.__dshWorktable&&window.__dshWorktable.splitStore; if(!st) return JSON.stringify(out); out.openResult=st.open({id:'t-diag',title:'diag',top:null,main:[{id:'p1',title:'1',min:200,content:null},{id:'p2',title:'2',min:200,content:null}],chatWidth:{default:320,min:240,max:600}}); out.afterOpen={active:st.active,spec:st.spec&&st.spec.id}; out.paneWs=st.paneWs&&st.paneWs.slice(); out.chatW=st.chatW; out.geom=st.geom; return JSON.stringify(out) })()");
   console.log('STEP1:', JSON.stringify(step1));
   await sleep(900);
 
-  const step2 = await evaluate("(function(){ var out={}; out.pickers=document.querySelectorAll('.dsh-wt_panePicker').length; out.pickButtons=document.querySelectorAll('.dsh-wt_panePick').length; var st=window.__dshWorktable.splitStore; st.openTab('main',0,{kind:'builtin',type:'browser'}); st.openTab('main',1,{kind:'builtin',type:'explorer'}); return JSON.stringify(out) })()");
+  const step2 = await evaluate("(function(){ var out={}; out.pickers=document.querySelectorAll('.dsh-wt_panePicker').length; out.pickButtons=document.querySelectorAll('.dsh-wt_panePick').length; out.pickerModes=Array.prototype.map.call(document.querySelectorAll('.dsh-wt_panePicker'),function(el){return el.className}); out.pickSize=(function(){var b=document.querySelector('.dsh-wt_panePick'); if(!b) return null; var r=b.getBoundingClientRect(); return {w:r.width,h:r.height};})(); var st=window.__dshWorktable.splitStore; st.openTab('main',0,{kind:'builtin',type:'browser'}); st.openTab('main',1,{kind:'builtin',type:'explorer'}); return JSON.stringify(out) })()");
   console.log('STEP2:', JSON.stringify(step2));
   await sleep(900);
 

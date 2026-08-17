@@ -8,7 +8,7 @@ import 'xterm/css/xterm.css'
  * 贴右或贴左，由 chatSide 决定；marginLeft/marginRight + marginTop 组合挤法）。
  * 内容三态：null（未指派 → 6 选 1 选择器）/ iframe / builtin（浏览器/资源管理器/SCM/任务/终端）。
  * 窗位调整：标题栏拖拽换位（同行或跨行）；工具栏 ⇄ 切换聊天窗左右。
- * 会话切换重新锚定不关闭；宽度按 layoutId 持久化 dsh.worktable.split.v1；
+ * 会话切换重新锚定不关闭；宽度按 layoutId 持久化 dsh.worktable.split.v2；
  * 内容与 chatSide 的变更经 onSpecMutated 回调交给工作台持久化（布局条目）。
  */
 
@@ -102,7 +102,7 @@ type SplitState = {
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
 const DIVIDER = 6
 const BAR_H = 26
-const PERSIST_KEY = 'dsh.worktable.split.v1'
+const PERSIST_KEY = 'dsh.worktable.split.v2'
 
 /** 内置内容窗图标 */
 const BUILTIN_ICONS: Record<BuiltinType, string> = {
@@ -297,12 +297,18 @@ export const splitStore: SplitState = {
     const top = spec.top ?? []
     const left = spec.left ?? null
     const saved = loadSaved(spec.id)
-    this.chatW = saved && saved.chatW >= 0 ? saved.chatW : spec.chatWidth.default
-    this.topH = saved && saved.topH >= 0 ? saved.topH : (spec.topHeight?.default ?? 200)
-    this.leftW = saved && saved.leftW >= 0 ? saved.leftW : (spec.leftWidth?.default ?? 260)
-    this.paneWs = saved && saved.paneWs.length === main.length ? [...saved.paneWs] : main.map((p) => p.min)
-    this.topWs = saved && saved.topWs.length === top.length ? [...saved.topWs] : top.map((p) => p.min)
-    this.leftWs = saved && saved.leftWs.length === (left ? 1 : 0) ? [...saved.leftWs] : (left ? [left.min] : [])
+    const hasChatW = !!saved && saved.chatW >= 0
+    const hasTopH = !!saved && saved.topH >= 0
+    const hasLeftW = !!saved && saved.leftW >= 0
+    const hasPaneWs = !!saved && saved.paneWs.length === main.length
+    const hasTopWs = !!saved && saved.topWs.length === top.length
+    const hasLeftWs = !!saved && saved.leftWs.length === (left ? 1 : 0)
+    this.chatW = hasChatW ? saved!.chatW : spec.chatWidth.default
+    this.topH = hasTopH ? saved!.topH : (spec.topHeight?.default ?? 200)
+    this.leftW = hasLeftW ? saved!.leftW : (spec.leftWidth?.default ?? 260)
+    this.paneWs = hasPaneWs ? [...saved!.paneWs] : main.map((p) => p.min)
+    this.topWs = hasTopWs ? [...saved!.topWs] : top.map((p) => p.min)
+    this.leftWs = hasLeftWs ? [...saved!.leftWs] : (left ? [left.min] : [])
     this.root = root
     this.header = header
     this.viewArea = viewArea
@@ -310,6 +316,38 @@ export const splitStore: SplitState = {
     this.savedMarginRight = viewArea.style.marginRight
     this.savedMarginTop = viewArea.style.marginTop
     this.refreshGeom()
+    // 均衡默认：无存档尺寸时按当前可用空间比例分配，
+    // 不再出现“其余窗全部贴 min、最后一个吃掉全部余量”的悬殊观感。
+    const g0 = this.geom
+    if (g0) {
+      const colW0 = g0.right - g0.left
+      const rowH0 = g0.bottom - g0.top
+      if (!hasChatW) {
+        const hi = Math.max(spec.chatWidth.min, colW0 - 60)
+        this.chatW = clamp(Math.round(colW0 * 0.3), spec.chatWidth.min, hi)
+      }
+      if (left && !hasLeftW) {
+        const lo = spec.leftWidth?.min ?? 160
+        this.leftW = clamp(Math.round(colW0 * 0.38), lo, Math.max(lo, colW0 - 260))
+      }
+      if (top.length > 0 && !hasTopH) {
+        const lo = spec.topHeight?.min ?? 80
+        this.topH = clamp(Math.round(rowH0 * 0.35), lo, Math.max(lo, rowH0 - BAR_H - 80))
+      }
+      if (!hasPaneWs) {
+        const contentW = Math.max(0, colW0 - this.chatW)
+        const avail = Math.max(main.length * 120, contentW - Math.max(0, main.length - 1) * DIVIDER)
+        const share = Math.round(avail / main.length)
+        this.paneWs = main.map((p) => Math.max(p.min, share))
+      }
+      if (!hasTopWs) {
+        const rowW = Math.max(0, colW0 - (left ? this.leftW : 0))
+        const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * DIVIDER)
+        const share = Math.round(avail / top.length)
+        this.topWs = top.map((p) => Math.max(p.min, share))
+      }
+      if (left && !hasLeftWs) this.leftWs = [Math.max(left.min, this.leftW)]
+    }
     this.applyMargin()
     this.observer = new ResizeObserver(() => {
       const r = this.root
@@ -1075,44 +1113,62 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   )
 }
 
-/** 未指派内容：6 选 1 选择器（better-sidebar 风格 5 项 + 自定义） */
+/** 未指派内容：4 选 1 选择器。按钮固定大小、整体居中；
+ * 按窗位宽高比自适应排列：宽窗横排 4 连 / 方窗 2×2 / 竖窗竖排。 */
 function PanePicker(props: { row: PaneRow; index: number }) {
   const [custom, setCustom] = useState(false)
   const [url, setUrl] = useState('')
+  const [mode, setMode] = useState<'row' | 'grid' | 'col'>('grid')
+  const hostRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = hostRef.current
+    if (!el) return
+    const update = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      const aspect = h > 0 ? w / h : 1
+      setMode(aspect > 1.4 ? 'row' : aspect > 0.72 ? 'grid' : 'col')
+    }
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const pick = (content: SplitContent) => splitStore.openTab(props.row, props.index, content)
   const applyCustom = () => {
     const u = url.trim()
     if (/^(\/|https?:\/\/)/i.test(u)) pick({ kind: 'iframe', url: u })
   }
-  if (custom) {
-    return (
-      <div className="dsh-wt_paneCustom">
-        <input
-          autoFocus
-          type="text"
-          placeholder={T('pane.customUrlPh')}
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') applyCustom() }}
-        />
-        <button type="button" className="dsh-wt_paneCustomGo" onClick={applyCustom}>{T('pane.open')}</button>
-      </div>
-    )
-  }
   return (
-    <div className="dsh-wt_panePicker">
-      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
-        <span aria-hidden>🌐</span>{T('pane.browser')}
-      </button>
-      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
-        <span aria-hidden>📁</span>{T('pane.explorer')}
-      </button>
-      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
-        <span aria-hidden>▸_</span>{T('pane.terminal')}
-      </button>
-      <button type="button" className="dsh-wt_panePick" onClick={() => setCustom(true)}>
-        <span aria-hidden>✨</span>{T('pane.custom')}
-      </button>
+    <div ref={hostRef} className={'dsh-wt_panePicker dsh-wt_panePicker-' + mode}>
+      {custom ? (
+        <div className="dsh-wt_paneCustom">
+          <input
+            autoFocus
+            type="text"
+            placeholder={T('pane.customUrlPh')}
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') applyCustom() }}
+          />
+          <button type="button" className="dsh-wt_paneCustomGo" onClick={applyCustom}>{T('pane.open')}</button>
+        </div>
+      ) : (
+        <>
+          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
+            <span aria-hidden>🌐</span>{T('pane.browser')}
+          </button>
+          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
+            <span aria-hidden>📁</span>{T('pane.explorer')}
+          </button>
+          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
+            <span aria-hidden>▸_</span>{T('pane.terminal')}
+          </button>
+          <button type="button" className="dsh-wt_panePick" onClick={() => setCustom(true)}>
+            <span aria-hidden>✨</span>{T('pane.custom')}
+          </button>
+        </>
+      )}
     </div>
   )
 }
