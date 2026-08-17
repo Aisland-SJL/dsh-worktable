@@ -43,8 +43,10 @@ type ProjectsState = {
   nameOverrides: Record<string, string>
   /** 图标覆盖（点图标换 emoji；含入驻插件项目 id → emoji）。 */
   iconOverrides: Record<string, string>
-  /** 已从工作台删除的入驻项目 id（插件不卸载，仅不再展示；恢复默认找回）。 */
+  /** 已从工作台删除的入驻项目 id（真删除：恢复默认不复活；在「已删除的项目」里可重新添加）。 */
   removed: string[]
+  /** 入驻项目的视图覆盖（id → LayoutSpec）：变更视图后按此打开，替换项目自声明的布局。 */
+  views: Record<string, LayoutSpec>
   /** 本地快捷方式条目。 */
   shortcuts: Shortcut[]
   /** 用户自建的布局条目（「+」新建工作区保存的 LayoutSpec）。 */
@@ -59,9 +61,7 @@ const SNAP_PX = 32
 const MARKET_URL = 'https://github.com/hikariming/dshfind'
 /** 已报到卡片的 CSS order 偏移：未上报（order=0）的 v1 卡片永远排在已上报卡片之前。 */
 const ORDER_OFFSET = 1000
-/** 自带分栏实现的遗留项目（如 travelatlas，未接入 openSplit 引擎）：埋点用冷却去重，避免每次点击置顶 */
-const LEGACY_SPLIT_IDS = new Set(['travelatlas'])
-/** 遗留项目埋点冷却（毫秒）：同 id 两次计使用的最小间隔 */
+/** 非引擎项目埋点冷却（毫秒）：同 id 两次计使用的最小间隔 */
 const LEGACY_BUMP_COOLDOWN = 15000
 /** 落点判定余量：松手时指针越出有效落点区（超出底部/顶部/侧边）即视为「无有效落点」。 */
 const OVER_BOTTOM_PX = 24
@@ -190,6 +190,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   nameOverrides: {},
   iconOverrides: {},
   removed: [],
+  views: {},
   shortcuts: [],
   layouts: [],
 }
@@ -229,6 +230,7 @@ function loadProjects(): ProjectsState {
       nameOverrides: p.nameOverrides && typeof p.nameOverrides === 'object' ? p.nameOverrides : {},
       iconOverrides: p.iconOverrides && typeof p.iconOverrides === 'object' ? p.iconOverrides : {},
       removed: Array.isArray(p.removed) ? p.removed.filter((x: unknown): x is string => typeof x === 'string') : [],
+      views: p.views && typeof p.views === 'object' ? p.views : {},
       shortcuts: Array.isArray(p.shortcuts)
         ? p.shortcuts.filter((s: any) => s && typeof s.id === 'string' && typeof s.name === 'string' && typeof s.href === 'string')
         : [],
@@ -484,22 +486,21 @@ function WorktableSection(props: any) {
     } else if (knownEngine) {
       // 引擎项目：本次是关闭/重复点击 → 不计
       return
-    } else if (LEGACY_SPLIT_IDS.has(id)) {
-      // 遗留自带分栏的项目：冷却去重（打开计一次；快速开关/关闭点击不重复计）
+    } else {
+      // 非引擎项目（自带分栏实现等）：冷却去重（打开计一次；快速开关/关闭点击不重复计）
       if (now - (lastLegacyBumpRef.current[id] ?? 0) > LEGACY_BUMP_COOLDOWN) {
         lastLegacyBumpRef.current[id] = now
         bump()
       }
-    } else {
-      bump() // 无判定依据的普通项目：保持原行为
     }
   }, [])
 
-  /** 分栏工作区入口（M1 引擎）：项目卡片调用 openSplit(spec) 打开声明式布局 */
+  /** 分栏工作区入口（M1 引擎）：项目卡片调用 openSplit(spec) 打开声明式布局；
+   * 若该 id 存在视图覆盖（用户在设置里变更过视图），用覆盖布局替换打开。 */
   const openSplit = useCallback((spec: LayoutSpec) => {
     engineIdsRef.current.add(spec.id)
-    splitStore.open(spec)
-  }, [])
+    splitStore.open(projects.views[spec.id] ?? spec)
+  }, [projects.views])
 
   // ── 有效排序 ──
   // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 与布局 id 追加尾部；
@@ -598,17 +599,7 @@ function WorktableSection(props: any) {
     }
   }
 
-  // ── 编辑模式动作 ──
-  const moveBy = (id: string, delta: number) => {
-    const list = [...effectiveOrder]
-    const i = list.indexOf(id)
-    const j = clamp(i + delta, 0, list.length - 1)
-    if (i < 0 || i === j) return
-    list.splice(i, 1)
-    list.splice(j, 0, id)
-    persistProjects({ order: list })
-  }
-
+  // ── 编辑模式动作（排序只用左缘 ≡ 抓手拖拽，无 ↑↓ 按钮） ──
   const moveTo = (id: string, targetId: string) => {
     if (id === targetId) return
     const list = [...effectiveOrder]
@@ -638,6 +629,7 @@ function WorktableSection(props: any) {
     })
   }
 
+  // 恢复默认：还原排序/隐藏/改名/图标/视图覆盖；已删除的项目不复活（真删除，可在「已删除的项目」重新添加）
   const resetProjects = () => {
     persistProjects((prev) => ({
       ...prev,
@@ -645,7 +637,15 @@ function WorktableSection(props: any) {
       hidden: [],
       nameOverrides: {},
       iconOverrides: {},
-      removed: [],
+      views: {},
+    }))
+  }
+
+  /** 重新添加已删除的入驻项目（删除 ↔ 重新添加 完全可逆） */
+  const readdProject = (id: string) => {
+    persistProjects((prev) => ({
+      ...prev,
+      removed: prev.removed.filter((x) => x !== id),
     }))
   }
 
@@ -670,16 +670,20 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
   }
 
-  // ── 变更视图：按预设重建布局拓扑，现有窗内容（标签）按序迁入，不丢失 ──
+  // ── 变更视图：所有项目通用。布局项目 = 重建其布局条目；入驻项目 = 建立/更新视图覆盖。
+  // 现有窗内容（标签）按序迁入新拓扑，不丢失。 ──
   const applyLayoutChange = (id: string, presetId: string) => {
     const layout = projects.layouts.find((l) => l.id === id)
-    if (!layout) return
-    const sources = [...(layout.top ?? []), ...layout.main]
-      .map((pp) => pp.tabs ?? [])
-      .filter((tabs) => tabs.length > 0)
-    const next = buildLayout(presetId, layout.title)
-    next.id = layout.id
-    next.icon = layout.icon
+    const meta = metas[id]
+    const current = layout ?? projects.views[id]
+    const sources = current
+      ? [...(current.top ?? []), ...current.main]
+          .map((pp) => pp.tabs ?? [])
+          .filter((tabs) => tabs.length > 0)
+      : []
+    const next = buildLayout(presetId, layout ? layout.title : (meta?.name ?? id))
+    next.id = id
+    next.icon = layout ? layout.icon : (projects.iconOverrides[id] ?? meta?.icon)
     const targets = [...(next.left ? [next.left] : []), ...(next.top ?? []), ...next.main]
     let si = 0
     for (const pane of targets) {
@@ -696,11 +700,10 @@ function WorktableSection(props: any) {
       last.tabs = [...(last.tabs ?? []), ...overflow]
       last.active = 0
     }
-    persistProjects((prev) => ({
-      ...prev,
-      layouts: prev.layouts.map((l) => (l.id === id ? next : l)),
-    }))
-    // 该布局当前打开时：关旧开新，工作区即时变为新视图
+    persistProjects((prev) => layout
+      ? { ...prev, layouts: prev.layouts.map((l) => (l.id === id ? next : l)) }
+      : { ...prev, views: { ...prev.views, [id]: next } })
+    // 该视图当前打开时：关旧开新，工作区即时变为新视图
     const wasOpen = splitStore.active && splitStore.spec?.id === id
     if (wasOpen) {
       splitStore.close()
@@ -765,44 +768,66 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, iconOverrides: { ...prev.iconOverrides, [id]: icon } }))
   }
 
-  // 入驻项目卡片图标覆盖（DOM 层，不改动对方插件代码）
-  // 1) 属性同步：iconOverrides[id] -> 卡片 icon 元素 data-wt-icon（CSS 用 attr() 换显示）；
-  // 2) 委托点击：捕获阶段拦截卡片 icon 点击 -> 打开图标选择器（阻止卡片自身打开项目）。
+  // ── 入驻项目卡片通用 DOM 桥（不写死任何项目名/类名） ──
+  // 卡片按子座位注册顺序渲染，与 aliveRegisteredIds 一一对应：
+  // 1) 位置映射：给每张卡片标 data-wt-id，图标覆盖写到卡片第一个子元素（通用结构约定）；
+  // 2) 委托点击（捕获阶段）：卡片图标 → 图标选择器；有视图覆盖的项目 → 用引擎打开该视图。
   useEffect(() => {
-    const ROOT_TO_ID = [['.ta_card', 'travelatlas'], ['.pr_card', 'planreview']]
     const sync = () => {
-      for (const [rootSel, pid] of ROOT_TO_ID) {
-        const cards = document.querySelectorAll('.dsh-wt_projects ' + rootSel)
-        cards.forEach((card) => {
-          const icon = card.querySelector('.ta_cardIcon, .pr_cardIcon')
-          if (!icon) return
-          const ovr = projects.iconOverrides[pid]
-          if (ovr) icon.setAttribute('data-wt-icon', ovr)
-          else icon.removeAttribute('data-wt-icon')
-        })
-      }
+      const box = document.querySelector<HTMLElement>('.dsh-wt_projects')
+      if (!box) return
+      // 子座位把所有卡片包在一个无类容器里：直接取卡片按钮（DOM 序 = 注册序），排除自渲染的布局卡
+      const cards = Array.from(box.querySelectorAll<HTMLElement>('button:not(.dsh-wt_layout)'))
+      cards.forEach((el, i) => {
+        const id = aliveRegisteredIds[i]
+        if (id) {
+          el.setAttribute('data-wt-id', id)
+          const icon = el.children[0] as HTMLElement | null
+          if (icon) {
+            const ovr = projects.iconOverrides[id]
+            if (ovr) icon.setAttribute('data-wt-icon', ovr)
+            else icon.removeAttribute('data-wt-icon')
+          }
+        } else {
+          el.removeAttribute('data-wt-id')
+        }
+      })
     }
     sync()
     const mo = new MutationObserver(sync)
     mo.observe(document.body, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [projects.iconOverrides])
+  }, [aliveRegisteredIds, projects.iconOverrides])
 
   useEffect(() => {
-    const onDocClick = (e) => {
-      const target = e.target
-      const icon = target && target.closest ? target.closest('.ta_cardIcon, .pr_cardIcon') : null
-      if (!icon || !icon.closest('.dsh-wt_projects')) return
-      const card = icon.closest('.ta_card, .pr_card')
-      const pid = card && card.classList.contains('ta_card') ? 'travelatlas' : card && card.classList.contains('pr_card') ? 'planreview' : null
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null
+      const card = target && target.closest
+        ? (target.closest('.dsh-wt_projects [data-wt-id]') as HTMLElement | null)
+        : null
+      if (!card) return
+      const pid = card.getAttribute('data-wt-id')
       if (!pid) return
-      e.stopPropagation()
-      e.preventDefault()
-      openIconPick('project', pid, icon)
+      // 图标点击（卡片第一个子元素内） → 打开图标选择器（阻止卡片自身打开项目）
+      const first = card.children[0] as HTMLElement | null
+      if (first && target && first.contains(target)) {
+        e.stopPropagation()
+        e.preventDefault()
+        openIconPick('project', pid, first)
+        return
+      }
+      // 有视图覆盖 → 用引擎打开该视图（替换卡片自带行为）
+      const view = projects.views[pid]
+      if (view) {
+        e.stopPropagation()
+        e.preventDefault()
+        openSplit(view)
+        reportUsed(pid)
+      }
     }
     document.addEventListener('click', onDocClick, true)
     return () => document.removeEventListener('click', onDocClick, true)
-  }, [])
+  }, [projects.views, openSplit, reportUsed])
 
   const query = view.query.trim()
   const queryLower = query.toLowerCase()
@@ -1087,14 +1112,10 @@ function WorktableSection(props: any) {
                   placeholder={t('manage.renamePh')}
                   onChange={(e) => renameProject(id, e.target.value)}
                 />
-                <button type="button" className="dsh-wt_manageBtn" title={t('manage.up')} onClick={() => moveBy(id, -1)}>↑</button>
-                <button type="button" className="dsh-wt_manageBtn" title={t('manage.down')} onClick={() => moveBy(id, 1)}>↓</button>
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
                   {isHidden ? '🙈' : '👁'}
                 </button>
-                {layout && (
-                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.changeView')} onClick={() => setViewPickFor(id)}>🧩</button>
-                )}
+                <button type="button" className="dsh-wt_manageBtn" title={t('manage.changeView')} onClick={() => setViewPickFor(id)}>🧩</button>
                 <button
                   type="button"
                   className="dsh-wt_manageBtn"
@@ -1119,6 +1140,18 @@ function WorktableSection(props: any) {
             </div>
           ))}
           <button type="button" className="dsh-wt_manageReset" onClick={resetProjects}>{t('manage.reset')}</button>
+          {projects.removed.length > 0 && (
+            <>
+              <div className="dsh-wt_menuSep" />
+              <span className="dsh-wt_menuLabel">{t('manage.removed')}</span>
+              {projects.removed.map((rid) => (
+                <div key={rid} className="dsh-wt_manageRow dsh-wt_manageRowOff dsh-wt_manageRowRemoved">
+                  <span className="dsh-wt_manageScName">{projects.nameOverrides[rid] ?? metas[rid]?.name ?? rid}</span>
+                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.readd')} onClick={() => readdProject(rid)}>↺</button>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -1128,7 +1161,7 @@ function WorktableSection(props: any) {
           <span className="dsh-wt_menuLabel">{t('viewPick.title')}</span>
           <div className="dsh-wt_presets">
             {PRESET_DEFS.map((def) => {
-              const cur = projects.layouts.find((l) => l.id === viewPickFor)
+              const cur = projects.layouts.find((l) => l.id === viewPickFor) ?? projects.views[viewPickFor]
               return (
                 <button
                   key={def.id}

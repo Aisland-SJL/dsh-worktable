@@ -639,19 +639,27 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-  自定义内容（标签）自动迁入新视图。
+## 补记（常驻项目彻底去特殊化：变更视图通用 / 真删除 / 去箭头）
+
+- 用户反馈（四条）：① 两个常驻项目也要变更视图按钮；② 怀疑底层代码里写死了这两个项目的
+  特殊内容——应该完全不特殊；③ 删除常驻项目后「恢复默认」不应复活它们（真删除），
+  但整个流程可逆（可重新添加回来）；④ 管理行去掉 ↑↓ 箭头（左缘 ≡ 抓手拖拽已够用）。
 - 处理：
-  ① PDF 回退：删 PdfViewer/pdfjs 依赖/worker banner/CSS/locale pdf.*/fixture；
-  FileViewer pdf → 原生 iframe（服务端 application/pdf MIME 保留，供原生内嵌渲染）；
-  bundle 从 2.6MB 回到 747KB；build.mjs 保留 esbuild JS API；
-  ② 设置面板：managing 状态并入 viewOptionsOpen；设置弹窗 = 排序项 + 分隔 + 管理标题/完成 +
-  管理行列表 + 恢复默认，宽 316；「管理项目…」菜单项与独立管理弹窗删除；卡区弱化跟随设置开关；
-  ③ 变更视图：布局行加 🧩 按钮 → 弹 6 预设缩略图选择器（当前拓扑高亮）；applyLayoutChange
-  按预设重建拓扑（保留 id/名称/图标），现有窗标签按序迁入新窗格、多余并入末窗不丢失；
-  当前打开的布局即时关旧开新生效。locale：menu.viewOptions→设置/Settings，
-  新增 manage.changeView/viewPick.title。
-- 验证（functional-diag STEP8/9 重写 + STEP10 适配）：STEP8 设置弹窗 fixed/left=288/
-  sortItems=2/rows=4 直接展开；STEP9 布局行 5 按钮 → 🧩 → 6 预设 → 选 l2 →
-  newTop=1/newMain=1/chatFull=true + migrated=1（标签迁入顶行）；STEP10 删除确认流程在新面板
-  内全部保持；STEP11 MD/TXT 不变；ERRORS_COUNT: 0。
+  ① 变更视图通用化：projects.v1 新增 views（id → LayoutSpec 视图覆盖）；管理行 🧩 按钮
+  所有项目显示；applyLayoutChange 对布局项目重建条目、对入驻项目写 views[id]；
+  openSplit 打开时用 views[spec.id] 替换自声明布局；卡片点击拦截（有覆盖时用引擎打开），
+  常驻项目一样可变更视图；
+  ② 去硬编码：删除 LEGACY_SPLIT_IDS/ta_card/pr_card 类名映射；改为通用 DOM 桥——
+  子座位卡片按注册序 ↔ aliveRegisteredIds 位置映射（button:not(.dsh-wt_layout)），
+  标记 data-wt-id；图标覆盖写到卡片第一个子元素；CSS 全部换成 [data-wt-id] 通用选择器
+  （框/高度/字号/字重/描述行隐藏）；reportUsed 冷却对全部非引擎项目通用；
+  split.tsx 仅保留跨插件互操作桥（.ta_split 浮层让位，注释中性化）；
+  ③ 删除语义：resetProjects 不再清空 removed（恢复默认不复活）；设置面板新增「已删除的项目」
+  区块，逐条「↺ 重新添加」（删除 ↔ 重新添加完全可逆）；confirm.projectBody 文案同步；
+  ④ 管理行删除 ↑/↓ 按钮与 moveBy 函数，排序只靠 ≡ 拖拽；locale 删 manage.up/down，
+  新增 manage.removed/readd。
+- 验证（functional-diag STEP9/10 重写）：STEP9 常驻行 3 按钮（无箭头+🧩）→ 变更视图
+  views['planreview'] 三栏拓扑 ✓；布局行迁移不变 ✓；STEP10 删除后 reset removedAfterReset
+  仍含 id（不复活）→ removedSection=true → ↺ 重新添加 removed=[] 且卡片回归 ✓；
+  通用桥回归：框/高度/字重/图标覆盖/desc 隐藏全 ✓；ERRORS_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。

@@ -130,12 +130,12 @@ export const css = [
   '.dsh-wt_layoutText{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}',
   '.dsh-wt_layoutName{font-size:12px;font-weight:400;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
-  // 项目卡片统一：入驻插件卡片（travelatlas/planreview）与布局卡片同款常显框（静止态可见边框+底）
-  '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
-  '.dsh-wt_projects .ta_card:hover,.dsh-wt_projects .pr_card:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
-  '.dsh-wt_projects .ta_card[data-on=true],.dsh-wt_projects .pr_card[data-on=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  // 项目卡片统一：所有入驻项目卡片（data-wt-id 通用标记）与布局卡片同款常显框
+  '.dsh-wt_projects [data-wt-id]{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
+  '.dsh-wt_projects [data-wt-id]:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_projects [data-wt-id][data-on=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   // 标签精简：项目卡片只留名称一行，小字描述行去掉
-  '.dsh-wt_projects .ta_cardDesc,.dsh-wt_projects .pr_cardDesc{display:none}',
+  '.dsh-wt_projects [data-wt-id] > :nth-child(2) > :nth-child(2){display:none}',
   // 图标选择弹窗（固定定位，点击项目/布局/快捷方式的图标唤出）
   '.dsh-wt_iconPop{position:fixed;z-index:81;width:256px;padding:8px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
   '.dsh-wt_iconPopTitle{font-size:10px;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683);padding:1px 4px 6px}',
@@ -147,13 +147,13 @@ export const css = [
   '.dsh-wt_iconPick{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:1px;border:none;background:transparent;cursor:pointer;border-radius:4px}',
   '.dsh-wt_iconPick:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
   // 四类项目卡片统一竖向高度（常驻×2 / 布局 / 快捷方式；新建条目自动继承）
-  '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card,.dsh-wt_layout,.dsh-wt_shortcut{height:34px;box-sizing:border-box}',
+  '.dsh-wt_projects [data-wt-id],.dsh-wt_layout,.dsh-wt_shortcut{height:34px;box-sizing:border-box}',
   // 入驻项目卡片图标覆盖：data-wt-icon 存在时用 attr() 替换显示（原字符字号压到 0）
-  '.dsh-wt_projects .ta_cardIcon[data-wt-icon],.dsh-wt_projects .pr_cardIcon[data-wt-icon]{font-size:0;line-height:20px}',
-  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:15px;line-height:20px}',
+  '.dsh-wt_projects [data-wt-id] > :first-child[data-wt-icon]{font-size:0;line-height:20px}',
+  '.dsh-wt_projects [data-wt-id] > :first-child[data-wt-icon]::before{content:attr(data-wt-icon);font-size:15px;line-height:20px}',
   // 常驻项目卡片与新建项目统一：emoji 字号 15px、名称不加粗
-  '.dsh-wt_projects .ta_cardIcon,.dsh-wt_projects .pr_cardIcon{font-size:15px;line-height:20px}',
-  '.dsh-wt_projects .ta_cardName,.dsh-wt_projects .pr_cardName{font-weight:400}',
+  '.dsh-wt_projects [data-wt-id] > :first-child{font-size:15px;line-height:20px}',
+  '.dsh-wt_projects [data-wt-id] > :nth-child(2) > :first-child{font-weight:400}',
   // 头部按钮内的官方 SVG 图标
   '.dsh-wt_iconBtn svg{display:block}',
   // 窗内容：选择器 / 自定义 / 浏览器 / 占位

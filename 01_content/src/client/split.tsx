@@ -286,7 +286,7 @@ export const splitStore: SplitState = {
       }
       this.close()
     }
-    // 兼容桥：travelatlas 尚未接入共享引擎（不改动其代码），打开本引擎布局前运行时点击其关闭按钮
+    // 跨插件互操作桥：自带分栏实现的入驻插件（未接入共享引擎）打开时，运行时点击其关闭按钮让位
     try {
       const taClose = document.querySelector<HTMLElement>('.ta_splitClose')
       taClose?.click()
@@ -751,8 +751,8 @@ export const splitStore: SplitState = {
   },
 }
 
-/** 兼容桥：travelatlas 分栏浮层（.ta_split）出现 = 其引擎打开 → 本引擎让位。
- * 不改动 travelatlas 代码，仅在 DOM 层观察其浮层挂载。 */
+/** 跨插件互操作桥：自带分栏实现的插件其浮层（.ta_split）出现 = 其引擎打开 → 本引擎让位。
+ * 不改动对方插件代码，仅在 DOM 层观察其浮层挂载。 */
 if (typeof document !== 'undefined' && document.body) {
   const taObserver = new MutationObserver(() => {
     if (!splitStore.active) return

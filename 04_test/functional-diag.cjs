@@ -167,21 +167,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP8:', JSON.stringify(step8));
 
-  // 变更视图：布局行 🧩 → 选择新预设 → 拓扑重建 + 内容标签自动迁入
+  // 变更视图：常驻项目与布局项目通用 🧩 → 选择新预设 → 拓扑重建 + 内容标签自动迁入
   const step9 = await evaluate(`(async function(){
     var out={};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
     await new Promise(function(r){setTimeout(r,300)});
     var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
-    var layoutRow=rows[rows.length-1];
-    if(layoutRow){ out.layoutRowBtns=layoutRow.querySelectorAll('.dsh-wt_manageBtn').length; }
+    out.rowsCount=rows.length;
+    out.row0Btns=rows[0]?rows[0].querySelectorAll('.dsh-wt_manageBtn').length:0;
+    var resPuzzle=rows[0]&&rows[0].querySelectorAll('.dsh-wt_manageBtn')[rows[0].querySelectorAll('.dsh-wt_manageBtn').length-2];
+    if(resPuzzle){ resPuzzle.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    out.viewPicker1=!!document.querySelector('.dsh-wt_pop .dsh-wt_presets');
+    var presets1=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset');
+    if(presets1[1]){ presets1[1].click(); }
+    await new Promise(function(r){setTimeout(r,400)});
+    try{
+      var vv=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).views||{};
+      out.viewsKeys=Object.keys(vv);
+      var rv=vv[out.viewsKeys[0]];
+      if(rv){ out.resTop=(rv.top||[]).length; out.resMain=rv.main.length; out.resChatFull=rv.chatFullHeight===true; out.resId=rv.id; }
+    }catch(e){ out.resErr=String(e) }
+    var rows2=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
+    var layoutRow=rows2[rows2.length-1];
+    out.layoutRowBtns=layoutRow?layoutRow.querySelectorAll('.dsh-wt_manageBtn').length:0;
     var puzzle=layoutRow&&layoutRow.querySelectorAll('.dsh-wt_manageBtn')[layoutRow.querySelectorAll('.dsh-wt_manageBtn').length-2];
     if(puzzle){ puzzle.click(); }
     await new Promise(function(r){setTimeout(r,300)});
-    out.viewPicker=!!document.querySelector('.dsh-wt_pop .dsh-wt_presets');
-    out.presetCount=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset').length;
     var presets=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset');
+    out.presetCount=presets.length;
     if(presets[2]){ presets[2].click(); }
     await new Promise(function(r){setTimeout(r,400)});
     try{
@@ -239,7 +254,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     out.cardsAfter={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     try{ out.removed=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removed='ERR' }
     out.rowsAfterDelete=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow').length;
-    var rows3=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
+    var rows3=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc):not(.dsh-wt_manageRowRemoved)');
     var lastRow=rows3[rows3.length-1];
     var xBtn3=lastRow&&lastRow.querySelectorAll('.dsh-wt_manageBtn')[lastRow.querySelectorAll('.dsh-wt_manageBtn').length-1];
     if(xBtn3){ xBtn3.click(); }
@@ -249,6 +264,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await new Promise(function(r){setTimeout(r,300)});
     out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_layout');
     try{ out.layoutsLeft=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts.length }catch(e){ out.layoutsLeft='ERR' }
+    // 恢复默认不应复活已删除项目；「已删除的项目」里重新添加可逆
+    var resetBtn=document.querySelector('.dsh-wt_manageReset');
+    if(resetBtn){ resetBtn.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    try{ out.removedAfterReset=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removedAfterReset='ERR' }
+    out.removedSection=!!document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved');
+    var readdBtn=document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved .dsh-wt_manageBtn');
+    if(readdBtn){ readdBtn.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    try{ out.removedAfterReadd=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removedAfterReadd='ERR' }
+    out.prBackAfterReadd=document.querySelectorAll('.dsh-wt_projects .pr_card').length;
     var done=document.querySelector('.dsh-wt_manageDone');
     if(done){ done.click(); }
     await new Promise(function(r){setTimeout(r,200)});
