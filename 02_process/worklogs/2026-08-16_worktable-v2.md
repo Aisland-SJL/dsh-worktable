@@ -538,3 +538,10 @@
 - 用户反馈：头部 3 按钮间距比官方小，左侧拖动抓手偏小。
 - 处理：.dsh-wt_actions gap 2px → 7px；.dsh-wt_handle 22×22/13px → 25×25/15px。
 - 验证：functional-diag 全 STEP 回归 PASS，ERRORS_COUNT: 0（纯 CSS 改动，F5 生效）。
+## 补记（视图选项改右侧弹窗）
+
+- 用户反馈：视图选项（排序/管理菜单）不要下方内联展开，要和 + 新建一样从右侧弹出。
+- 处理：viewOptionsOpen 复用 popLeft/popTop（锚定侧栏右缘 + 区块顶部），
+  dsh-wt_menu dsh-wt_pop fixed 定位 width 200 + 透明遮罩点击关闭；与 + 弹窗互斥不变。
+- 验证：functional-diag STEP8 menuPos=fixed、menuLeft=288（侧栏右缘+8）、
+  遮罩点击关闭 PASS；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。

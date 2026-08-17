@@ -150,6 +150,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP7:', JSON.stringify(step7));
 
+  // 视图选项：右侧 fixed 弹窗（对齐 + 弹窗），不再下方内联展开
+  const step8 = await evaluate(`(async function(){
+    var out={};
+    var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+    if(btn){ btn.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    var menu=document.querySelector('.dsh-wt_menu.dsh-wt_pop');
+    if(menu){ var cs=getComputedStyle(menu); out.menuPos=cs.position; out.menuLeft=menu.getBoundingClientRect().left; }
+    out.backdrop=!!document.querySelector('.dsh-wt_popBackdrop');
+    var bd=document.querySelector('.dsh-wt_popBackdrop');
+    if(bd){ bd.click(); }
+    await new Promise(function(r){setTimeout(r,200)});
+    out.closedAfterBackdrop=!document.querySelector('.dsh-wt_menu.dsh-wt_pop');
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP8:', JSON.stringify(step8));
+
   const errors = events.filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||

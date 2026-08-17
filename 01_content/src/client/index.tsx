@@ -943,8 +943,9 @@ function WorktableSection(props: any) {
         </>
       )}
 
+      {viewOptionsOpen && <div className="dsh-wt_popBackdrop" onClick={() => setViewOptionsOpen(false)} />}
       {viewOptionsOpen && (
-        <div className="dsh-wt_menu">
+        <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 200, zIndex: 80 }}>
           <span className="dsh-wt_menuLabel">{t('sort.label')}</span>
           <button type="button" className="dsh-wt_menuItem" data-on={view.orderBy === 'manual'}
             onClick={() => { persistView({ orderBy: 'manual' }); setViewOptionsOpen(false) }}>{t('sort.manual')}</button>
