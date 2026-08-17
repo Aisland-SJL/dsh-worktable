@@ -639,23 +639,15 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（自定义窗口：需求对话框 + 新建专属会话 + 项目选择 + 上下文注入）
+## 补记（自定义窗口增加「发送到已有会话」模式）
 
-- 用户需求：点「自定义」→ 新开标签（关标签可回退）→ 居中对话框：写需求 + 选所属项目
-  （默认 = 刚在用的项目）+ 提示发送后将新建一个对话 → 发送 = 自动新建会话，
-  会话需知道：worktable 是什么（自建工具，官方文档没有）、本对话是解决一个窗口的自定义、
-  用户需求原文、窗口位于哪个项目（便于窗口级与项目级后续自定义）。
-- 实现：
-  ① BuiltinType 新增 custom；PanePicker ✨ 直接 openTab 自定义标签（旧内联 URL 表单移除）；
-  ② CustomPane：居中卡片对话框（需求 textarea + 项目 select + 提示文案 + 发送按钮），
-  默认项目 = splitStore.spec.id（当前工作区所属项目），不在列表时回退第一个；发送成功后 ✓ 态；
-  ③ 会话创建桥：inject 增加 'conversation'（探针实测 sessions.create/open、conversation.send/
-  sendSession 可用；api 不可注入已排除）；createCustomSession：sessions.create({}) → 优先
-  conversation.sendSession(sessionId, text) 否则 open 后 send；注入上下文消息：
-  「worktable 是什么 / 本对话用途 / 用户需求 / 所在项目」四段式；
-  ④ WorktableSection 经 projectsRef 快照向引擎注入 custom.getProjects/currentProjectId/submit；
-  locale custom.* 八键 + 对话框 CSS。
-- 验证（functional-diag STEP20，仅 UI 不点发送防真实建会话）：tabType=custom、对话框/
-  textarea/提示语/项目下拉/发送禁用（空需求）全部正确；全 20 STEP ERROR_COUNT: 0。
-  真实建会话闭环需用户在 GUI 实测。
-- 备注：纯客户端改动，F5 即生效。checkpoint tag: checkpoint-2026-08-17-pre-customdialog。
+- 用户需求：不一定每次都新建对话；可加入当前对话/选择已有会话，把内容直接发过去。
+- 处理：CustomPane 顶部加模式切换（新建对话 | 发送到会话）；发送到会话模式出现会话下拉
+  （默认当前会话，标注「（当前）」），项目选择保留（上下文仍需项目信息）；
+  sendCustomToSession：优先 conversation.sendSession(sessionId, text) 定向发送，否则 open 后 send，
+  发送后打开该会话；消息为精简版上下文（worktable 是什么/需求/所在项目）；
+  env.custom 增 getSessions（读 ctx.sessions.list 快照 items+current）与 sendToSession；
+  完成态文案区分「已新建专属对话 / 已发送到会话」。locale custom.* 增 7 键。
+- 验证（functional-diag STEP20 扩展）：切换模式 → 会话下拉出现；新建模式各项回归不变；
+  全 20 STEP ERROR_COUNT: 0。真实发送闭环待用户在 GUI 实测（新建/发送两种模式各试一次）。
+- 备注：纯客户端改动，F5 即生效。

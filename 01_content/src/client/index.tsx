@@ -263,7 +263,7 @@ function findSidebar(start: HTMLElement | null): HTMLElement | null {
 const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], listeners: new Set() }
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
-let sessionBridge: { sessions: any; conversation: any } | null = null
+let sessionBridge: { sessions: any; conversation: any; list: any } | null = null
 
 /** 自定义窗口任务：新建一个专属会话，注入工作台背景 + 用户需求，并打开该会话 */
 export async function createCustomSession(projectId: string, projectName: string, requirement: string): Promise<void> {
@@ -283,6 +283,25 @@ export async function createCustomSession(projectId: string, projectName: string
     '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
   ].join('\n')
   const sessionId = await b.sessions.create({})
+  let sent = false
+  if (typeof b.conversation?.sendSession === 'function') {
+    try { await b.conversation.sendSession(sessionId, text); sent = true } catch { sent = false }
+  }
+  try { b.sessions.open?.(sessionId) } catch {}
+  if (!sent) await b.conversation?.send?.(text)
+}
+
+/** 把自定义需求直接发到用户选定的已有会话（默认当前会话） */
+export async function sendCustomToSession(sessionId: string, projectName: string, requirement: string): Promise<void> {
+  const b = sessionBridge
+  if (!b) throw new Error('bridge unavailable')
+  const text = [
+    '【工作台自定义窗口任务】',
+    '以下内容由 dsh-worktable（工作台）插件发送：用户正在自定义「' + projectName + '」项目中的一个窗口。',
+    '1. dsh-worktable 是侧边栏底部的自建「工作台」插件（官方文档没有它的说明，不了解之处可向用户提问）；',
+    '2. 用户需求：' + requirement,
+    '3. 请帮助完成该窗口的自定义设计（内容/页面/实现方案），该窗口位于「' + projectName + '」项目内。',
+  ].join('\n')
   let sent = false
   if (typeof b.conversation?.sendSession === 'function') {
     try { await b.conversation.sendSession(sessionId, text); sent = true } catch { sent = false }
@@ -411,6 +430,19 @@ function WorktableSection(props: any) {
           ]
         },
         currentProjectId: () => (splitStore.active && splitStore.spec ? splitStore.spec.id : null),
+        getSessions: () => {
+          try {
+            const snap = sessionBridge?.list?.getSnapshot?.()
+            const items = Array.isArray(snap?.items) ? snap.items : []
+            const current = snap?.current ?? ''
+            return items.map((it: any) => ({
+              id: it?.sessionId ?? it?.id ?? '',
+              title: it?.title ?? it?.name ?? it?.summary?.title ?? (it?.sessionId ?? it?.id ?? ''),
+              isCurrent: (it?.sessionId ?? it?.id) === current,
+            }))
+          } catch { return [] }
+        },
+        sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),
         submit: (projectId, projectName, requirement) => createCustomSession(projectId, projectName, requirement),
       },
     })
@@ -1325,8 +1357,8 @@ function WorktableSection(props: any) {
 export const inject = ['slots', 'locale', 'sessions', 'conversation']
 
 export function apply(ctx: any) {
-  // 自定义窗口 → 新建会话桥：保存宿主 sessions/conversation 服务引用（模块级）
-  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null }
+  // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
+  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null }
 
   ctx.effect(() => {
     const style = document.createElement('style')

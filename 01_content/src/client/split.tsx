@@ -185,11 +185,13 @@ type SplitEnv = {
   getScope: () => SplitScope | null
   getJobs: () => SplitJob[]
   getSubagents: () => any[]
-  /** 自定义窗口：项目列表 + 当前项目 + 提交创建专属会话 */
+  /** 自定义窗口：项目列表 + 会话列表 + 当前项目 + 新建会话 / 发送到已有会话 */
   custom?: {
     getProjects: () => { id: string; name: string }[]
     currentProjectId: () => string | null
+    getSessions: () => { id: string; title: string; isCurrent: boolean }[]
     submit: (projectId: string, projectName: string, requirement: string) => Promise<void>
+    sendToSession: (sessionId: string, projectName: string, requirement: string) => Promise<void>
   }
 }
 let splitEnv: SplitEnv | null = null
@@ -1243,21 +1245,27 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   )
 }
 
-/** 自定义窗口：居中对话框。用户写下需求 + 选择所属项目 → 发送 = 新建专属会话并由 AI 辅助设计。 */
+/** 自定义窗口：居中对话框。两种模式：新建专属会话 / 发送到已有会话（默认当前会话）。 */
 function CustomPane() {
   const custom = splitEnv?.custom
   const [requirement, setRequirement] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projects, setProjects] = useState<{ id: string; name: string }[]>(() => custom?.getProjects?.() ?? [])
+  const [mode, setMode] = useState<'new' | 'existing'>('new')
+  const [sessions, setSessions] = useState<{ id: string; title: string; isCurrent: boolean }[]>(() => custom?.getSessions?.() ?? [])
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [fail, setFail] = useState('')
-  // 默认项目 = 当前工作区所属项目（用户刚在用的项目）
+  // 默认项目 = 当前工作区所属项目；默认会话 = 当前会话
   useEffect(() => {
     const list = custom?.getProjects?.() ?? []
     setProjects(list)
     const cur = custom?.currentProjectId?.() ?? null
     setProjectId(cur && list.some((p) => p.id === cur) ? cur : (list[0]?.id ?? null))
+    const slist = custom?.getSessions?.() ?? []
+    setSessions(slist)
+    setSessionId(slist.find((s) => s.isCurrent)?.id ?? slist[0]?.id ?? null)
   }, [custom])
   const submit = async () => {
     const text = requirement.trim()
@@ -1266,7 +1274,12 @@ function CustomPane() {
     setFail('')
     try {
       const proj = projects.find((p) => p.id === projectId)
-      await custom.submit(projectId, proj?.name ?? projectId, text)
+      const pname = proj?.name ?? projectId
+      if (mode === 'new') await custom.submit(projectId, pname, text)
+      else {
+        if (!sessionId) return
+        await custom.sendToSession(sessionId, pname, text)
+      }
       setDone(true)
     } catch (e) {
       setFail(String(e))
@@ -1281,7 +1294,7 @@ function CustomPane() {
     return (
       <div className="dsh-wt_customBox">
         <span className="dsh-wt_customDone" aria-hidden>✅</span>
-        <p className="dsh-wt_customDoneText">{T('custom.done')}</p>
+        <p className="dsh-wt_customDoneText">{mode === 'new' ? T('custom.done') : T('custom.sent')}</p>
         <p className="dsh-wt_customDoneHint">{T('custom.doneHint')}</p>
       </div>
     )
@@ -1290,7 +1303,11 @@ function CustomPane() {
     <div className="dsh-wt_customBox">
       <div className="dsh-wt_customCard">
         <span className="dsh-wt_customTitle">✨ {T('custom.title')}</span>
-        <p className="dsh-wt_customHint">{T('custom.hint')}</p>
+        <div className="dsh-wt_customModes">
+          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'new' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('new')}>{T('custom.modeNew')}</button>
+          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'existing' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('existing')}>{T('custom.modeSend')}</button>
+        </div>
+        <p className="dsh-wt_customHint">{mode === 'new' ? T('custom.hint') : T('custom.hintSend')}</p>
         <textarea
           className="dsh-wt_customInput"
           autoFocus
@@ -1298,6 +1315,20 @@ function CustomPane() {
           value={requirement}
           onChange={(e) => setRequirement(e.target.value)}
         />
+        {mode === 'existing' && (
+          <div className="dsh-wt_customRow">
+            <span className="dsh-wt_customLabel">{T('custom.session')}</span>
+            <select
+              className="dsh-wt_customSelect"
+              value={sessionId ?? ''}
+              onChange={(e) => setSessionId(e.target.value)}
+            >
+              {sessions.map((s) => (
+                <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="dsh-wt_customRow">
           <span className="dsh-wt_customLabel">{T('custom.project')}</span>
           <select
@@ -1313,9 +1344,9 @@ function CustomPane() {
         <button
           type="button"
           className="dsh-wt_customSend"
-          disabled={busy || !requirement.trim() || !projectId}
+          disabled={busy || !requirement.trim() || !projectId || (mode === 'existing' && !sessionId)}
           onClick={submit}
-        >{busy ? '…' : T('custom.send')}</button>
+        >{busy ? '…' : (mode === 'new' ? T('custom.send') : T('custom.sendToSession'))}</button>
         {fail && <p className="dsh-wt_customFail">{T('custom.fail')}：{fail}</p>}
       </div>
     </div>

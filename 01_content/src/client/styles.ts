@@ -194,6 +194,11 @@ export const css = [
   '.dsh-wt_customCard{display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;padding:14px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
   '.dsh-wt_customTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_customHint{font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-secondary,#9aa4b2);margin:0}',
+  // 自定义对话框：模式切换（新建对话 / 发送到会话）
+  '.dsh-wt_customModes{display:flex;gap:6px}',
+  '.dsh-wt_customModeBtn{flex:1;display:flex;align-items:center;justify-content:center;padding:4px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_customModeBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);border-color:var(--dsw-alias-border-l2,#3a4150)}',
+  '.dsh-wt_customModeBtnOn{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_customInput{width:100%;box-sizing:border-box;min-height:96px;padding:8px 10px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none;resize:vertical}',
   '.dsh-wt_customInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_customRow{display:flex;align-items:center;gap:8px}',

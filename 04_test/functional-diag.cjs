@@ -659,6 +659,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.defaultIsCurrent=sel?sel.value==='t-custom':false;
       var send=vis('.dsh-wt_customSend');
       out.sendDisabled=send?send.disabled:null;
+      // 切到「发送到会话」模式：出现会话下拉，默认当前会话
+      var modeBtns=[].slice.call(document.querySelectorAll('.dsh-wt_customModeBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      if(modeBtns[1]){ modeBtns[1].click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var ssel=[].slice.call(document.querySelectorAll('.dsh-wt_customSelect')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');})[0];
+      out.sessionSelect=!!ssel;
+      out.sessionHasCurrent=ssel?String(ssel.textContent).indexOf('\u5f53\u524d')>=0||String(ssel.textContent).indexOf('current')>=0:false;
       st.close();
     }catch(err){ out.err=String(err) }
     return JSON.stringify(out);
