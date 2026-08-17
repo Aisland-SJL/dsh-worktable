@@ -591,3 +591,9 @@
   中心 = 缝中心。聊天/左列/上下水平分隔线本就骑缝居中，不动。
 - 验证（functional-diag STEP2 dividerAlign）：paneRight=514、divLeft=514、divWidth=6、
   centerOffset=0（修复前 +3）；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。
+## 里程碑 checkpoint（开始自定义开发前）
+
+- 时间：2026-08-17。工作树干净，全部历史已推送。
+- 打点：git tag checkpoint-2026-08-17-pre-fileviewer（已推远端，b22cd6b）。
+- 状态：工作台 UI/交互（卡片统一、图标、弹窗、删除确认、互斥、预设均衡、picker 自适应、
+  分隔线居中）全部完成并验证；下一个大块 = 文件预览（MD/TXT/PDF 等自定义开发）。
