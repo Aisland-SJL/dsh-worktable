@@ -545,3 +545,12 @@
   dsh-wt_menu dsh-wt_pop fixed 定位 width 200 + 透明遮罩点击关闭；与 + 弹窗互斥不变。
 - 验证：functional-diag STEP8 menuPos=fixed、menuLeft=288（侧栏右缘+8）、
   遮罩点击关闭 PASS；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。
+## 补记（管理项目改右侧弹窗展开）
+
+- 用户反馈：点「管理项目…」后，管理面板应从新弹出的界面（同锚点）往下展开，
+  而不是从工作台原位内联展开。
+- 处理：managing 时 dsh-wt_manage 加 dsh-wt_pop + fixed 定位（popLeft/popTop 与视图选项
+  弹窗同一锚点，宽 316），加透明遮罩点击关闭；完成按钮关闭不变；
+  项目卡区 data-managing 弱化保持。
+- 验证：functional-diag STEP9 managePos=fixed、manageLeft=288（同弹窗锚点）、rows=3、
+  遮罩关闭 PASS；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。

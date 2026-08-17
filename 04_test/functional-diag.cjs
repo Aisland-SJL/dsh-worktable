@@ -167,6 +167,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP8:', JSON.stringify(step8));
 
+  // 管理项目：从视图选项弹窗同锚点往下展开为 fixed 面板（不再内联展开）
+  const step9 = await evaluate(`(async function(){
+    var out={};
+    var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+    if(btn){ btn.click(); }
+    await new Promise(function(r){setTimeout(r,250)});
+    var items=document.querySelectorAll('.dsh-wt_menu.dsh-wt_pop .dsh-wt_menuItem');
+    var manageItem=items[items.length-1];
+    if(manageItem){ manageItem.click(); }
+    await new Promise(function(r){setTimeout(r,300)});
+    var mp=document.querySelector('.dsh-wt_manage.dsh-wt_pop');
+    if(mp){ var cs=getComputedStyle(mp); out.managePos=cs.position; out.manageLeft=mp.getBoundingClientRect().left; out.manageTop=mp.getBoundingClientRect().top; out.rows=mp.querySelectorAll('.dsh-wt_manageRow').length; }
+    var bd=document.querySelector('.dsh-wt_popBackdrop');
+    if(bd){ bd.click(); }
+    await new Promise(function(r){setTimeout(r,200)});
+    out.closedAfterBackdrop=!document.querySelector('.dsh-wt_manage.dsh-wt_pop');
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP9:', JSON.stringify(step9));
+
   const errors = events.filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||

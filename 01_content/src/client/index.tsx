@@ -957,8 +957,9 @@ function WorktableSection(props: any) {
         </div>
       )}
 
+      {managing && <div className="dsh-wt_popBackdrop" onClick={() => setManaging(false)} />}
       {managing && (
-        <div className="dsh-wt_manage">
+        <div className="dsh-wt_manage dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 316, zIndex: 80 }}>
           <div className="dsh-wt_manageHead">
             <span className="dsh-wt_manageTitle">{t('manage.title')}</span>
             <button type="button" className="dsh-wt_manageDone" onClick={() => setManaging(false)}>{t('manage.done')}</button>
