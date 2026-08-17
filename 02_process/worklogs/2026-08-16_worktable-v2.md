@@ -533,3 +533,8 @@
   既有图标链路（🧱→🏠）+ ta/pr 统一框 + 小字隐藏 + STEP7 互斥全部保持；ERRORS_COUNT: 0。
   bundle-eval 补 jsxs 桩后 PASS（模块级 JSX 常量引入）。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+## 补记（头部间距与抓手微调）
+
+- 用户反馈：头部 3 按钮间距比官方小，左侧拖动抓手偏小。
+- 处理：.dsh-wt_actions gap 2px → 7px；.dsh-wt_handle 22×22/13px → 25×25/15px。
+- 验证：functional-diag 全 STEP 回归 PASS，ERRORS_COUNT: 0（纯 CSS 改动，F5 生效）。

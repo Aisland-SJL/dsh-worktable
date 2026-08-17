@@ -9,12 +9,12 @@ export const css = [
   '.dsh-wt_divider{flex:none;height:1px;background:var(--dsw-alias-border-l1,#262b36);margin:2px 0}',
   // 头部
   '.dsh-wt_header{display:flex;align-items:center;gap:6px;padding:0 2px}',
-  '.dsh-wt_handle{display:flex;align-items:center;justify-content:center;width:22px;height:22px;padding:0;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:13px;line-height:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}',
+  '.dsh-wt_handle{display:flex;align-items:center;justify-content:center;width:25px;height:25px;padding:0;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:15px;line-height:1;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}',
   '.dsh-wt_handle:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_handle:active{cursor:grabbing}',
   '.dsh-wt_handle[data-float=true]{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_title{font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}',
-  '.dsh-wt_actions{margin-left:auto;display:flex;align-items:center;gap:2px}',
+  '.dsh-wt_actions{margin-left:auto;display:flex;align-items:center;gap:7px}',
   '.dsh-wt_iconBtn{display:flex;align-items:center;justify-content:center;width:24px;height:22px;padding:0;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:12px;line-height:1;cursor:pointer}',
   '.dsh-wt_iconBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   // 搜索行
