@@ -23,7 +23,7 @@ hljs.registerLanguage('json', hljsJson)
  * 内容与 chatSide 的变更经 onSpecMutated 回调交给工作台持久化（布局条目）。
  */
 
-export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal'
+export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal' | 'custom'
 
 export type SplitContent =
   | { kind: 'iframe'; url: string; title?: string }
@@ -125,6 +125,7 @@ const BUILTIN_ICONS: Record<BuiltinType, string> = {
   scm: '🔀',
   tasks: '✅',
   terminal: '▸_',
+  custom: '✨',
 }
 
 const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
@@ -133,6 +134,7 @@ const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
   scm: 'pane.scm',
   tasks: 'pane.tasks',
   terminal: 'pane.terminal',
+  custom: 'pane.custom',
 }
 
 function tabTitleOf(content: SplitContent): string {
@@ -183,6 +185,12 @@ type SplitEnv = {
   getScope: () => SplitScope | null
   getJobs: () => SplitJob[]
   getSubagents: () => any[]
+  /** 自定义窗口：项目列表 + 当前项目 + 提交创建专属会话 */
+  custom?: {
+    getProjects: () => { id: string; name: string }[]
+    currentProjectId: () => string | null
+    submit: (projectId: string, projectName: string, requirement: string) => Promise<void>
+  }
 }
 let splitEnv: SplitEnv | null = null
 export function setSplitEnv(env: SplitEnv | null) {
@@ -1235,6 +1243,85 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   )
 }
 
+/** 自定义窗口：居中对话框。用户写下需求 + 选择所属项目 → 发送 = 新建专属会话并由 AI 辅助设计。 */
+function CustomPane() {
+  const custom = splitEnv?.custom
+  const [requirement, setRequirement] = useState('')
+  const [projectId, setProjectId] = useState<string | null>(null)
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>(() => custom?.getProjects?.() ?? [])
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+  const [fail, setFail] = useState('')
+  // 默认项目 = 当前工作区所属项目（用户刚在用的项目）
+  useEffect(() => {
+    const list = custom?.getProjects?.() ?? []
+    setProjects(list)
+    const cur = custom?.currentProjectId?.() ?? null
+    setProjectId(cur && list.some((p) => p.id === cur) ? cur : (list[0]?.id ?? null))
+  }, [custom])
+  const submit = async () => {
+    const text = requirement.trim()
+    if (!text || !projectId || !custom) return
+    setBusy(true)
+    setFail('')
+    try {
+      const proj = projects.find((p) => p.id === projectId)
+      await custom.submit(projectId, proj?.name ?? projectId, text)
+      setDone(true)
+    } catch (e) {
+      setFail(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  if (!custom) {
+    return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{T('pane.wip')}</span></div>
+  }
+  if (done) {
+    return (
+      <div className="dsh-wt_customBox">
+        <span className="dsh-wt_customDone" aria-hidden>✅</span>
+        <p className="dsh-wt_customDoneText">{T('custom.done')}</p>
+        <p className="dsh-wt_customDoneHint">{T('custom.doneHint')}</p>
+      </div>
+    )
+  }
+  return (
+    <div className="dsh-wt_customBox">
+      <div className="dsh-wt_customCard">
+        <span className="dsh-wt_customTitle">✨ {T('custom.title')}</span>
+        <p className="dsh-wt_customHint">{T('custom.hint')}</p>
+        <textarea
+          className="dsh-wt_customInput"
+          autoFocus
+          placeholder={T('custom.placeholder')}
+          value={requirement}
+          onChange={(e) => setRequirement(e.target.value)}
+        />
+        <div className="dsh-wt_customRow">
+          <span className="dsh-wt_customLabel">{T('custom.project')}</span>
+          <select
+            className="dsh-wt_customSelect"
+            value={projectId ?? ''}
+            onChange={(e) => setProjectId(e.target.value)}
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          className="dsh-wt_customSend"
+          disabled={busy || !requirement.trim() || !projectId}
+          onClick={submit}
+        >{busy ? '…' : T('custom.send')}</button>
+        {fail && <p className="dsh-wt_customFail">{T('custom.fail')}：{fail}</p>}
+      </div>
+    </div>
+  )
+}
+
 /** 单个标签页的内容渲染 */
 function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
   const content = props.tab.content
@@ -1249,6 +1336,7 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
   if (content.type === 'terminal') return <TerminalPane />
+  if (content.type === 'custom') return <CustomPane />
   return (
     <div className="dsh-wt_paneWip">
       <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>
@@ -1296,8 +1384,6 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
 /** 未指派内容：4 选 1 选择器。按钮固定大小、整体居中；
  * 按窗位宽高比自适应排列：宽窗横排 4 连 / 方窗 2×2 / 竖窗竖排。 */
 function PanePicker(props: { row: PaneRow; index: number }) {
-  const [custom, setCustom] = useState(false)
-  const [url, setUrl] = useState('')
   const [mode, setMode] = useState<'row' | 'grid' | 'col'>('grid')
   const hostRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
@@ -1315,40 +1401,20 @@ function PanePicker(props: { row: PaneRow; index: number }) {
     return () => ro.disconnect()
   }, [])
   const pick = (content: SplitContent) => splitStore.openTab(props.row, props.index, content)
-  const applyCustom = () => {
-    const u = url.trim()
-    if (/^(\/|https?:\/\/)/i.test(u)) pick({ kind: 'iframe', url: u })
-  }
   return (
     <div ref={hostRef} className={'dsh-wt_panePicker dsh-wt_panePicker-' + mode}>
-      {custom ? (
-        <div className="dsh-wt_paneCustom">
-          <input
-            autoFocus
-            type="text"
-            placeholder={T('pane.customUrlPh')}
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') applyCustom() }}
-          />
-          <button type="button" className="dsh-wt_paneCustomGo" onClick={applyCustom}>{T('pane.open')}</button>
-        </div>
-      ) : (
-        <>
-          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
-            <span aria-hidden>🌐</span>{T('pane.browser')}
-          </button>
-          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
-            <span aria-hidden>📁</span>{T('pane.explorer')}
-          </button>
-          <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
-            <span aria-hidden>▸_</span>{T('pane.terminal')}
-          </button>
-          <button type="button" className="dsh-wt_panePick" onClick={() => setCustom(true)}>
-            <span aria-hidden>✨</span>{T('pane.custom')}
-          </button>
-        </>
-      )}
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
+        <span aria-hidden>🌐</span>{T('pane.browser')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
+        <span aria-hidden>📁</span>{T('pane.explorer')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'terminal' })}>
+        <span aria-hidden>▸_</span>{T('pane.terminal')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'custom' })}>
+        <span aria-hidden>✨</span>{T('pane.custom')}
+      </button>
     </div>
   )
 }

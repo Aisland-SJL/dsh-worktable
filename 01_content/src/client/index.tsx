@@ -262,6 +262,35 @@ function findSidebar(start: HTMLElement | null): HTMLElement | null {
 /** 子座位注册 id 序列（模块级 store；apply 里订阅 slots 变化写入）。 */
 const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], listeners: new Set() }
 
+/** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
+let sessionBridge: { sessions: any; conversation: any } | null = null
+
+/** 自定义窗口任务：新建一个专属会话，注入工作台背景 + 用户需求，并打开该会话 */
+export async function createCustomSession(projectId: string, projectName: string, requirement: string): Promise<void> {
+  const b = sessionBridge
+  if (!b || typeof b.sessions?.create !== 'function') throw new Error('sessions unavailable')
+  const text = [
+    '【工作台自定义窗口任务】',
+    '以下背景由 dsh-worktable（工作台）插件自动附加，用于帮助你理解任务：',
+    '1. dsh-worktable 是什么：它是本机 DeepSeek Harness 的自建容器插件——侧边栏底部的「工作台」区块管理多个项目；',
+    '   每个项目打开后是一个平铺工作区（若干内容窗 + 对话窗）；内容窗可放浏览器、资源管理器、终端、',
+    '   文件预览（MD/TXT/代码/本地网页）等，支持 6 种布局预设、变更视图、窗内容以标签页组织、状态持久化。',
+    '   它是用户自建的工具，官方文档中没有它的说明；不了解之处可直接向用户提问。',
+    '2. 本对话的用途：专门负责「' + projectName + '」项目中一个窗口（内容窗）的自定义设计——',
+    '   用户希望把这个窗口做成自定义内容。',
+    '3. 用户需求：' + requirement,
+    '4. 请基于以上背景，帮助用户完成这个窗口的自定义设计（例如产出可直接放入窗口的内容、页面或实现方案）；',
+    '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
+  ].join('\n')
+  const sessionId = await b.sessions.create({})
+  let sent = false
+  if (typeof b.conversation?.sendSession === 'function') {
+    try { await b.conversation.sendSession(sessionId, text); sent = true } catch { sent = false }
+  }
+  try { b.sessions.open?.(sessionId) } catch {}
+  if (!sent) await b.conversation?.send?.(text)
+}
+
 /** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
 const sessionScopeStore: {
   snapshot: { sessionId: string; cwd: string; jobs: any[]; subagents: any[] } | null
@@ -357,6 +386,10 @@ function WorktableSection(props: any) {
   const [activeSplitId, setActiveSplitId] = useState<string | null>(() =>
     splitStore.active && splitStore.spec ? splitStore.spec.id : null,
   )
+  /** 供分栏引擎读取的最新项目快照（setSplitEnv 闭包取最新值用） */
+  const projectsRef = useRef<{ projects: ProjectsState; metas: Record<string, ProjectMeta>; aliveRegisteredIds: string[] }>(
+    { projects, metas, aliveRegisteredIds: registeredIds },
+  )
 
   // 会话作用域（当前会话 + 工作目录）与后台任务：注入分栏引擎环境
   // 注意：不走 props.useSessions hook（其宿主包装在部分版本会触发 useSyncExternalStore
@@ -369,6 +402,17 @@ function WorktableSection(props: any) {
       },
       getJobs: () => sessionScopeStore.snapshot?.jobs ?? [],
       getSubagents: () => sessionScopeStore.snapshot?.subagents ?? [],
+      custom: {
+        getProjects: () => {
+          const p = projectsRef.current
+          return [
+            ...p.aliveRegisteredIds.map((id) => ({ id, name: p.projects.nameOverrides[id] ?? p.metas[id]?.name ?? id })),
+            ...p.projects.layouts.map((l) => ({ id: l.id, name: p.projects.nameOverrides[l.id] ?? l.title })),
+          ]
+        },
+        currentProjectId: () => (splitStore.active && splitStore.spec ? splitStore.spec.id : null),
+        submit: (projectId, projectName, requirement) => createCustomSession(projectId, projectName, requirement),
+      },
     })
     return () => setSplitEnv(null)
   }, [])
@@ -538,6 +582,7 @@ function WorktableSection(props: any) {
     () => registeredIds.filter((id) => !projects.removed.includes(id)),
     [registeredIds, projects.removed],
   )
+  projectsRef.current = { projects, metas, aliveRegisteredIds }
   const allIds = useMemo(() => [...aliveRegisteredIds, ...layoutIds], [aliveRegisteredIds, layoutIds])
   const effectiveOrder = useMemo(() => {
     const known = new Set(allIds)
@@ -1277,9 +1322,12 @@ function WorktableSection(props: any) {
   )
 }
 
-export const inject = ['slots', 'locale', 'sessions']
+export const inject = ['slots', 'locale', 'sessions', 'conversation']
 
 export function apply(ctx: any) {
+  // 自定义窗口 → 新建会话桥：保存宿主 sessions/conversation 服务引用（模块级）
+  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null }
+
   ctx.effect(() => {
     const style = document.createElement('style')
     style.setAttribute('data-dsh-plugin', 'dsh-worktable')

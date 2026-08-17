@@ -637,6 +637,34 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP19:', JSON.stringify(step19));
 
+  // 自定义窗口：点 ✨ → 新标签打开居中对话框；默认项目 = 当前项目（仅测 UI，不点发送以免真实建会话）
+  const step20 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      var vis=function(sel){ return [].slice.call(document.querySelectorAll(sel)).find(function(el){ return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0); }); };
+      st.open({id:'t-custom',title:'c',top:null,main:[{id:'p1',title:'p',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await new Promise(function(r){setTimeout(r,400)});
+      var pick=[].slice.call(document.querySelectorAll('.dsh-wt_panePick')).find(function(el){ var t=el.textContent||''; return (t.indexOf('\u81ea\u5b9a\u4e49')>=0||t.indexOf('Custom')>=0) && (getComputedStyle(el).visibility!=='hidden'); });
+      if(pick){ pick.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.tabOpened=st.spec.main[0].tabs.length===1;
+      out.tabType=st.spec.main[0].tabs[0].content.type;
+      out.dialog=!!vis('.dsh-wt_customCard');
+      out.textarea=!!vis('.dsh-wt_customInput');
+      var hint=vis('.dsh-wt_customHint');
+      out.hint=hint?String(hint.textContent).slice(0,26):null;
+      var sel=vis('.dsh-wt_customSelect');
+      out.selectValue=sel?sel.value:null;
+      out.defaultIsCurrent=sel?sel.value==='t-custom':false;
+      var send=vis('.dsh-wt_customSend');
+      out.sendDisabled=send?send.disabled:null;
+      st.close();
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP20:', JSON.stringify(step20));
+
   // 还原临时夹具
   try { fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8') } catch {}
 

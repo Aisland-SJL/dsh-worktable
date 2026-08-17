@@ -639,17 +639,23 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（网页 iframe 内部滚动位置保活）
+## 补记（自定义窗口：需求对话框 + 新建专属会话 + 项目选择 + 上下文注入）
 
-- 用户反馈：MD 位置已能记忆，网页（iframe）内部滚动位置切走再切回仍丢。
-- 根因：保活池用 display:none 隐藏 → iframe 视口被压成 0×0，其内部文档滚动被钳制清零；
-  MD 等普通 div 不受影响，iframe 受影响。
-- 处理：保活包装器 display:none → visibility:hidden（保留布局尺寸，内部滚动不丢；
-  不可见即不可交互，无副作用）。fixture-site 加高 body 用于滚动测试。
-- 测试事故（二次）：visibility 保活让隐藏层保留尺寸，回归脚本里 height>0 的可见性筛选
-  全部失效 → STEP16 再次误点隐藏层保存按钮写坏 styles.ts（已 git 恢复）。修复：
-  ① 所有可见性筛选改 getComputedStyle(visibility)!=='hidden'；
-  ② STEP16 保存前 fail-safe 校验激活标签目标路径必须含 wt-edit-test.md 才点击保存。
-- 验证（STEP19 + 探针）：iframe contentWindow.scrollTo(0,400) → 切走 → 切回 scrollY=400；
-  全 19 STEP 回归 ERROR_COUNT: 0。
-- 备注：纯客户端改动，F5 即生效。checkpoint tag: checkpoint-2026-08-17-pre-iframescroll。
+- 用户需求：点「自定义」→ 新开标签（关标签可回退）→ 居中对话框：写需求 + 选所属项目
+  （默认 = 刚在用的项目）+ 提示发送后将新建一个对话 → 发送 = 自动新建会话，
+  会话需知道：worktable 是什么（自建工具，官方文档没有）、本对话是解决一个窗口的自定义、
+  用户需求原文、窗口位于哪个项目（便于窗口级与项目级后续自定义）。
+- 实现：
+  ① BuiltinType 新增 custom；PanePicker ✨ 直接 openTab 自定义标签（旧内联 URL 表单移除）；
+  ② CustomPane：居中卡片对话框（需求 textarea + 项目 select + 提示文案 + 发送按钮），
+  默认项目 = splitStore.spec.id（当前工作区所属项目），不在列表时回退第一个；发送成功后 ✓ 态；
+  ③ 会话创建桥：inject 增加 'conversation'（探针实测 sessions.create/open、conversation.send/
+  sendSession 可用；api 不可注入已排除）；createCustomSession：sessions.create({}) → 优先
+  conversation.sendSession(sessionId, text) 否则 open 后 send；注入上下文消息：
+  「worktable 是什么 / 本对话用途 / 用户需求 / 所在项目」四段式；
+  ④ WorktableSection 经 projectsRef 快照向引擎注入 custom.getProjects/currentProjectId/submit；
+  locale custom.* 八键 + 对话框 CSS。
+- 验证（functional-diag STEP20，仅 UI 不点发送防真实建会话）：tabType=custom、对话框/
+  textarea/提示语/项目下拉/发送禁用（空需求）全部正确；全 20 STEP ERROR_COUNT: 0。
+  真实建会话闭环需用户在 GUI 实测。
+- 备注：纯客户端改动，F5 即生效。checkpoint tag: checkpoint-2026-08-17-pre-customdialog。
