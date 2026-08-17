@@ -765,7 +765,6 @@ function WorktableSection(props: any) {
                 onClick={() => { setWsPreset(def.id); setWsError(false) }}
               >
                 {presetThumb(def.id)}
-                <span className="dsh-wt_presetLabel">{t('preset.' + def.id)}</span>
               </button>
             ))}
           </div>
