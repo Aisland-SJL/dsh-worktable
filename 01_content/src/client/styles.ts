@@ -52,7 +52,7 @@ export const css = [
   '.dsh-wt_manageRow:hover{border-color:var(--dsw-alias-border-l2,#3a4150)}',
   '.dsh-wt_manageRowOff{opacity:.45}',
   '.dsh-wt_manageGrip{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:12px;cursor:grab;user-select:none;-webkit-user-select:none}',
-  '.dsh-wt_manageIcon{flex:none;width:18px;font-size:13px;text-align:center}',
+  '.dsh-wt_manageIcon{flex:none;width:20px;font-size:15px;text-align:center}',
   '.dsh-wt_manageInput{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;padding:2px 0}',
   '.dsh-wt_manageBtn{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:none;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:11px;line-height:1;cursor:pointer}',
   '.dsh-wt_manageBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}',
@@ -63,7 +63,7 @@ export const css = [
   '.dsh-wt_shortcuts{display:flex;flex-direction:column;gap:4px}',
   '.dsh-wt_shortcut{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-primary,#e6e8eb);text-decoration:none;font-size:12px;line-height:18px}',
   '.dsh-wt_shortcut:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
-  '.dsh-wt_shortcutIcon{flex:none;font-size:13px}',
+  '.dsh-wt_shortcutIcon{flex:none;font-size:15px}',
   '.dsh-wt_shortcutName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_shortcutBadge{flex:none;font-size:9px;line-height:14px;padding:0 5px;border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06));color:var(--dsw-alias-label-tertiary,#6e7683)}',
   // 项目区
@@ -101,7 +101,7 @@ export const css = [
   '.dsh-wt_layout:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_layout[data-on=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_layout[data-on=true] .dsh-wt_layoutName{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
-  '.dsh-wt_layoutIcon{flex:none;font-size:13px}',
+  '.dsh-wt_layoutIcon{flex:none;font-size:15px}',
   '.dsh-wt_layoutText{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}',
   '.dsh-wt_layoutName{font-size:12px;font-weight:400;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
@@ -119,13 +119,15 @@ export const css = [
   '.dsh-wt_iconCell:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05));border-color:var(--dsw-alias-border-l2,#3a4150)}',
   '.dsh-wt_iconCell[data-on=true]{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08));border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   // 可点图标（布局卡 / 管理行 / 快捷方式上的图标，点击换 emoji）
-  '.dsh-wt_iconPick{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:1px;border:none;background:transparent;font:inherit;cursor:pointer;border-radius:4px}',
+  '.dsh-wt_iconPick{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:1px;border:none;background:transparent;cursor:pointer;border-radius:4px}',
   '.dsh-wt_iconPick:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
+  // 四类项目卡片统一竖向高度（常驻×2 / 布局 / 快捷方式；新建条目自动继承）
+  '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card,.dsh-wt_layout,.dsh-wt_shortcut{height:34px;box-sizing:border-box}',
   // 入驻项目卡片图标覆盖：data-wt-icon 存在时用 attr() 替换显示（原字符字号压到 0）
   '.dsh-wt_projects .ta_cardIcon[data-wt-icon],.dsh-wt_projects .pr_cardIcon[data-wt-icon]{font-size:0;line-height:20px}',
-  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:13px;line-height:20px}',
-  // 常驻项目卡片与新建项目统一：emoji 字号 13px、名称不加粗
-  '.dsh-wt_projects .ta_cardIcon,.dsh-wt_projects .pr_cardIcon{font-size:13px;line-height:20px}',
+  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:15px;line-height:20px}',
+  // 常驻项目卡片与新建项目统一：emoji 字号 15px、名称不加粗
+  '.dsh-wt_projects .ta_cardIcon,.dsh-wt_projects .pr_cardIcon{font-size:15px;line-height:20px}',
   '.dsh-wt_projects .ta_cardName,.dsh-wt_projects .pr_cardName{font-weight:400}',
   // 头部按钮内的官方 SVG 图标
   '.dsh-wt_iconBtn svg{display:block}',

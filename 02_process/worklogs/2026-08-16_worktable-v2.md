@@ -570,3 +570,15 @@
   管理行 ✕ → confirmShown=true → 取消（卡片仍在）→ 再 ✕ 删除 → cardsAfter pr:0 + removed=['planreview']；
   布局 ✕ 确认后 layoutsLeft=0；rowsAfterDelete=2；全 STEP 回归 ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+## 补记（图标统一放大 15px + 四类卡片竖向高度统一）
+
+- 用户反馈：① 项目 emoji 放大到 15；② 现有四个项目卡片框的竖向高度不一致，统一；
+  ③ 后续新建的项目也要继承统一高度。
+- 处理：
+  ① 全部项目图标 15px：布局卡/快捷方式/常驻卡（含 data-wt-icon ::before 覆盖）/管理行（20px 盒）；
+  顺带修掉 .dsh-wt_iconPick 的 font:inherit 简写（会把字号重置回父级 12px，覆盖 15px 设置）。
+  ② 四类卡片统一 height:34px + box-sizing:border-box：.ta_card/.pr_card/.dsh-wt_layout/.dsh-wt_shortcut；
+  按类名生效，新建条目自动继承。
+- 验证（functional-diag STEP10 扩展 + 种子加 1 条快捷方式）：heights ta/pr/layout/shortcut 全 34px；
+  四类图标 computed 全 15px；删除确认等既有断言不变；ERRORS_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。

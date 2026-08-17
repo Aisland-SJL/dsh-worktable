@@ -48,7 +48,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await send('Log.enable');
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:[],lastUsed:{},hidden:[],nameOverrides:{},shortcuts:[],layouts:[{id:'t-layout',title:'\u6d4b\u8bd5\u5e03\u5c40',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}]})); } }catch(e){}",
+    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:[],lastUsed:{},hidden:[],nameOverrides:{},shortcuts:[{id:'t-sc',name:'\u6d4b\u8bd5\u5feb\u6377',icon:'\ud83d\udd17',href:'https://example.com'}],layouts:[{id:'t-layout',title:'\u6d4b\u8bd5\u5e03\u5c40',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}]})); } }catch(e){}",
   });
   await send('Page.navigate', { url: 'http://127.0.0.1:3080/' });
   await sleep(11000);
@@ -192,12 +192,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var out={};
     var prIcon=document.querySelector('.dsh-wt_projects .pr_cardIcon');
     var taIcon=document.querySelector('.dsh-wt_projects .ta_cardIcon');
+    var layIcon=document.querySelector('.dsh-wt_layoutIcon');
+    var scIcon=document.querySelector('.dsh-wt_shortcutIcon');
     var taName=document.querySelector('.dsh-wt_projects .ta_cardName');
     var laName=document.querySelector('.dsh-wt_layoutName');
     if(prIcon) out.prIconSize=getComputedStyle(prIcon).fontSize;
     if(taIcon) out.taIconBeforeSize=getComputedStyle(taIcon,'::before').fontSize;
+    if(layIcon) out.layIconSize=getComputedStyle(layIcon).fontSize;
+    if(scIcon) out.scIconSize=getComputedStyle(scIcon).fontSize;
     if(taName) out.taNameWeight=getComputedStyle(taName).fontWeight;
     if(laName) out.laNameWeight=getComputedStyle(laName).fontWeight;
+    function h(sel){ var el=document.querySelector(sel); return el?Math.round(el.getBoundingClientRect().height):null; }
+    out.heights={ta:h('.dsh-wt_projects .ta_card'),pr:h('.dsh-wt_projects .pr_card'),layout:h('.dsh-wt_layout'),shortcut:h('.dsh-wt_shortcut')};
     out.cardsBefore={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
@@ -227,7 +233,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     out.cardsAfter={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     try{ out.removed=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removed='ERR' }
     out.rowsAfterDelete=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow').length;
-    var rows3=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow');
+    var rows3=document.querySelectorAll('.dsh-wt_manage.dsh-wt_pop .dsh-wt_manageRow:not(.dsh-wt_manageRowSc)');
     var lastRow=rows3[rows3.length-1];
     var xBtn3=lastRow&&lastRow.querySelectorAll('.dsh-wt_manageBtn')[lastRow.querySelectorAll('.dsh-wt_manageBtn').length-1];
     if(xBtn3){ xBtn3.click(); }
