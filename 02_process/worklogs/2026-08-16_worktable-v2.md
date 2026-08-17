@@ -357,3 +357,19 @@
   未安排自动重启（用户要求，其他窗口仍在工作）。
 - 待后续：文件打开/编辑、SCM diff/暂存/提交、终端 cwd 信任客户端（better-sidebar 用
   服务端 header.cwd，后续对齐）、jobs 输出回放。
+
+## 补记（重启后工作台消失：useSessions 崩溃排查与修复）
+
+- 现象：用户重启 dsh web 后侧边栏工作台与各项目卡片全部消失（服务端正常、bundle 正常下发）。
+- 排查：opencli 绑定用户标签页失败（被另一 Chrome 扩展占用调试通道）；改用
+  Node + headless Chrome + CDP 自建诊断（04_test/headless-diag.cjs），在真实浏览器引擎
+  中复现并捕获到根因：`slot entry crashed in 'sidebar.footer.action':
+  TypeError: w is not a function`（宿主 useSyncExternalStore 包装层）——触发点是
+  WorktableSection 调用 `props.useSessions()`（GlobalStandardProps 的 selector hook
+  在该宿主版本的 footer.action 座位里崩坏）。
+- 修复：不再使用 props.useSessions；改为 apply() 里订阅 `ctx.sessions.list`
+  （ObservableSnapshot.getSnapshot/subscribe，client inject 增加 'sessions'），
+  写入模块级 sessionScopeStore；组件与分栏引擎（setSplitEnv getScope/getJobs）直接读该快照。
+- 回归验证：headless Chrome 重跑——wtSection/railBox 渲染正常、ERRORS_COUNT=0；
+  用户刷新即恢复（客户端实时下发，无需重启）。
+- 工具沉淀：04_test/headless-diag.cjs（headless Chrome + CDP 页面诊断，可复用）。

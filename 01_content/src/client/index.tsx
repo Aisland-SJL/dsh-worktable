@@ -229,6 +229,26 @@ function findSidebar(start: HTMLElement | null): HTMLElement | null {
 /** 子座位注册 id 序列（模块级 store；apply 里订阅 slots 变化写入）。 */
 const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], listeners: new Set() }
 
+/** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
+const sessionScopeStore: {
+  snapshot: { sessionId: string; cwd: string; jobs: any[] } | null
+} = { snapshot: null }
+
+function syncSessionScope(list: any) {
+  try {
+    const snap = list.getSnapshot()
+    const current: string = snap?.current ?? ''
+    const entry = snap?.items?.find((it: any) => it.sessionId === current) ?? null
+    sessionScopeStore.snapshot = {
+      sessionId: current,
+      cwd: entry?.cwd ?? '',
+      jobs: (snap?.jobsBySession?.[current] ?? []) as any[],
+    }
+  } catch {
+    sessionScopeStore.snapshot = { sessionId: '', cwd: '', jobs: [] }
+  }
+}
+
 function WorktableSection(props: any) {
   const wide = props.wide !== false
   const renderProjectSlot = typeof props.renderSlot === 'function' ? props.renderSlot : null
@@ -272,17 +292,15 @@ function WorktableSection(props: any) {
   )
 
   // 会话作用域（当前会话 + 工作目录）与后台任务：注入分栏引擎环境
-  const useSessions = typeof props.useSessions === 'function' ? props.useSessions : null
-  const sessionsSnap = useSessions ? useSessions() : null
-  const currentEntry = sessionsSnap?.items?.find((it: any) => it.sessionId === sessionsSnap?.current) ?? null
-  const scopeRef = useRef<{ sessionId: string; cwd: string }>({ sessionId: '', cwd: '' })
-  const jobsRef = useRef<any[]>([])
-  scopeRef.current = { sessionId: sessionsSnap?.current ?? '', cwd: currentEntry?.cwd ?? '' }
-  jobsRef.current = sessionsSnap?.jobsBySession?.[sessionsSnap?.current] ?? []
+  // 注意：不走 props.useSessions hook（其宿主包装在部分版本会触发 useSyncExternalStore
+  // 崩溃），改为 apply 里订阅 ctx.sessions.list 后写入模块级 store，此处直接读取。
   useEffect(() => {
     setSplitEnv({
-      getScope: () => scopeRef.current,
-      getJobs: () => jobsRef.current,
+      getScope: () => {
+        const s = sessionScopeStore.snapshot
+        return s ? { sessionId: s.sessionId, cwd: s.cwd } : null
+      },
+      getJobs: () => sessionScopeStore.snapshot?.jobs ?? [],
     })
     return () => setSplitEnv(null)
   }, [])
@@ -911,7 +929,7 @@ function WorktableSection(props: any) {
   )
 }
 
-export const inject = ['slots', 'locale']
+export const inject = ['slots', 'locale', 'sessions']
 
 export function apply(ctx: any) {
   ctx.effect(() => {
@@ -941,6 +959,14 @@ export function apply(ctx: any) {
   const disposeSubscribe = ctx.slots.subscribe('sidebar.worktable.project', syncIds)
   syncIds()
   ctx.effect(() => disposeSubscribe, 'dsh-worktable: project registry watch')
+
+  // 会话作用域（当前会话 cwd 与后台任务）→ 功能窗数据源
+  const sessionsList = ctx.sessions?.list
+  if (sessionsList && typeof sessionsList.getSnapshot === 'function') {
+    syncSessionScope(sessionsList)
+    const disposeScope = sessionsList.subscribe(() => syncSessionScope(sessionsList))
+    ctx.effect(() => disposeScope, 'dsh-worktable: session scope watch')
+  }
 
   // 分栏工作区浮层（M1 通用引擎，shell.overlay 座位）
   ctx.slots.inject('shell.overlay', () => ctx.slots.register({
