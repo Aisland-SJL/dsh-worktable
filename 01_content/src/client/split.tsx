@@ -1352,50 +1352,12 @@ function PanePicker(props: { row: PaneRow; index: number }) {
   )
 }
 
-/** 分栏工作区浮层（shell.overlay 座位；订阅 splitStore 快照渲染） */
-function SplitWorkspace() {
-  const [snap, setSnap] = useState({
-    active: splitStore.active,
-    spec: splitStore.spec,
-    geom: splitStore.geom,
-    chatW: splitStore.chatW,
-    topH: splitStore.topH,
-    paneWs: [...splitStore.paneWs],
-    topWs: [...splitStore.topWs],
-  })
+type PoolItem = { spec: LayoutSpec; chatW: number; topH: number; leftW: number; paneWs: number[]; topWs: number[] }
 
-  useEffect(() => splitStore.subscribe(() => {
-    setSnap({
-      active: splitStore.active,
-      spec: splitStore.spec,
-      geom: splitStore.geom,
-      chatW: splitStore.chatW,
-      topH: splitStore.topH,
-      paneWs: [...splitStore.paneWs],
-      topWs: [...splitStore.topWs],
-    })
-  }), [])
-
-  useEffect(() => {
-    if (!snap.active) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') splitStore.close()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [snap.active])
-
-  // 标签拖放高亮 → 重渲染
-  const [, setDropTick] = useState(0)
-  useEffect(() => {
-    const fn = () => setDropTick((t) => t + 1)
-    dropTargetListeners.add(fn)
-    return () => { dropTargetListeners.delete(fn) }
-  }, [])
-
-  if (!snap.active || !snap.spec || !snap.geom) return null
-  const g = snap.geom
-  const spec = snap.spec
+/** 单个工作区渲染层（geom 为 null 时用 0 几何渲染，外层 display:none 保活，保留网页/MD 滚动/激活标签等状态） */
+function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: number; topH: number; leftW: number; paneWs: number[]; topWs: number[] }) {
+  const g = props.geom ?? { left: 0, top: 0, right: 0, bottom: 0 }
+  const spec = props.spec
   const top = spec.top ?? []
   const main = spec.main ?? []
   const hasLeft = !!spec.left
@@ -1403,12 +1365,12 @@ function SplitWorkspace() {
   const chatLeft = !hasLeft && spec.chatSide === 'left'
   const colW = g.right - g.left
   const rowH = g.bottom - g.top
-  const chatW = clamp(snap.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
+  const chatW = clamp(props.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
   const topH = hasTop
-    ? clamp(snap.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
+    ? clamp(props.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
     : 0
   const leftW = hasLeft
-    ? clamp(snap.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
+    ? clamp(props.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
     : 0
   const chatFull = spec.chatFullHeight === true
   const contentW = Math.max(0, colW - chatW)
@@ -1416,8 +1378,8 @@ function SplitWorkspace() {
   const topRowX = hasLeft ? g.left + leftW : contentX
   const topRowW = hasLeft ? Math.max(0, colW - leftW) : (chatFull ? contentW : colW)
 
-  const topItems = allocate(top, snap.topWs, topRowW)
-  const mainItems = allocate(main, snap.paneWs, contentW)
+  const topItems = allocate(top, props.topWs, topRowW)
+  const mainItems = allocate(main, props.paneWs, contentW)
   const leftItem = spec.left ? { pane: spec.left, left: 0, width: leftW } : null
 
   const barTop = g.top
@@ -1538,6 +1500,95 @@ function SplitWorkspace() {
         }}
         onPointerDown={makeDividerHandler(hasLeft ? 'left' : 'chat')}
       />
+    </>
+  )
+}
+
+/** 分栏工作区浮层（shell.overlay 座位；订阅 splitStore 快照渲染）。
+ * 切换项目时旧工作区不销毁：全部挂载在池中、仅当前可见（display:none 保活），
+ * 网页子页面/滚动位置、MD 滚动位置、激活标签等在切回时原样保留。 */
+function SplitWorkspace() {
+  const [snap, setSnap] = useState({
+    active: splitStore.active,
+    spec: splitStore.spec,
+    geom: splitStore.geom,
+    chatW: splitStore.chatW,
+    topH: splitStore.topH,
+    leftW: splitStore.leftW,
+    paneWs: [...splitStore.paneWs],
+    topWs: [...splitStore.topWs],
+  })
+  const poolRef = useRef<Map<string, PoolItem>>(new Map())
+  const [, setPoolTick] = useState(0)
+
+  useEffect(() => splitStore.subscribe(() => {
+    const spec = splitStore.spec
+    if (splitStore.active && spec) {
+      poolRef.current.set(spec.id, {
+        spec,
+        chatW: splitStore.chatW,
+        topH: splitStore.topH,
+        leftW: splitStore.leftW,
+        paneWs: [...splitStore.paneWs],
+        topWs: [...splitStore.topWs],
+      })
+      // 保活池上限 6 个（LRU：删最老的），避免长时间使用内存膨胀
+      while (poolRef.current.size > 6) {
+        const first = poolRef.current.keys().next().value
+        if (first != null) poolRef.current.delete(first)
+      }
+    }
+    setSnap({
+      active: splitStore.active,
+      spec: splitStore.spec,
+      geom: splitStore.geom,
+      chatW: splitStore.chatW,
+      topH: splitStore.topH,
+      leftW: splitStore.leftW,
+      paneWs: [...splitStore.paneWs],
+      topWs: [...splitStore.topWs],
+    })
+    setPoolTick((t) => t + 1)
+  }), [])
+
+  useEffect(() => {
+    if (!snap.active) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') splitStore.close()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [snap.active])
+
+  // 标签拖放高亮 → 重渲染
+  const [, setDropTick] = useState(0)
+  useEffect(() => {
+    const fn = () => setDropTick((t) => t + 1)
+    dropTargetListeners.add(fn)
+    return () => { dropTargetListeners.delete(fn) }
+  }, [])
+
+  const activeId = snap.active && snap.spec ? snap.spec.id : null
+  const entries = Array.from(poolRef.current.entries())
+  if (entries.length === 0) return null
+  return (
+    <>
+      {entries.map(([id, item]) => {
+        const isActive = id === activeId
+        return (
+          <div key={id} style={isActive ? undefined : { display: 'none' }}>
+            <WorkspaceLayer
+              spec={item.spec}
+              geom={isActive ? snap.geom : null}
+              chatW={isActive ? snap.chatW : item.chatW}
+              topH={isActive ? snap.topH : item.topH}
+              leftW={isActive ? snap.leftW : item.leftW}
+              paneWs={isActive ? snap.paneWs : item.paneWs}
+              topWs={isActive ? snap.topWs : item.topWs}
+            />
+          </div>
+        )
+      })}
     </>
   )
 }

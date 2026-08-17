@@ -639,16 +639,19 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（txt/tsx/css 编辑开启 + 代码语法着色）
+## 补记（工作区切换保活 + 改名输入草稿修复）
 
-- 用户需求：① txt/tsx/css 也开编辑模式；② 代码文件要有颜色（考虑开源后程序员使用）。
+- 用户反馈：① 切到其他项目再回来，网页子页面/位置、MD 滚动位置、激活标签全部重置；
+  ② 改名时先删原名会立刻弹回（只有先加新字才能删）。
 - 处理：
-  ① TextViewer 编辑/预览工具栏对所有文本类型通用（md/txt/log/tsx/ts/jsx/js/css/json），
-  保存走既有 /api/worktable/write 路由；
-  ② 语法着色：highlight.js（只打包 core + typescript/javascript/css/json 四种语言），
-  代码预览渲染成 .dsh-wt_code（token class 配色采用 GitHub Dark 风格自写 CSS，无主题依赖）；
-  无语言映射时 HTML 转义兜底；bundle 859KB。
-- 验证（functional-diag）：STEP15 tsx 预览 hljs-keyword 493 个 token + 编辑区出现/含原文/切回预览；
-  STEP11 package.json 改断言 json 高亮 31 个 token；其余全绿 ERROR_COUNT: 0；
-  STEP16 写路由仍 writeRouteReady=false（等用户重启后验证保存闭环）。
-- 备注：客户端 F5 生效；保存写盘需重启一次 dsh web（上次已提示）。
+  ① SplitWorkspace 重构为「保活池」：按布局 id 把工作区层全部保持挂载（display:none 隐藏、
+  仅当前可见；池上限 6 个 LRU）。切走再切回时 iframe 实例不销毁（子页面/滚动保留）、
+  TextViewer 滚动保留、激活标签保留；几何经 props 传入（隐藏层用 0 几何）。
+  重构中清理了 snap.leftW 长期缺省（clamp(undefined)→NaN）的隐患；
+  ② 改名输入改本地草稿（RenameInput 组件）：输入不落盘，blur/Enter 才提交；
+  清空提交 = 删除覆盖并回显原名。Enter 直接调 commit（无头实测发现程序化 blur() 不派发
+  focusout，真实点击无碍，但 Enter 路径必须显式提交）。
+- 验证（functional-diag STEP17/18 + 多个探针）：STEP17 scrollBeforeClose=320 →
+  scrollAfter=320、activeAfter=1、iframeSameRef=true；STEP18 cleared=true 且真实 CDP 点击
+  失焦后 revertedToOriginal=true；全 18 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

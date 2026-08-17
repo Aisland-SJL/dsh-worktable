@@ -282,9 +282,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\index.tsx'});
       await new Promise(function(r){setTimeout(r,1200)});
       out.tsxTab=st.spec.main[0].tabs[0].title;
-      out.tsxView=!!document.querySelector('.dsh-wt_code');
-      out.tsxHljs=document.querySelectorAll('.dsh-wt_code .hljs-keyword').length;
-      out.tsxHasText=document.querySelector('.dsh-wt_code')?String(document.querySelector('.dsh-wt_code').textContent).indexOf('WorktableSection')>=0:false;
+      var codeEl=[].slice.call(document.querySelectorAll('.dsh-wt_code')).find(function(el){return el.getBoundingClientRect().height>0});
+      out.tsxView=!!codeEl;
+      out.tsxHljs=codeEl?codeEl.querySelectorAll('.hljs-keyword').length:0;
+      out.tsxHasText=codeEl?String(codeEl.textContent).indexOf('WorktableSection')>=0:false;
       st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\styles.ts'});
       await new Promise(function(r){setTimeout(r,900)});
       out.cssTab=st.spec.main[0].tabs[1].title;
@@ -509,6 +510,98 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return JSON.stringify(out);
   })()`);
   console.log('STEP16:', JSON.stringify(step16));
+
+  // 工作区状态保活：切换项目后激活标签/MD滚动位置/iframe 实例原样保留
+  const step17 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      var spec={id:'t-pool',title:'pool',top:null,main:[{id:'p1',title:'p',min:200,content:null}],chatWidth:{default:320,min:240,max:600}};
+      st.open(spec);
+      await new Promise(function(r){setTimeout(r,400)});
+      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\02_process\\\\PRD.md'});
+      await new Promise(function(r){setTimeout(r,900)});
+      st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\styles.ts'});
+      await new Promise(function(r){setTimeout(r,900)});
+      st.setActiveTab('main',0,st.spec.main[0].tabs[1].id);
+      // 轮询等待代码视图渲染（fetch 完成后 .dsh-wt_fileView 才出现；只取可见元素，避开保活池里的隐藏层）
+      var fv=null;
+      for(var w=0;w<20 && !fv;w++){ await new Promise(function(r){setTimeout(r,150)}); fv=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return el.getBoundingClientRect().height>0}); }
+      out.fileViewReady=!!fv;
+      if(fv){ fv.scrollTop=320; }
+      await new Promise(function(r){setTimeout(r,200)});
+      out.scrollBeforeClose=fv?fv.scrollTop:null;
+      var savedSpec=st.spec;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      st.open(savedSpec);
+      await new Promise(function(r){setTimeout(r,500)});
+      out.activeAfter=st.spec.main[0].active;
+      var fv2=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return el.getBoundingClientRect().height>0});
+      out.scrollAfter=fv2?fv2.scrollTop:null;
+      // iframe 保活：加一个站点 iframe 标签 → 关闭 → 重开 → 同一 DOM 实例
+      var rootToken=encodeURIComponent('E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture-site');
+      st.openTab('main',0,{kind:'iframe',url:'/api/worktable/site/'+rootToken+'/index.html',title:'site'});
+      await new Promise(function(r){setTimeout(r,1500)});
+      var f1=document.querySelector('.dsh-wt_paneFrame');
+      var savedSpec2=st.spec;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      st.open(savedSpec2);
+      await new Promise(function(r){setTimeout(r,500)});
+      var f2=document.querySelector('.dsh-wt_paneFrame');
+      out.iframeSameRef=f1===f2;
+      out.activeAfter2=st.spec.main[0].active;
+      st.close();
+      await new Promise(function(r){setTimeout(r,200)});
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP17:', JSON.stringify(step17));
+
+  // 改名输入框：清空不会立刻弹回原名（本地草稿）；真实鼠标点击别处触发 blur 提交后回显原名
+  const step18pre = await evaluate(`(async function(){
+    var out={};
+    try{
+      var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+      if(btn){ btn.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc):not(.dsh-wt_manageRowRemoved)');
+      var inp=rows[0]?rows[0].querySelector('.dsh-wt_manageInput'):null;
+      if(inp){
+        var setter=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+        setter.call(inp,'');
+        inp.dispatchEvent(new Event('input',{bubbles:true}));
+        await new Promise(function(r){setTimeout(r,250)});
+        out.cleared=inp.value==='';
+        inp.focus();
+        await new Promise(function(r){setTimeout(r,100)});
+      }
+      var sr=document.querySelector('.dsh-wt_sortRow').getBoundingClientRect();
+      out.x=Math.round(sr.left+10);
+      out.y=Math.round(sr.top+10);
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP18pre:', JSON.stringify(step18pre));
+  const p18 = JSON.parse(step18pre);
+  if (p18 && p18.x != null && p18.y != null) {
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p18.x, y: p18.y, button: 'left', clickCount: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p18.x, y: p18.y, button: 'left', clickCount: 1 });
+    await sleep(300);
+  }
+  const step18 = await evaluate(`(function(){
+    var out={};
+    try{
+      var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc):not(.dsh-wt_manageRowRemoved)');
+      var inp=rows[0]?rows[0].querySelector('.dsh-wt_manageInput'):null;
+      out.revertedToOriginal=inp?inp.value!=='':false;
+      var bd=document.querySelector('.dsh-wt_popBackdrop');
+      if(bd){ bd.click(); }
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP18:', JSON.stringify(step18));
 
   // 还原临时夹具
   try { fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8') } catch {}

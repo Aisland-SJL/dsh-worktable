@@ -289,6 +289,28 @@ function syncSessionScope(list: any) {
   }
 }
 
+/** 管理面板改名输入：本地草稿，blur/Enter 才提交（清空时不会立刻弹回原名） */
+function RenameInput(props: { initial: string; placeholder: string; onCommit: (v: string) => void }) {
+  const [val, setVal] = useState(props.initial)
+  useEffect(() => { setVal(props.initial) }, [props.initial])
+  const commit = () => {
+    const v = val
+    props.onCommit(v)
+    // 清空提交 = 删除覆盖：回显原名（与文件改名一致）
+    if (!v.trim()) setVal(props.initial)
+  }
+  return (
+    <input
+      className="dsh-wt_manageInput"
+      value={val}
+      placeholder={props.placeholder}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') { commit(); (e.target as HTMLInputElement).blur() } }}
+    />
+  )
+}
+
 function WorktableSection(props: any) {
   const wide = props.wide !== false
   const renderProjectSlot = typeof props.renderSlot === 'function' ? props.renderSlot : null
@@ -1115,12 +1137,7 @@ function WorktableSection(props: any) {
                       title={t('icons.change')}
                       onClick={(e) => { e.stopPropagation(); openIconPick('project', id, e.currentTarget as HTMLElement) }}
                     >{projects.iconOverrides[id] ?? meta?.icon ?? '📦'}</span>}
-                <input
-                  className="dsh-wt_manageInput"
-                  value={display}
-                  placeholder={t('manage.renamePh')}
-                  onChange={(e) => renameProject(id, e.target.value)}
-                />
+                <RenameInput initial={display} placeholder={t('manage.renamePh')} onCommit={(v) => renameProject(id, v)} />
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
                   {isHidden ? '🙈' : '👁'}
                 </button>
