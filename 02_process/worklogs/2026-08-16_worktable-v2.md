@@ -324,3 +324,12 @@
   （removeShortcut 保留）；词典新增 preset.l2/preset.t3。
 - 验证：构建 + node --check 通过；服务端实时下发（含 preset.l2/leftWidth/setLeftW）；
   待用户刷新实测。
+
+## 补记（第 6 个布局改为「左品右聊」）
+
+- 用户定案：上一下三 改为——左侧品字形（上一个、下两个内容窗）+ 右侧聊天窗通高整列。
+- 引擎：LayoutSpec 新增 chatFullHeight（聊天通高：marginTop 不再被 top 行下推、
+  top 行排入内容区一侧、聊天分隔线全高、工具栏宽度取内容区宽）；
+  该布局支持 ⇄ 翻转（聊天通高贴左时内容区在右）。
+- 预设：t3 的 chatFull=true；缩略图改为左品字 + 右通高聊天；词典 preset.t3 改名「左品右聊 / Pin + chat」。
+- 验证：构建 + node --check 通过；服务端实时下发（含 chatFullHeight）；待用户刷新实测。

@@ -30,6 +30,8 @@ export type LayoutSpec = {
   topHeight?: { default: number; min: number; max: number }
   /** 聊天窗贴边位置：'right'（右列/右下，默认）| 'left'（左列/左下） */
   chatSide?: 'left' | 'right'
+  /** 聊天窗通高（整列）：为 true 时聊天占整条右/左列，内容区（含 top 行）全部排在其另一侧 */
+  chatFullHeight?: boolean
 }
 
 type Geom = { left: number; top: number; right: number; bottom: number }
@@ -310,8 +312,9 @@ export const splitStore: SplitState = {
     const leftW = hasLeft
       ? clamp(this.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
       : 0
+    const chatFull = spec.chatFullHeight === true
     const gap = Math.max(0, colW - chatW) + 'px'
-    const mt = (BAR_H + topH) + 'px'
+    const mt = (BAR_H + (hasTop && !chatFull ? topH : 0)) + 'px'
     const chatLeft = !hasLeft && spec.chatSide === 'left'
     this.lastMarginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
     this.lastMarginRight = hasLeft ? '' : (chatLeft ? gap : '')
@@ -691,10 +694,11 @@ function SplitWorkspace() {
   const leftW = hasLeft
     ? clamp(snap.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260))
     : 0
+  const chatFull = spec.chatFullHeight === true
   const contentW = Math.max(0, colW - chatW)
   const contentX = hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.left)
-  const topRowX = hasLeft ? g.left + leftW : g.left
-  const topRowW = hasLeft ? Math.max(0, colW - leftW) : colW
+  const topRowX = hasLeft ? g.left + leftW : contentX
+  const topRowW = hasLeft ? Math.max(0, colW - leftW) : (chatFull ? contentW : colW)
 
   const topItems = allocate(top, snap.topWs, topRowW)
   const mainItems = allocate(main, snap.paneWs, contentW)
@@ -731,7 +735,7 @@ function SplitWorkspace() {
   return (
     <>
       {/* 标题栏 */}
-      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: g.left, top: barTop, width: hasLeft ? colW : (hasTop ? colW : contentW), zIndex: 70 }}>
+      <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: g.left, top: barTop, width: hasLeft || chatFull ? contentW : (hasTop ? colW : contentW), zIndex: 70 }}>
         <span className="dsh-wt_splitTitle">{spec.title}</span>
         {!hasLeft && (
           <button
@@ -789,9 +793,9 @@ function SplitWorkspace() {
         style={{
           position: 'fixed',
           left: (hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.right - chatW)) - DIVIDER / 2,
-          top: hasLeft ? barTop + BAR_H : bodyTop,
+          top: hasLeft || chatFull ? barTop + BAR_H : bodyTop,
           width: DIVIDER,
-          height: hasLeft ? g.bottom - barTop - BAR_H : mainH,
+          height: hasLeft || chatFull ? g.bottom - barTop - BAR_H : mainH,
           zIndex: 72,
         }}
         onPointerDown={makeDividerHandler(hasLeft ? 'left' : 'chat')}

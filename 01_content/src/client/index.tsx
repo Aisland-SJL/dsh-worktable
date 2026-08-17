@@ -66,12 +66,12 @@ const OVER_SIDE_PX = 80
 
 /** 拓扑预设（聊天窗恒贴右，PRD §13.2 硬约束）：左右/三栏/上一下二/井字 */
 const PRESET_DEFS = [
-  { id: '2h', leftCount: 0, topCount: 0, contentCount: 1 },
-  { id: '3h', leftCount: 0, topCount: 0, contentCount: 2 },
-  { id: 'l2', leftCount: 1, topCount: 1, contentCount: 0 },
-  { id: 't2', leftCount: 0, topCount: 1, contentCount: 1 },
-  { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1 },
-  { id: 't3', leftCount: 0, topCount: 1, contentCount: 2 },
+  { id: '2h', leftCount: 0, topCount: 0, contentCount: 1, chatFull: false },
+  { id: '3h', leftCount: 0, topCount: 0, contentCount: 2, chatFull: false },
+  { id: 'l2', leftCount: 1, topCount: 1, contentCount: 0, chatFull: false },
+  { id: 't2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: false },
+  { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1, chatFull: false },
+  { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
 ] as const
 
 function buildLayout(presetId: string, name: string): LayoutSpec {
@@ -95,6 +95,7 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
     chatWidth: { default: 360, min: 240, max: 600 },
     topHeight: { default: 200, min: 120, max: 480 },
     chatSide: 'right',
+    chatFullHeight: def.chatFull === true,
   }
 }
 
@@ -137,9 +138,12 @@ function presetThumb(defId: string) {
     )
   }
   return (
-    <span className="dsh-wt_thumb">
-      <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
-      <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(false, 'c')}{cell(true, 'd')}</span>
+    <span className="dsh-wt_thumb dsh-wt_thumbCols">
+      <span className="dsh-wt_thumbCol">
+        <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
+        <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(false, 'c')}</span>
+      </span>
+      <span className="dsh-wt_thumbCol">{cell(true, 'd')}</span>
     </span>
   )
 }
