@@ -351,12 +351,12 @@ type SplitPane = {
 
 | 内容窗 | 可行性 | 依据 |
 | --- | --- | --- |
-| 浏览器 | ✅ 现成 | iframe + 同源路由（travelatlas 已验证） |
-| 资源管理器 | 🔶 待调研 | workspaces/directory 服务与官方目录选择器可作基底 |
-| 终端 | 🔶 待调研 | 宿主依赖含 xterm + dsh-terminal 包，接入方式需逆向确认 |
-| 任务管理 | 🔶 待调研 | todo/目标状态投影服务，需找对 API |
-| 源代码管理 | ⚠️ 受限 | 宿主无内置 git 服务；先以「终端里跑 git」替代 |
-| 自定义 vibe | ✅ 可闭环 | 描述需求 → agent 生成新项目（插件/站点）→ 注册进工作台 |
+| 浏览器 | ✅ 已实现 | iframe + 地址栏 |
+| 资源管理器 | ✅ 已实现（第一版） | 服务端 /api/worktable/fs 目录列表（参考 better-sidebar 架构）；文件打开待后续 |
+| 源代码管理 | ✅ 已实现（第一版） | 服务端 /api/worktable/git（porcelain v1 -z）；diff/暂存/提交待后续 |
+| 终端 | ✅ 已实现（第一版） | WS /api/worktable/term + node-pty + xterm（宿主缺 node-pty 时降级提示） |
+| 任务管理 | ✅ 已实现（第一版） | 客户端 sessions 快照 jobsBySession（后台任务列表，2s 刷新） |
+| 自定义 vibe | ✅ 可闭环 | 描述需求 → agent 生成新项目（插件/站点）→ 注册进工作台（UI 已留 ✨ 入口） |
 
 ### 13.8 里程碑
 

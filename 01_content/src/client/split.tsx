@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Terminal } from 'xterm'
+import 'xterm/css/xterm.css'
 
 /**
  * dsh-worktable 乐高式工作区 M1：通用分栏引擎（PRD §13）。
@@ -100,6 +102,44 @@ export function setSplitT(fn: ((key: string) => string) | null) {
   uiT = fn
 }
 const T = (key: string): string => (uiT ? uiT(key) : key)
+
+/** 工作区环境（由工作台注入：当前会话作用域与后台任务列表） */
+export type SplitScope = { sessionId: string; cwd: string }
+export type SplitJob = {
+  id: string
+  kind: string
+  label: string
+  status: string
+  detail?: string
+  startedAt: number
+  finishedAt?: number
+}
+type SplitEnv = {
+  getScope: () => SplitScope | null
+  getJobs: () => SplitJob[]
+}
+let splitEnv: SplitEnv | null = null
+export function setSplitEnv(env: SplitEnv | null) {
+  splitEnv = env
+}
+
+async function postJson(url: string, body: unknown): Promise<any> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  return res.json()
+}
+
+function parentPathOf(p: string): string {
+  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
+  if (idx <= 0) return p
+  let parent = p.slice(0, idx)
+  if (/^[A-Za-z]:$/.test(parent)) parent += '\\'
+  return parent
+}
 
 /** 拖拽换位暂存 */
 let dragPane: { row: PaneRow; index: number } | null = null
@@ -575,6 +615,177 @@ function BrowserPane() {
   )
 }
 
+/** 资源管理器窗（服务端 /api/worktable/fs） */
+function ExplorerPane() {
+  const [path, setPath] = useState('')
+  const [entries, setEntries] = useState<any[]>([])
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [history, setHistory] = useState<string[]>([])
+  const load = useCallback((p: string, push: boolean) => {
+    if (!p) { setError(T('pane.explorerNoCwd')); return }
+    setLoading(true)
+    postJson('/api/worktable/fs', { path: p })
+      .then((d) => {
+        setPath(d.path ?? p)
+        setEntries(d.entries ?? [])
+        setError('')
+        setHistory((h) => (push && p !== d.path ? [...h, p] : h))
+      })
+      .catch((e) => setError(String(e)))
+      .finally(() => setLoading(false))
+  }, [])
+  useEffect(() => {
+    load(splitEnv?.getScope()?.cwd ?? '', false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const back = () => {
+    setHistory((h) => {
+      if (h.length === 0) return h
+      const prev = h[h.length - 1]
+      load(prev, false)
+      return h.slice(0, -1)
+    })
+  }
+  return (
+    <>
+      <div className="dsh-wt_subBar">
+        <button type="button" className="dsh-wt_subBtn" title="上一级" onClick={() => load(parentPathOf(path), true)}>⬆</button>
+        <button type="button" className="dsh-wt_subBtn" title="后退" onClick={back}>↩</button>
+        <button type="button" className="dsh-wt_subBtn" title="刷新" onClick={() => load(path, false)}>↻</button>
+        <span className="dsh-wt_subPath">{path || '…'}</span>
+      </div>
+      <div className="dsh-wt_subList">
+        {error && <div className="dsh-wt_subEmpty">{error}</div>}
+        {!error && !loading && entries.length === 0 && <div className="dsh-wt_subEmpty">—</div>}
+        {entries.map((e) => (
+          <button
+            key={e.path}
+            type="button"
+            className="dsh-wt_subRow"
+            onClick={() => (e.isDir ? load(e.path, true) : setError(T('pane.openLater')))}
+          >
+            <span className="dsh-wt_subIcon" aria-hidden>{e.isDir ? '📁' : '📄'}</span>
+            <span className="dsh-wt_subName">{e.name}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 源代码管理窗（服务端 /api/worktable/git） */
+function GitPane() {
+  const [snap, setSnap] = useState<{ isRepo: boolean; branch?: string; entries: any[] } | null>(null)
+  const [error, setError] = useState('')
+  const load = useCallback(() => {
+    const cwd = splitEnv?.getScope()?.cwd ?? ''
+    if (!cwd) { setError(T('pane.explorerNoCwd')); return }
+    postJson('/api/worktable/git', { cwd })
+      .then(setSnap)
+      .catch((e) => setError(String(e)))
+  }, [])
+  useEffect(() => { load() }, [load])
+  return (
+    <>
+      <div className="dsh-wt_subBar">
+        <button type="button" className="dsh-wt_subBtn" title="刷新" onClick={load}>↻</button>
+        <span className="dsh-wt_subPath">{snap?.isRepo ? ('⎇ ' + snap.branch) : ''}</span>
+      </div>
+      <div className="dsh-wt_subList">
+        {error && <div className="dsh-wt_subEmpty">{error}</div>}
+        {!error && snap && !snap.isRepo && <div className="dsh-wt_subEmpty">{T('pane.gitNotRepo')}</div>}
+        {!error && snap?.isRepo && snap.entries.length === 0 && <div className="dsh-wt_subEmpty">{T('pane.gitClean')}</div>}
+        {!error && snap?.isRepo && snap.entries.map((e, i) => (
+          <div key={i} className="dsh-wt_subRow dsh-wt_subRowStatic">
+            <span className={'dsh-wt_gitXY dsh-wt_gitXY' + (e.xy.includes('A') || e.xy.includes('M') ? 'Mod' : 'New')}>{e.xy.trim()}</span>
+            <span className="dsh-wt_subName">{e.path}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 任务管理窗（客户端 sessions 快照 jobsBySession；2s 刷新） */
+function JobsPane() {
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => setTick((t) => t + 1), 2000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const jobs = splitEnv?.getJobs?.() ?? []
+  return (
+    <div className="dsh-wt_subList">
+      {jobs.length === 0 && <div className="dsh-wt_subEmpty">{T('pane.jobsEmpty')}</div>}
+      {jobs.map((j) => (
+        <div key={j.id} className="dsh-wt_subRow dsh-wt_subRowStatic">
+          <span className={'dsh-wt_jobDot dsh-wt_jobDot-' + j.status} aria-hidden>●</span>
+          <span className="dsh-wt_subName">{j.label}</span>
+          <span className="dsh-wt_subTag">{j.kind}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** 终端窗（WS /api/worktable/term + node-pty） */
+function TerminalPane() {
+  const hostRef = useRef<HTMLDivElement | null>(null)
+  const [failed, setFailed] = useState('')
+  useEffect(() => {
+    const el = hostRef.current
+    if (!el) return
+    let term: any = null
+    let ws: WebSocket | null = null
+    let disposed = false
+    try {
+      term = new Terminal({
+        cursorBlink: true,
+        fontFamily: 'Consolas, Menlo, monospace',
+        fontSize: 12,
+        convertEol: true,
+        theme: { background: '#010409' },
+      })
+    } catch {
+      setFailed(T('pane.termFail'))
+      return
+    }
+    term.open(el)
+    const scope = splitEnv?.getScope?.()
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const url = proto + '//' + location.host + '/api/worktable/term?cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
+    try {
+      ws = new WebSocket(url)
+    } catch {
+      term.dispose()
+      setFailed(T('pane.termFail'))
+      return
+    }
+    ws.onmessage = (ev) => { try { term.write(String(ev.data)) } catch {} }
+    ws.onclose = () => { if (!disposed) { try { term.write('\r\n[连接已关闭]') } catch {} } }
+    ws.onerror = () => { if (!disposed) setFailed(T('pane.termFail')) }
+    term.onData((d: string) => { if (ws && ws.readyState === 1) ws.send(d) })
+    const ro = new ResizeObserver(() => {
+      if (typeof term.fit === 'function') {
+        try { term.fit() } catch {}
+        if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'resize', cols: term.cols, rows: term.rows }))
+      }
+    })
+    ro.observe(el)
+    return () => {
+      disposed = true
+      ro.disconnect()
+      try { ws?.close() } catch {}
+      try { term.dispose() } catch {}
+    }
+  }, [])
+  if (failed) {
+    return <div className="dsh-wt_paneWip"><span className="dsh-wt_paneWipText">{failed}</span></div>
+  }
+  return <div ref={hostRef} className="dsh-wt_termHost" />
+}
+
 /** 窗内容三态渲染 */
 function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   const { pane, row, index } = props
@@ -582,10 +793,12 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   if (content && content.kind === 'iframe') {
     return <iframe className="dsh-wt_paneFrame" src={content.url} title={pane.title} />
   }
-  if (content && content.kind === 'builtin' && content.type === 'browser') {
-    return <BrowserPane />
-  }
   if (content && content.kind === 'builtin') {
+    if (content.type === 'browser') return <BrowserPane />
+    if (content.type === 'explorer') return <ExplorerPane />
+    if (content.type === 'scm') return <GitPane />
+    if (content.type === 'tasks') return <JobsPane />
+    if (content.type === 'terminal') return <TerminalPane />
     return (
       <div className="dsh-wt_paneWip">
         <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>

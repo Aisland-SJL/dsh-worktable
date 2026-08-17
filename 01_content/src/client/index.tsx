@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
-import { splitStore, SplitWorkspace, setSplitT, type LayoutSpec, type SplitPane } from './split'
+import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane } from './split'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -270,6 +270,22 @@ function WorktableSection(props: any) {
   const [activeSplitId, setActiveSplitId] = useState<string | null>(() =>
     splitStore.active && splitStore.spec ? splitStore.spec.id : null,
   )
+
+  // 会话作用域（当前会话 + 工作目录）与后台任务：注入分栏引擎环境
+  const useSessions = typeof props.useSessions === 'function' ? props.useSessions : null
+  const sessionsSnap = useSessions ? useSessions() : null
+  const currentEntry = sessionsSnap?.items?.find((it: any) => it.sessionId === sessionsSnap?.current) ?? null
+  const scopeRef = useRef<{ sessionId: string; cwd: string }>({ sessionId: '', cwd: '' })
+  const jobsRef = useRef<any[]>([])
+  scopeRef.current = { sessionId: sessionsSnap?.current ?? '', cwd: currentEntry?.cwd ?? '' }
+  jobsRef.current = sessionsSnap?.jobsBySession?.[sessionsSnap?.current] ?? []
+  useEffect(() => {
+    setSplitEnv({
+      getScope: () => scopeRef.current,
+      getJobs: () => jobsRef.current,
+    })
+    return () => setSplitEnv(null)
+  }, [])
   const floatRef = useRef<FloatRect | null>(null)
 
   const persistView = (patch: Partial<ViewState>) => {

@@ -33,7 +33,7 @@ const jobs = [
   {
     entryPoints: [join(here, 'src/index.ts')], outfile: 'lib/index.js',
     platform: 'node', format: 'esm', target: ['node22'],
-    external: ['@deepseek-ai/*', 'node:*'],
+    external: ['@deepseek-ai/*', 'node:*', 'ws', 'node-pty'],
   },
   {
     entryPoints: [join(here, 'src/client/index.tsx')], outfile: 'lib/client.js',

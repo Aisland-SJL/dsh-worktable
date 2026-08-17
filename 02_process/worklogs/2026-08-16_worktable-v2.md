@@ -333,3 +333,27 @@
   该布局支持 ⇄ 翻转（聊天通高贴左时内容区在右）。
 - 预设：t3 的 chatFull=true；缩略图改为左品字 + 右通高聊天；词典 preset.t3 改名「左品右聊 / Pin + chat」。
 - 验证：构建 + node --check 通过；服务端实时下发（含 chatFullHeight）；待用户刷新实测。
+
+## 补记（5 个功能窗照搬 better-sidebar 架构，第一版实现）
+
+- 用户要求：参照已安装的 dsh-better-sidebar，把前 5 个内容窗（浏览器/资源管理器/
+  源代码管理/任务管理/终端）做成真正生效的，自定义暂缓。
+- 调研结论（better-sidebar 架构）：内容窗能力 = 它自己服务端的路由（fs 列表、git 命令、
+  node-pty + WebSocket 升级路由、任务回放）+ 客户端 xterm/iframe；注册 Upgrade 走
+  ctx.webServer.registerUpgrade。
+- 实现（dsh-worktable）：
+  ① 服务端重写（src/index.ts）：POST /api/worktable/fs（readdir 目录优先排序、上限 500）、
+  POST /api/worktable/git（status porcelain v1 -z + 分支）、WS /api/worktable/term
+  （node-pty 生成 shell + resize 协议；node-pty/ws 缺失时路由不注册、终端窗降级提示）；
+  build.mjs 服务端 external 增加 ws/node-pty（运行时从宿主 node_modules 解析，
+  better-sidebar 已带）。
+  ② 客户端（split.tsx）：ExplorerPane（面包屑路径/上一级/后退/刷新/目录进入）、
+  GitPane（分支 + 变更清单，XY 着色）、JobsPane（sessions 快照 jobsBySession 列表、
+  状态圆点、2s 刷新）、TerminalPane（xterm + WS + ResizeObserver fit/resize）；
+  新增 SplitEnv（setSplitEnv 注入 getScope/getJobs），工作台从 useSessions 快照取
+  当前会话与 cwd、jobsBySession。
+  ③ 依赖：devDependencies 增加 xterm ^5.3.0（已 npm install，打包进 client.js）。
+- 注意：服务端路由改动需**重启 dsh web 后生效**（bundle 启动时组合；客户端已实时下发）。
+  未安排自动重启（用户要求，其他窗口仍在工作）。
+- 待后续：文件打开/编辑、SCM diff/暂存/提交、终端 cwd 信任客户端（better-sidebar 用
+  服务端 header.cwd，后续对齐）、jobs 输出回放。
