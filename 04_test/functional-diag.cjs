@@ -282,7 +282,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       st.openTab('main',0,{kind:'file',path:'E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\01_content\\\\src\\\\client\\\\index.tsx'});
       await new Promise(function(r){setTimeout(r,1200)});
       out.tsxTab=st.spec.main[0].tabs[0].title;
-      var codeEl=[].slice.call(document.querySelectorAll('.dsh-wt_code')).find(function(el){return el.getBoundingClientRect().height>0});
+      var codeEl=[].slice.call(document.querySelectorAll('.dsh-wt_code')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
       out.tsxView=!!codeEl;
       out.tsxHljs=codeEl?codeEl.querySelectorAll('.hljs-keyword').length:0;
       out.tsxHasText=codeEl?String(codeEl.textContent).indexOf('WorktableSection')>=0:false;
@@ -485,12 +485,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await new Promise(function(r){setTimeout(r,400)});
         st.openTab('main',0,{kind:'file',path:'C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md'});
         await new Promise(function(r){setTimeout(r,1200)});
-        out.bar=!![].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return el.getBoundingClientRect().height>0});
-        var bar=[].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return el.getBoundingClientRect().height>0});
+        out.bar=!![].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
+        var bar=[].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
         var btns=bar?bar.querySelectorAll('.dsh-wt_mdBtn'):[];
         if(btns[1]){ btns[1].click(); }
         await new Promise(function(r){setTimeout(r,250)});
-        var ta=[].slice.call(document.querySelectorAll('.dsh-wt_mdEdit')).find(function(el){return el.getBoundingClientRect().height>0});
+        var ta=[].slice.call(document.querySelectorAll('.dsh-wt_mdEdit')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
         out.editArea=!!ta;
         out.draft0=ta?ta.value.slice(0,8):null;
         if(ta){
@@ -499,10 +499,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           ta.dispatchEvent(new Event('input',{bubbles:true}));
         }
         await new Promise(function(r){setTimeout(r,250)});
-        var saveBtn=[].slice.call(document.querySelectorAll('.dsh-wt_mdSave')).find(function(el){return el.getBoundingClientRect().height>0});
-        if(saveBtn){ saveBtn.click(); }
+        var saveBtn=[].slice.call(document.querySelectorAll('.dsh-wt_mdSave')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
+        // fail-safe：保存前强制校验激活标签的目标路径就是临时夹具，防止测试误写真实文件
+        var curTab=st.spec&&st.spec.main[0]?st.spec.main[0].tabs[st.spec.main[0].active||0]:null;
+        out.curPath=curTab?String(curTab.content.path||'').slice(-20):null;
+        if(saveBtn && curTab && String(curTab.content.path).indexOf('wt-edit-test.md')>=0){ saveBtn.click(); }
         await new Promise(function(r){setTimeout(r,900)});
-        out.previewBack=!![].slice.call(document.querySelectorAll('.dsh-wt_md')).find(function(el){return el.getBoundingClientRect().height>0});
+        out.previewBack=!![].slice.call(document.querySelectorAll('.dsh-wt_md')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
         var chk=await fetch('/api/worktable/file?path='+encodeURIComponent('C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md')).then(function(r){return r.text()}).catch(function(){return null});
         out.savedContent=chk?String(chk).indexOf('EDITED_OK')>=0:false;
         st.close();
@@ -527,7 +530,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       st.setActiveTab('main',0,st.spec.main[0].tabs[1].id);
       // 轮询等待代码视图渲染（fetch 完成后 .dsh-wt_fileView 才出现；只取可见元素，避开保活池里的隐藏层）
       var fv=null;
-      for(var w=0;w<20 && !fv;w++){ await new Promise(function(r){setTimeout(r,150)}); fv=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return el.getBoundingClientRect().height>0}); }
+      for(var w=0;w<20 && !fv;w++){ await new Promise(function(r){setTimeout(r,150)}); fv=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)}); }
       out.fileViewReady=!!fv;
       if(fv){ fv.scrollTop=320; }
       await new Promise(function(r){setTimeout(r,200)});
@@ -538,7 +541,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       st.open(savedSpec);
       await new Promise(function(r){setTimeout(r,500)});
       out.activeAfter=st.spec.main[0].active;
-      var fv2=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return el.getBoundingClientRect().height>0});
+      var fv2=[].slice.call(document.querySelectorAll('.dsh-wt_fileView')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
       out.scrollAfter=fv2?fv2.scrollTop:null;
       // iframe 保活：加一个站点 iframe 标签 → 关闭 → 重开 → 同一 DOM 实例
       var rootToken=encodeURIComponent('E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture-site');
@@ -603,6 +606,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     return JSON.stringify(out);
   })()`);
   console.log('STEP18:', JSON.stringify(step18));
+
+  // 网页 iframe 内部滚动位置保活（visibility 保活，尺寸不被压缩）
+  const step19 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      var spec={id:'t-webkeep',title:'w',top:null,main:[{id:'p1',title:'p',min:200,content:null}],chatWidth:{default:320,min:240,max:600}};
+      st.open(spec);
+      await new Promise(function(r){setTimeout(r,400)});
+      var rt=encodeURIComponent('E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture-site');
+      st.openTab('main',0,{kind:'iframe',url:'/api/worktable/site/'+rt+'/index.html',title:'index'});
+      await new Promise(function(r){setTimeout(r,1800)});
+      var f=[].slice.call(document.querySelectorAll('.dsh-wt_paneFrame')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
+      var doc=f&&f.contentDocument;
+      if(doc&&doc.defaultView){ doc.defaultView.scrollTo(0,400); }
+      await new Promise(function(r){setTimeout(r,200)});
+      out.scrollSet=doc&&doc.defaultView?doc.defaultView.scrollY:null;
+      var saved=st.spec;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      st.open(saved);
+      await new Promise(function(r){setTimeout(r,600)});
+      var f2=[].slice.call(document.querySelectorAll('.dsh-wt_paneFrame')).find(function(el){return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0)});
+      var doc2=f2&&f2.contentDocument;
+      out.scrollBack=doc2&&doc2.defaultView?doc2.defaultView.scrollY:null;
+      st.close();
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP19:', JSON.stringify(step19));
 
   // 还原临时夹具
   try { fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8') } catch {}

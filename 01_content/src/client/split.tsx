@@ -1577,7 +1577,7 @@ function SplitWorkspace() {
       {entries.map(([id, item]) => {
         const isActive = id === activeId
         return (
-          <div key={id} style={isActive ? undefined : { display: 'none' }}>
+          <div key={id} style={isActive ? undefined : { visibility: 'hidden' as const }}>
             <WorkspaceLayer
               spec={item.spec}
               geom={isActive ? snap.geom : null}
