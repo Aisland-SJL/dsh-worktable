@@ -485,11 +485,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await new Promise(function(r){setTimeout(r,400)});
         st.openTab('main',0,{kind:'file',path:'C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md'});
         await new Promise(function(r){setTimeout(r,1200)});
-        out.bar=!!document.querySelector('.dsh-wt_mdBar');
-        var btns=document.querySelectorAll('.dsh-wt_mdBtn');
+        out.bar=!![].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return el.getBoundingClientRect().height>0});
+        var bar=[].slice.call(document.querySelectorAll('.dsh-wt_mdBar')).find(function(el){return el.getBoundingClientRect().height>0});
+        var btns=bar?bar.querySelectorAll('.dsh-wt_mdBtn'):[];
         if(btns[1]){ btns[1].click(); }
         await new Promise(function(r){setTimeout(r,250)});
-        var ta=document.querySelector('.dsh-wt_mdEdit');
+        var ta=[].slice.call(document.querySelectorAll('.dsh-wt_mdEdit')).find(function(el){return el.getBoundingClientRect().height>0});
         out.editArea=!!ta;
         out.draft0=ta?ta.value.slice(0,8):null;
         if(ta){
@@ -498,10 +499,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           ta.dispatchEvent(new Event('input',{bubbles:true}));
         }
         await new Promise(function(r){setTimeout(r,250)});
-        var saveBtn=document.querySelector('.dsh-wt_mdSave');
+        var saveBtn=[].slice.call(document.querySelectorAll('.dsh-wt_mdSave')).find(function(el){return el.getBoundingClientRect().height>0});
         if(saveBtn){ saveBtn.click(); }
         await new Promise(function(r){setTimeout(r,900)});
-        out.previewBack=!!document.querySelector('.dsh-wt_md');
+        out.previewBack=!![].slice.call(document.querySelectorAll('.dsh-wt_md')).find(function(el){return el.getBoundingClientRect().height>0});
         var chk=await fetch('/api/worktable/file?path='+encodeURIComponent('C:\\\\Users\\\\SJL\\\\AppData\\\\Local\\\\Temp\\\\wt-edit-test.md')).then(function(r){return r.text()}).catch(function(){return null});
         out.savedContent=chk?String(chk).indexOf('EDITED_OK')>=0:false;
         st.close();

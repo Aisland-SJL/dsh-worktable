@@ -678,6 +678,7 @@ export const splitStore: SplitState = {
       main[i] = mutate(main[i])
       this.spec = { ...spec, main }
     }
+    this.onSpecMutated?.(this.spec)
     this.persist()
     this.notify()
   },

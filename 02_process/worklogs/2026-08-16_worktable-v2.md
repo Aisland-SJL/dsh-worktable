@@ -639,19 +639,18 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（工作区切换保活 + 改名输入草稿修复）
+## 补记（激活标签持久化漏写修复——保活问题的真正根因）
 
-- 用户反馈：① 切到其他项目再回来，网页子页面/位置、MD 滚动位置、激活标签全部重置；
-  ② 改名时先删原名会立刻弹回（只有先加新字才能删）。
-- 处理：
-  ① SplitWorkspace 重构为「保活池」：按布局 id 把工作区层全部保持挂载（display:none 隐藏、
-  仅当前可见；池上限 6 个 LRU）。切走再切回时 iframe 实例不销毁（子页面/滚动保留）、
-  TextViewer 滚动保留、激活标签保留；几何经 props 传入（隐藏层用 0 几何）。
-  重构中清理了 snap.leftW 长期缺省（clamp(undefined)→NaN）的隐患；
-  ② 改名输入改本地草稿（RenameInput 组件）：输入不落盘，blur/Enter 才提交；
-  清空提交 = 删除覆盖并回显原名。Enter 直接调 commit（无头实测发现程序化 blur() 不派发
-  focusout，真实点击无碍，但 Enter 路径必须显式提交）。
-- 验证（functional-diag STEP17/18 + 多个探针）：STEP17 scrollBeforeClose=320 →
-  scrollAfter=320、activeAfter=1、iframeSameRef=true；STEP18 cleared=true 且真实 CDP 点击
-  失焦后 revertedToOriginal=true；全 18 STEP ERROR_COUNT: 0。
+- 用户反馈：自媒体工作台建 3 标签选 MD 滚到中间，切建筑审图再切回 → MD 和位置都丢了，
+  默认跳到第三个 index 网页标签。
+- 精确复现（按用户真实路径：布局卡↔带视图覆盖的常驻卡互相切换）确认：active 回到 2。
+- 根因：splitStore.setActiveTab 漏调 onSpecMutated → 激活标签变更从不落盘；
+  持久化里保留的是最后一次 openTab 的 active（最后一个标签）。保活池机制本身一直正常，
+  之前「不保活」的表象全部源于这个持久化缺口。
+- 修复：setActiveTab 补 this.onSpecMutated?.(this.spec)。
+- 事故记录：上一轮测试脚本作用域缺陷（点中隐藏保活层里 styles.ts 标签的保存按钮），
+  用户重启后写路由生效，把 '# EDITED_OK' 写进了 styles.ts 源文件——已 git checkout 恢复，
+  并修正 STEP16 全部选择器限定可见元素（只写临时夹具）。
+- 验证：probe-card 精确复现用户流程 → activeBack=0、scrollBack=300、iframeSame=true；
+  全 18 STEP 回归：STEP17 scroll 320→320、STEP16 保存闭环 savedContent=true；ERRORS 0。
 - 备注：纯客户端改动，F5 即生效。
