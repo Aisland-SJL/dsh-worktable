@@ -635,18 +635,6 @@ function WorktableSection(props: any) {
     })
   }
 
-  // 恢复默认：还原排序/隐藏/改名/图标/视图覆盖；已删除的项目不复活（真删除，可在「已删除的项目」重新添加）
-  const resetProjects = () => {
-    persistProjects((prev) => ({
-      ...prev,
-      order: [],
-      hidden: [],
-      nameOverrides: {},
-      iconOverrides: {},
-      views: {},
-    }))
-  }
-
   /** 重新添加已删除的入驻项目（删除 ↔ 重新添加 完全可逆） */
   const readdProject = (id: string) => {
     persistProjects((prev) => ({
@@ -794,10 +782,17 @@ function WorktableSection(props: any) {
             if (ovr) icon.setAttribute('data-wt-icon', ovr)
             else icon.removeAttribute('data-wt-icon')
           }
-          // 选中态统一由工作台判定（引擎打开的项目高亮；未打开时若引擎空闲则保留卡片自带状态，
-          // 兼容自带分栏实现的插件）
-          if (activeSplitId === id) el.setAttribute('data-on', 'true')
-          else if (activeSplitId != null) el.setAttribute('data-on', 'false')
+          // 选中态统一由工作台判定：
+          // - 有视图覆盖的项目：点击恒由工作台接管 → 高亮完全跟随 activeSplitId（关闭即熄灭）；
+          // - 无视图覆盖：引擎打开时点亮；引擎开着别的时熄灭；引擎空闲时保留卡片自带状态
+          //   （兼容自带分栏实现的插件）。
+          if (projects.views[id]) {
+            el.setAttribute('data-on', activeSplitId === id ? 'true' : 'false')
+          } else if (activeSplitId === id) {
+            el.setAttribute('data-on', 'true')
+          } else if (activeSplitId != null) {
+            el.setAttribute('data-on', 'false')
+          }
         } else {
           el.removeAttribute('data-wt-id')
         }
@@ -807,7 +802,7 @@ function WorktableSection(props: any) {
     const mo = new MutationObserver(sync)
     mo.observe(document.body, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [aliveRegisteredIds, projects.iconOverrides, activeSplitId])
+  }, [aliveRegisteredIds, projects.iconOverrides, projects.views, activeSplitId])
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -1070,12 +1065,16 @@ function WorktableSection(props: any) {
 
       {viewOptionsOpen && <div className="dsh-wt_popBackdrop" onClick={() => setViewOptionsOpen(false)} />}
       {viewOptionsOpen && (
-        <div className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: popTop, width: 316, zIndex: 80 }}>
-          <span className="dsh-wt_menuLabel">{t('sort.label')}</span>
-          <button type="button" className="dsh-wt_menuItem" data-on={view.orderBy === 'manual'}
-            onClick={() => persistView({ orderBy: 'manual' })}>{t('sort.manual')}</button>
-          <button type="button" className="dsh-wt_menuItem" data-on={view.orderBy === 'recent'}
-            onClick={() => persistView({ orderBy: 'recent' })}>{t('sort.recent')}</button>
+        <div className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: popTop, width: 280, zIndex: 80 }}>
+          <div className="dsh-wt_manageHead">
+            <span className="dsh-wt_manageTitle">{t('sort.label')}</span>
+          </div>
+          <div className="dsh-wt_sortRow">
+            <button type="button" className="dsh-wt_sortBtn" data-on={view.orderBy === 'manual'}
+              onClick={() => persistView({ orderBy: 'manual' })}>{t('sort.manual')}</button>
+            <button type="button" className="dsh-wt_sortBtn" data-on={view.orderBy === 'recent'}
+              onClick={() => persistView({ orderBy: 'recent' })}>{t('sort.recent')}</button>
+          </div>
           <div className="dsh-wt_menuSep" />
           <div className="dsh-wt_manageHead">
             <span className="dsh-wt_manageTitle">{t('manage.title')}</span>
@@ -1149,7 +1148,6 @@ function WorktableSection(props: any) {
               <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => askDelete('shortcut', s.id, s.name)}>✕</button>
             </div>
           ))}
-          <button type="button" className="dsh-wt_manageReset" onClick={resetProjects}>{t('manage.reset')}</button>
           {projects.removed.length > 0 && (
             <>
               <div className="dsh-wt_menuSep" />

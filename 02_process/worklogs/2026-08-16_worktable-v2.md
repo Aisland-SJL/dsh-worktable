@@ -639,17 +639,20 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（工作台状态持久化修复 + tsx/css 代码预览）
+## 补记（反选修复 + 设置面板五项微调）
 
-- 用户反馈：① 项目里布置好的窗口内容（如上面浏览器/下面终端）切换项目再切回就变回默认，
-  每个项目的工作台应保持上一次的样子；② 资源管理器要能点开 tsx/css 文件预览（同 MD）。
-- 根因：onSpecMutated 回写只写 layouts 条目，漏了 views（视图覆盖工作区）→ 常驻项目
-  内容丢失；布局路径本身正常（实测确认）。
-- 处理：① onSpecMutated 按 spec.id 分流：layouts 里有该 id → 更新布局条目；否则写回
-  views[id]（入驻项目工作区）。所有变更（开标签/关标签/换聊天边/换位）都会触发；
-  ② 资源管理器文件匹配加 tsx/ts/jsx/js/css/json → kind:file 预览（等宽文本展示，同 TXT 模式）。
-- 验证（functional-diag 重排 STEP14/15 到 STEP10 前 + STEP9 改查 planreview 键 +
-  恢复误删的 STEP13 打印行）：STEP14 布局 layoutSavedTabs=1/layoutRestoredTabs=1、
-  视图覆盖 taSavedTabs=1/taRestoredTabs=1（切换回来内容保持）；STEP15 tsx/css 双标签预览
-  且内容含 WorktableSection；全 15 STEP ERROR_COUNT: 0。
+- 用户反馈（五项）：① 旅行 Atlas 卡片再点一次应反选（取消选中），现在做不到；
+  ② 「排序方式」与「管理项目」应同级别同字体（按管理项目样式）；③ 设置弹窗宽度略宽；
+  ④ 排序方式两行字改成一左一右两个选择按钮（手动/最近）；⑤ 去掉「恢复默认」按钮。
+- 处理：
+  ① 根因：引擎其实已关，但 DOM 同步写入的 data-on=true 在引擎空闲时从不还原 → 高亮残留。
+  修正规则：有视图覆盖的项目高亮完全跟随 activeSplitId（关闭即 false）；无覆盖项目引擎空闲时
+  保留卡片自带状态；
+  ② 「排序方式」标签改用 manageHead/manageTitle（与管理项目同款 11px/600）；
+  ③ 设置弹窗 316 → 280px；
+  ④ 排序改为 .dsh-wt_sortRow 一左一右两个 .dsh-wt_sortBtn（选中态描边高亮）；
+  ⑤ 删除恢复默认按钮与 resetProjects 函数、locale manage.reset（zh/en）。
+- 验证（functional-diag）：STEP13 增反选断言 activeAfterSecondClick=false +
+  taOnAfterSecondClick='false'；STEP8 sortItems=2；STEP10 resetBtnGone=true 且删除/重新添加
+  流程保持；全 15 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。

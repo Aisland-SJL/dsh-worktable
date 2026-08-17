@@ -48,6 +48,11 @@ export const css = [
   '.dsh-wt_manageTitle{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_manageDone{display:flex;align-items:center;padding:2px 8px;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-state-accent-primary,#4f8ef7);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
   '.dsh-wt_manageDone:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  // 排序方式：一左一右两个选择按钮（手动 / 最近）
+  '.dsh-wt_sortRow{display:flex;gap:6px;padding:0 8px 2px}',
+  '.dsh-wt_sortBtn{flex:1;display:flex;align-items:center;justify-content:center;padding:4px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_sortBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);border-color:var(--dsw-alias-border-l2,#3a4150)}',
+  '.dsh-wt_sortBtn[data-on=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_manageRow{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid transparent;border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03))}',
   '.dsh-wt_manageRow:hover{border-color:var(--dsw-alias-border-l2,#3a4150)}',
   '.dsh-wt_manageRowOff{opacity:.45}',

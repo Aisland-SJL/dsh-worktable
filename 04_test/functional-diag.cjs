@@ -157,7 +157,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if(btn){ btn.click(); }
     await new Promise(function(r){setTimeout(r,300)});
     var sp=document.querySelector('.dsh-wt_settings');
-    if(sp){ var cs=getComputedStyle(sp); out.pos=cs.position; out.left=sp.getBoundingClientRect().left; out.sortItems=sp.querySelectorAll('.dsh-wt_menuItem').length; out.rows=sp.querySelectorAll('.dsh-wt_manageRow').length; }
+    if(sp){ var cs=getComputedStyle(sp); out.pos=cs.position; out.left=sp.getBoundingClientRect().left; out.sortItems=sp.querySelectorAll('.dsh-wt_sortBtn').length; out.rows=sp.querySelectorAll('.dsh-wt_manageRow').length; }
     out.backdrop=!!document.querySelector('.dsh-wt_popBackdrop');
     var bd=document.querySelector('.dsh-wt_popBackdrop');
     if(bd){ bd.click(); }
@@ -342,12 +342,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await new Promise(function(r){setTimeout(r,300)});
     out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_layout');
     try{ out.layoutsLeft=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts.length }catch(e){ out.layoutsLeft='ERR' }
-    // 恢复默认不应复活已删除项目；「已删除的项目」里重新添加可逆
-    var resetBtn=document.querySelector('.dsh-wt_manageReset');
-    if(resetBtn){ resetBtn.click(); }
-    await new Promise(function(r){setTimeout(r,250)});
-    try{ out.removedAfterReset=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removedAfterReset='ERR' }
+    // 真删除：「已删除的项目」区块出现，重新添加可逆（无恢复默认按钮）
     out.removedSection=!!document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved');
+    out.resetBtnGone=!document.querySelector('.dsh-wt_manageReset');
     var readdBtn=document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved .dsh-wt_manageBtn');
     if(readdBtn){ readdBtn.click(); }
     await new Promise(function(r){setTimeout(r,300)});
@@ -445,6 +442,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await new Promise(function(r){setTimeout(r,500)});
       out.taOnAfterOpen=ta?ta.getAttribute('data-on'):null;
       out.engineSpecId=st.spec?st.spec.id:null;
+      // 反选：再点一次卡片 → 引擎关闭 + 高亮熄灭
+      if(ta){ ta.click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      out.activeAfterSecondClick=st.active;
+      out.taOnAfterSecondClick=ta?ta.getAttribute('data-on'):null;
       st.close();
       await new Promise(function(r){setTimeout(r,300)});
     }catch(err){ out.err=String(err) }
