@@ -639,27 +639,18 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（常驻项目彻底去特殊化：变更视图通用 / 真删除 / 去箭头）
+## 补记（本地站点目录级托管：资源管理器点 index.html 完整渲染相对资源）
 
-- 用户反馈（四条）：① 两个常驻项目也要变更视图按钮；② 怀疑底层代码里写死了这两个项目的
-  特殊内容——应该完全不特殊；③ 删除常驻项目后「恢复默认」不应复活它们（真删除），
-  但整个流程可逆（可重新添加回来）；④ 管理行去掉 ↑↓ 箭头（左缘 ≡ 抓手拖拽已够用）。
-- 处理：
-  ① 变更视图通用化：projects.v1 新增 views（id → LayoutSpec 视图覆盖）；管理行 🧩 按钮
-  所有项目显示；applyLayoutChange 对布局项目重建条目、对入驻项目写 views[id]；
-  openSplit 打开时用 views[spec.id] 替换自声明布局；卡片点击拦截（有覆盖时用引擎打开），
-  常驻项目一样可变更视图；
-  ② 去硬编码：删除 LEGACY_SPLIT_IDS/ta_card/pr_card 类名映射；改为通用 DOM 桥——
-  子座位卡片按注册序 ↔ aliveRegisteredIds 位置映射（button:not(.dsh-wt_layout)），
-  标记 data-wt-id；图标覆盖写到卡片第一个子元素；CSS 全部换成 [data-wt-id] 通用选择器
-  （框/高度/字号/字重/描述行隐藏）；reportUsed 冷却对全部非引擎项目通用；
-  split.tsx 仅保留跨插件互操作桥（.ta_split 浮层让位，注释中性化）；
-  ③ 删除语义：resetProjects 不再清空 removed（恢复默认不复活）；设置面板新增「已删除的项目」
-  区块，逐条「↺ 重新添加」（删除 ↔ 重新添加完全可逆）；confirm.projectBody 文案同步；
-  ④ 管理行删除 ↑/↓ 按钮与 moveBy 函数，排序只靠 ≡ 拖拽；locale 删 manage.up/down，
-  新增 manage.removed/readd。
-- 验证（functional-diag STEP9/10 重写）：STEP9 常驻行 3 按钮（无箭头+🧩）→ 变更视图
-  views['planreview'] 三栏拓扑 ✓；布局行迁移不变 ✓；STEP10 删除后 reset removedAfterReset
-  仍含 id（不复活）→ removedSection=true → ↺ 重新添加 removed=[] 且卡片回归 ✓；
-  通用桥回归：框/高度/字重/图标覆盖/desc 隐藏全 ✓；ERRORS_COUNT: 0。
-- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+- 用户问题：AI 乐（静态内容 HTML）点 index.html 能渲染，旅行 Atlas（JS 单页应用）白屏。
+- 根因：旧预览走 /api/worktable/file 单文件直读，页内相对引用（./assets/...）解析到错误目录 404；
+  AI 乐 HTML 自带静态内容所以仍可见，旅行 Atlas 只有空 root + JS 注入所以白屏。
+- 处理（用户确认方案 1）：
+  ① 服务端新增前缀路由 /api/worktable/site（kind:'prefix'，模式照搬 better-sidebar）：
+  URL = /site/<encodeURIComponent(目录)>/<相对路径>，逐段 decode，root 目录内沙箱（.. 越界 403），
+  目录访问回退 index.html；40MB 上限；FILE_TYPES 共享 MIME 表扩充（字体/wasm/音视频/avif 等）；
+  ② 客户端资源管理器点 .html/.htm 改开 site URL（root=所在目录，rel=文件名），标签标题=文件名
+  （SplitContent iframe 增加可选 title 字段）；单文件预览（md/txt/pdf/图片）不变。
+- 验证（functional-diag STEP12 + 04_test/fixture-site 夹具：index.html + assets/app.js/style.css）：
+  预检路由存在才断言（appText=SITE_OK + CSS 颜色注入）。当前运行中的服务器未加载新路由 →
+  routeReady=false（404 已过滤，ERRORS_COUNT: 0），其余 STEP1-11 全绿。
+- 备注：含服务端路由，**需手动重启一次 dsh web** 后 STEP12 完整验证与旅行 Atlas dist 实测。

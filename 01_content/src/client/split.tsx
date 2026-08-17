@@ -16,7 +16,7 @@ import MarkdownIt from 'markdown-it'
 export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal'
 
 export type SplitContent =
-  | { kind: 'iframe'; url: string }
+  | { kind: 'iframe'; url: string; title?: string }
   | { kind: 'builtin'; type: BuiltinType }
   | { kind: 'file'; path: string }
 
@@ -128,6 +128,7 @@ const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
 function tabTitleOf(content: SplitContent): string {
   if (content.kind === 'builtin') return T(BUILTIN_LABEL_KEYS[content.type])
   if (content.kind === 'file') return basenameOf(content.path)
+  if (content.kind === 'iframe' && content.title) return content.title
   try {
     const u = new URL(content.url)
     return u.hostname || content.url
@@ -929,7 +930,13 @@ function ExplorerPane(props: { row: PaneRow; index: number }) {
             onClick={() => {
               if (e.isDir) { toggle(e.path); return }
               if (/\.html?$/i.test(e.name)) {
-                splitStore.openTab(props.row, props.index, { kind: 'iframe', url: '/api/worktable/file?path=' + encodeURIComponent(e.path) })
+                // 目录级静态托管：相对引用（./assets/...）在所在目录下解析，页面可完整渲染
+                const dir = parentPathOf(e.path)
+                splitStore.openTab(props.row, props.index, {
+                  kind: 'iframe',
+                  url: '/api/worktable/site/' + encodeURIComponent(dir) + '/' + encodeURIComponent(e.name),
+                  title: e.name,
+                })
               } else if (/\.(md|markdown|mdown|txt|log|pdf|png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(e.name)) {
                 splitStore.openTab(props.row, props.index, { kind: 'file', path: e.path })
               } else {

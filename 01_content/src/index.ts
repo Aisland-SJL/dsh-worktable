@@ -23,6 +23,21 @@ export const HEALTH_PATH = '/api/worktable/health'
 
 const MAX_ENTRIES = 500
 
+/** 本地文件/站点静态资源的 MIME 映射（file 与 site 两条路由共用） */
+const FILE_TYPES: Record<string, string> = {
+  html: 'text/html; charset=utf-8', htm: 'text/html; charset=utf-8',
+  css: 'text/css; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
+  json: 'application/json; charset=utf-8', map: 'application/json; charset=utf-8',
+  md: 'text/markdown; charset=utf-8', markdown: 'text/markdown; charset=utf-8',
+  txt: 'text/plain; charset=utf-8', log: 'text/plain; charset=utf-8',
+  pdf: 'application/pdf', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg',
+  gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', ico: 'image/x-icon', avif: 'image/avif',
+  woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf',
+  wasm: 'application/wasm', mp3: 'audio/mpeg', mp4: 'video/mp4', webm: 'video/webm',
+}
+
+const SITE_PREFIX = '/api/worktable/site'
+
 /**
  * 从本插件模块位置向祖先方向查找并加载 node_modules 包（如 ws / node-pty）。
  * 本包经 junction 链接进 profile，普通 import 可能解析不到 profile 级依赖；
@@ -211,7 +226,41 @@ export function apply(ctx: Context) {
           json: 'application/json; charset=utf-8', md: 'text/markdown; charset=utf-8', markdown: 'text/markdown; charset=utf-8', txt: 'text/plain; charset=utf-8', log: 'text/plain; charset=utf-8',
           pdf: 'application/pdf', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', ico: 'image/x-icon',
         }
-        res.writeHead(200, { 'content-type': types[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
+        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
+        res.end(data)
+      } catch (err) {
+        json(res, 404, { error: String(err) })
+      }
+    },
+  })
+
+  // 本地站点（目录级静态托管）：点开 index.html 时挂载整个所在目录，
+  // 让 ./assets/... 等相对引用正常解析（前缀路由，余下路径 = <rootToken>/<相对路径>）。
+  webServer.register({
+    kind: 'prefix',
+    path: SITE_PREFIX,
+    handler: async (req: any, res: any) => {
+      try {
+        if (req.method !== 'GET') { res.writeHead(405); res.end(); return }
+        const pathname = new URL(req.url ?? '/', 'http://dsh.internal').pathname
+        const segs = pathname.slice(SITE_PREFIX.length).split('/').filter(Boolean)
+        const rootToken = segs.shift() ?? ''
+        const rel = segs.map((s) => { try { return decodeURIComponent(s) } catch { return s } }).join('/')
+        if (!rootToken) { json(res, 400, { error: 'missing root' }); return }
+        const root = pathResolve(rootToken)
+        let abs = pathResolve(root, rel)
+        if (abs !== root && !abs.startsWith(root + sep)) { json(res, 403, { error: 'outside root' }); return }
+        const statMod = await import('node:fs/promises')
+        let info = await statMod.stat(abs).catch(() => null)
+        if (info && info.isDirectory()) {
+          abs = pathResolve(abs, 'index.html')
+          info = await statMod.stat(abs).catch(() => null)
+        }
+        if (!info || !info.isFile()) { json(res, 404, { error: 'not found' }); return }
+        if (info.size > 40 * 1024 * 1024) { json(res, 413, { error: 'file too large' }); return }
+        const data = await readFile(abs)
+        const ext = (abs.split('.').pop() || '').toLowerCase()
+        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
         res.end(data)
       } catch (err) {
         json(res, 404, { error: String(err) })

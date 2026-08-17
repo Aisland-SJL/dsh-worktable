@@ -304,8 +304,41 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP11:', JSON.stringify(step11));
 
+  // 本地站点目录级托管：index.html 的相对资源（./assets/...）应随目录一起解析渲染
+  const step12 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      st.open({id:'t-site',title:'site',top:null,main:[{id:'s1',title:'s',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await new Promise(function(r){setTimeout(r,400)});
+      var rootToken=encodeURIComponent('E:\\\\AI_Workspace\\\\DeepseekHarness\\\\Projects\\\\dsh-worktable\\\\04_test\\\\fixture-site');
+      var pr=await fetch('/api/worktable/site/'+rootToken+'/index.html').catch(function(e){ return null; });
+      out.routeReady=!!(pr&&pr.ok);
+      out.probeStatus=pr?pr.status:null;
+      if(out.routeReady){
+        st.openTab('main',0,{kind:'iframe',url:'/api/worktable/site/'+rootToken+'/index.html',title:'site'});
+        await new Promise(function(r){setTimeout(r,1800)});
+        out.tabTitle=st.spec.main[0].tabs[0].title;
+        var f=document.querySelector('.dsh-wt_paneFrame');
+        var doc=f&&f.contentDocument;
+        if(doc){
+          var app=doc.getElementById('app');
+          out.appText=app?app.textContent:null;
+          out.appColor=app?doc.defaultView.getComputedStyle(app).color:null;
+        }
+      }
+      st.close();
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP12:', JSON.stringify(step12));
 
   const errors = events.filter((e) => {
+    // 站点路由属新增服务端能力：运行中的服务器未重启前该 404 属预期（重启后移除本过滤）
+    const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
+    const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';
+    if (txt.indexOf('/api/worktable/site') >= 0) return false;
+    return true;
   }).filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||

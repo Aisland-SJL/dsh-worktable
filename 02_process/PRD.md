@@ -353,7 +353,7 @@ type SplitPane = {
 | 内容窗 | 可行性 | 依据 |
 | --- | --- | --- |
 | 浏览器 | ✅ 已实现 | iframe + 地址栏 |
-| 资源管理器 | ✅ 已实现（第一版） | 服务端 /api/worktable/fs 目录列表（参考 better-sidebar 架构）；文件点击开预览标签（2026-08-17）：.html iframe、.md markdown-it 渲染、.txt/.log 纯文本、.pdf pdf.js 自绘阅读器（抓手：按住空格临时拖动 / H 切换常开 / 顶部 ✋ 按钮，缩放与适应宽度）、常见图片居中展示；pdf.js worker 源码注入客户端 bundle（Blob URL 起 module worker，零服务端依赖） |
+| 资源管理器 | ✅ 已实现（第一版） | 服务端 /api/worktable/fs 目录列表（参考 better-sidebar 架构）；文件点击开预览标签（2026-08-17）：.html → /api/worktable/site 目录级静态托管（相对资源随目录解析，本地网页完整渲染；PDF 已回退原生 iframe 阅读器）、.md markdown-it 渲染、.txt/.log 纯文本、常见图片居中展示 |
 | 源代码管理 | ✅ 已实现（第一版） | 服务端 /api/worktable/git（porcelain v1 -z）；diff/暂存/提交待后续 |
 | 终端 | ✅ 已实现（第一版） | WS /api/worktable/term + node-pty + xterm（宿主缺 node-pty 时降级提示） |
 | 任务管理 | ✅ 已实现（第一版） | 客户端 sessions 快照 jobsBySession（后台任务列表，2s 刷新） |
