@@ -333,6 +333,47 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   })()`);
   console.log('STEP12:', JSON.stringify(step12));
 
+  // 选中态统一：引擎打开的项目卡片高亮（含视图覆盖打开的常驻项目）；新建项目同规则
+  const step13 = await evaluate(`(async function(){
+    var out={};
+    try{
+      var st=window.__dshWorktable.splitStore;
+      var ta=document.querySelector('.dsh-wt_projects .ta_card');
+      var pr=document.querySelector('.dsh-wt_projects .pr_card');
+      // 布局项目打开 → 常驻卡 data-on=false
+      st.open({id:'t-layout',title:'L',top:null,main:[{id:'p1',title:'1',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await new Promise(function(r){setTimeout(r,400)});
+      out.taOnWhenLayoutOpen=ta?ta.getAttribute('data-on'):null;
+      out.prOnWhenLayoutOpen=pr?pr.getAttribute('data-on'):null;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+      // 给旅行设置视图覆盖（走 UI：设置 → 旅行行 🧩 → 2h）
+      var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
+      if(btn){ btn.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var rows=document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow:not(.dsh-wt_manageRowSc):not(.dsh-wt_manageRowRemoved)');
+      var taRow=rows[1];
+      var puzzle=taRow&&taRow.querySelectorAll('.dsh-wt_manageBtn')[taRow.querySelectorAll('.dsh-wt_manageBtn').length-2];
+      if(puzzle){ puzzle.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      var presets=document.querySelectorAll('.dsh-wt_presets .dsh-wt_preset');
+      if(presets[0]){ presets[0].click(); }
+      await new Promise(function(r){setTimeout(r,400)});
+      var bd=document.querySelector('.dsh-wt_popBackdrop');
+      if(bd){ bd.click(); }
+      await new Promise(function(r){setTimeout(r,300)});
+      // 点旅行卡片 → 视图覆盖 → 引擎打开 → 卡片高亮
+      if(ta){ ta.click(); }
+      await new Promise(function(r){setTimeout(r,500)});
+      out.taOnAfterOpen=ta?ta.getAttribute('data-on'):null;
+      out.engineSpecId=st.spec?st.spec.id:null;
+      st.close();
+      await new Promise(function(r){setTimeout(r,300)});
+    }catch(err){ out.err=String(err) }
+    return JSON.stringify(out);
+  })()`);
+  console.log('STEP13:', JSON.stringify(step13));
+
   const errors = events.filter((e) => {
     // 站点路由属新增服务端能力：运行中的服务器未重启前该 404 属预期（重启后移除本过滤）
     const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;

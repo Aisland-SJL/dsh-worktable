@@ -788,6 +788,10 @@ function WorktableSection(props: any) {
             if (ovr) icon.setAttribute('data-wt-icon', ovr)
             else icon.removeAttribute('data-wt-icon')
           }
+          // 选中态统一由工作台判定（引擎打开的项目高亮；未打开时若引擎空闲则保留卡片自带状态，
+          // 兼容自带分栏实现的插件）
+          if (activeSplitId === id) el.setAttribute('data-on', 'true')
+          else if (activeSplitId != null) el.setAttribute('data-on', 'false')
         } else {
           el.removeAttribute('data-wt-id')
         }
@@ -797,7 +801,7 @@ function WorktableSection(props: any) {
     const mo = new MutationObserver(sync)
     mo.observe(document.body, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [aliveRegisteredIds, projects.iconOverrides])
+  }, [aliveRegisteredIds, projects.iconOverrides, activeSplitId])
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {

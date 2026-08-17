@@ -639,12 +639,14 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（site 路由 rootToken 未解码修复）
+## 补记（卡片选中态统一判定）
 
-- 用户重启后实测：点 index.html 返回 {"error":"not found"}（路由已生效，文件解析失败）。
-- 根因：rootToken（encodeURIComponent 编码的目录）直接 pathResolve，未 decodeURIComponent，
-  解析成带 %3A%5C 字面量的错误路径 → stat 空 → not found。rel 段当时有 decode，root 段漏了。
-- 修复：rootToken = decodeURIComponent(segs.shift())。
-- 验证：node 单测模拟解析逻辑——旅行 Atlas dist/index.html、dist/assets/index-*.js、
-  fixture-site/index.html、fixture-site/assets/app.js 四条全部命中真实文件且沙箱判定 inside=true。
-- 备注：服务端改动，需用户再重启一次 dsh web 生效。
+- 用户反馈：旅行 Atlas 卡片选中后没有高亮边（其他 3 个项目都有）；新建项目也要有。
+- 根因：ta_card 的 data-on 由它自己插件控制（自有引擎状态）；用视图覆盖走工作台引擎打开时
+  两边状态对不上 → 不高亮。
+- 处理：DOM 桥 sync 里选中态统一由工作台判定——activeSplitId===id → data-on=true；
+  引擎开着别的 → false；引擎空闲（activeSplitId=null）→ 不动（保留卡片自带状态，
+  兼容自带分栏插件的打开态）。通用规则覆盖所有注册项目与新建项目。
+- 验证（functional-diag STEP13）：布局打开时 ta/pr 卡 false；旅行设置视图覆盖后点卡片 →
+  engineSpecId=travelatlas 且 taOnAfterOpen=true；全 STEP 回归 ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
