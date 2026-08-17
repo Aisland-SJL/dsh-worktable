@@ -582,3 +582,12 @@
 - 验证（functional-diag STEP10 扩展 + 种子加 1 条快捷方式）：heights ta/pr/layout/shortcut 全 34px；
   四类图标 computed 全 15px；删除确认等既有断言不变；ERRORS_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+## 补记（窗间竖向分隔线居中修正）
+
+- 用户反馈：窗口之间的竖向可拖动分隔线偏右，不在两个窗口缝隙的正中。
+- 根因：窗格 border-box、allocate 留 6px 缝；分隔线定位写成了「窗右缘 + DIVIDER/2」
+  （左 = 缝右半起点），6px 线右半压进下一个窗口 → 视觉偏右 3px。
+- 处理：主行与顶部行内垂直分隔线 left 去掉 + DIVIDER/2，直接对齐窗右缘（[缝左, 缝左+6]），
+  中心 = 缝中心。聊天/左列/上下水平分隔线本就骑缝居中，不动。
+- 验证（functional-diag STEP2 dividerAlign）：paneRight=514、divLeft=514、divWidth=6、
+  centerOffset=0（修复前 +3）；全 STEP 回归 ERROR_COUNT: 0。纯客户端改动，F5 生效。

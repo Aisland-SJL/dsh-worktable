@@ -1341,7 +1341,7 @@ function SplitWorkspace() {
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: topRowX + it.left + it.width + DIVIDER / 2, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
+          style={{ position: 'fixed', left: topRowX + it.left + it.width, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('topPane', i)}
         />
       ))}
@@ -1352,7 +1352,7 @@ function SplitWorkspace() {
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: contentX + it.left + it.width + DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
+          style={{ position: 'fixed', left: contentX + it.left + it.width, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('pane', i)}
         />
       ))}
