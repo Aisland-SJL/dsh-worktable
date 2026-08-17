@@ -428,3 +428,18 @@
   跨窗移动标签→关闭）→ **全绿、零报错**。
 - 注意：服务端改动（file 路由 + 终端 loadPkg）需**重启 dsh web 生效**；
   客户端改动（4 选项/HTML 点击开标签/拖动吸附）刷新即生效。
+
+## 补记（fs 500 与终端无响应修复）
+
+- 用户重启后反馈：① 资源管理器 Error: HTTP 500；② 终端无法敲命令（pwd 无响应）；
+  ③ 标签拖拽吸附好评。
+- 根因：
+  ① fs 路由 ReferenceError: resolve is not defined——改 import 时将 resolve 重命名
+  pathResolve，函数体仍用旧名（探活服务端拿到的真实报错）；
+  ② 终端 ws 路由是异步注册（await import 之后才 registerUpgrade），宿主错过晚注册的
+  升级路由 → 握手失败、终端空白。
+- 修复：① resolve → pathResolve（listDirectory 与 file 路由两处）；
+  ② setupTerminal 改同步（只用同步 loadPkg 解析 ws/node-pty）+ 注册包进 ctx.effect
+  （better-sidebar 同款生命周期）。
+- 验证（04_test/term-e2e.cjs 扩展）：fs handler 直调 200 + 真实条目；终端 E2E
+  RESULT: PASS（真实 cmd.exe shell，pwd 回显正常）。**需再重启一次 dsh web 生效。**

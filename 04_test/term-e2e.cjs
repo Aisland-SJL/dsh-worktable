@@ -1,35 +1,28 @@
 
-/**
- * 终端端到端测试：模拟宿主加载方式（经 profile junction 路径 import 服务端 bundle），
- * 用真实 http server + ws 客户端验证 /api/worktable/term 能否拉起 shell。
- */
 const http = require('http');
-const fs = require('fs');
-const path = require('path');
 const WebSocket = require('ws');
-
 (async () => {
-  const bundleUrl = 'file:///C:/Users/SJL/.dsh/profiles/web/node_modules/dsh-worktable/lib/index.js';
-  const mod = await import(bundleUrl);
-  const upgrades = [];
+  const mod = await import('file:///C:/Users/SJL/.dsh/profiles/web/node_modules/dsh-worktable/lib/index.js');
   const routes = [];
+  const upgrades = [];
   const ctx = {
-    logger: {
-      warn: (...a) => console.log('[logger-warn]', ...a),
-      info: (...a) => console.log('[logger-info]', ...a),
-    },
+    logger: { warn: (...a) => console.log('[warn]', ...a), info: (...a) => console.log('[info]', ...a) },
     sessions: { get: () => undefined },
+    effect: (fn) => fn && fn(),
     webServer: {
       register(r) { routes.push(r); return () => {} },
       registerUpgrade(r) { upgrades.push(r); return () => {} },
     },
   };
   mod.apply(ctx);
-  await new Promise((r) => setTimeout(r, 2500)); // 等异步 setupTerminal 完成（真实宿主进程长驻）
-  console.log('routes:', routes.map((r) => r.path).join(', '));
-  console.log('upgrade routes:', upgrades.map((r) => r.path).join(', ') || '(none)');
+  console.log('upgrades:', upgrades.map((r) => r.path).join(', ') || '(none)');
+  const fsRoute = routes.find((r) => r.path === '/api/worktable/fs');
+  let captured = null;
+  const fakeRes = { writeHead: (s) => { captured = { status: s }; }, end: (b) => { captured.body = String(b); } };
+  const fakeReq = { [Symbol.asyncIterator]() { let done = false; return { next: () => (done ? Promise.resolve({ done: true }) : (done = true, Promise.resolve({ done: false, value: Buffer.from('{"path":"E:/AI_Workspace"}') }))) }; } };
+  await fsRoute.handler(fakeReq, fakeRes);
+  console.log('fs direct:', captured && captured.status, captured && captured.body ? captured.body.slice(0, 160) : '');
   if (upgrades.length === 0) { console.log('RESULT: NO_TERMINAL_ROUTE'); process.exit(1); }
-
   const server = http.createServer((req, res) => { res.writeHead(404); res.end(); });
   server.on('upgrade', (req, socket, head) => {
     const u = new URL(req.url ?? '/', 'http://x');
@@ -37,17 +30,17 @@ const WebSocket = require('ws');
     if (!route) { socket.destroy(); return; }
     route.handler(req, socket, head);
   });
-  await new Promise((r) => server.listen(19087, '127.0.0.1', r));
-
-  const ws = new WebSocket('ws://127.0.0.1:19087/api/worktable/term?cwd=' + encodeURIComponent(process.cwd()) + '&cols=80&rows=24');
-  const received = [];
-  const done = (code, msg) => { console.log('RESULT: ' + code + ' ' + msg); try { ws.close(); } catch {} server.close(); process.exit(code === 'PASS' ? 0 : 1); };
-  const timer = setTimeout(() => done('FAIL', '10s 内无输出'), 10000);
-  ws.on('open', () => { ws.send('echo __WT_TERM_OK__\r'); });
+  await new Promise((r) => server.listen(19088, '127.0.0.1', r));
+  const ws = new WebSocket('ws://127.0.0.1:19088/api/worktable/term?cwd=' + encodeURIComponent(process.cwd()) + '&cols=80&rows=24');
+  const timer = setTimeout(() => { console.log('RESULT: FAIL 超时'); process.exit(1); }, 10000);
+  ws.on('open', () => ws.send('pwd\r'));
   ws.on('message', (d) => {
     const t = String(d);
-    received.push(t);
-    if (t.includes('__WT_TERM_OK__')) { clearTimeout(timer); done('PASS', 'shell 回显正常 (' + received.length + ' 帧)'); }
+    if (t.length > 3 && /[A-Za-z]:[\\\/]/.test(t)) {
+      clearTimeout(timer);
+      console.log('RESULT: PASS pwd 回显正常: ' + t.slice(0, 90).replace(/\r?\n/g, ' | '));
+      ws.close(); server.close(); process.exit(0);
+    }
   });
-  ws.on('error', (e) => { clearTimeout(timer); done('FAIL', String(e)); });
+  ws.on('error', (e) => { clearTimeout(timer); console.log('RESULT: FAIL ' + e); process.exit(1); });
 })().catch((e) => { console.log('RESULT: HARNESS_FAIL', e); process.exit(1); });

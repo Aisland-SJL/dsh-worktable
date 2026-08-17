@@ -84,7 +84,7 @@ async function readJsonBody(req: any): Promise<any> {
 
 /** 列出一个目录层级（目录在前、大小写不敏感排序、上限 500、隐藏项标注） */
 async function listDirectory(path: string) {
-  const abs = resolve(path)
+  const abs = pathResolve(path)
   const dirents = await readdir(abs, { withFileTypes: true })
   const entries = dirents
     .map((d) => ({ name: d.name, path: abs + sep + d.name, isDir: d.isDirectory(), hidden: d.name.startsWith('.') }))
@@ -120,18 +120,14 @@ async function gitStatus(cwd: string) {
   }
 }
 
-/** 终端 WebSocket 升级路由（node-pty 缺失时不注册，终端窗降级为提示） */
-async function setupTerminal(webServer: any, ctx: any) {
+/** 终端 WebSocket 升级路由（同步注册 + ctx.effect，同 better-sidebar；node-pty 缺失时不注册） */
+function setupTerminal(webServer: any, ctx: any) {
   if (typeof webServer.registerUpgrade !== 'function') return
-  let wsMod: any = null
-  let ptyMod: any = null
-  try { wsMod = await import('ws') } catch {}
-  try { ptyMod = await import('node-pty') } catch {}
-  if (!wsMod) wsMod = loadPkg('ws')
-  if (!ptyMod) ptyMod = loadPkg('node-pty')
+  const wsMod = loadPkg('ws')
+  const ptyMod = loadPkg('node-pty')
   ctx.logger?.info?.('[dsh-worktable] term deps: ws=' + (wsMod ? 'ok' : 'MISSING') + ' node-pty=' + (ptyMod ? 'ok' : 'MISSING'))
   if (!wsMod || !ptyMod) {
-    ctx.logger?.warn('[dsh-worktable] 终端路由未注册：ws/node-pty 均不可用')
+    ctx.logger?.warn('[dsh-worktable] 终端路由未注册：ws/node-pty 不可用')
     return
   }
   const WebSocketServer = wsMod.WebSocketServer ?? wsMod.default?.WebSocketServer
@@ -142,7 +138,7 @@ async function setupTerminal(webServer: any, ctx: any) {
     process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : (process.env.SHELL || '/bin/bash')
   const clampDim = (v: number, fallback: number) => Math.min(1024, Math.max(2, Number.isFinite(v) ? v : fallback))
 
-  webServer.registerUpgrade({
+  ctx.effect(() => webServer.registerUpgrade({
     path: '/api/worktable/term',
     handler: (req: any, socket: any, head: any) => {
       wss.handleUpgrade(req, socket, head, (ws: any) => {
@@ -174,7 +170,7 @@ async function setupTerminal(webServer: any, ctx: any) {
         ws.on('close', () => { try { term.kill() } catch {} })
       })
     },
-  })
+  }), 'dsh-worktable: terminal upgrade')
 }
 
 export function apply(ctx: Context) {
@@ -201,7 +197,7 @@ export function apply(ctx: Context) {
         const u = new URL(req.url ?? '/', 'http://dsh.internal')
         const p = u.searchParams.get('path') || ''
         if (!p) { json(res, 400, { error: 'missing path' }); return }
-        const abs = resolve(p)
+        const abs = pathResolve(p)
         const stat = await import('node:fs/promises').then((m) => m.stat(abs))
         if (stat.size > 20 * 1024 * 1024) { json(res, 413, { error: 'file too large' }); return }
         const data = await readFile(abs)
@@ -246,5 +242,5 @@ export function apply(ctx: Context) {
     },
   })
 
-  setupTerminal(webServer, ctx).catch(() => {})
+  setupTerminal(webServer, ctx)
 }
