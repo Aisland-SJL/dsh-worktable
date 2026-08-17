@@ -41,6 +41,8 @@ type ProjectsState = {
   hidden: string[]
   /** 显示名覆盖（编辑模式改名；空值删除覆盖）。 */
   nameOverrides: Record<string, string>
+  /** 图标覆盖（点图标换 emoji；含入驻插件项目 id → emoji）。 */
+  iconOverrides: Record<string, string>
   /** 本地快捷方式条目。 */
   shortcuts: Shortcut[]
   /** 用户自建的布局条目（「+」新建工作区保存的 LayoutSpec）。 */
@@ -74,8 +76,27 @@ const PRESET_DEFS = [
   { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
 ] as const
 
-/** 侧栏图标备选集（emoji）：布局/快捷方式的图标，点击可换（首项 🧱 为布局默认） */
+/** 侧栏图标备选集（emoji）：布局/快捷方式/入驻项目的图标，点击可换（首项 🧱 为布局默认） */
 const EMOJI_SET = ['🧱', '🏠', '🎓', '🚗', '✈️', '🌍', '🏥', '📚', '✏️', '⚙️', '🎨', '🎮', '🌏', '📐', '🧪', '🤖', '📦', '💬']
+
+/** 官方工作区头部按钮图标（自 DSH Web GUI 工作区面板取样，fill=currentColor 跟随主题） */
+const ICON_SEARCH = (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M11.894845 6.647401C11.894845 3.725463 9.534486 1.356779 6.623219 1.35657C3.711786 1.35657 1.351635 3.725338 1.351635 6.647401C1.351843 9.569296 3.711911 11.938273 6.623219 11.938273C9.534361 11.938064 11.894637 9.569171 11.894845 6.647401ZM13.245462 6.647401C13.245254 10.317935 10.280401 13.293613 6.623219 13.293821C2.965871 13.293821 0.000204 10.31806 0 6.647401C0 2.976574 2.965746 0 6.623219 0C10.280526 0.000205 13.245462 2.9767 13.245462 6.647401Z" fill="currentColor" />
+    <path d="M16.000417 15.041079L15.044449 16.000433L11.530434 12.473588L12.486298 11.514234L16.000417 15.041079Z" fill="currentColor" />
+  </svg>
+)
+const ICON_VIEW_OPTIONS = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path transform="translate(1.292 1.3)" d="M10.3232 9.18164C11.2868 9.18164 12.0985 9.82833 12.3506 10.7109L13.415 10.7109L13.415 11.8711L12.3496 11.8711C12.0971 12.7532 11.2864 13.3994 10.3232 13.3994C9.36031 13.3992 8.55012 12.7531 8.29785 11.8711L0 11.8711L0 10.7109L8.29688 10.7109C8.54876 9.82845 9.35988 9.18186 10.3232 9.18164ZM10.3232 10.3418C9.7999 10.3421 9.37534 10.7667 9.375 11.29C9.375 11.8137 9.79969 12.239 10.3232 12.2393C10.847 12.2393 11.2725 11.8138 11.2725 11.29C11.2721 10.7666 10.8468 10.3418 10.3232 10.3418ZM12.4326 11.291C12.4326 11.3549 12.4284 11.418 12.4229 11.4805C12.4287 11.4181 12.4326 11.355 12.4326 11.291ZM8.21484 11.2832C8.21484 11.2856 8.21484 11.2886 8.21484 11.291L8.21484 11.29C8.21484 11.2878 8.21484 11.2855 8.21484 11.2832ZM3.08301 4.59082C4.04605 4.59095 4.85696 5.23717 5.10938 6.11914L13.415 6.11914L13.415 7.2793L5.11035 7.2793C4.85833 8.16202 4.04648 8.80846 3.08301 8.80859C2.11972 8.80843 1.30963 8.16179 1.05762 7.2793L0 7.2793L0 6.11914L1.05762 6.11914C1.30994 5.23728 2.12006 4.59098 3.08301 4.59082ZM3.08301 5.75098C2.55962 5.75117 2.13512 6.17587 2.13477 6.69922C2.13477 7.22287 2.5594 7.64824 3.08301 7.64844C3.60665 7.64828 4.03223 7.2229 4.03223 6.69922C4.03187 6.17585 3.60643 5.75113 3.08301 5.75098ZM5.19238 6.69922C5.19238 6.763 5.18816 6.82633 5.18262 6.88867C5.18846 6.82629 5.19238 6.76313 5.19238 6.69922C5.19236 6.63495 5.18853 6.57152 5.18262 6.50879C5.18826 6.57154 5.19236 6.635 5.19238 6.69922ZM0.982422 6.52344C0.977382 6.58136 0.97463 6.63999 0.974609 6.69922C0.974609 6.75775 0.977496 6.81579 0.982422 6.87305C0.977758 6.81579 0.974609 6.75767 0.974609 6.69922C0.974628 6.64 0.977618 6.58142 0.982422 6.52344ZM10.3232 0C11.2869 0 12.0986 0.646596 12.3506 1.5293L13.415 1.5293L13.415 2.68945L12.3496 2.68945C12.363 2.64266 12.3754 2.59488 12.3857 2.54688C12.1838 3.50118 11.3376 4.21777 10.3232 4.21777C9.36037 4.21756 8.55018 3.57139 8.29785 2.68945L0 2.68945L0 1.5293L8.29688 1.5293C8.5487 0.646717 9.35981 0.00021854 10.3232 0ZM10.3232 1.16016C9.79984 1.16042 9.37524 1.58499 9.375 2.1084C9.375 2.63201 9.79969 3.05735 10.3232 3.05762C10.847 3.05762 11.2725 2.63217 11.2725 2.1084C11.2722 1.58483 10.8469 1.16016 10.3232 1.16016ZM12.4229 2.29883C12.4287 2.23641 12.4326 2.17331 12.4326 2.10938C12.4326 2.17327 12.4284 2.23638 12.4229 2.29883ZM8.21484 2.10938L8.21484 2.1084L8.21484 2.10938ZM8.22266 1.93359C8.21785 1.98897 8.21506 2.04499 8.21484 2.10156C8.21503 2.04501 8.2181 1.98902 8.22266 1.93359ZM8.22266 11.1162C8.2179 11.1713 8.21507 11.227 8.21484 11.2832C8.21504 11.227 8.21814 11.1713 8.22266 11.1162Z" fill="currentColor" />
+  </svg>
+)
+const ICON_ADD = (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path transform="translate(9.52 2.52)" d="M3.55246 0L3.55246 2.44252L6 2.44252L6 3.55748L3.55246 3.55748L3.55246 6L2.43834 6L2.43834 3.55748L0 3.55748L0 2.44252L2.43834 2.44252L2.43834 0L3.55246 0Z" fill="currentColor" />
+    <path transform="translate(0.3496 2.35)" d="M4.76367 0C5.36861 1.80598e-05 5.93113 0.310294 6.25488 0.821289L6.78027 1.64941C6.79685 1.67558 6.81791 1.69775 6.83887 1.71973C6.72186 2.15521 6.65702 2.61192 6.65137 3.08301C6.25601 2.96045 5.90909 2.70478 5.68164 2.3457L5.15723 1.5166C5.07183 1.38189 4.92318 1.3008 4.76367 1.30078L2.32422 1.30078C1.7589 1.30078 1.30078 1.7589 1.30078 2.32422L1.30078 10.1338C1.30078 10.6991 1.7589 11.1572 2.32422 11.1572L11.9766 11.1572C12.5419 11.1572 13 10.6991 13 10.1338L13 8.58398C13.4545 8.5135 13.8903 8.38748 14.3008 8.21289L14.3008 10.1338C14.3008 11.4171 13.2598 12.458 11.9766 12.458L2.32422 12.458C1.04093 12.458 0 11.4171 0 10.1338L0 2.32422C0 1.04093 1.04093 0 2.32422 0L4.76367 0Z" fill="currentColor" />
+  </svg>
+)
 
 function buildLayout(presetId: string, name: string): LayoutSpec {
   const def = PRESET_DEFS.find((d) => d.id === presetId) ?? PRESET_DEFS[0]
@@ -164,6 +185,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   lastUsed: {},
   hidden: [],
   nameOverrides: {},
+  iconOverrides: {},
   shortcuts: [],
   layouts: [],
 }
@@ -201,6 +223,7 @@ function loadProjects(): ProjectsState {
       lastUsed: p.lastUsed && typeof p.lastUsed === 'object' ? p.lastUsed : {},
       hidden: Array.isArray(p.hidden) ? p.hidden.filter((x: unknown): x is string => typeof x === 'string') : [],
       nameOverrides: p.nameOverrides && typeof p.nameOverrides === 'object' ? p.nameOverrides : {},
+      iconOverrides: p.iconOverrides && typeof p.iconOverrides === 'object' ? p.iconOverrides : {},
       shortcuts: Array.isArray(p.shortcuts)
         ? p.shortcuts.filter((s: any) => s && typeof s.id === 'string' && typeof s.name === 'string' && typeof s.href === 'string')
         : [],
@@ -287,7 +310,7 @@ function WorktableSection(props: any) {
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
-  const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut'; id: string; x: number; y: number } | null>(null)
+  const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   const [float, setFloat] = useState<FloatRect | null>(() =>
     view.dock === 'float' && view.floatTop != null ? { top: view.floatTop } : null,
   )
@@ -496,6 +519,7 @@ function WorktableSection(props: any) {
     order: effectiveOrder,
     hidden: projects.hidden,
     nameOverrides: projects.nameOverrides,
+    iconOverrides: projects.iconOverrides,
     reportMeta,
     reportUsed,
     openSplit,
@@ -627,11 +651,10 @@ function WorktableSection(props: any) {
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
   }
 
-  // ── 图标选择器（布局 / 快捷方式的侧栏 emoji 点击可换） ──
-  const openIconPick = (kind: 'layout' | 'shortcut', id: string, e: any) => {
-    e.stopPropagation()
-    e.preventDefault()
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  // ── 图标选择器（布局 / 快捷方式 / 入驻项目的侧栏 emoji 点击可换） ──
+  // anchor：DOM 锚点元素（自己卡片里的 icon 元素或事件 currentTarget）
+  const openIconPick = (kind: 'layout' | 'shortcut' | 'project', id: string, anchor: HTMLElement) => {
+    const r = anchor.getBoundingClientRect()
     const x = Math.min(r.right + 8, Math.max(16, window.innerWidth - 284))
     const y = Math.max(MIN_TOP, Math.min(r.top - 4, window.innerHeight - 316))
     setIconPick({ kind, id, x, y })
@@ -648,6 +671,48 @@ function WorktableSection(props: any) {
       shortcuts: prev.shortcuts.map((s) => (s.id === id ? { ...s, icon } : s)),
     }))
   }
+  const setProjectIcon = (id: string, icon: string) => {
+    persistProjects((prev) => ({ ...prev, iconOverrides: { ...prev.iconOverrides, [id]: icon } }))
+  }
+
+  // 入驻项目卡片图标覆盖（DOM 层，不改动对方插件代码）
+  // 1) 属性同步：iconOverrides[id] -> 卡片 icon 元素 data-wt-icon（CSS 用 attr() 换显示）；
+  // 2) 委托点击：捕获阶段拦截卡片 icon 点击 -> 打开图标选择器（阻止卡片自身打开项目）。
+  useEffect(() => {
+    const ROOT_TO_ID = [['.ta_card', 'travelatlas'], ['.pr_card', 'planreview']]
+    const sync = () => {
+      for (const [rootSel, pid] of ROOT_TO_ID) {
+        const cards = document.querySelectorAll('.dsh-wt_projects ' + rootSel)
+        cards.forEach((card) => {
+          const icon = card.querySelector('.ta_cardIcon, .pr_cardIcon')
+          if (!icon) return
+          const ovr = projects.iconOverrides[pid]
+          if (ovr) icon.setAttribute('data-wt-icon', ovr)
+          else icon.removeAttribute('data-wt-icon')
+        })
+      }
+    }
+    sync()
+    const mo = new MutationObserver(sync)
+    mo.observe(document.body, { childList: true, subtree: true })
+    return () => mo.disconnect()
+  }, [projects.iconOverrides])
+
+  useEffect(() => {
+    const onDocClick = (e) => {
+      const target = e.target
+      const icon = target && target.closest ? target.closest('.ta_cardIcon, .pr_cardIcon') : null
+      if (!icon || !icon.closest('.dsh-wt_projects')) return
+      const card = icon.closest('.ta_card, .pr_card')
+      const pid = card && card.classList.contains('ta_card') ? 'travelatlas' : card && card.classList.contains('pr_card') ? 'planreview' : null
+      if (!pid) return
+      e.stopPropagation()
+      e.preventDefault()
+      openIconPick('project', pid, icon)
+    }
+    document.addEventListener('click', onDocClick, true)
+    return () => document.removeEventListener('click', onDocClick, true)
+  }, [])
 
   const query = view.query.trim()
   const queryLower = query.toLowerCase()
@@ -730,7 +795,7 @@ function WorktableSection(props: any) {
   const popTop = clamp(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540))
 
   if (!wide) {
-    const projectIcons = registeredIds.map((id) => metas[id]?.icon ?? '📦')
+    const projectIcons = registeredIds.map((id) => projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦')
     const shortcutIcons = projects.shortcuts.map((s) => s.icon)
     const layoutIcons = projects.layouts.map((l) => l.icon ?? '🧱')
     const icons = [...projectIcons, ...shortcutIcons, ...layoutIcons]
@@ -787,21 +852,21 @@ function WorktableSection(props: any) {
             aria-label={t('menu.search')}
             title={t('menu.search')}
             onClick={() => persistView({ searchOpen: !view.searchOpen, query: view.searchOpen ? '' : view.query })}
-          >🔍</button>
+          >{ICON_SEARCH}</button>
           <button
             type="button"
             className="dsh-wt_iconBtn"
             aria-label={t('menu.viewOptions')}
             title={t('menu.viewOptions')}
             onClick={() => { setViewOptionsOpen((v) => !v); setAddOpen(false) }}
-          >☰</button>
+          >{ICON_VIEW_OPTIONS}</button>
           <button
             type="button"
             className="dsh-wt_iconBtn"
             aria-label={t('menu.add')}
             title={t('menu.add')}
             onClick={() => { setAddOpen((v) => !v); setViewOptionsOpen(false) }}
-          >+</button>
+          >{ICON_ADD}</button>
         </div>
       </div>
 
@@ -855,7 +920,9 @@ function WorktableSection(props: any) {
               {EMOJI_SET.map((em) => {
                 const cur = iconPick.kind === 'layout'
                   ? (projects.layouts.find((l) => l.id === iconPick.id)?.icon ?? '🧱')
-                  : (projects.shortcuts.find((s) => s.id === iconPick.id)?.icon ?? '🔗')
+                  : iconPick.kind === 'shortcut'
+                    ? (projects.shortcuts.find((s) => s.id === iconPick.id)?.icon ?? '🔗')
+                    : (projects.iconOverrides[iconPick.id] ?? metas[iconPick.id]?.icon ?? '📦')
                 return (
                   <button
                     key={em}
@@ -864,7 +931,8 @@ function WorktableSection(props: any) {
                     data-on={cur === em ? 'true' : 'false'}
                     onClick={() => {
                       if (iconPick.kind === 'layout') setLayoutIcon(iconPick.id, em)
-                      else setShortcutIcon(iconPick.id, em)
+                      else if (iconPick.kind === 'shortcut') setShortcutIcon(iconPick.id, em)
+                      else setProjectIcon(iconPick.id, em)
                       setIconPick(null)
                     }}
                   >{em}</button>
@@ -920,9 +988,15 @@ function WorktableSection(props: any) {
                       role="button"
                       tabIndex={0}
                       title={t('icons.change')}
-                      onClick={(e) => openIconPick('layout', id, e)}
+                      onClick={(e) => { e.stopPropagation(); openIconPick('layout', id, e.currentTarget as HTMLElement) }}
                     >{layout.icon ?? '🧱'}</span>
-                  : <span className="dsh-wt_manageIcon" aria-hidden>{meta?.icon ?? '📦'}</span>}
+                  : <span
+                      className="dsh-wt_manageIcon dsh-wt_iconPick"
+                      role="button"
+                      tabIndex={0}
+                      title={t('icons.change')}
+                      onClick={(e) => { e.stopPropagation(); openIconPick('project', id, e.currentTarget as HTMLElement) }}
+                    >{projects.iconOverrides[id] ?? meta?.icon ?? '📦'}</span>}
                 <input
                   className="dsh-wt_manageInput"
                   value={display}
@@ -948,7 +1022,7 @@ function WorktableSection(props: any) {
                 role="button"
                 tabIndex={0}
                 title={t('icons.change')}
-                onClick={(e) => openIconPick('shortcut', s.id, e)}
+                onClick={(e) => { e.stopPropagation(); openIconPick('shortcut', s.id, e.currentTarget as HTMLElement) }}
               >{s.icon}</span>
               <span className="dsh-wt_manageScName">{s.name}</span>
               <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => removeShortcut(s.id)}>✕</button>
@@ -962,33 +1036,28 @@ function WorktableSection(props: any) {
         {renderProjectSlot
           ? renderProjectSlot('sidebar.worktable.project', ownerProps)
           : <div className="dsh-wt_empty">{t('empty')}</div>}
-        {visibleLayouts.map((l) => {
-          const paneCount = [...(l.top ?? []), ...l.main].length
-          return (
-            <button
-              key={l.id}
-              type="button"
-              className="dsh-wt_layout"
-              data-on={activeSplitId === l.id ? 'true' : 'false'}
-              style={{ order: effectiveOrder.indexOf(l.id) + 1000 }}
-              onClick={() => { openSplit(l); reportUsed(l.id) }}
-            >
-              <span
-                className="dsh-wt_layoutIcon dsh-wt_iconPick"
-                role="button"
-                tabIndex={0}
-                title={t('icons.change')}
-                onClick={(e) => openIconPick('layout', l.id, e)}
-              >{l.icon ?? '🧱'}</span>
-              <span className="dsh-wt_layoutText">
-                <span className="dsh-wt_layoutName">{projects.nameOverrides[l.id] ?? l.title}</span>
-                <span className="dsh-wt_layoutDesc">{t('layout.desc', { n: String(paneCount) })}</span>
-              </span>
-              <span className="dsh-wt_layoutBadge">{t('layout.badge')}</span>
-              <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
-            </button>
-          )
-        })}
+        {visibleLayouts.map((l) => (
+          <button
+            key={l.id}
+            type="button"
+            className="dsh-wt_layout"
+            data-on={activeSplitId === l.id ? 'true' : 'false'}
+            style={{ order: effectiveOrder.indexOf(l.id) + 1000 }}
+            onClick={() => { openSplit(l); reportUsed(l.id) }}
+          >
+            <span
+              className="dsh-wt_layoutIcon dsh-wt_iconPick"
+              role="button"
+              tabIndex={0}
+              title={t('icons.change')}
+              onClick={(e) => { e.stopPropagation(); openIconPick('layout', l.id, e.currentTarget as HTMLElement) }}
+            >{l.icon ?? '🧱'}</span>
+            <span className="dsh-wt_layoutText">
+              <span className="dsh-wt_layoutName">{projects.nameOverrides[l.id] ?? l.title}</span>
+            </span>
+            <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
+          </button>
+        ))}
       </div>
 
       {visibleShortcuts.length > 0 && (
@@ -1007,7 +1076,7 @@ function WorktableSection(props: any) {
                 role="button"
                 tabIndex={0}
                 title={t('icons.change')}
-                onClick={(e) => openIconPick('shortcut', s.id, e)}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); openIconPick('shortcut', s.id, e.currentTarget as HTMLElement) }}
               >{s.icon}</span>
               <span className="dsh-wt_shortcutName">{s.name}</span>
               <span className="dsh-wt_shortcutBadge">{t('shortcut.badge')}</span>

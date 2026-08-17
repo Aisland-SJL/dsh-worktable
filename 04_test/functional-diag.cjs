@@ -99,10 +99,25 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.icon1=card.querySelector('.dsh-wt_layoutIcon').textContent;
       try{ out.saved=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts[0].icon }catch(e){ out.saved='ERR:'+e.message }
     }
+    out.layoutDesc=document.querySelectorAll('.dsh-wt_layoutDesc').length;
+    out.layoutBadge=document.querySelectorAll('.dsh-wt_layoutBadge').length;
+    out.headerSvgs=document.querySelectorAll('.dsh-wt_actions .dsh-wt_iconBtn svg').length;
     var ta=document.querySelector('.dsh-wt_projects .ta_card');
     if(ta){ var cs=getComputedStyle(ta); out.taBorder=cs.borderTopColor; var desc=ta.querySelector('.ta_cardDesc'); out.taDescDisplay=desc?getComputedStyle(desc).display:null; }
     var pr=document.querySelector('.dsh-wt_projects .pr_card');
     if(pr){ var cs2=getComputedStyle(pr); out.prBorder=cs2.borderTopColor; var desc2=pr.querySelector('.pr_cardDesc'); out.prDescDisplay=desc2?getComputedStyle(desc2).display:null; }
+    // 常驻项目图标换选：点 ta_cardIcon → 选择器 → 选第 5 项 ✈️ → data-wt-icon + 持久化
+    var taIcon=document.querySelector('.dsh-wt_projects .ta_cardIcon');
+    if(taIcon){
+      taIcon.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+      await new Promise(function(r){setTimeout(r,250)});
+      out.taPopup=!!document.querySelector('.dsh-wt_iconPop');
+      var cells2=document.querySelectorAll('.dsh-wt_iconCell');
+      if(cells2[4]){ cells2[4].dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true})); }
+      await new Promise(function(r){setTimeout(r,250)});
+      out.taIconAttr=taIcon.getAttribute('data-wt-icon');
+      try{ out.taSaved=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).iconOverrides.travelatlas }catch(e){ out.taSaved='ERR:'+e.message }
+    }
     return JSON.stringify(out);
   })()`);
   console.log('STEP6:', JSON.stringify(step6));

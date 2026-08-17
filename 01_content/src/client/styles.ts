@@ -104,8 +104,6 @@ export const css = [
   '.dsh-wt_layoutIcon{flex:none;font-size:13px}',
   '.dsh-wt_layoutText{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}',
   '.dsh-wt_layoutName{font-size:12px;font-weight:600;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-  '.dsh-wt_layoutDesc{font-size:10px;line-height:14px;color:var(--dsw-alias-label-tertiary,#6e7683);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-  '.dsh-wt_layoutBadge{flex:none;font-size:9px;line-height:14px;padding:0 5px;border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06));color:var(--dsw-alias-label-tertiary,#6e7683)}',
   '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
   // 项目卡片统一：入驻插件卡片（travelatlas/planreview）与布局卡片同款常显框（静止态可见边框+底）
   '.dsh-wt_projects .ta_card,.dsh-wt_projects .pr_card{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
@@ -123,6 +121,11 @@ export const css = [
   // 可点图标（布局卡 / 管理行 / 快捷方式上的图标，点击换 emoji）
   '.dsh-wt_iconPick{flex:none;display:inline-flex;align-items:center;justify-content:center;padding:1px;border:none;background:transparent;font:inherit;cursor:pointer;border-radius:4px}',
   '.dsh-wt_iconPick:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}',
+  // 入驻项目卡片图标覆盖：data-wt-icon 存在时用 attr() 替换显示（原字符字号压到 0）
+  '.dsh-wt_projects .ta_cardIcon[data-wt-icon],.dsh-wt_projects .pr_cardIcon[data-wt-icon]{font-size:0;line-height:20px}',
+  '.dsh-wt_projects .ta_cardIcon[data-wt-icon]::before,.dsh-wt_projects .pr_cardIcon[data-wt-icon]::before{content:attr(data-wt-icon);font-size:15px;line-height:20px}',
+  // 头部按钮内的官方 SVG 图标
+  '.dsh-wt_iconBtn svg{display:block}',
   // 窗内容：选择器 / 自定义 / 浏览器 / 占位
   '.dsh-wt_panePicker{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;overflow:auto}',
   '.dsh-wt_panePicker-row{flex-direction:row;flex-wrap:wrap}',

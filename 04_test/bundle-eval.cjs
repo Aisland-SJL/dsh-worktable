@@ -45,7 +45,7 @@ sandbox.self = sandbox; try {
     const fakeRequire = (name) => {
       const stubs = {
         "react": { useState: (v)=>[v,()=>{}], useEffect: ()=>{}, useLayoutEffect: ()=>{}, useMemo: (f)=>f(), useCallback: (f)=>f, useRef: (v)=>({current:v}), createElement: ()=>null, Fragment: null },
-        "react/jsx-runtime": { jsx: ()=>({}) },
+        "react/jsx-runtime": { jsx: ()=>({}), jsxs: ()=>({}) },
         "react/jsx-dev-runtime": { jsx: ()=>({}) },
         "@deepseek-ai/dsh-client-ui-slots": {},
         "@deepseek-ai/dsh-client-ui-primitives": {},

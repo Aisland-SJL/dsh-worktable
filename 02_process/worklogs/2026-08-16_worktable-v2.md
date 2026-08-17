@@ -511,3 +511,25 @@
   （travelatlas 在无会话 headless 页面不自开分栏，taSplitPresent=false 属预期，改合成验证。）
   STEP1-5 回归不变（paneWs 均分、picker 自适应、拖标签）；ERRORS_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+## 补记（常驻项目图标可换 + 新建布局卡单行化 + 头部按钮对齐官方图标）
+
+- 用户反馈（三条）：
+  ① 常驻项目（建筑审图/旅行 Atlas）也纳入图标可换范围（🌏📐 已含在 18 项图标集里）；
+  ② 新建布局卡片要与常驻项目展示完全一致：标题单行，去掉第二行描述与右侧「布局」小字；
+  ③ 工作台右上角 3 按钮（搜索/视图选项/添加）完全照抄官方工作区头部 icon。
+- 处理：
+  ① 常驻项目图标（DOM 层，不改动 travelatlas/planreview 代码）：projects.v1 新增
+  iconOverrides 字段并传给卡片 ownerProps；effect 把 override 写到卡片 icon 元素的
+  data-wt-icon 属性，CSS 用 attr() 换显示（原字符字号压 0）；文档捕获阶段委托点击
+  .ta_cardIcon/.pr_cardIcon → 打开图标选择器（kind: project，stopPropagation 阻止卡片
+  自身打开）；管理行插件图标、rail 图标同步可换。图标选择器支持三类：layout/shortcut/project。
+  ② 布局卡单行化：去掉 .dsh-wt_layoutDesc 与 .dsh-wt_layoutBadge 渲染及样式、
+  locale 的 layout.desc/layout.badge 键；卡片 = 图标 + 名称 + ›，与 ta_card/pr_card 一致。
+  ③ 头部按钮换官方 SVG：用 CDP 探针从运行中的 DSH Web GUI 工作区面板取样三枚图标
+  （Search sessions 放大镜 / View options 滑块 / Add workspace 文档加号，fill=currentColor），
+  内联为 ICON_SEARCH/ICON_VIEW_OPTIONS/ICON_ADD 常量替换原 🔍/☰/+ 文本。
+- 验证（functional-diag STEP6 扩展）：layoutDesc=0、layoutBadge=0、headerSvgs=3；
+  ta_cardIcon 点击 → popup → 选 ✈️ → taIconAttr=✈️ + projects.v1.iconOverrides.travelatlas=✈️；
+  既有图标链路（🧱→🏠）+ ta/pr 统一框 + 小字隐藏 + STEP7 互斥全部保持；ERRORS_COUNT: 0。
+  bundle-eval 补 jsxs 桩后 PASS（模块级 JSX 常量引入）。
+- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
