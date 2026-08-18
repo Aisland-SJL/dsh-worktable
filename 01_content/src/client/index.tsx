@@ -68,14 +68,14 @@ const OVER_BOTTOM_PX = 24
 const OVER_TOP_PX = 24
 const OVER_SIDE_PX = 80
 
-/** 拓扑预设（聊天窗恒贴右，PRD §13.2 硬约束）：左右/三栏/上一下二/井字 */
+/** 拓扑预设（聊天窗恒贴右，PRD §13.2 硬约束）：左右/三栏/左二右一/井字/左品右聊/左1大下3小 */
 const PRESET_DEFS = [
   { id: '2h', leftCount: 0, topCount: 0, contentCount: 1, chatFull: false },
   { id: '3h', leftCount: 0, topCount: 0, contentCount: 2, chatFull: false },
   { id: 'l2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: true },
-  { id: 't2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: false },
   { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1, chatFull: false },
   { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
+  { id: 'l13', leftCount: 0, topCount: 1, contentCount: 3, chatFull: true, topHeightDefault: 420 },
 ] as const
 
 /** 侧栏图标备选集（emoji）：布局/快捷方式/入驻项目的图标，点击可换（首项 🧱 为布局默认） */
@@ -119,7 +119,7 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
     main,
     leftWidth: { default: 260, min: 160, max: 480 },
     chatWidth: { default: 360, min: 240, max: 600 },
-    topHeight: { default: 200, min: 120, max: 480 },
+    topHeight: { default: (def as any).topHeightDefault ?? 200, min: 120, max: 480 },
     chatSide: 'right',
     chatFullHeight: def.chatFull === true,
   }
@@ -136,11 +136,15 @@ function presetThumb(defId: string) {
   if (defId === '3h') {
     return <span className="dsh-wt_thumb"><span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}{cell(true, 'c')}</span></span>
   }
-  if (defId === 't2') {
+  if (defId === 'l13') {
+    // 左列上 1 大 + 下 3 小；右列对话整列（5 视窗）
     return (
-      <span className="dsh-wt_thumb">
-        <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
-        <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(true, 'c')}</span>
+      <span className="dsh-wt_thumb dsh-wt_thumbCols">
+        <span className="dsh-wt_thumbCol">
+          <span className="dsh-wt_thumbRow">{cell(false, 'a')}</span>
+          <span className="dsh-wt_thumbRow">{cell(false, 'b')}{cell(false, 'c')}{cell(false, 'd')}</span>
+        </span>
+        <span className="dsh-wt_thumbCol">{cell(true, 'e')}</span>
       </span>
     )
   }

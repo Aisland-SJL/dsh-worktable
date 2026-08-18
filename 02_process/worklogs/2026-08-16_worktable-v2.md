@@ -699,4 +699,20 @@
   （建目录→注册分组→按组建会话→验证→归档会话+删分组+清目录，无残留）。
 - 备注：加入现有组纯客户端（重启前即可用）；新建组依赖 mkdir 路由（重启后可用）。
 
+## 补记（布局预设重排 + 新增 5 视窗预设）
+
+- 用户要求：① 删「上一下二」（第二行第一个，与左品右聊重叠）；② 其后两个预设左移一位、
+  末尾空出；③ 末尾新增 5 视窗预设——左侧上下结构：上 1 通栏大窗 + 下 3 小窗并排，右侧对话整列；
+  ④ 已确认「原来的第4个」= 上一下二本身（只删一个）。
+- 实现：PRESET_DEFS 新序 [2h, 3h, l2, grid, t3, l13]；l13 = topCount 1 + contentCount 3 +
+  chatFull true + topHeightDefault 420（上大下小在宽高上都明显，可拖动微调）；缩略图新增 l13
+  分支（左列 1+3、右列对话，共 5 格），删除 t2 分支与定义；buildLayout 支持按预设定制
+  topHeight 默认值。
+- 验证（preset-l13-probe.cjs）：presetCount=6、thumbCells=[2,3,3,4,4,5]（t2 已去、l13 末尾
+  5 格）；保存布局 savedTop=1/savedMain=3/chatFull=true/topDefault=420；打开后 paneCount=4
+  （4 内容窗 + 对话 = 5 视窗）、topW=797 通栏 vs botW=262×3 三小窗、topOnTop=true；
+  functional-diag 全 20 STEP ERROR_COUNT: 0（STEP9 点第 3 个仍为 l2，断言不变）。
+- 备注：纯客户端改动，F5 即生效；存量已保存布局不受影响（存的是完整 spec，非预设 id）。
+
+
 
