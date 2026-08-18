@@ -357,7 +357,7 @@ type SplitPane = {
 | 源代码管理 | ✅ 已实现（第一版） | 服务端 /api/worktable/git（porcelain v1 -z）；diff/暂存/提交待后续 |
 | 终端 | ✅ 已实现（第一版） | WS /api/worktable/term + node-pty + xterm（宿主缺 node-pty 时降级提示） |
 | 任务管理 | ✅ 已实现（第一版） | 客户端 sessions 快照 jobsBySession（后台任务列表，2s 刷新） |
-| 自定义 vibe | ✅ 可闭环 | 描述需求 → agent 生成新项目（插件/站点）→ 注册进工作台（UI 已留 ✨ 入口） |
+| 自定义 vibe | ✅ 可闭环 | 描述需求 → agent 生成新项目（插件/站点）→ 注册进工作台（UI 已留 ✨ 入口）。✨ 自定义窗两模式（新建对话/发送到会话）点发送后调用宿主 sessions.open(会话id)，右侧对话窗自动切到目标会话（2026-08-18 无头探针实测 switched=true） |
 
 ### 13.8 里程碑
 

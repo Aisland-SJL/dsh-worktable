@@ -647,3 +647,19 @@
 - 验证（STEP20 断言）：groupFontSize=12px、groupWeight=600、groupBorderLeft=2px；
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（自定义窗口发送后右侧对话窗自动切换 — 实测验证）
+
+- 用户要求：自定义窗口「新建会话」或「发送到会话」点发送后，右侧对话窗自动切到选定会话。
+- 结论：功能代码此前已实现——createCustomSession / sendCustomToSession 成功后均调用
+  b.sessions.open(sessionId)（宿主 manager.select）。本次为实测验证 + 加诊断钩子。
+- 调试钩子：apply 里新增 window.__dshOpenSession(id) / window.__dshSessions（try/catch 包住，
+  与既有 __dshWorktable 调试导出一致），供无头探针复用。
+- 新增 04_test/chatswitch-probe.cjs：无头 Chrome 读 ctx.sessions.list.getSnapshot() 快照 →
+  切到另一会话 → 校验 current 变更 + 右侧出现目标标题 → 切回原会话（非破坏性）。
+- 验证结果：idsCount=16，switched=true，domTitleRight=true（主区 x=300 标题精确匹配），
+  restoredOk=true；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 教训：构建必须在 01_content 目录下执行（node build.mjs）；误在仓库根目录跑会把 lib 写到
+  仓库根的 lib/，宿主仍加载 01_content/lib 旧 bundle，出现「改完不生效」假象（已删误产物）。
+- 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
+
