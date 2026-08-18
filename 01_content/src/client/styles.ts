@@ -153,15 +153,17 @@ export const css = [
   '.dsh-wt_presetAdd{border-style:dashed;color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_presetAddIcon{font-size:18px;line-height:20px}',
   '.dsh-wt_presetAddText{font-size:10px;line-height:13px}',
-  // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆单色绘制；
-  // 布局卡与入驻卡统一绝对定位于卡片中间偏右、垂直居中，保证所有卡片竖向对齐）
-  '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:18px;height:14px;margin:0;display:block;color:var(--dsw-alias-label-tertiary,#6b7280);cursor:pointer;user-select:none}',
-  '.dsh-wt_bindBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb)}',
-  '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
-  '.dsh-wt_bindCircles{position:absolute;left:0;top:50%;width:18px;height:9px;transform:translateY(-50%)}',
-  '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;box-sizing:border-box;border:1.4px solid currentColor;background:transparent}',
+  // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆绘制，黑白单色克制：
+  // 未绑定次级灰空心、已绑定主色实心，不用强调色；hover 时自身出现按钮底色 + 气泡显示绑定对象）
+  '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:16px;height:12px;margin:0;display:block;border-radius:4px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}',
+  '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_bindBtn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(2px);padding:4px 8px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease, transform .12s ease;z-index:90;box-shadow:0 4px 12px rgba(0,0,0,.35)}',
+  '.dsh-wt_bindBtn:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}',
+  '.dsh-wt_bindCircles{position:absolute;left:0;top:50%;width:14px;height:7px;transform:translateY(-50%)}',
+  '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-sizing:border-box;border:1.2px solid currentColor;background:transparent}',
   '.dsh-wt_bindCircles::before{left:0}',
-  '.dsh-wt_bindCircles::after{left:9px}',
+  '.dsh-wt_bindCircles::after{left:7px}',
   '.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after{background:currentColor}',
 
   // 布局条目卡片

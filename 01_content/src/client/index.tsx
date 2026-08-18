@@ -754,6 +754,16 @@ function WorktableSection(props: any) {
     }
   }, [])
 
+/** 绑定会话显示名（同步读会话快照；找不到回退 id）——供按钮 hover 气泡使用 */
+function boundSessionTitle(sid: string): string {
+  try {
+    const snap = sessionBridge?.list?.getSnapshot?.()
+    const e = snap?.byId?.[sid]
+    if (e) return e.displayTitle ?? e.title ?? sid
+  } catch {}
+  return sid
+}
+
 /** 绑定会话信息：文件夹（工作区）+ 会话标题（供绑定弹窗状态行展示） */
 function bindInfoOf(groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[], sid: string): { folder: string; title: string } {
   for (const g of groups) {
@@ -1134,7 +1144,9 @@ function buildCustomLayoutPrompt(req: string): string {
           bindBtn.setAttribute('data-wt-bind', id)
           const bound = projects.bindings[id]
           bindBtn.setAttribute('data-bound', bound ? 'true' : 'false')
-          bindBtn.title = bound ? t('bind.titleBound') : t('bind.titleUnbound')
+          const tip = bound ? t('bind.tipBound', { name: boundSessionTitle(bound) }) : t('bind.tipUnbound')
+          bindBtn.setAttribute('data-tip', tip)
+          bindBtn.setAttribute('aria-label', tip)
           const icon = el.children[0] as HTMLElement | null
           if (icon) {
             const ovr = projects.iconOverrides[id]
@@ -1682,7 +1694,8 @@ function buildCustomLayoutPrompt(req: string): string {
               role="button"
               tabIndex={0}
               data-bound={projects.bindings[l.id] ? 'true' : 'false'}
-              title={projects.bindings[l.id] ? t('bind.titleBound') : t('bind.titleUnbound')}
+              data-tip={projects.bindings[l.id] ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) : t('bind.tipUnbound')}
+              aria-label={projects.bindings[l.id] ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) : t('bind.tipUnbound')}
               onClick={(e) => { e.stopPropagation(); openBindPick(l.id, e.currentTarget as HTMLElement) }}
             ><span className="dsh-wt_bindCircles" aria-hidden /></span>
             <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
