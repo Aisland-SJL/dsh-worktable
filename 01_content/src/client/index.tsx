@@ -382,7 +382,7 @@ async function promptIntoSession(sessionId: string, text: string): Promise<void>
 export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId: string } | { kind: 'new'; parent: string; name: string }
 
 /** 自定义窗口任务：新建一个专属会话（可选指定分组），注入工作台背景 + 用户需求，并打开该会话 */
-export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup): Promise<void> {
+export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup): Promise<string> {
   const b = sessionBridge
   if (!b || typeof b.sessions?.create !== 'function') throw new Error('sessions unavailable')
   const text = [
@@ -424,6 +424,7 @@ export async function createCustomSession(projectId: string, projectName: string
   const sessionId = await b.sessions.create(workspaceId ? { workspaceId } : {})
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
+  return sessionId
 }
 
 /** 把自定义需求直接发到用户选定的已有会话（默认当前会话） */
@@ -553,7 +554,7 @@ function WorktableSection(props: any) {
   // 注意：不走 props.useSessions hook（其宿主包装在部分版本会触发 useSyncExternalStore
   // 崩溃），改为 apply 里订阅 ctx.sessions.list 后写入模块级 store，此处直接读取。
   useEffect(() => {
-    setSplitEnv({
+    const env = {
       getScope: () => {
         const s = sessionScopeStore.snapshot
         return s ? { sessionId: s.sessionId, cwd: s.cwd } : null
@@ -587,9 +588,20 @@ function WorktableSection(props: any) {
         },
         createWorkspace: (path: string) => sessionBridge?.workspaces?.create?.({ path }),
         createWorkspaceDir: (parent: string, name: string) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
+        // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
+        autoBind: (sessionId: string): 'auto' | 'kept' | 'none' => {
+          const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null
+          if (!pid || typeof sessionId !== 'string' || !sessionId) return 'none'
+          const already = projectsRef.current.projects.bindings[pid]
+          if (already) return 'kept'
+          persistProjects((prev) => (prev.bindings[pid] ? prev : { ...prev, bindings: { ...prev.bindings, [pid]: sessionId } }))
+          return 'auto'
+        },
       },
-    })
-    return () => setSplitEnv(null)
+    }
+    setSplitEnv(env)
+    try { (window as any).__dshCustomEnv = env } catch {}
+    return () => { setSplitEnv(null); try { (window as any).__dshCustomEnv = null } catch {} }
   }, [])
   const floatRef = useRef<FloatRect | null>(null)
 
@@ -741,6 +753,15 @@ function WorktableSection(props: any) {
       }
     }
   }, [])
+
+/** 绑定会话信息：文件夹（工作区）+ 会话标题（供绑定弹窗状态行展示） */
+function bindInfoOf(groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[], sid: string): { folder: string; title: string } {
+  for (const g of groups) {
+    const s = g.sessions.find((x) => x.id === sid)
+    if (s) return { folder: g.title || '未分组', title: s.title }
+  }
+  return { folder: '', title: sid }
+}
 
 /** 自定义布局提示词模板（复制到剪贴板，可发给任意 dsh 会话让 agent 实现） */
 function buildCustomLayoutPrompt(req: string): string {
@@ -1102,7 +1123,10 @@ function buildCustomLayoutPrompt(req: string): string {
             bindBtn = document.createElement('span')
             bindBtn.className = 'dsh-wt_bindBtn'
             bindBtn.setAttribute('role', 'button')
-            bindBtn.textContent = '🔗'
+            const circles = document.createElement('span')
+            circles.className = 'dsh-wt_bindCircles'
+            circles.setAttribute('aria-hidden', 'true')
+            bindBtn.appendChild(circles)
             el.appendChild(bindBtn)
             const cs = getComputedStyle(el)
             if (cs.position === 'static') el.style.position = 'relative'
@@ -1110,7 +1134,7 @@ function buildCustomLayoutPrompt(req: string): string {
           bindBtn.setAttribute('data-wt-bind', id)
           const bound = projects.bindings[id]
           bindBtn.setAttribute('data-bound', bound ? 'true' : 'false')
-          bindBtn.title = t('bind.title')
+          bindBtn.title = bound ? t('bind.titleBound') : t('bind.titleUnbound')
           const icon = el.children[0] as HTMLElement | null
           if (icon) {
             const ovr = projects.iconOverrides[id]
@@ -1542,7 +1566,25 @@ function buildCustomLayoutPrompt(req: string): string {
       {bindPick && (
         <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
           <span className="dsh-wt_menuLabel">{t('bind.title')}</span>
-          <div className="dsh-wt_bindProjName">{projects.nameOverrides[bindPick.id] ?? metas[bindPick.id]?.name ?? projects.layouts.find((l) => l.id === bindPick.id)?.title ?? bindPick.id}</div>
+          {(() => {
+            const sid = projects.bindings[bindPick.id]
+            if (!sid) {
+              return (
+                <div className="dsh-wt_bindStatus dsh-wt_bindStatusNone">
+                  <span className="dsh-wt_bindMini" aria-hidden><span className="dsh-wt_bindCircles" /></span>
+                  <span className="dsh-wt_bindNoneText">{t('bind.unbound')}</span>
+                </div>
+              )
+            }
+            const info = bindInfoOf(bindGroups, sid)
+            return (
+              <div className="dsh-wt_bindStatus">
+                <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
+                <span className="dsh-wt_bindSep" aria-hidden>|</span>
+                <span className="dsh-wt_bindConv" title={info.title}>{info.title}</span>
+              </div>
+            )
+          })()}
           <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
           {projects.bindings[bindPick.id] && (
             <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
@@ -1622,7 +1664,7 @@ function buildCustomLayoutPrompt(req: string): string {
             type="button"
             className="dsh-wt_layout"
             data-on={activeSplitId === l.id ? 'true' : 'false'}
-            style={{ order: effectiveOrder.indexOf(l.id) + 1000 }}
+            style={{ order: effectiveOrder.indexOf(l.id) + 1000, position: 'relative' }}
             onClick={() => { openSplit(l); reportUsed(l.id) }}
           >
             <span
@@ -1640,9 +1682,9 @@ function buildCustomLayoutPrompt(req: string): string {
               role="button"
               tabIndex={0}
               data-bound={projects.bindings[l.id] ? 'true' : 'false'}
-              title={t('bind.title')}
+              title={projects.bindings[l.id] ? t('bind.titleBound') : t('bind.titleUnbound')}
               onClick={(e) => { e.stopPropagation(); openBindPick(l.id, e.currentTarget as HTMLElement) }}
-            >🔗</span>
+            ><span className="dsh-wt_bindCircles" aria-hidden /></span>
             <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
           </button>
         ))}

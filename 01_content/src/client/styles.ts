@@ -153,11 +153,16 @@ export const css = [
   '.dsh-wt_presetAdd{border-style:dashed;color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_presetAddIcon{font-size:18px;line-height:20px}',
   '.dsh-wt_presetAddText{font-size:10px;line-height:13px}',
-  // 项目卡片上的对话绑定按钮（布局卡内联 / 入驻卡由桥注入，绝对定位于中间偏右）
-  '.dsh-wt_bindBtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:auto;border-radius:5px;font-size:12px;line-height:1;color:var(--dsw-alias-label-tertiary,#6b7280);cursor:pointer;user-select:none}',
-  '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.06));color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆单色绘制；
+  // 布局卡与入驻卡统一绝对定位于卡片中间偏右、垂直居中，保证所有卡片竖向对齐）
+  '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:18px;height:14px;margin:0;display:block;color:var(--dsw-alias-label-tertiary,#6b7280);cursor:pointer;user-select:none}',
+  '.dsh-wt_bindBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
-  'button[data-wt-id] > .dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);margin:0}',
+  '.dsh-wt_bindCircles{position:absolute;left:0;top:50%;width:18px;height:9px;transform:translateY(-50%)}',
+  '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;box-sizing:border-box;border:1.4px solid currentColor;background:transparent}',
+  '.dsh-wt_bindCircles::before{left:0}',
+  '.dsh-wt_bindCircles::after{left:9px}',
+  '.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after{background:currentColor}',
 
   // 布局条目卡片
   '.dsh-wt_layout{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;cursor:pointer;text-align:left}',
@@ -221,9 +226,17 @@ export const css = [
   '.dsh-wt_customLayoutBtn:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_customLayoutToast{margin:8px 0 0;font-size:11.5px;line-height:17px;color:var(--dsw-alias-state-success,#3fb950)}',
   '.dsh-wt_customLayoutToastFail{color:var(--dsw-alias-state-danger,#f85149)}',
-  // 对话绑定弹窗
-  '.dsh-wt_bindProjName{font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb);margin-top:6px}',
-  '.dsh-wt_bindHint{margin:4px 0 6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
+  // 对话绑定弹窗：状态行（未绑定 / 📂文件夹 | [对话框]）
+  '.dsh-wt_bindStatus{display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px}',
+  '.dsh-wt_bindStatusNone{color:var(--dsw-alias-label-secondary,#9aa4b2)}',
+  '.dsh-wt_bindMini{position:relative;display:inline-block;width:18px;height:14px;flex:none}',
+  '.dsh-wt_bindNoneText{font-size:12px;line-height:18px}',
+  '.dsh-wt_bindFolder{flex:none;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40%}',
+  '.dsh-wt_bindSep{flex:none;color:var(--dsw-alias-border-l2,#3a4150);font-size:11px}',
+  '.dsh-wt_bindConv{flex:1;min-width:0;padding:2px 8px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,rgba(255,255,255,.05));font-size:12px;line-height:18px;color:var(--dsw-alias-label-primary,#e6e8eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.dsh-wt_bindHint{margin:6px 0 6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
+  // 自定义窗完成页：自动绑定提示
+  '.dsh-wt_customDoneBind{margin:6px 0 0;font-size:11px;line-height:16px;color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_bindUnbind{display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;padding:3px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
   '.dsh-wt_bindUnbind:hover{color:var(--dsw-alias-state-danger,#f85149);border-color:var(--dsw-alias-state-danger,#f85149)}',
   '.dsh-wt_bindList{max-height:280px;overflow:auto;position:static}',

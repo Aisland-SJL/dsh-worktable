@@ -292,7 +292,8 @@ export function apply(ctx: Context) {
       try {
         const file = pathResolve(homedir(), '.dsh', 'storages', 'workspace.json')
         const raw = await readFile(file, 'utf8')
-        json(res, 200, JSON.parse(raw))
+        // 容忍 BOM（外部工具改写可能带 EF BB BF，JSON.parse 会抛错）
+        json(res, 200, JSON.parse(raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw))
       } catch (err) {
         json(res, 404, { error: String(err) })
       }

@@ -23,7 +23,7 @@ hljs.registerLanguage('json', hljsJson)
  * 内容与 chatSide 的变更经 onSpecMutated 回调交给工作台持久化（布局条目）。
  */
 
-export type BuiltinType = 'browser' | 'explorer' | 'scm' | 'tasks' | 'terminal' | 'custom'
+export type BuiltinType = 'browser' | 'anim' | 'explorer' | 'scm' | 'tasks' | 'terminal' | 'custom'
 
 export type SplitContent =
   | { kind: 'iframe'; url: string; title?: string }
@@ -123,6 +123,7 @@ const PERSIST_KEY = 'dsh.worktable.split.v2'
 /** 内置内容窗图标 */
 const BUILTIN_ICONS: Record<BuiltinType, string> = {
   browser: '🌐',
+  anim: '🎬',
   explorer: '📁',
   scm: '🔀',
   tasks: '✅',
@@ -132,6 +133,7 @@ const BUILTIN_ICONS: Record<BuiltinType, string> = {
 
 const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
   browser: 'pane.browser',
+  anim: 'pane.anim',
   explorer: 'pane.explorer',
   scm: 'pane.scm',
   tasks: 'pane.tasks',
@@ -861,6 +863,31 @@ function BrowserPane() {
   )
 }
 
+/** 动画播放窗：iframe 壳 + 地址栏（站内自带项目/场景列表、播放、画幅切换、导出等全部控件） */
+function AnimPane() {
+  const [url, setUrl] = useState('')
+  const [src, setSrc] = useState('about:blank')
+  const go = () => {
+    const u = url.trim()
+    setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
+  }
+  return (
+    <>
+      <div className="dsh-wt_browserBar">
+        <input
+          className="dsh-wt_browserInput"
+          value={url}
+          placeholder={T('pane.animUrlPh')}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') go() }}
+        />
+        <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
+      </div>
+      <iframe className="dsh-wt_paneFrame" src={src} title="anim" />
+    </>
+  )
+}
+
 /** 文件夹图标（重绘 SVG，与 better-sidebar 同款风格） */
 function FolderIcon() {
   return (
@@ -1313,6 +1340,7 @@ function CustomPane() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [fail, setFail] = useState('')
+  const [bindNote, setBindNote] = useState<'auto' | 'kept' | 'none'>('none')
   // 默认项目 = 当前工作区所属项目；默认会话 = 当前会话；默认分组 = 当前会话所在工作区
   useEffect(() => {
     const list = custom?.getProjects?.() ?? []
@@ -1344,10 +1372,12 @@ function CustomPane() {
           if (!newGroupParent.trim() || !newGroupName.trim()) { setFail(T('custom.groupNeedPath')); return }
           group = { kind: 'new', parent: newGroupParent.trim(), name: newGroupName.trim() }
         }
-        await custom.submit(projectId, pname, text, group)
+        const sid = await custom.submit(projectId, pname, text, group)
+        setBindNote((custom.autoBind?.(sid) ?? 'none') as any)
       } else {
         if (!sessionId) return
         await custom.sendToSession(sessionId, pname, text)
+        setBindNote((custom.autoBind?.(sessionId) ?? 'none') as any)
       }
       setDone(true)
     } catch (e) {
@@ -1365,6 +1395,9 @@ function CustomPane() {
         <span className="dsh-wt_customDone" aria-hidden>✅</span>
         <p className="dsh-wt_customDoneText">{mode === 'new' ? T('custom.done') : T('custom.sent')}</p>
         <p className="dsh-wt_customDoneHint">{T('custom.doneHint')}</p>
+        {bindNote !== 'none' && (
+          <p className="dsh-wt_customDoneBind">{bindNote === 'auto' ? T('custom.autoBound') : T('custom.keptBinding')}</p>
+        )}
       </div>
     )
   }
@@ -1473,6 +1506,7 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
     return <FileViewer path={content.path} />
   }
   if (content.type === 'browser') return <BrowserPane />
+  if (content.type === 'anim') return <AnimPane />
   if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
@@ -1546,6 +1580,9 @@ function PanePicker(props: { row: PaneRow; index: number }) {
     <div ref={hostRef} className={'dsh-wt_panePicker dsh-wt_panePicker-' + mode}>
       <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'browser' })}>
         <span aria-hidden>🌐</span>{T('pane.browser')}
+      </button>
+      <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'anim' })}>
+        <span aria-hidden>🎬</span>{T('pane.anim')}
       </button>
       <button type="button" className="dsh-wt_panePick" onClick={() => pick({ kind: 'builtin', type: 'explorer' })}>
         <span aria-hidden>📁</span>{T('pane.explorer')}

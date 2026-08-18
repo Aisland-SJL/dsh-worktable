@@ -724,6 +724,28 @@
 - 重启后 functional-diag 全 20 STEP 复跑 ERROR_COUNT: 0（site/write/workspaces 路由全部就绪）。
 - 备注：之前 send-self-test 遗留的一次性会话 session-91a6adea 用户未删，STEP20 itemCount 13→14
   即该测试会话；再次提醒用户删除即可，不影响功能。
+## 补记（动画窗类型 + 绑定按钮改版 + 自动绑定规则 + 会话硬删除）
+
+- 用户要求：① 删掉归档的一次性会话 session-91a6adea；② 新增「动画」窗类型（iframe 壳 + 地址栏，
+  独立 🎬 图标，站内自带控件）；③ 绑定按钮重画：竖向对齐 + ○○（未绑定）/●●（已绑定）双圆单色图标；
+  ④ 绑定弹窗改版：未绑定显示「未绑定对话」，已绑定显示「📂文件夹 | [对话名框]」，去掉照抄项目名的
+  第二行；⑤ 自动绑定规则：子窗口新建/发送到会话且当前项目未绑定 → 自动绑定该会话；已绑定 → 永不
+  自动改绑；⑥ 资深 PM 式 hover 提示。
+- 实现：① 会话目录 + workspace.json 引用删除（备份后清理，宿主已采纳）；② BuiltinType 增 'anim'、
+  BUILTIN_ICONS 🎬、AnimPane（浏览器窗同款壳、默认 about:blank）、选择器第 2 位；③ 绑定按钮改为
+  绝对定位 right:26px/top:50% 统一对齐（布局卡与入驻卡一致），图标由 CSS 双圆绘制（::before/::after，
+  data-bound 切换空心/实心、单色 currentColor）；④ 弹窗状态行（bindInfoOf 查文件夹+标题，对话名带框）
+  + 提示文案「一个项目只能绑定一个对话…」；⑤ custom env 增 autoBind（'auto'/'kept'/'none'），
+  createCustomSession 返回会话 id，CustomPane 完成页显示自动绑定/未改绑提示。
+- 验证（probe-batch5/autobind-mini）：pickCount=5、tabType=anim、地址栏+iframe ✓；3 个绑定按钮
+  全部 absolute/delta=0 对齐、8px 空心圆 ✓；弹窗未绑定态「未绑定对话」无对话框 ✓，绑定后
+  📂未分组 | [dsh-usage] 带框 ✓；autoBind 未绑定→'auto'+写入、再调→'kept'+不变 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 事故与修复：删除会话时用 PowerShell Set-Content 重写 workspace.json 带上了 UTF-8 BOM，宿主路由
+  JSON.parse 抛错 → /api/worktable/workspaces 404、会话分组退化为平铺（STEP20 groupHeaders 0）。
+  已去 BOM 修复，并在服务端路由加 BOM 容忍（下次重启生效）。
+- 备注：动画窗/绑定按钮纯客户端，F5 即生效；服务端 BOM 容忍改动需下次重启 dsh web 后生效。
+
 ## 补记（第 7/8 布局 + ＋自定义磁贴 + 窗口改名 + 对话绑定）
 
 - 用户要求：① 新增第 7 个预设「田字格」——右聊天通高整列、左侧 2×2 四窗默认等大，横向贯通、
