@@ -48,7 +48,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         var cs = getComputedStyle(b);
         var c4 = getComputedStyle(b.querySelector('.dsh-wt_bindCircles'), '::before');
         var aft = getComputedStyle(b, '::after');
-        return { w: cs.width, h: cs.height, color: cs.color, circleW: c4.width, circleBorder: c4.borderTopWidth, circleFill: c4.backgroundColor, tip: aft.content, hoverBg: cs.backgroundColor };
+        return { w: cs.width, h: cs.height, radius: cs.borderRadius, color: cs.color, circleW: c4.width, circleBorder: c4.borderTopWidth, circleFill: c4.backgroundColor, tip: aft.content, tipRight: aft.right, tipLeft: aft.left, hoverBg: cs.backgroundColor };
       };
       // 未绑定态
       out.unbound = read(btn);

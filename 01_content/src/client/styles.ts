@@ -154,13 +154,14 @@ export const css = [
   '.dsh-wt_presetAddIcon{font-size:18px;line-height:20px}',
   '.dsh-wt_presetAddText{font-size:10px;line-height:13px}',
   // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆绘制，黑白单色克制：
-  // 未绑定次级灰空心、已绑定主色实心，不用强调色；hover 时自身出现按钮底色 + 气泡显示绑定对象）
-  '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:16px;height:12px;margin:0;display:block;border-radius:4px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}',
+  // 未绑定次级灰空心、已绑定主色实心，不用强调色；hover 区域 = 22×22 圆角矩形按钮底，
+  // 气泡向左伸出（留在侧栏内，不被右侧对话区遮挡），垂直居中于按钮）
+  '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:22px;height:22px;margin:0;display:block;border-radius:6px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}',
   '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}',
-  '.dsh-wt_bindBtn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%) translateY(2px);padding:4px 8px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease, transform .12s ease;z-index:90;box-shadow:0 4px 12px rgba(0,0,0,.35)}',
-  '.dsh-wt_bindBtn:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}',
-  '.dsh-wt_bindCircles{position:absolute;left:0;top:50%;width:14px;height:7px;transform:translateY(-50%)}',
+  '.dsh-wt_bindBtn::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%) translateX(4px);padding:5px 9px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease, transform .12s ease;box-shadow:0 4px 12px rgba(0,0,0,.35)}',
+  '.dsh-wt_bindBtn:hover::after{opacity:1;transform:translateY(-50%) translateX(0)}',
+  '.dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:14px;height:7px;transform:translate(-50%,-50%)}',
   '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-sizing:border-box;border:1.2px solid currentColor;background:transparent}',
   '.dsh-wt_bindCircles::before{left:0}',
   '.dsh-wt_bindCircles::after{left:7px}',
