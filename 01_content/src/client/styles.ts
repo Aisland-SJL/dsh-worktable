@@ -204,6 +204,7 @@ export const css = [
   '.dsh-wt_customRow{display:flex;align-items:center;gap:8px}',
   '.dsh-wt_customLabel{flex:none;font-size:11.5px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
   '.dsh-wt_customSelect{flex:1;min-width:0;padding:5px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;outline:none}',
+  '.dsh-wt_customSelect option{background-color:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_customSend{align-self:flex-end;padding:6px 14px;border:none;border-radius:6px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);color:#fff;font:inherit;font-size:12px;cursor:pointer}',
   '.dsh-wt_customSend:disabled{opacity:.55;cursor:default}',
   '.dsh-wt_customFail{font-size:11px;color:var(--dsw-alias-state-danger,#e5484d);margin:0}',

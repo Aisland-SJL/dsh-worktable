@@ -319,7 +319,7 @@ function syncSessionScope(list: any) {
   try {
     const snap = list.getSnapshot()
     const current: string = snap?.current ?? ''
-    const entry = snap?.items?.find((it: any) => it.sessionId === current) ?? null
+    const entry = snap?.byId?.[current] ?? snap?.items?.find((it: any) => it.sessionId === current) ?? null ?? null
     const cat = snap?.subagentsByParent?.[current]
     let subagents: any[] = []
     if (Array.isArray(cat)) subagents = cat
@@ -433,13 +433,17 @@ function WorktableSection(props: any) {
         getSessions: () => {
           try {
             const snap = sessionBridge?.list?.getSnapshot?.()
-            const items = Array.isArray(snap?.items) ? snap.items : []
+            const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
+            const byId = snap?.byId ?? {}
             const current = snap?.current ?? ''
-            return items.map((it: any) => ({
-              id: it?.sessionId ?? it?.id ?? '',
-              title: it?.title ?? it?.name ?? it?.summary?.title ?? (it?.sessionId ?? it?.id ?? ''),
-              isCurrent: (it?.sessionId ?? it?.id) === current,
-            }))
+            return ids.map((sid: string) => {
+              const rec = byId[sid] ?? {}
+              return {
+                id: sid,
+                title: rec?.title ?? rec?.name ?? rec?.summary?.title ?? sid,
+                isCurrent: sid === current,
+              }
+            })
           } catch { return [] }
         },
         sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),

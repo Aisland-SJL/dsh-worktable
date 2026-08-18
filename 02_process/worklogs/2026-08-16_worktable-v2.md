@@ -639,15 +639,16 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（自定义窗口增加「发送到已有会话」模式）
+## 补记（自定义对话框两个显示 bug 修复）
 
-- 用户需求：不一定每次都新建对话；可加入当前对话/选择已有会话，把内容直接发过去。
-- 处理：CustomPane 顶部加模式切换（新建对话 | 发送到会话）；发送到会话模式出现会话下拉
-  （默认当前会话，标注「（当前）」），项目选择保留（上下文仍需项目信息）；
-  sendCustomToSession：优先 conversation.sendSession(sessionId, text) 定向发送，否则 open 后 send，
-  发送后打开该会话；消息为精简版上下文（worktable 是什么/需求/所在项目）；
-  env.custom 增 getSessions（读 ctx.sessions.list 快照 items+current）与 sendToSession；
-  完成态文案区分「已新建专属对话 / 已发送到会话」。locale custom.* 增 7 键。
-- 验证（functional-diag STEP20 扩展）：切换模式 → 会话下拉出现；新建模式各项回归不变；
-  全 20 STEP ERROR_COUNT: 0。真实发送闭环待用户在 GUI 实测（新建/发送两种模式各试一次）。
+- 用户反馈：① 所属项目下拉打开一片空白，hover 才见选项；② 发送到会话模式的下拉
+  只有很细一条、不能用。并提醒：做功能要自己测渲染细节。
+- 根因：① 原生 select 弹层里 option 未指定背景/前景色——亮色文字落在默认白底上不可见；
+  ② getSessions 读的快照字段错了（用的是 items，实际结构是 ids + byId）→ 会话列表恒空，
+  空 select 就缩成一条细线。
+- 处理：① .dsh-wt_customSelect option 显式 dark 背景 + 亮色文字；
+  ② getSessions 改读 snap.ids + snap.byId（标题取 title/name/summary.title，isCurrent 标记）；
+  ③ 顺手修正 syncSessionScope 的会话条目读取（byId 优先，items 兜底）。
+- 验证（探针 + 回归）：会话下拉 16 个选项、标题正常；项目下拉 option 配色已加；
+  STEP20 sessionHasCurrent=true；全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
