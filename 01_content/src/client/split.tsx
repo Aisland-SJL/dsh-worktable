@@ -1299,19 +1299,29 @@ function CustomPane() {
   const [mode, setMode] = useState<'new' | 'existing'>('new')
   const [sessionGroups, setSessionGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  // 分组（宿主工作区）三态：未分组 / 现有组 / 新建组
+  const [wsGroups, setWsGroups] = useState<{ id: string; title: string; path: string }[]>([])
+  const [groupMode, setGroupMode] = useState<'none' | 'existing' | 'new'>('none')
+  const [groupId, setGroupId] = useState<string | null>(null)
+  const [newGroupParent, setNewGroupParent] = useState('')
+  const [newGroupName, setNewGroupName] = useState('')
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [fail, setFail] = useState('')
-  // 默认项目 = 当前工作区所属项目；默认会话 = 当前会话
+  // 默认项目 = 当前工作区所属项目；默认会话 = 当前会话；默认分组 = 当前会话所在工作区
   useEffect(() => {
     const list = custom?.getProjects?.() ?? []
     setProjects(list)
     const cur = custom?.currentProjectId?.() ?? null
     setProjectId(cur && list.some((p) => p.id === cur) ? cur : (list[0]?.id ?? null))
+    setWsGroups((custom?.getWorkspaces?.() ?? []).map((w) => ({ id: w.id, title: w.title, path: w.path })))
     custom?.getSessions?.().then((res) => {
       setSessionGroups(res.groups)
       const flat = res.groups.flatMap((g) => g.sessions)
       setSessionId(flat.find((s) => s.isCurrent)?.id ?? flat[0]?.id ?? null)
+      const curId = flat.find((s) => s.isCurrent)?.id
+      const home = curId ? (custom?.getWorkspaces?.() ?? []).find((w) => (w.sessionIds ?? []).includes(curId)) : null
+      if (home) { setGroupMode('existing'); setGroupId(home.id) }
     }).catch(() => { setSessionGroups([]) })
   }, [custom])
   const submit = async () => {
@@ -1322,8 +1332,15 @@ function CustomPane() {
     try {
       const proj = projects.find((p) => p.id === projectId)
       const pname = proj?.name ?? projectId
-      if (mode === 'new') await custom.submit(projectId, pname, text)
-      else {
+      if (mode === 'new') {
+        let group: any = { kind: 'none' }
+        if (groupMode === 'existing' && groupId) group = { kind: 'existing', workspaceId: groupId }
+        else if (groupMode === 'new') {
+          if (!newGroupParent.trim() || !newGroupName.trim()) { setFail(T('custom.groupNeedPath')); return }
+          group = { kind: 'new', parent: newGroupParent.trim(), name: newGroupName.trim() }
+        }
+        await custom.submit(projectId, pname, text, group)
+      } else {
         if (!sessionId) return
         await custom.sendToSession(sessionId, pname, text)
       }
@@ -1385,10 +1402,54 @@ function CustomPane() {
             onChange={setProjectId}
           />
         </div>
+        {mode === 'new' && (
+          <div className="dsh-wt_customRow">
+            <span className="dsh-wt_customLabel">{T('custom.group')}</span>
+            <SelectPop
+              value={groupMode === 'none' ? '__none' : groupMode === 'new' ? '__new' : groupId}
+              groups={[{
+                title: '',
+                items: [
+                  { id: '__none', label: T('custom.groupNone') },
+                  ...wsGroups.map((w) => ({ id: w.id, label: w.title })),
+                  { id: '__new', label: T('custom.groupNew') },
+                ],
+              }]}
+              placeholder={T('custom.group')}
+              onChange={(id) => {
+                if (id === '__none') setGroupMode('none')
+                else if (id === '__new') setGroupMode('new')
+                else { setGroupMode('existing'); setGroupId(id) }
+              }}
+            />
+          </div>
+        )}
+        {mode === 'new' && groupMode === 'new' && (
+          <>
+            <div className="dsh-wt_customRow">
+              <span className="dsh-wt_customLabel">{T('custom.groupNewParent')}</span>
+              <input
+                className="dsh-wt_customPathInput"
+                placeholder={T('custom.groupNewParentPh')}
+                value={newGroupParent}
+                onChange={(e) => setNewGroupParent(e.target.value)}
+              />
+            </div>
+            <div className="dsh-wt_customRow">
+              <span className="dsh-wt_customLabel">{T('custom.groupNewName')}</span>
+              <input
+                className="dsh-wt_customPathInput"
+                placeholder={T('custom.groupNewNamePh')}
+                value={newGroupName}
+                onChange={(e) => setNewGroupName(e.target.value)}
+              />
+            </div>
+          </>
+        )}
         <button
           type="button"
           className="dsh-wt_customSend"
-          disabled={busy || !requirement.trim() || !projectId || (mode === 'existing' && !sessionId)}
+          disabled={busy || !requirement.trim() || !projectId || (mode === 'existing' && !sessionId) || (mode === 'new' && groupMode === 'new' && (!newGroupParent.trim() || !newGroupName.trim()))}
           onClick={submit}
         >{busy ? '…' : (mode === 'new' ? T('custom.send') : T('custom.sendToSession'))}</button>
         {fail && <p className="dsh-wt_customFail">{T('custom.fail')}：{fail}</p>}

@@ -656,6 +656,35 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.defaultIsCurrent=false;
       var send=vis('.dsh-wt_customSend');
       out.sendDisabled=send?send.disabled:null;
+      // 新建模式的分组选择：项目选择器之后应有分组选择器；点开应含 未分组/现有组/新建分组
+      var nbtns=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.newSelectCount=nbtns.length;
+      var gbtn=nbtns[1];
+      out.groupSelectPresent=!!gbtn;
+      out.groupDefaultValue=gbtn?String(gbtn.textContent).trim():null;
+      if(gbtn){ gbtn.click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var glist=[].slice.call(document.querySelectorAll('.dsh-wt_selectList')).find(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.groupListOpen=!!glist;
+      out.groupItemCount=glist?glist.querySelectorAll('.dsh-wt_selectItem').length:0;
+      var gitems=glist?[].slice.call(glist.querySelectorAll('.dsh-wt_selectItem')):[];
+      out.groupHasNone=gitems.some(function(el){return String(el.textContent).indexOf('\u672a\u5206\u7ec4')>=0});
+      out.groupHasNew=gitems.some(function(el){return String(el.textContent).indexOf('\u65b0\u5efa')>=0});
+      var newItem=gitems.find(function(el){return String(el.textContent).indexOf('\u65b0\u5efa')>=0});
+      if(newItem){ newItem.click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      out.newGroupInputs=[].slice.call(document.querySelectorAll('.dsh-wt_customPathInput')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');}).length;
+      var send2=vis('.dsh-wt_customSend');
+      out.sendDisabledNewGroup=send2?send2.disabled:null;
+      // 收尾：选回「未分组」，输入框应消失
+      var nbtns2=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      if(nbtns2[1]){ nbtns2[1].click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var glist2=[].slice.call(document.querySelectorAll('.dsh-wt_selectList')).find(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      var noneItem=glist2?[].slice.call(glist2.querySelectorAll('.dsh-wt_selectItem')).find(function(el){return String(el.textContent).indexOf('\u672a\u5206\u7ec4')>=0}):null;
+      if(noneItem){ noneItem.click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      out.groupInputsAfterNone=[].slice.call(document.querySelectorAll('.dsh-wt_customPathInput')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');}).length;
       // 切到「发送到会话」模式：出现自制会话下拉，点开看分组与当前标记
       var modeBtns=[].slice.call(document.querySelectorAll('.dsh-wt_customModeBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
       if(modeBtns[1]){ modeBtns[1].click(); }

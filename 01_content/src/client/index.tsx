@@ -263,7 +263,7 @@ function findSidebar(start: HTMLElement | null): HTMLElement | null {
 const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], listeners: new Set() }
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
-let sessionBridge: { sessions: any; conversation: any; list: any } | null = null
+let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
 
 /** 把文本送入指定会话：宿主同款寻址（binding(id).session.prompt / sendSession(会话面)），
  *  插件是根级上下文，无作用域的 conversation.send 会报 requires a session scope，不可用。 */
@@ -299,8 +299,11 @@ async function promptIntoSession(sessionId: string, text: string): Promise<void>
   throw new Error('no send path: session face unavailable')
 }
 
-/** 自定义窗口任务：新建一个专属会话，注入工作台背景 + 用户需求，并打开该会话 */
-export async function createCustomSession(projectId: string, projectName: string, requirement: string): Promise<void> {
+/** 新建会话的分组选择：未分组 / 加入现有分组 / 新建一个分组（父目录 + 名称） */
+export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId: string } | { kind: 'new'; parent: string; name: string }
+
+/** 自定义窗口任务：新建一个专属会话（可选指定分组），注入工作台背景 + 用户需求，并打开该会话 */
+export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup): Promise<void> {
   const b = sessionBridge
   if (!b || typeof b.sessions?.create !== 'function') throw new Error('sessions unavailable')
   const text = [
@@ -316,7 +319,30 @@ export async function createCustomSession(projectId: string, projectName: string
     '4. 请基于以上背景，帮助用户完成这个窗口的自定义设计（例如产出可直接放入窗口的内容、页面或实现方案）；',
     '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
   ].join('\n')
-  const sessionId = await b.sessions.create({})
+  // 分组解析：existing → 直接带 workspaceId 建会话；new → 先建目录并注册为工作区
+  let workspaceId: string | null = null
+  const g = group ?? { kind: 'none' as const }
+  if (g.kind === 'existing') {
+    workspaceId = g.workspaceId
+  } else if (g.kind === 'new') {
+    const ws = b.workspaces as any
+    if (!ws || typeof ws.create !== 'function') throw new Error('workspaces unavailable')
+    const parent = g.parent.replace(/[\\/]+$/, '')
+    const name = g.name.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
+    if (!parent || !name) throw new Error('invalid group path')
+    const full = parent + '\\' + name
+    try { await ws.createDirectory?.(parent, name) } catch { /* 宿主 browse 能力本机为 native 时不可用 */ }
+    try {
+      // 兜底：插件服务端 mkdir（父目录必须已存在，避免误建深层目录）
+      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
+      const d = await r.json()
+      if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
+    } catch { /* 目录建不出来的错误最终由 workspace.create 暴露 */ }
+    const view = await ws.create({ path: full })
+    workspaceId = view?.workspaceId ?? view?.id ?? null
+    if (!workspaceId) throw new Error('workspace create failed')
+  }
+  const sessionId = await b.sessions.create(workspaceId ? { workspaceId } : {})
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
 }
@@ -499,7 +525,22 @@ function WorktableSection(props: any) {
           } catch { return { groups: [], current: '' } }
         },
         sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),
-        submit: (projectId, projectName, requirement) => createCustomSession(projectId, projectName, requirement),
+        submit: (projectId, projectName, requirement, group) => createCustomSession(projectId, projectName, requirement, group),
+        // 分组（宿主工作区）数据源：读 ctx.workspaces 快照，供新建对话选分组
+        getWorkspaces: () => {
+          try {
+            const snap = sessionBridge?.workspaces?.list?.getSnapshot?.()
+            const items = snap?.items ?? []
+            return items.map((w: any) => ({
+              id: w.workspaceId ?? w.id,
+              title: w.title ?? '',
+              path: w.path ?? '',
+              sessionIds: Array.isArray(w.sessionIds) ? w.sessionIds : [],
+            }))
+          } catch { return [] }
+        },
+        createWorkspace: (path: string) => sessionBridge?.workspaces?.create?.({ path }),
+        createWorkspaceDir: (parent: string, name: string) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
       },
     })
     return () => setSplitEnv(null)
@@ -1410,12 +1451,12 @@ function WorktableSection(props: any) {
   )
 }
 
-export const inject = ['slots', 'locale', 'sessions', 'conversation']
+export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspaces']
 
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
-  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null }
-  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text) } catch {}
+  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
+  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces } catch {}
 
 
   ctx.effect(() => {

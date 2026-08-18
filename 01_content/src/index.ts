@@ -320,6 +320,28 @@ export function apply(ctx: Context) {
     },
   })
 
+  // 新建分组：创建目录（仅当父目录已存在，避免递归误建深层垃圾目录）
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/mkdir',
+    handler: async (req: any, res: any) => {
+      try {
+        if (req.method !== 'POST') { res.writeHead(405); res.end(); return }
+        const body = await readJsonBody(req)
+        const p = typeof body.path === 'string' ? body.path.trim() : ''
+        if (!p) { json(res, 400, { error: 'missing path' }); return }
+        const abs = pathResolve(p)
+        const fsx = await import('node:fs/promises')
+        const parent = abs.split(/[\\/]/).slice(0, -1).join('\\') || '\\'
+        try { await fsx.access(parent) } catch { json(res, 400, { error: 'parent not found' }); return }
+        await fsx.mkdir(abs)
+        json(res, 200, { ok: true, path: abs })
+      } catch (err: any) {
+        json(res, err?.code === 'EEXIST' ? 200 : 500, err?.code === 'EEXIST' ? { ok: true, exists: true } : { error: String(err) })
+      }
+    },
+  })
+
   webServer.register({
     kind: 'exact',
     path: '/api/worktable/git',

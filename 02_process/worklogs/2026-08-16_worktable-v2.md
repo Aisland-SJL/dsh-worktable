@@ -681,3 +681,22 @@
   listEntry running=true 轮次启动）；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；自测留下的一次性会话请用户手动删除。
 
+## 补记（新建对话加分组选项：加入现有组 / 新建一个组）
+
+- 用户反馈：新建对话只能落在未分组，无法加进已有项目组（如 Projects），也没法顺手建新组。
+- 宿主能力勘察：sessions.create({workspaceId}) 指定分组建会话；ctx.workspaces 服务提供
+  list/create({path})/rename/delete/archiveSession 等；本机目录选择器为 native 模式，
+  createDirectory 需 browse 能力不可用 → 建组目录改走插件服务端 mkdir 路由。
+- 实现：① 插件 inject 增 'workspaces'，桥接 ctx.workspaces；② 新建模式加「分组」三态选择
+  （未分组 / 现有组列表 / ＋新建分组），新建组显示父目录+名称两个输入框；③ 默认分组 =
+  当前会话所在工作区（体验：新会话直接落在你正在用的组里）；④ 服务端新增
+  POST /api/worktable/mkdir（父目录必须已存在，防误建深层目录），客户端 create 前调用兜底；
+  ⑤ createCustomSession 按分组解析 workspaceId 后 sessions.create({workspaceId})。
+- 验证：STEP20 扩展断言全过——newSelectCount=2、groupDefaultValue=Projects▾（自动选中当前组）、
+  groupItemCount=4、groupHasNone/groupHasNew=true、newGroupInputs=2、sendDisabledNewGroup=true、
+  groupInputsAfterNone=0；ERRORS_COUNT: 0。
+- 待办：mkdir 为服务端路由，需用户重启 dsh web 后跑 group-cycle-test.cjs 全周期自测
+  （建目录→注册分组→按组建会话→验证→归档会话+删分组+清目录，无残留）。
+- 备注：加入现有组纯客户端（重启前即可用）；新建组依赖 mkdir 路由（重启后可用）。
+
+
