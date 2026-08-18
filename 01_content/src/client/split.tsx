@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
 import 'xterm/css/xterm.css'
 import MarkdownIt from 'markdown-it'
@@ -1245,6 +1245,51 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
   )
 }
 
+/** 自制下拉列表（原生 select 无法美化）：文件夹分组标题 + 1px 细分隔线 + 选项列表 */
+function SelectPop(props: {
+  value: string | null
+  groups: { title: string; items: { id: string; label: string; isCurrent?: boolean }[] }[]
+  placeholder?: string
+  onChange: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const flat = props.groups.flatMap((g) => g.items)
+  const selected = flat.find((i) => i.id === props.value)
+  return (
+    <div className="dsh-wt_select">
+      <button type="button" className="dsh-wt_selectBtn" onClick={() => setOpen((v) => !v)}>
+        <span className={'dsh-wt_selectVal' + (selected ? '' : ' dsh-wt_selectPh')}>{selected?.label ?? props.placeholder ?? ''}</span>
+        <span className="dsh-wt_selectCaret" aria-hidden>▾</span>
+      </button>
+      {open && (
+        <div className="dsh-wt_selectList">
+          {props.groups.map((g, gi) => (
+            <Fragment key={g.title || 'g' + gi}>
+              {g.title && (
+                <>
+                  <div className="dsh-wt_selectDivider" />
+                  <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                </>
+              )}
+              {g.items.map((it) => (
+                <button
+                  key={it.id}
+                  type="button"
+                  className={'dsh-wt_selectItem' + (it.id === props.value ? ' dsh-wt_selectItemOn' : '')}
+                  onClick={() => { props.onChange(it.id); setOpen(false) }}
+                >
+                  <span className="dsh-wt_selectItemTitle">{it.label}</span>
+                  {it.isCurrent && <span className="dsh-wt_selectCurrent">{T('custom.sessionCurrent')}</span>}
+                </button>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** 自定义窗口：居中对话框。两种模式：新建专属会话 / 发送到已有会话（默认当前会话）。 */
 function CustomPane() {
   const custom = splitEnv?.custom
@@ -1320,37 +1365,25 @@ function CustomPane() {
         {mode === 'existing' && (
           <div className="dsh-wt_customRow">
             <span className="dsh-wt_customLabel">{T('custom.session')}</span>
-            <select
-              className="dsh-wt_customSelect"
-              value={sessionId ?? ''}
-              onChange={(e) => setSessionId(e.target.value)}
-            >
-              {sessionGroups.map((g) => g.title
-                ? (
-                  <optgroup key={g.title} label={g.title}>
-                    {g.sessions.map((s) => (
-                      <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
-                    ))}
-                  </optgroup>
-                )
-                : g.sessions.map((s) => (
-                  <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
-                )),
-              )}
-            </select>
+            <SelectPop
+              value={sessionId}
+              groups={sessionGroups.map((g) => ({
+                title: g.title,
+                items: g.sessions.map((s) => ({ id: s.id, label: s.title, isCurrent: s.isCurrent })),
+              }))}
+              placeholder={T('custom.session')}
+              onChange={setSessionId}
+            />
           </div>
         )}
         <div className="dsh-wt_customRow">
           <span className="dsh-wt_customLabel">{T('custom.project')}</span>
-          <select
-            className="dsh-wt_customSelect"
-            value={projectId ?? ''}
-            onChange={(e) => setProjectId(e.target.value)}
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <SelectPop
+            value={projectId}
+            groups={[{ title: '', items: projects.map((p) => ({ id: p.id, label: p.name })) }]}
+            placeholder={T('custom.project')}
+            onChange={setProjectId}
+          />
         </div>
         <button
           type="button"

@@ -651,23 +651,26 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.tabOpened=st.spec.main[0].tabs.length===1;
       out.tabType=st.spec.main[0].tabs[0].content.type;
       out.dialog=!!vis('.dsh-wt_customCard');
-      out.textarea=!!vis('.dsh-wt_customInput');
-      var hint=vis('.dsh-wt_customHint');
-      out.hint=hint?String(hint.textContent).slice(0,26):null;
-      var sel=vis('.dsh-wt_customSelect');
-      out.selectValue=sel?sel.value:null;
-      out.defaultIsCurrent=sel?sel.value==='t-custom':false;
+      var sel=vis('.dsh-wt_selectBtn');
+      out.selectValue=sel?String(sel.textContent).trim():null;
+      out.defaultIsCurrent=false;
       var send=vis('.dsh-wt_customSend');
       out.sendDisabled=send?send.disabled:null;
-      // 切到「发送到会话」模式：出现会话下拉，默认当前会话
+      // 切到「发送到会话」模式：出现自制会话下拉，点开看分组与当前标记
       var modeBtns=[].slice.call(document.querySelectorAll('.dsh-wt_customModeBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
       if(modeBtns[1]){ modeBtns[1].click(); }
       await new Promise(function(r){setTimeout(r,250)});
-      var ssel=[].slice.call(document.querySelectorAll('.dsh-wt_customSelect')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');})[0];
-      out.sessionSelect=!!ssel;
-      out.sessionOptGroups=ssel?ssel.querySelectorAll('optgroup').length:0;
-      out.sessionOptionCount=ssel?ssel.options.length:0;
-      out.sessionHasCurrent=ssel?String(ssel.textContent).indexOf('\u5f53\u524d')>=0||String(ssel.textContent).indexOf('current')>=0:false;
+      var sbtns=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.selectBtnCount=sbtns.length;
+      out.sessionSelect=sbtns.length>=2;
+      if(sbtns[0]){ sbtns[0].click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var list=[].slice.call(document.querySelectorAll('.dsh-wt_selectList')).find(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.listOpen=!!list;
+      out.groupHeaders=list?list.querySelectorAll('.dsh-wt_selectGroup').length:0;
+      out.dividers=list?list.querySelectorAll('.dsh-wt_selectDivider').length:0;
+      out.itemCount=list?list.querySelectorAll('.dsh-wt_selectItem').length:0;
+      out.currentBadge=list?list.querySelectorAll('.dsh-wt_selectCurrent').length:0;
       st.close();
     }catch(err){ out.err=String(err) }
     return JSON.stringify(out);

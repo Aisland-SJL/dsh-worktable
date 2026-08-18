@@ -639,18 +639,14 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（会话列表按用户面板分组 + 排除后台会话）
+## 补记（自制下拉列表：文件夹分组标题 + 细分隔线）
 
-- 用户反馈：会话下拉里出现看不到的会话（如「你是一个只读调查员」等后台/子代理对话、乱码标题）；
-  应只显示用户面板里可见的对话，并按面板结构分组（Projects / DeepSeek Harness 两个工作区），
-  带分隔符。
-- 处理：
-  ① 服务端新增只读路由 /api/worktable/workspaces：读宿主 ~/.dsh/storages/workspace.json
-  （工作区 id→title+sessionIds + archived 列表）；
-  ② 客户端 getSessions 改为异步：拉工作区分组 → 排除 archived 与子代理会话（subagentsByParent），
-  标题取自活快照 byId，当前会话标记；路由不可用时回退平铺（排除子代理）；
-  ③ CustomPane 会话下拉用 optgroup 按工作区分组（分隔符），默认选中当前会话；
-  ④ 清理临时探针导出。
-- 验证（functional-diag STEP20 扩展）：回退态 sessionOptionCount=16、sessionHasCurrent=true；
-  workspaces 路由 404 已加入待重启过滤；全 20 STEP ERROR_COUNT: 0。
-- 备注：含服务端新路由，**需重启一次 dsh web** 后分组生效；重启前为平铺回退。
+- 用户反馈：① 工作区文件夹名（Projects/DeepSeek Harness）在原生 optgroup 里看起来像对话项，
+  需要明确区分是分组名；② 分隔符是白色大横线太丑，要很细的一条。
+- 处理：弃用原生 select/optgroup（无法美化），新写 SelectPop 自制下拉：
+  组标题 = 📁 图标 + 小号暗色大写文字（不可点击、明显是文件夹名）；组间 1px 细分隔线；
+  选项可点选、当前会话带「（当前）」角标、选中项蓝色高亮；列表 max-height 内滚动。
+  项目下拉同样换用（顺带根治原生 option 配色问题）。修复过程中两次测试脚本语法损坏已恢复。
+- 验证（STEP20 重写断言）：selectBtnCount=2、listOpen、groupHeaders=2、dividers=2、
+  itemCount=13（子代理/archived 已排除）、currentBadge=1；全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
