@@ -665,6 +665,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await new Promise(function(r){setTimeout(r,250)});
       var ssel=[].slice.call(document.querySelectorAll('.dsh-wt_customSelect')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');})[0];
       out.sessionSelect=!!ssel;
+      out.sessionOptGroups=ssel?ssel.querySelectorAll('optgroup').length:0;
+      out.sessionOptionCount=ssel?ssel.options.length:0;
       out.sessionHasCurrent=ssel?String(ssel.textContent).indexOf('\u5f53\u524d')>=0||String(ssel.textContent).indexOf('current')>=0:false;
       st.close();
     }catch(err){ out.err=String(err) }
@@ -681,10 +683,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if (txt.indexOf('/api/worktable/write') >= 0) return false;
     return true;
   }).filter((e) => {
-    // 站点路由属新增服务端能力：运行中的服务器未重启前该 404 属预期（重启后移除本过滤）
+    // 服务端新路由（site/write/workspaces）：运行中的服务器未重启前其 404 属预期（重启后移除本过滤）
     const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
     const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';
     if (txt.indexOf('/api/worktable/site') >= 0) return false;
+    if (txt.indexOf('/api/worktable/workspaces') >= 0) return false;
     return true;
   }).filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||

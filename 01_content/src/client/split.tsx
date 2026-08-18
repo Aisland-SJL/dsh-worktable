@@ -189,7 +189,7 @@ type SplitEnv = {
   custom?: {
     getProjects: () => { id: string; name: string }[]
     currentProjectId: () => string | null
-    getSessions: () => { id: string; title: string; isCurrent: boolean }[]
+    getSessions: () => Promise<{ groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]; current: string }>
     submit: (projectId: string, projectName: string, requirement: string) => Promise<void>
     sendToSession: (sessionId: string, projectName: string, requirement: string) => Promise<void>
   }
@@ -1252,7 +1252,7 @@ function CustomPane() {
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projects, setProjects] = useState<{ id: string; name: string }[]>(() => custom?.getProjects?.() ?? [])
   const [mode, setMode] = useState<'new' | 'existing'>('new')
-  const [sessions, setSessions] = useState<{ id: string; title: string; isCurrent: boolean }[]>(() => custom?.getSessions?.() ?? [])
+  const [sessionGroups, setSessionGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
@@ -1263,9 +1263,11 @@ function CustomPane() {
     setProjects(list)
     const cur = custom?.currentProjectId?.() ?? null
     setProjectId(cur && list.some((p) => p.id === cur) ? cur : (list[0]?.id ?? null))
-    const slist = custom?.getSessions?.() ?? []
-    setSessions(slist)
-    setSessionId(slist.find((s) => s.isCurrent)?.id ?? slist[0]?.id ?? null)
+    custom?.getSessions?.().then((res) => {
+      setSessionGroups(res.groups)
+      const flat = res.groups.flatMap((g) => g.sessions)
+      setSessionId(flat.find((s) => s.isCurrent)?.id ?? flat[0]?.id ?? null)
+    }).catch(() => { setSessionGroups([]) })
   }, [custom])
   const submit = async () => {
     const text = requirement.trim()
@@ -1323,9 +1325,18 @@ function CustomPane() {
               value={sessionId ?? ''}
               onChange={(e) => setSessionId(e.target.value)}
             >
-              {sessions.map((s) => (
-                <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
-              ))}
+              {sessionGroups.map((g) => g.title
+                ? (
+                  <optgroup key={g.title} label={g.title}>
+                    {g.sessions.map((s) => (
+                      <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
+                    ))}
+                  </optgroup>
+                )
+                : g.sessions.map((s) => (
+                  <option key={s.id} value={s.id}>{s.title}{s.isCurrent ? ' ' + T('custom.sessionCurrent') : ''}</option>
+                )),
+              )}
             </select>
           </div>
         )}

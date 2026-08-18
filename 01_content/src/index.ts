@@ -284,6 +284,21 @@ export function apply(ctx: Context) {
     },
   })
 
+  // 工作区列表（自定义窗口会话分组用）：读宿主 ~/.dsh/storages/workspace.json（只读）
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/workspaces',
+    handler: async (_req: any, res: any) => {
+      try {
+        const file = pathResolve(homedir(), '.dsh', 'storages', 'workspace.json')
+        const raw = await readFile(file, 'utf8')
+        json(res, 200, JSON.parse(raw))
+      } catch (err) {
+        json(res, 404, { error: String(err) })
+      }
+    },
+  })
+
   // 本地文件写入（MD 编辑模式保存回磁盘）
   webServer.register({
     kind: 'exact',

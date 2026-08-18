@@ -430,21 +430,47 @@ function WorktableSection(props: any) {
           ]
         },
         currentProjectId: () => (splitStore.active && splitStore.spec ? splitStore.spec.id : null),
-        getSessions: () => {
+        getSessions: async () => {
           try {
             const snap = sessionBridge?.list?.getSnapshot?.()
-            const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
             const byId = snap?.byId ?? {}
             const current = snap?.current ?? ''
-            return ids.map((sid: string) => {
-              const rec = byId[sid] ?? {}
-              return {
-                id: sid,
-                title: rec?.title ?? rec?.name ?? rec?.summary?.title ?? sid,
-                isCurrent: sid === current,
+            // 子代理会话（后台产生的，用户面板看不到）排除
+            const subKids = new Set<string>()
+            try {
+              const map = snap?.subagentsByParent ?? {}
+              for (const k of Object.keys(map)) {
+                const v = map[k]
+                const arr = Array.isArray(v) ? v : (v?.entries ?? v?.items ?? [])
+                if (Array.isArray(arr)) arr.forEach((c: any) => {
+                  const cid = c?.sessionId ?? c?.id
+                  if (typeof cid === 'string') subKids.add(cid)
+                })
               }
-            })
-          } catch { return [] }
+            } catch {}
+            const titleOf = (sid: string) => byId[sid]?.title ?? byId[sid]?.displayTitle ?? sid
+            const mk = (sid: string) => ({ id: sid, title: titleOf(sid), isCurrent: sid === current })
+            // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组
+            try {
+              const r = await fetch('/api/worktable/workspaces')
+              const d = await r.json()
+              const order: string[] = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : []
+              const archived: string[] = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : []
+              const table = d?.tables?.workspaces ?? {}
+              const groups = order
+                .map((wid: string) => ({
+                  title: (table[wid]?.title ?? wid) as string,
+                  sessions: ((table[wid]?.sessionIds ?? []) as string[])
+                    .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
+                    .map(mk),
+                }))
+                .filter((g) => g.sessions.length > 0)
+              if (groups.length > 0) return { groups, current }
+            } catch {}
+            // 回退：平铺（排除子代理）
+            const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
+            return { groups: [{ title: '', sessions: ids.filter((x) => !subKids.has(x)).map(mk) }], current }
+          } catch { return { groups: [], current: '' } }
         },
         sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),
         submit: (projectId, projectName, requirement) => createCustomSession(projectId, projectName, requirement),
@@ -1363,6 +1389,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation']
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null }
+
 
   ctx.effect(() => {
     const style = document.createElement('style')

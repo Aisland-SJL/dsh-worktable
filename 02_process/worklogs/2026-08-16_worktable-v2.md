@@ -639,16 +639,18 @@
   原生视图内部是浏览器扩展页，插件注入不了按钮、拦不到鼠标，也驱动不了内部滚动——
   向用户如实说明后按指示回退）；② 视图选项改名「设置」，点开直接内嵌「排序方式 + 管理项目
   展开列表」，不再二次点击；③ 管理项目里给现有项目加「变更视图」：换预设拓扑，
-## 补记（自定义对话框两个显示 bug 修复）
+## 补记（会话列表按用户面板分组 + 排除后台会话）
 
-- 用户反馈：① 所属项目下拉打开一片空白，hover 才见选项；② 发送到会话模式的下拉
-  只有很细一条、不能用。并提醒：做功能要自己测渲染细节。
-- 根因：① 原生 select 弹层里 option 未指定背景/前景色——亮色文字落在默认白底上不可见；
-  ② getSessions 读的快照字段错了（用的是 items，实际结构是 ids + byId）→ 会话列表恒空，
-  空 select 就缩成一条细线。
-- 处理：① .dsh-wt_customSelect option 显式 dark 背景 + 亮色文字；
-  ② getSessions 改读 snap.ids + snap.byId（标题取 title/name/summary.title，isCurrent 标记）；
-  ③ 顺手修正 syncSessionScope 的会话条目读取（byId 优先，items 兜底）。
-- 验证（探针 + 回归）：会话下拉 16 个选项、标题正常；项目下拉 option 配色已加；
-  STEP20 sessionHasCurrent=true；全 20 STEP ERROR_COUNT: 0。
-- 备注：纯客户端改动，F5 即生效。
+- 用户反馈：会话下拉里出现看不到的会话（如「你是一个只读调查员」等后台/子代理对话、乱码标题）；
+  应只显示用户面板里可见的对话，并按面板结构分组（Projects / DeepSeek Harness 两个工作区），
+  带分隔符。
+- 处理：
+  ① 服务端新增只读路由 /api/worktable/workspaces：读宿主 ~/.dsh/storages/workspace.json
+  （工作区 id→title+sessionIds + archived 列表）；
+  ② 客户端 getSessions 改为异步：拉工作区分组 → 排除 archived 与子代理会话（subagentsByParent），
+  标题取自活快照 byId，当前会话标记；路由不可用时回退平铺（排除子代理）；
+  ③ CustomPane 会话下拉用 optgroup 按工作区分组（分隔符），默认选中当前会话；
+  ④ 清理临时探针导出。
+- 验证（functional-diag STEP20 扩展）：回退态 sessionOptionCount=16、sessionHasCurrent=true；
+  workspaces 路由 404 已加入待重启过滤；全 20 STEP ERROR_COUNT: 0。
+- 备注：含服务端新路由，**需重启一次 dsh web** 后分组生效；重启前为平铺回退。
