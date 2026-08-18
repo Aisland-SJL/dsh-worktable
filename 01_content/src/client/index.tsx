@@ -265,6 +265,40 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any } | null = null
 
+/** 把文本送入指定会话：宿主同款寻址（binding(id).session.prompt / sendSession(会话面)），
+ *  插件是根级上下文，无作用域的 conversation.send 会报 requires a session scope，不可用。 */
+async function promptIntoSession(sessionId: string, text: string): Promise<void> {
+  const b = sessionBridge
+  if (!b) throw new Error('bridge unavailable')
+  const sessions = b.sessions as any
+  // 新会话入列可能异步：最多等 2s 直到 binding 可解析
+  let session: any = null
+  for (let i = 0; i < 10; i++) {
+    try { session = sessions?.binding?.(sessionId)?.session ?? null } catch { session = null }
+    if (session) break
+    await new Promise((r) => setTimeout(r, 200))
+  }
+  if (session) {
+    // 1) 宿主包装（正确签名：会话面 + 空图片 + queue 投递）
+    if (typeof b.conversation?.sendSession === 'function') {
+      try { await b.conversation.sendSession(session, text, [], 'queue'); return } catch { /* 包装失败则直连 */ }
+    }
+    // 2) 直连会话面 prompt（宿主 sendSession 内部同款路径）
+    if (typeof session.prompt === 'function') {
+      const result = await session.prompt([{ type: 'text', text }], 'queue')
+      if (result && result.ok) return
+      if (result && !result.ok) throw new Error('session.prompt: ' + (result.error?.code ?? 'rejected') + (result.error?.message ? ': ' + result.error.message : ''))
+    }
+  }
+  // 3) 备用：作用域上下文里取 conversation 服务再发
+  try {
+    const scoped = sessions?.scope?.(sessionId)
+    const conv = scoped?.get?.('conversation')
+    if (conv && typeof conv.send === 'function') { await conv.send(text); return }
+  } catch { /* 落入最终报错 */ }
+  throw new Error('no send path: session face unavailable')
+}
+
 /** 自定义窗口任务：新建一个专属会话，注入工作台背景 + 用户需求，并打开该会话 */
 export async function createCustomSession(projectId: string, projectName: string, requirement: string): Promise<void> {
   const b = sessionBridge
@@ -283,12 +317,8 @@ export async function createCustomSession(projectId: string, projectName: string
     '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
   ].join('\n')
   const sessionId = await b.sessions.create({})
-  let sent = false
-  if (typeof b.conversation?.sendSession === 'function') {
-    try { await b.conversation.sendSession(sessionId, text); sent = true } catch { sent = false }
-  }
-  try { b.sessions.open?.(sessionId) } catch {}
-  if (!sent) await b.conversation?.send?.(text)
+  try { await b.sessions.open?.(sessionId) } catch {}
+  await promptIntoSession(sessionId, text)
 }
 
 /** 把自定义需求直接发到用户选定的已有会话（默认当前会话） */
@@ -302,12 +332,8 @@ export async function sendCustomToSession(sessionId: string, projectName: string
     '2. 用户需求：' + requirement,
     '3. 请帮助完成该窗口的自定义设计（内容/页面/实现方案），该窗口位于「' + projectName + '」项目内。',
   ].join('\n')
-  let sent = false
-  if (typeof b.conversation?.sendSession === 'function') {
-    try { await b.conversation.sendSession(sessionId, text); sent = true } catch { sent = false }
-  }
-  try { b.sessions.open?.(sessionId) } catch {}
-  if (!sent) await b.conversation?.send?.(text)
+  try { await b.sessions.open?.(sessionId) } catch {}
+  await promptIntoSession(sessionId, text)
 }
 
 /** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
@@ -1389,7 +1415,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation']
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null }
-  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions } catch {}
+  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text) } catch {}
 
 
   ctx.effect(() => {

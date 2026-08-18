@@ -663,3 +663,21 @@
   仓库根的 lib/，宿主仍加载 01_content/lib 旧 bundle，出现「改完不生效」假象（已删误产物）。
 - 备注：纯客户端改动，F5 即生效，无需重启 dsh web。
 
+## 补记（修复「发送到会话」失败：conversation.send requires a session scope）
+
+- 用户实测报错：创建对话失败：Error: conversation.send requires a session scope — address one via
+  ctx.sessions.scope(id).conversation。
+- 根因：① conversation.sendSession(session, text, images, mode) 第一参数是「会话面」对象而非 id
+  字符串，旧代码传 id → 静默失败；② 回退的 conversation.send 按插件自身 ctx 解析作用域，
+  而 dsh-worktable 是根级插件，无会话标签 → 宿主报 requires a session scope。
+- 探针实测（读宿主 dsh-client-runtime / dsh-client-ui-conversation 源码 + 页面验证）：
+  scope(id).conversation 属性访问被 inject 代理拦截；scope(id).get('conversation') 可用；
+  sessions.binding(id).session.prompt([{type:'text',text}], 'queue') 是宿主 sendSession 同款路径。
+- 修复：新增 promptIntoSession(sessionId, text)——binding 解析重试 2s → 宿主
+  conversation.sendSession(会话面, text, [], 'queue') → 直连 session.prompt → scope(id).get
+  ('conversation').send 三级降级；createCustomSession / sendCustomToSession 统一走该函数，
+  open(会话) 后发送（右侧对话窗仍自动切换）。
+- 验证：send-self-test.cjs 端到端自测（新建一次性会话 session-91a6adea，promptOk=true、
+  listEntry running=true 轮次启动）；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；自测留下的一次性会话请用户手动删除。
+
