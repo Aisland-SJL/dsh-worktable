@@ -344,6 +344,30 @@ async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions
   } catch { return { groups: [], current: '' } }
 }
 
+/** hover 气泡：挂在 document.body 的独立元素（不受侧栏堆叠上下文限制，可向右伸出显示） */
+let bindTipEl: HTMLDivElement | null = null
+function showBindTip(btn: HTMLElement) {
+  const tip = btn.getAttribute('data-tip')
+  if (!tip) return
+  if (!bindTipEl) {
+    bindTipEl = document.createElement('div')
+    bindTipEl.className = 'dsh-wt_bindTip'
+    document.body.appendChild(bindTipEl)
+  }
+  bindTipEl.textContent = tip
+  const r = btn.getBoundingClientRect()
+  bindTipEl.style.left = (r.right + 8) + 'px'
+  bindTipEl.style.top = (r.top + r.height / 2) + 'px'
+  bindTipEl.style.display = 'block'
+  // 右侧放不下时翻到左侧（一般不会：侧栏 ~288px + 气泡 ~200px 远小于视口宽）
+  const tw = bindTipEl.offsetWidth
+  const x = r.right + 8 + tw > window.innerWidth - 8 ? Math.max(8, r.left - 8 - tw) : r.right + 8
+  bindTipEl.style.left = x + 'px'
+}
+function hideBindTip() {
+  if (bindTipEl) bindTipEl.style.display = 'none'
+}
+
 /** 把文本送入指定会话：宿主同款寻址（binding(id).session.prompt / sendSession(会话面)），
  *  插件是根级上下文，无作用域的 conversation.send 会报 requires a session scope，不可用。 */
 async function promptIntoSession(sessionId: string, text: string): Promise<void> {
@@ -1746,6 +1770,31 @@ export function apply(ctx: any) {
     document.head.appendChild(style)
     return () => { style.remove() }
   }, 'dsh-worktable: styles')
+
+  // 绑定按钮 hover 气泡：事件委托 + body 级气泡（跨层显示，不遮挡右侧对话也不盖项目名）
+  ctx.effect(() => {
+    const over = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      const btn = t && t.closest ? (t.closest('.dsh-wt_bindBtn') as HTMLElement | null) : null
+      if (btn) showBindTip(btn)
+    }
+    const out = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t && t.closest && t.closest('.dsh-wt_bindBtn')) hideBindTip()
+    }
+    const hide = () => hideBindTip()
+    document.addEventListener('mouseover', over, true)
+    document.addEventListener('mouseout', out, true)
+    document.addEventListener('scroll', hide, true)
+    document.addEventListener('click', hide, true)
+    return () => {
+      document.removeEventListener('mouseover', over, true)
+      document.removeEventListener('mouseout', out, true)
+      document.removeEventListener('scroll', hide, true)
+      document.removeEventListener('click', hide, true)
+      if (bindTipEl) { bindTipEl.remove(); bindTipEl = null }
+    }
+  }, 'dsh-worktable: bind tip')
 
   // locale 词典（宿主 locale 服务缺席时由 t 的回退分支兜底）
   ctx.effect(() => {

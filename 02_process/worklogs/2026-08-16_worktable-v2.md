@@ -780,6 +780,20 @@
   全 20 STEP ERROR_COUNT: 0（STEP9 presetCount 9）。
 - 备注：纯客户端改动，F5 即生效；动画生成窗（iframe 壳）按用户指示未实现，仅给方案。
 
+## 补记（绑定气泡最终方案：body 级气泡向右伸出）
+
+- 用户反馈：向左弹出盖住项目名；要向右伸（参照「添加项目」原生 title 气泡——溢出侧栏也显示正常）。
+- 根因（两处）：① 此前 CSS ::after 气泡画在侧栏层叠上下文内，向右必被右侧对话浮层压住；
+  ② 首次尝试的 body 级气泡函数被误插进 WorktableSection 组件内部，apply 的 effect 引用
+  模块级同名函数 → 运行时 ReferenceError，hover 无任何反应（esbuild 改名 showBindTip2 暴露）。
+- 方案：事件委托（mouseover/mouseout/scroll/click，捕获阶段）→ body 级 .dsh-wt_bindTip 独立元素，
+  z-index 1200（> 分栏浮层 68），定位在按钮右侧 8px、垂直居中，右侧放不下才翻左。
+- 验证（bindtip-portal.cjs）：tipShown ✓、tipText=已绑定对话：Projects、parent=body、z=1200>
+  overlay 68、tipLeft 249 > btnRight 241（向右伸出）✓、mouseout 隐藏 ✓；functional-diag
+  ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 ## 补记（绑定按钮 hover 修复：气泡改向左伸出 + hover 区加大）
 
 - 用户反馈：已绑定对话的 hover 气泡被右侧对话窗挡住（怀疑堆叠顺序）；hover 底色框太小，
