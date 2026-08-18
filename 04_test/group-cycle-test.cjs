@@ -42,8 +42,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     out.parent = parent;
     out.name = name;
     try {
-      out.dirCreated = await W.createDirectory(parent, name);
-      var view = await W.create({ path: out.dirCreated });
+      var full = parent + '\\\\' + name;
+      out.fullPath = full;
+      // 宿主本机 picker 为 native，createDirectory 不可用 → 走插件服务端 mkdir 路由（与客户端同款）
+      var mk = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) });
+      var md = await mk.json();
+      out.mkdirOk = !!(mk.ok && md.ok);
+      var view = await W.create({ path: full });
       out.workspaceId = view && (view.workspaceId || view.id);
       out.workspaceTitle = view && view.title;
       var newId = await S.create({ workspaceId: out.workspaceId });

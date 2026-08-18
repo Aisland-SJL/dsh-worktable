@@ -714,5 +714,16 @@
   functional-diag 全 20 STEP ERROR_COUNT: 0（STEP9 点第 3 个仍为 l2，断言不变）。
 - 备注：纯客户端改动，F5 即生效；存量已保存布局不受影响（存的是完整 spec，非预设 id）。
 
+## 补记（用户重启后补跑分组全周期自测 — 通过）
+
+- 用户重启 dsh web（mkdir 路由生效）后补跑 group-cycle-test.cjs（已改为走服务端 mkdir 路由，
+  与客户端同款路径）：
+  mkdirOk=true → 注册工作区 workspaceTitle=wt-grouptest-* → sessions.create({workspaceId}) →
+  wsInList=true / sessionInWs=true（会话正确落进新分组）/ sessionCwd=新目录 →
+  清理 archived=true / wsDeleted=true / wsGone=true，测试空目录已 rm。
+- 重启后 functional-diag 全 20 STEP 复跑 ERROR_COUNT: 0（site/write/workspaces 路由全部就绪）。
+- 备注：之前 send-self-test 遗留的一次性会话 session-91a6adea 用户未删，STEP20 itemCount 13→14
+  即该测试会话；再次提醒用户删除即可，不影响功能。
+
 
 
