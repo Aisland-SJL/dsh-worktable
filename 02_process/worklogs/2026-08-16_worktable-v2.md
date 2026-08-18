@@ -724,6 +724,27 @@
 - 重启后 functional-diag 全 20 STEP 复跑 ERROR_COUNT: 0（site/write/workspaces 路由全部就绪）。
 - 备注：之前 send-self-test 遗留的一次性会话 session-91a6adea 用户未删，STEP20 itemCount 13→14
   即该测试会话；再次提醒用户删除即可，不影响功能。
+## 补记（第 7/8 布局 + ＋自定义磁贴 + 窗口改名 + 对话绑定）
+
+- 用户要求：① 新增第 7 个预设「田字格」——右聊天通高整列、左侧 2×2 四窗默认等大，横向贯通、
+  竖向两段分隔条独立可拖；② 第 8 个预设「上2下3」——左列上排 2 窗 + 下排 3 窗宽度均分，右聊天；
+  ③ 第 9 格为「＋」磁贴（永远最后）：点开右侧弹窗，上半描述布局、下半按钮把「用户需求 + 上下文
+  提示词」复制进剪贴板并弹 Toast，提示词含引擎规则与现有预设清单，可发给任意 dsh 实现；
+  ④ 窗格改名「内容N」→「窗口N」，并把窗口编号映射写进 AGENTS.md/PRD（左栏→顶行→主行）；
+  ⑤ 对话绑定：每张项目卡中间偏右加 🔗 按钮 → 会话分组列表弹窗（与发送到会话同源）→ 绑定后
+  打开项目自动 sessions.open 切换右侧对话；解绑/未绑定不切换。
+- 引擎修正：① topHeightRatio 字段（首次打开顶行占比，(rowH-BAR)*ratio；0.5=等分，缺省 0.35）；
+  ② chatFull 布局顶行默认宽扣除聊天列（此前 2 窗顶行一宽一窄）。
+- 剪贴板降级：navigator.clipboard 失败时改用临时隐藏 textarea 全选提示词后 execCommand('copy')
+  （此前误选输入框原文）。
+- 验证（probe-batch4.cjs）：tileCount=9、thumbCells=[2,3,3,4,4,5,5,6,0]、plusTileLast=true；
+  g4 保存 top2/main2/ratio0.5/窗口1-4；打开后四窗 rect 388×388 等大（宽度差 ≤ 分隔条宽）、
+  g4TopAbove=true；l23 top2/main3；＋磁贴弹窗 promptLen=1059 含需求+PRESET_DEFS+g4+topHeightRatio
+  +现有清单且需求落在「用户需求」段后；绑定全流程 boundSaved/boundIsSession/switchedToBound/
+  unbindShown/bindingsAfterUnbind=null/restored 全过，入驻卡注入 2 个 🔗；functional-diag
+  全 20 STEP ERROR_COUNT: 0（STEP9 presetCount 9）。
+- 备注：纯客户端改动，F5 即生效；动画生成窗（iframe 壳）按用户指示未实现，仅给方案。
+
 
 
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane } from './split'
@@ -51,6 +51,8 @@ type ProjectsState = {
   shortcuts: Shortcut[]
   /** 用户自建的布局条目（「+」新建工作区保存的 LayoutSpec）。 */
   layouts: LayoutSpec[]
+  /** 项目 → 绑定会话：打开该项目时右侧对话窗自动切换到这个会话（空/缺 = 不换）。 */
+  bindings: Record<string, string>
 }
 
 const PERSIST_KEY = 'dsh.worktable.view.v1'
@@ -75,7 +77,9 @@ const PRESET_DEFS = [
   { id: 'l2', leftCount: 0, topCount: 1, contentCount: 1, chatFull: true },
   { id: 'grid', leftCount: 0, topCount: 2, contentCount: 1, chatFull: false },
   { id: 't3', leftCount: 0, topCount: 1, contentCount: 2, chatFull: true },
-  { id: 'l13', leftCount: 0, topCount: 1, contentCount: 3, chatFull: true, topHeightDefault: 420 },
+  { id: 'l13', leftCount: 0, topCount: 1, contentCount: 3, chatFull: true, topHeightDefault: 420, topHeightRatio: 0.55 },
+  { id: 'g4', leftCount: 0, topCount: 2, contentCount: 2, chatFull: true, topHeightRatio: 0.5 },
+  { id: 'l23', leftCount: 0, topCount: 2, contentCount: 3, chatFull: true, topHeightRatio: 0.5 },
 ] as const
 
 /** 侧栏图标备选集（emoji）：布局/快捷方式/入驻项目的图标，点击可换（首项 🧱 为布局默认） */
@@ -104,7 +108,7 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
   const def = PRESET_DEFS.find((d) => d.id === presetId) ?? PRESET_DEFS[0]
   const mk = (i: number): SplitPane => ({
     id: 'p' + (i + 1),
-    title: '内容' + (i + 1),
+    title: '窗口' + (i + 1),
     min: 200,
     content: null,
   })
@@ -120,6 +124,7 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
     leftWidth: { default: 260, min: 160, max: 480 },
     chatWidth: { default: 360, min: 240, max: 600 },
     topHeight: { default: (def as any).topHeightDefault ?? 200, min: 120, max: 480 },
+    topHeightRatio: (def as any).topHeightRatio ?? 0.35,
     chatSide: 'right',
     chatFullHeight: def.chatFull === true,
   }
@@ -135,6 +140,30 @@ function presetThumb(defId: string) {
   }
   if (defId === '3h') {
     return <span className="dsh-wt_thumb"><span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}{cell(true, 'c')}</span></span>
+  }
+  if (defId === 'g4') {
+    // 田字格：左侧 2×2 均分，右侧对话整列（5 视窗）
+    return (
+      <span className="dsh-wt_thumb dsh-wt_thumbCols">
+        <span className="dsh-wt_thumbCol">
+          <span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}</span>
+          <span className="dsh-wt_thumbRow">{cell(false, 'c')}{cell(false, 'd')}</span>
+        </span>
+        <span className="dsh-wt_thumbCol">{cell(true, 'e')}</span>
+      </span>
+    )
+  }
+  if (defId === 'l23') {
+    // 上 2 下 3：左侧上排 2 窗 + 下排 3 窗，右侧对话整列（6 视窗）
+    return (
+      <span className="dsh-wt_thumb dsh-wt_thumbCols">
+        <span className="dsh-wt_thumbCol">
+          <span className="dsh-wt_thumbRow">{cell(false, 'a')}{cell(false, 'b')}</span>
+          <span className="dsh-wt_thumbRow">{cell(false, 'c')}{cell(false, 'd')}{cell(false, 'e')}</span>
+        </span>
+        <span className="dsh-wt_thumbCol">{cell(true, 'f')}</span>
+      </span>
+    )
   }
   if (defId === 'l13') {
     // 左列上 1 大 + 下 3 小；右列对话整列（5 视窗）
@@ -197,6 +226,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   views: {},
   shortcuts: [],
   layouts: [],
+  bindings: {},
 }
 
 function loadView(): ViewState {
@@ -241,6 +271,7 @@ function loadProjects(): ProjectsState {
       layouts: Array.isArray(p.layouts)
         ? p.layouts.filter((l: any) => l && typeof l.id === 'string' && typeof l.title === 'string' && Array.isArray(l.main))
         : [],
+      bindings: p.bindings && typeof p.bindings === 'object' ? p.bindings : {},
     }
   } catch {
     return { ...DEFAULT_PROJECTS }
@@ -268,6 +299,50 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
+
+/** 会话分组列表（模块级，供自定义窗会话选择与对话绑定弹窗共用） */
+async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]; current: string }> {
+  try {
+    const snap = sessionBridge?.list?.getSnapshot?.()
+    const byId = snap?.byId ?? {}
+    const current = snap?.current ?? ''
+    // 子代理会话（后台产生的，用户面板看不到）排除
+    const subKids = new Set<string>()
+    try {
+      const map = snap?.subagentsByParent ?? {}
+      for (const k of Object.keys(map)) {
+        const v = map[k]
+        const arr = Array.isArray(v) ? v : (v?.entries ?? v?.items ?? [])
+        if (Array.isArray(arr)) arr.forEach((c: any) => {
+          const cid = c?.sessionId ?? c?.id
+          if (typeof cid === 'string') subKids.add(cid)
+        })
+      }
+    } catch {}
+    const titleOf = (sid: string) => byId[sid]?.title ?? byId[sid]?.displayTitle ?? sid
+    const mk = (sid: string) => ({ id: sid, title: titleOf(sid), isCurrent: sid === current })
+    // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组
+    try {
+      const r = await fetch('/api/worktable/workspaces')
+      const d = await r.json()
+      const order: string[] = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : []
+      const archived: string[] = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : []
+      const table = d?.tables?.workspaces ?? {}
+      const groups = order
+        .map((wid: string) => ({
+          title: (table[wid]?.title ?? wid) as string,
+          sessions: ((table[wid]?.sessionIds ?? []) as string[])
+            .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
+            .map(mk),
+        }))
+        .filter((g) => g.sessions.length > 0)
+      if (groups.length > 0) return { groups, current }
+    } catch {}
+    // 回退：平铺（排除子代理）
+    const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
+    return { groups: [{ title: '', sessions: ids.filter((x) => !subKids.has(x)).map(mk) }], current }
+  } catch { return { groups: [], current: '' } }
+}
 
 /** 把文本送入指定会话：宿主同款寻址（binding(id).session.prompt / sendSession(会话面)），
  *  插件是根级上下文，无作用域的 conversation.send 会报 requires a session scope，不可用。 */
@@ -443,6 +518,14 @@ function WorktableSection(props: any) {
   const [wsError, setWsError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
+  /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组 */
+  const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
+  /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customLayoutText, setCustomLayoutText] = useState('')
+  const [copiedToast, setCopiedToast] = useState<'ok' | 'fail' | null>(null)
+  const copyToastTimerRef = useRef<number | null>(null)
   /** 删除二次确认：kind + 目标 id + 显示名 */
   const [requestDelete, setRequestDelete] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; name: string } | null>(null)
   /** 变更视图：正在挑选新拓扑的布局 id */
@@ -486,48 +569,7 @@ function WorktableSection(props: any) {
           ]
         },
         currentProjectId: () => (splitStore.active && splitStore.spec ? splitStore.spec.id : null),
-        getSessions: async () => {
-          try {
-            const snap = sessionBridge?.list?.getSnapshot?.()
-            const byId = snap?.byId ?? {}
-            const current = snap?.current ?? ''
-            // 子代理会话（后台产生的，用户面板看不到）排除
-            const subKids = new Set<string>()
-            try {
-              const map = snap?.subagentsByParent ?? {}
-              for (const k of Object.keys(map)) {
-                const v = map[k]
-                const arr = Array.isArray(v) ? v : (v?.entries ?? v?.items ?? [])
-                if (Array.isArray(arr)) arr.forEach((c: any) => {
-                  const cid = c?.sessionId ?? c?.id
-                  if (typeof cid === 'string') subKids.add(cid)
-                })
-              }
-            } catch {}
-            const titleOf = (sid: string) => byId[sid]?.title ?? byId[sid]?.displayTitle ?? sid
-            const mk = (sid: string) => ({ id: sid, title: titleOf(sid), isCurrent: sid === current })
-            // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组
-            try {
-              const r = await fetch('/api/worktable/workspaces')
-              const d = await r.json()
-              const order: string[] = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : []
-              const archived: string[] = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : []
-              const table = d?.tables?.workspaces ?? {}
-              const groups = order
-                .map((wid: string) => ({
-                  title: (table[wid]?.title ?? wid) as string,
-                  sessions: ((table[wid]?.sessionIds ?? []) as string[])
-                    .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
-                    .map(mk),
-                }))
-                .filter((g) => g.sessions.length > 0)
-              if (groups.length > 0) return { groups, current }
-            } catch {}
-            // 回退：平铺（排除子代理）
-            const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
-            return { groups: [{ title: '', sessions: ids.filter((x) => !subKids.has(x)).map(mk) }], current }
-          } catch { return { groups: [], current: '' } }
-        },
+        getSessions: () => fetchSessionGroups(),
         sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),
         submit: (projectId, projectName, requirement, group) => createCustomSession(projectId, projectName, requirement, group),
         // 分组（宿主工作区）数据源：读 ctx.workspaces 快照，供新建对话选分组
@@ -700,12 +742,90 @@ function WorktableSection(props: any) {
     }
   }, [])
 
+/** 自定义布局提示词模板（复制到剪贴板，可发给任意 dsh 会话让 agent 实现） */
+function buildCustomLayoutPrompt(req: string): string {
+  return [
+    '【为 dsh-worktable（工作台）插件增加一个新的布局预设】',
+    '',
+    '背景：dsh-worktable 是 DeepSeek Harness 的自建容器插件（本机仓库 dsh-worktable，插件包根目录 01_content/）。',
+    '侧边栏「工作台」区块管理项目，每个项目打开后是一个平铺工作区（若干内容窗 + 右侧对话窗）。',
+    '布局预设定义在 01_content/src/client/index.tsx 的 PRESET_DEFS 数组，选择器缩略图在 presetThumb() 函数。',
+    '',
+    '任务：按下方「用户需求」新增一个布局预设。',
+    '',
+    '规则（必须遵守）：',
+    '1. 新预设追加到 PRESET_DEFS 数组末尾；预设选择器按数组顺序显示，末尾的「＋」自定义磁贴永远是最后一个，新预设自动出现在它前面。',
+    '2. 预设字段：id（kebab-case 唯一）；leftCount = 左侧整列内容窗数（0/1）；topCount = 顶部通栏行窗数；contentCount = 主行窗数；chatFull = 对话窗是否通高整列（true/false）；可选 topHeightDefault = 顶行固定默认高（px）；可选 topHeightRatio = 首次打开时顶行高度占可用高度比例（0~1，0.5 = 上下等分；缺省 0.35）。',
+    '3. 硬约束：对话窗恒在右侧（chatSide 固定 right）；聊天 ⇄ 翻转贴左由引擎自带，不要改。',
+    '4. 想要「上下等大」的网格就用 topHeightRatio: 0.5；每行内的窗格宽度由引擎按可用宽度自动均分，无需配置。',
+    '5. 窗格最小宽 200、聊天窗最小宽 240，引擎有钳制，无需配置。',
+    '6. 在 presetThumb(defId) 里为新 id 增加一个缩略图分支（用 dsh-wt_thumb / dsh-wt_thumbCol / dsh-wt_thumbRow / cell()；聊天窗用 cell(true) 的蓝色 💬 格）。',
+    '7. 现有预设的顺序与内容不要改动：2h / 3h / l2 / grid / t3 / l13 / g4 / l23。',
+    '8. 改完在 01_content 目录执行 npm run build 重新打包，浏览器 F5 即生效。',
+    '9. 需求若超出以上字段的表达能力（例如三行、嵌套分栏），按现有引擎模型做最接近的实现，并在回复里说明取舍。',
+    '',
+    '用户需求：',
+    req,
+  ].join('\n')
+}
+
   /** 分栏工作区入口（M1 引擎）：项目卡片调用 openSplit(spec) 打开声明式布局；
-   * 若该 id 存在视图覆盖（用户在设置里变更过视图），用覆盖布局替换打开。 */
+   * 若该 id 存在视图覆盖（用户在设置里变更过视图），用覆盖布局替换打开。
+   * 若项目绑定了会话，打开后右侧对话窗自动切换过去。 */
   const openSplit = useCallback((spec: LayoutSpec) => {
     engineIdsRef.current.add(spec.id)
     splitStore.open(projects.views[spec.id] ?? spec)
+    const bound = projectsRef.current.projects.bindings[spec.id]
+    if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
   }, [projects.views])
+
+  /** 打开对话绑定弹窗：抓取会话分组 + 锚点定位 */
+  const openBindPick = useCallback((id: string, anchor: HTMLElement) => {
+    const r = anchor.getBoundingClientRect()
+    const x = clamp(Math.round(r.right + 8), 8, window.innerWidth - 300)
+    const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
+    setBindPick({ id, x, y })
+    setBindGroups([])
+    fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
+  }, [])
+
+  /** 绑定 / 解绑会话 */
+  const setProjectBinding = (id: string, sessionId: string | null) => {
+    persistProjects((prev) => {
+      const next = { ...prev.bindings }
+      if (sessionId) next[id] = sessionId
+      else delete next[id]
+      return { ...prev, bindings: next }
+    })
+    setBindPick(null)
+  }
+
+  /** 复制自定义布局提示词到剪贴板（失败则全选输入框手动复制） */
+  const copyCustomLayout = async () => {
+    const text = customLayoutText.trim()
+    if (!text) { setCopiedToast('fail'); return }
+    const prompt = buildCustomLayoutPrompt(text)
+    try { (window as any).__dshLastPrompt = prompt } catch {}
+    let ok = false
+    try { await navigator.clipboard.writeText(prompt); ok = true } catch {}
+    if (!ok) {
+      // 降级：临时隐藏 textarea 选中提示词全文后 execCommand('copy')
+      try {
+        const tmp = document.createElement('textarea')
+        tmp.value = prompt
+        tmp.style.position = 'fixed'
+        tmp.style.opacity = '0'
+        document.body.appendChild(tmp)
+        tmp.focus()
+        tmp.select()
+        ok = document.execCommand('copy')
+        tmp.remove()
+      } catch {}
+    }
+    setCopiedToast(ok ? 'ok' : 'fail')
+    if (copyToastTimerRef.current != null) window.clearTimeout(copyToastTimerRef.current)
+    copyToastTimerRef.current = window.setTimeout(() => setCopiedToast(null), 6000)
+  }
 
   // ── 有效排序 ──
   // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 与布局 id 追加尾部；
@@ -976,6 +1096,21 @@ function WorktableSection(props: any) {
         const id = aliveRegisteredIds[i]
         if (id) {
           el.setAttribute('data-wt-id', id)
+          // 对话绑定按钮：追加为最后一个子元素（不破坏 children[0] 图标约定），中间偏右
+          let bindBtn = el.querySelector<HTMLElement>('.dsh-wt_bindBtn')
+          if (!bindBtn) {
+            bindBtn = document.createElement('span')
+            bindBtn.className = 'dsh-wt_bindBtn'
+            bindBtn.setAttribute('role', 'button')
+            bindBtn.textContent = '🔗'
+            el.appendChild(bindBtn)
+            const cs = getComputedStyle(el)
+            if (cs.position === 'static') el.style.position = 'relative'
+          }
+          bindBtn.setAttribute('data-wt-bind', id)
+          const bound = projects.bindings[id]
+          bindBtn.setAttribute('data-bound', bound ? 'true' : 'false')
+          bindBtn.title = t('bind.title')
           const icon = el.children[0] as HTMLElement | null
           if (icon) {
             const ovr = projects.iconOverrides[id]
@@ -1002,7 +1137,7 @@ function WorktableSection(props: any) {
     const mo = new MutationObserver(sync)
     mo.observe(document.body, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [aliveRegisteredIds, projects.iconOverrides, projects.views, activeSplitId])
+  }, [aliveRegisteredIds, projects.iconOverrides, projects.views, activeSplitId, projects.bindings])
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -1013,6 +1148,14 @@ function WorktableSection(props: any) {
       if (!card) return
       const pid = card.getAttribute('data-wt-id')
       if (!pid) return
+      // 绑定按钮点击 → 打开对话绑定弹窗（阻止卡片自身打开项目）
+      const bindBtn = (target && target.closest ? target.closest('.dsh-wt_bindBtn') : null) as HTMLElement | null
+      if (bindBtn) {
+        e.stopPropagation()
+        e.preventDefault()
+        openBindPick(pid, bindBtn)
+        return
+      }
       // 图标点击（卡片第一个子元素内） → 打开图标选择器（阻止卡片自身打开项目）
       const first = card.children[0] as HTMLElement | null
       if (first && target && first.contains(target)) {
@@ -1028,11 +1171,15 @@ function WorktableSection(props: any) {
         e.preventDefault()
         openSplit(view)
         reportUsed(pid)
+        return
       }
+      // 无视图覆盖：项目自带打开行为照旧，仅当绑定了会话时切换右侧对话窗
+      const bound = projectsRef.current.projects.bindings[pid]
+      if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
     }
     document.addEventListener('click', onDocClick, true)
     return () => document.removeEventListener('click', onDocClick, true)
-  }, [projects.views, openSplit, reportUsed])
+  }, [projects.views, openSplit, reportUsed, openBindPick])
 
   const query = view.query.trim()
   const queryLower = query.toLowerCase()
@@ -1221,6 +1368,11 @@ function WorktableSection(props: any) {
                 {presetThumb(def.id)}
               </button>
             ))}
+            <button type="button" className="dsh-wt_preset dsh-wt_presetAdd" title={t('customLayout.addTitle')}
+              onClick={() => { setAddOpen(false); setCustomOpen(true) }}>
+              <span className="dsh-wt_presetAddIcon" aria-hidden>＋</span>
+              <span className="dsh-wt_presetAddText">{t('customLayout.add')}</span>
+            </button>
           </div>
           <div className="dsh-wt_addForm">
             <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
@@ -1377,7 +1529,68 @@ function WorktableSection(props: any) {
                 </button>
               )
             })}
+            <button type="button" className="dsh-wt_preset dsh-wt_presetAdd" title={t('customLayout.addTitle')}
+              onClick={() => { setViewPickFor(null); setCustomOpen(true) }}>
+              <span className="dsh-wt_presetAddIcon" aria-hidden>＋</span>
+              <span className="dsh-wt_presetAddText">{t('customLayout.add')}</span>
+            </button>
           </div>
+        </div>
+      )}
+
+      {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setBindPick(null)} />}
+      {bindPick && (
+        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
+          <span className="dsh-wt_menuLabel">{t('bind.title')}</span>
+          <div className="dsh-wt_bindProjName">{projects.nameOverrides[bindPick.id] ?? metas[bindPick.id]?.name ?? projects.layouts.find((l) => l.id === bindPick.id)?.title ?? bindPick.id}</div>
+          <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
+          {projects.bindings[bindPick.id] && (
+            <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
+          )}
+          <div className="dsh-wt_selectList dsh-wt_bindList">
+            {bindGroups.map((g, gi) => (
+              <Fragment key={g.title || 'g' + gi}>
+                {g.title && (
+                  <>
+                    <div className="dsh-wt_selectDivider" />
+                    <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                  </>
+                )}
+                {g.sessions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={'dsh-wt_selectItem' + (projects.bindings[bindPick.id] === s.id ? ' dsh-wt_selectItemOn' : '')}
+                    onClick={() => setProjectBinding(bindPick.id, s.id)}
+                  >
+                    <span className="dsh-wt_selectItemTitle">{s.title}</span>
+                    {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+                  </button>
+                ))}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {customOpen && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setCustomOpen(false)} />}
+      {customOpen && (
+        <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 340, zIndex: 84 }}>
+          <span className="dsh-wt_menuLabel">✨ {t('customLayout.title')}</span>
+          <textarea
+            className="dsh-wt_customLayoutInput"
+            autoFocus
+            rows={6}
+            placeholder={t('customLayout.placeholder')}
+            value={customLayoutText}
+            onChange={(e) => setCustomLayoutText(e.target.value)}
+          />
+          <button type="button" className="dsh-wt_customLayoutBtn" onClick={copyCustomLayout}>{t('customLayout.copy')}</button>
+          {copiedToast && (
+            <p className={'dsh-wt_customLayoutToast' + (copiedToast === 'fail' ? ' dsh-wt_customLayoutToastFail' : '')}>
+              {copiedToast === 'ok' ? '✅ ' + t('customLayout.copied') : '⚠️ ' + t('customLayout.copyFail')}
+            </p>
+          )}
         </div>
       )}
 
@@ -1422,6 +1635,14 @@ function WorktableSection(props: any) {
             <span className="dsh-wt_layoutText">
               <span className="dsh-wt_layoutName">{projects.nameOverrides[l.id] ?? l.title}</span>
             </span>
+            <span
+              className={'dsh-wt_bindBtn'}
+              role="button"
+              tabIndex={0}
+              data-bound={projects.bindings[l.id] ? 'true' : 'false'}
+              title={t('bind.title')}
+              onClick={(e) => { e.stopPropagation(); openBindPick(l.id, e.currentTarget as HTMLElement) }}
+            >🔗</span>
             <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
           </button>
         ))}

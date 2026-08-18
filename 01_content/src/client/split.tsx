@@ -61,6 +61,8 @@ export type LayoutSpec = {
   icon?: string
   /** 聊天窗通高（整列）：为 true 时聊天占整条右/左列，内容区（含 top 行）全部排在其另一侧 */
   chatFullHeight?: boolean
+  /** 顶行首次打开时高度占可用高度比例（0~1；0.5 = 上下等分）；拖动后由存档值覆盖 */
+  topHeightRatio?: number
 }
 
 type Geom = { left: number; top: number; right: number; bottom: number }
@@ -372,7 +374,8 @@ export const splitStore: SplitState = {
       }
       if (top.length > 0 && !hasTopH) {
         const lo = spec.topHeight?.min ?? 80
-        this.topH = clamp(Math.round(rowH0 * 0.35), lo, Math.max(lo, rowH0 - BAR_H - 80))
+        const ratio = spec.topHeightRatio ?? 0.35
+        this.topH = clamp(Math.round((rowH0 - BAR_H) * ratio), lo, Math.max(lo, rowH0 - BAR_H - 80))
       }
       if (!hasPaneWs) {
         const contentW = Math.max(0, colW0 - this.chatW)
@@ -381,7 +384,9 @@ export const splitStore: SplitState = {
         this.paneWs = main.map((p) => Math.max(p.min, share))
       }
       if (!hasTopWs) {
-        const rowW = Math.max(0, colW0 - (left ? this.leftW : 0))
+        // chatFull 时顶行只占内容侧（扣除聊天列宽）
+        const chatW0 = spec.chatFullHeight === true ? this.chatW : 0
+        const rowW = Math.max(0, colW0 - chatW0 - (left ? this.leftW : 0))
         const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * DIVIDER)
         const share = Math.round(avail / top.length)
         this.topWs = top.map((p) => Math.max(p.min, share))

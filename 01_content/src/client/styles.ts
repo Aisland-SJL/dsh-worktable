@@ -149,6 +149,16 @@ export const css = [
   '.dsh-wt_thumbCell{flex:1;min-width:0;border-right:1px solid var(--dsw-alias-border-l1,#262b36);border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);display:flex;align-items:center;justify-content:center;font-size:8px;line-height:1}',
   '.dsh-wt_thumbRow .dsh-wt_thumbCell:last-child{border-right:none}',
   '.dsh-wt_thumbChat{background:var(--dsw-alias-state-accent-primary,#4f8ef7);color:#fff}',
+  // 预设网格末尾的 ＋ 自定义磁贴
+  '.dsh-wt_presetAdd{border-style:dashed;color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  '.dsh-wt_presetAddIcon{font-size:18px;line-height:20px}',
+  '.dsh-wt_presetAddText{font-size:10px;line-height:13px}',
+  // 项目卡片上的对话绑定按钮（布局卡内联 / 入驻卡由桥注入，绝对定位于中间偏右）
+  '.dsh-wt_bindBtn{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:auto;border-radius:5px;font-size:12px;line-height:1;color:var(--dsw-alias-label-tertiary,#6b7280);cursor:pointer;user-select:none}',
+  '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.06));color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  'button[data-wt-id] > .dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);margin:0}',
+
   // 布局条目卡片
   '.dsh-wt_layout{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;cursor:pointer;text-align:left}',
   '.dsh-wt_layout:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
@@ -204,6 +214,19 @@ export const css = [
   // 新建分组：父目录 / 名称单行输入
   '.dsh-wt_customPathInput{flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none}',
   '.dsh-wt_customPathInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  // 自定义布局弹窗（＋磁贴）：描述输入 + 复制提示词 + Toast
+  '.dsh-wt_customLayoutInput{width:100%;box-sizing:border-box;min-height:110px;margin-top:8px;padding:8px 10px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none;resize:vertical}',
+  '.dsh-wt_customLayoutInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  '.dsh-wt_customLayoutBtn{width:100%;margin-top:8px;padding:7px 10px;border:1px solid var(--dsw-alias-state-accent-primary,#4f8ef7);border-radius:8px;background:transparent;color:var(--dsw-alias-state-accent-primary,#4f8ef7);font:inherit;font-size:12px;line-height:18px;cursor:pointer}',
+  '.dsh-wt_customLayoutBtn:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
+  '.dsh-wt_customLayoutToast{margin:8px 0 0;font-size:11.5px;line-height:17px;color:var(--dsw-alias-state-success,#3fb950)}',
+  '.dsh-wt_customLayoutToastFail{color:var(--dsw-alias-state-danger,#f85149)}',
+  // 对话绑定弹窗
+  '.dsh-wt_bindProjName{font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb);margin-top:6px}',
+  '.dsh-wt_bindHint{margin:4px 0 6px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
+  '.dsh-wt_bindUnbind{display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;padding:3px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_bindUnbind:hover{color:var(--dsw-alias-state-danger,#f85149);border-color:var(--dsw-alias-state-danger,#f85149)}',
+  '.dsh-wt_bindList{max-height:280px;overflow:auto;position:static}',
   '.dsh-wt_customRow{display:flex;align-items:center;gap:8px}',
   '.dsh-wt_customLabel{flex:none;font-size:11.5px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
   '.dsh-wt_customSelect{flex:1;min-width:0;padding:5px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;outline:none}',
