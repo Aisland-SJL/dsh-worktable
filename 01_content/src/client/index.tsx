@@ -550,6 +550,19 @@ function saveNotifyAck(sid: string, state: string) {
     localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(ack))
   } catch {}
 }
+/** 每会话最近一次观察到的「需要判断」布尔值：状态转移时清除旧 ack（新一轮待决重新点亮） */
+const notifyStateSeenRef: { current: Record<string, boolean> } = { current: {} }
+/** 清除某会话的 ack 记录（状态转移时调用，保证新问题不会被旧确认压住） */
+function clearNotifyAck(sid: string) {
+  try {
+    const all = loadNotifyAck()
+    if (all[sid]) {
+      delete all[sid]
+      localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(all))
+    }
+  } catch {}
+}
+
 /** 会话状态 → 提醒类型：待决(黄) 优先于 完成(绿)——等待用户判断时 pendingInteraction 与
  *  running 会同时为真，原生 UI 以黄点优先，镜像必须一致 */
 function sessionNotifyState(entry: any): 'done' | 'need' | null {
@@ -1061,49 +1074,62 @@ function buildCustomLayoutPrompt(req: string): string {
     return kids
   }, [])
 
-  /** 项目 → 提醒态：绑定会话（含其子代理）completed=done / pendingInteraction=need（ack 过则不亮） */
+  /** 项目 → 提醒态：绑定会话（含其子代理）待决(黄) > 完成(绿) > 工作中(蓝)；
+   *  状态转移自动清除旧 ack——原生 UI 每个新问题都会重新亮黄，镜像不得被旧确认压住 */
   const bindNotifyMap: Record<string, 'done' | 'need' | 'busy'> = useMemo(() => {
     const map: Record<string, 'done' | 'need' | 'busy'> = {}
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
     const ack = loadNotifyAck()
+    const seen = notifyStateSeenRef.current
     for (const [pid, sid] of Object.entries(projects.bindings)) {
       const e = byId[sid]
       if (!e) continue
-      // 优先级：待决（黄）> 完成（绿）> 工作中（蓝）——与原生 UI 一致；ack 过的状态若仍在跑则落 busy
-      // ① 自身待决
-      const state = sessionNotifyState(e)
-      if (state && ack[sid] !== state) { map[pid] = state; continue }
-      // ② 子代理待决 → 黄（用户在工作区看到的黄点常来自子代理，父会话自己仍是 running）
-      let childNeed = false
-      for (const cid of collectKids(sid)) {
-        const ce = byId[cid]
-        if (ce && sessionNotifyState(ce) === 'need' && ack[cid] !== 'need') { childNeed = true; break }
+      // 是否需要判断：自身列表字段 / 子代理 / 会话面兜底，三通道聚合
+      let needNow = sessionNotifyState(e) === 'need'
+      if (!needNow) {
+        for (const cid of collectKids(sid)) {
+          const ce = byId[cid]
+          if (ce && sessionNotifyState(ce) === 'need') { needNow = true; break }
+        }
       }
-      if (childNeed) { map[pid] = 'need'; continue }
-      // ③ 会话面 pending 队列兜底（宿主列表不映射 pendingInteraction 时的保险）
-      try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
-        if (Array.isArray(face?.pending) && face.pending.length > 0 && ack[sid] !== 'need') { map[pid] = 'need'; continue }
-      } catch {}
+      if (!needNow) {
+        try {
+          const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+          if (Array.isArray(face?.pending) && face.pending.length > 0) needNow = true
+        } catch {}
+      }
+      // 状态转移 → 清除旧 ack（新一轮待决重新点亮）
+      if (needNow !== seen[sid]) {
+        if (seen[sid] !== undefined) clearNotifyAck(sid)
+        seen[sid] = needNow
+      }
+      if (needNow) { if (ack[sid] !== 'need') map[pid] = 'need'; continue }
+      if (sessionNotifyState(e) === 'done' && ack[sid] !== 'done') { map[pid] = 'done'; continue }
       if (e.running === true) map[pid] = 'busy'
     }
     return map
   }, [projects.bindings, notifyTick, collectKids])
 
-  /** 点开项目 = 确认提醒：ack 当前会话及其子代理的待决状态，圆点恢复常态实心 */
+  /** 点开项目 = 确认提醒：ack 当前会话（含子代理）的待决/完成状态，圆点恢复常态实心 */
   const ackProjectNotify = (projectId: string) => {
     const sid = projectsRef.current.projects.bindings[projectId]
     if (!sid) return
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
-    const state = sessionNotifyState(byId[sid])
-    if (state) saveNotifyAck(sid, state)
+    let needNow = sessionNotifyState(byId[sid]) === 'need'
     for (const cid of collectKids(sid)) {
-      if (sessionNotifyState(byId[cid]) === 'need') saveNotifyAck(cid, 'need')
+      if (sessionNotifyState(byId[cid]) === 'need') { needNow = true; saveNotifyAck(cid, 'need') }
     }
-    try {
-      const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
-      if (Array.isArray(face?.pending) && face.pending.length > 0) saveNotifyAck(sid, 'need')
-    } catch {}
+    if (!needNow) {
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+        if (Array.isArray(face?.pending) && face.pending.length > 0) needNow = true
+      } catch {}
+    }
+    if (needNow) saveNotifyAck(sid, 'need')
+    else {
+      const st = sessionNotifyState(byId[sid])
+      if (st === 'done') saveNotifyAck(sid, 'done')
+    }
   }
 
   // ── 有效排序 ──

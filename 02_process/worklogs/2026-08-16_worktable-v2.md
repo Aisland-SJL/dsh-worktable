@@ -1016,6 +1016,20 @@
   ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（修复：旧 ack 压住新一轮待决提示）
+
+- 用户反馈：健身记录绑定 FitnessWeb——对话新弹出一个需要判断的黄点，工作台卡片仍蓝色闪烁
+  （助理机器人同病）。子代理聚合修复后依旧。
+- 根因：ack 记忆过黏——用户此前点开项目确认过待决（ack['need'] 持久化），此后同一状态值
+  的新问题被旧 ack 压制，落到 busy 蓝。原生 UI 是每个新问题都重新亮黄。
+- 修复：notifyStateSeenRef 跟踪每会话「needNow」布尔；状态转移（真↔假）时 clearNotifyAck
+  清除旧 ack。第一轮黄 → 点项目确认 → 解决后（needNow 转假）ack 自动清 → 新一轮问题重新亮黄。
+- 验证（probe-repending.cjs，完整用户流程）：firstPending=need → afterAck=true(ack=need) →
+  afterResolved=busy 且 ackAfterResolve=null → repending=need 黄 rgb(210,153,34) ✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

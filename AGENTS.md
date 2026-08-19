@@ -65,6 +65,8 @@ node --check lib/index.js
   collectKids（byId.parentId + subagentsByParent 双通道）聚合父会话及其子代理的 pending；
   会话面 binding(id).session.getSnapshot().pending 非空也判 need（列表不映射时的兜底）；
   ackProjectNotify 同步 ack 子代理。
+  **ack 生命周期**：ack 只在「同一轮待决未解决」期间压制提醒；状态转移（needNow 真↔假）时
+  clearNotifyAck 自动清除旧 ack——原生 UI 每个新问题都重新亮黄，镜像必须同样重新点亮。
 
 ## 安装 / 重启
 
