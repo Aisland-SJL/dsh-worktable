@@ -1043,7 +1043,25 @@ function buildCustomLayoutPrompt(req: string): string {
     return () => { sessionsSnapshotStore.listeners.delete(l) }
   }, [])
 
-  /** 项目 → 提醒态：绑定会话 completed=done / pendingInteraction=need（ack 过则不亮） */
+  /** 收集某会话的子代理 id 集：byId 的 parentId 标注 + subagentsByParent 目录双通道 */
+  const collectKids = useCallback((sid: string): Set<string> => {
+    const kids = new Set<string>()
+    const snap = sessionsSnapshotStore.snapshot
+    const byId = snap?.byId ?? {}
+    for (const [cid, ce] of Object.entries<any>(byId)) {
+      if (ce?.parentId === sid) kids.add(cid)
+    }
+    const subMap = snap?.subagentsByParent ?? {}
+    const v = (subMap as any)[sid]
+    const arr = Array.isArray(v) ? v : (v?.entries ?? v?.items ?? [])
+    if (Array.isArray(arr)) arr.forEach((c: any) => {
+      const cid = c?.sessionId ?? c?.id
+      if (typeof cid === 'string') kids.add(cid)
+    })
+    return kids
+  }, [])
+
+  /** 项目 → 提醒态：绑定会话（含其子代理）completed=done / pendingInteraction=need（ack 过则不亮） */
   const bindNotifyMap: Record<string, 'done' | 'need' | 'busy'> = useMemo(() => {
     const map: Record<string, 'done' | 'need' | 'busy'> = {}
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
@@ -1052,20 +1070,40 @@ function buildCustomLayoutPrompt(req: string): string {
       const e = byId[sid]
       if (!e) continue
       // 优先级：待决（黄）> 完成（绿）> 工作中（蓝）——与原生 UI 一致；ack 过的状态若仍在跑则落 busy
+      // ① 自身待决
       const state = sessionNotifyState(e)
       if (state && ack[sid] !== state) { map[pid] = state; continue }
+      // ② 子代理待决 → 黄（用户在工作区看到的黄点常来自子代理，父会话自己仍是 running）
+      let childNeed = false
+      for (const cid of collectKids(sid)) {
+        const ce = byId[cid]
+        if (ce && sessionNotifyState(ce) === 'need' && ack[cid] !== 'need') { childNeed = true; break }
+      }
+      if (childNeed) { map[pid] = 'need'; continue }
+      // ③ 会话面 pending 队列兜底（宿主列表不映射 pendingInteraction 时的保险）
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+        if (Array.isArray(face?.pending) && face.pending.length > 0 && ack[sid] !== 'need') { map[pid] = 'need'; continue }
+      } catch {}
       if (e.running === true) map[pid] = 'busy'
     }
     return map
-  }, [projects.bindings, notifyTick])
+  }, [projects.bindings, notifyTick, collectKids])
 
-  /** 点开项目 = 确认提醒：ack 当前会话状态，圆点恢复常态实心 */
+  /** 点开项目 = 确认提醒：ack 当前会话及其子代理的待决状态，圆点恢复常态实心 */
   const ackProjectNotify = (projectId: string) => {
     const sid = projectsRef.current.projects.bindings[projectId]
     if (!sid) return
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
     const state = sessionNotifyState(byId[sid])
     if (state) saveNotifyAck(sid, state)
+    for (const cid of collectKids(sid)) {
+      if (sessionNotifyState(byId[cid]) === 'need') saveNotifyAck(cid, 'need')
+    }
+    try {
+      const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+      if (Array.isArray(face?.pending) && face.pending.length > 0) saveNotifyAck(sid, 'need')
+    } catch {}
   }
 
   // ── 有效排序 ──

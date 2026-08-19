@@ -61,6 +61,10 @@ node --check lib/index.js
   **工作中（busy）**：byId[sid].running === true → data-bound=busy，蓝色 #4f8ef7 发光 +
   dsh-wt-busyA/B 关键帧两圆交替亮灭（对应 DSH 转圈标记）；优先级 need > done > busy——等待判断时 pendingInteraction 与 running 同时为真，
   原生 UI 以黄点优先，镜像必须一致；busy 无需 ack，running 变 false 自动切换。
+  **子代理聚合**：待决状态常挂在子代理会话上（父会话只有 running）——bindNotifyMap 用
+  collectKids（byId.parentId + subagentsByParent 双通道）聚合父会话及其子代理的 pending；
+  会话面 binding(id).session.getSnapshot().pending 非空也判 need（列表不映射时的兜底）；
+  ackProjectNotify 同步 ack 子代理。
 
 ## 安装 / 重启
 

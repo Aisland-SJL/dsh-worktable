@@ -1002,6 +1002,21 @@
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（修复：待决状态挂在子代理上导致黄点镜像失效）
+
+- 用户反馈：助理机器人项目在工作区是黄点（需要判断），工作台卡片仍显示蓝色工作态。
+- 排查（dumpstate/findpending 探针）：宿主快照 byId 的 pendingInteraction 只出现在真正待决的
+  会话条目上；「父会话 running + 子代理待决」场景下父条目没有该字段——用户在工作区看到的
+  黄点来自子代理行。
+- 修复：bindNotifyMap 聚合父会话 + 其子代理（collectKids：byId.parentId 标注 + subagentsByParent
+  目录双通道）的 pendingInteraction → need；另加会话面 binding(id).session.getSnapshot().pending
+  非空兜底；ackProjectNotify 同步 ack 子代理待决。优先级不变：need > done > busy。
+- 验证（probe-childpending.cjs）：注入子代理 pendingInteraction=question + 父 running →
+  attr=need、黄 rgb(210,153,34) ✓（真实待决会话同样落 need）；functional-diag 全 20 STEP
+  ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 
