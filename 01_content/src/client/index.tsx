@@ -550,11 +550,12 @@ function saveNotifyAck(sid: string, state: string) {
     localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(ack))
   } catch {}
 }
-/** 会话状态 → 提醒类型：completed=完成(绿) / pendingInteraction=待决(黄) */
+/** 会话状态 → 提醒类型：待决(黄) 优先于 完成(绿)——等待用户判断时 pendingInteraction 与
+ *  running 会同时为真，原生 UI 以黄点优先，镜像必须一致 */
 function sessionNotifyState(entry: any): 'done' | 'need' | null {
   if (!entry) return null
-  if (entry.completed === true) return 'done'
   if (entry.pendingInteraction != null) return 'need'
+  if (entry.completed === true) return 'done'
   return null
 }
 
@@ -1050,10 +1051,10 @@ function buildCustomLayoutPrompt(req: string): string {
     for (const [pid, sid] of Object.entries(projects.bindings)) {
       const e = byId[sid]
       if (!e) continue
-      // 优先级：工作中（蓝色交替闪烁）> 完成（绿）> 待决（黄）
-      if (e.running === true) { map[pid] = 'busy'; continue }
+      // 优先级：待决（黄）> 完成（绿）> 工作中（蓝）——与原生 UI 一致；ack 过的状态若仍在跑则落 busy
       const state = sessionNotifyState(e)
-      if (state && ack[sid] !== state) map[pid] = state
+      if (state && ack[sid] !== state) { map[pid] = state; continue }
+      if (e.running === true) map[pid] = 'busy'
     }
     return map
   }, [projects.bindings, notifyTick])

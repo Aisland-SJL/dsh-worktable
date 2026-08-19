@@ -59,8 +59,8 @@ node --check lib/index.js
   点开项目 = ack（notifyAck.v1 按会话存状态）恢复常态实心。数据源 = sessionsSnapshotStore
   （syncSessionScope 写入完整快照并通知监听者）；跨状态（done↔need）会重新点亮。
   **工作中（busy）**：byId[sid].running === true → data-bound=busy，蓝色 #4f8ef7 发光 +
-  dsh-wt-busyA/B 关键帧两圆交替亮灭（对应 DSH 转圈标记）；优先级 busy > done > need，
-  无需 ack，running 变 false 自动切换。
+  dsh-wt-busyA/B 关键帧两圆交替亮灭（对应 DSH 转圈标记）；优先级 need > done > busy——等待判断时 pendingInteraction 与 running 同时为真，
+  原生 UI 以黄点优先，镜像必须一致；busy 无需 ack，running 变 false 自动切换。
 
 ## 安装 / 重启
 

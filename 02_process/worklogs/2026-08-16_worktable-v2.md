@@ -989,6 +989,20 @@
   completed=true → 切回 done 绿 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（修复：待决状态被「工作中」蓝色覆盖）
+
+- 用户反馈：项目「助理机器人」绑定对话在 DSH 原生里是黄点（等待判断），工作台项目卡却显示
+  蓝色工作态——不对，应显示黄色常亮。
+- 根因：等待用户判断时宿主快照里 pendingInteraction 与 running 同时为真；此前优先级
+  busy > done > need 把黄色压成了蓝色，与原生 UI（黄点优先）不一致。
+- 修复：sessionNotifyState 改为 pendingInteraction 优先于 completed；bindNotifyMap 优先级
+  改为 need > done > busy（ack 过的状态若仍在 running 则落 busy）。新建项目同套逻辑，一并生效。
+- 验证（probe-priority.cjs，桩注入双真状态）：pendingInteraction+running → attr=need、
+  色 rgb(210,153,34) 黄 ✓；仅 running → busy ✓；completed → done 绿 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 
