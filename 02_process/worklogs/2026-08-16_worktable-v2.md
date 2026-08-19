@@ -952,6 +952,19 @@
   knowledgeNeutral/stillHasHtmlForTools 全 true；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；组件窗（配置驱动）方向另行讨论。
 
+## 补记（终端窗修复：乱码图标 + 长行截断）
+
+- 用户反馈（附图）：终端窗左上角有奇怪乱码；长行输入超过窗口宽度被截断、不换行。
+- 根因：服务端以 powershell.exe -NoLogo 启动会加载用户 Profile——oh-my-posh 等花哨提示符
+  的 nerd 字体字符在 xterm 里渲染为乱码；PSReadLine 接管输入行后按 cols 宽度绘制、超宽部分
+  不换行直接截断。
+- 修复：① 服务端加 -NoProfile（干净标准提示符 + 控制台原生换行，一举两得）；② 客户端字体
+  改 Cascadia Code 优先；③ term.open 与 ws 连接建立时写入 \x1b[?7h（DECAWM on）强制自动换行。
+- 验证：powershell.exe -NoLogo -NoProfile 正常启动（输出 OK）；functional-diag 全 20 STEP
+  ERROR_COUNT: 0（终端窗不在回归范围内，视觉部分请用户重启后确认）。
+- 备注：-NoProfile 为服务端改动，需重启 dsh web 生效；字体/换行转义为客户端改动，F5 生效。
+
+
 
 
 

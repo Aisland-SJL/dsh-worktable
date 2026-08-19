@@ -151,7 +151,7 @@ function setupTerminal(webServer: any, ctx: any) {
   const wss = new WebSocketServer({ noServer: true })
   const spawnShell = (): { cmd: string; args: string[] } =>
     process.platform === 'win32'
-      ? { cmd: 'powershell.exe', args: ['-NoLogo'] }
+      ? { cmd: 'powershell.exe', args: ['-NoLogo', '-NoProfile'] } // -NoProfile：跳过用户配置（oh-my-posh 花哨提示符在 xterm 里是乱码，PSReadLine 长输入行不换行被截断）
       : { cmd: process.env.SHELL || '/bin/bash', args: [] }
   const clampDim = (v: number, fallback: number) => Math.min(1024, Math.max(2, Number.isFinite(v) ? v : fallback))
 

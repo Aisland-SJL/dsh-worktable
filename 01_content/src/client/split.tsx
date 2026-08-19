@@ -1104,7 +1104,7 @@ function TerminalPane() {
     try {
       term = new Terminal({
         cursorBlink: true,
-        fontFamily: 'Consolas, Menlo, monospace',
+        fontFamily: 'Cascadia Code, Cascadia Mono, Consolas, Menlo, monospace',
         fontSize: 12,
         convertEol: true,
         theme: { background: '#010409' },
@@ -1114,6 +1114,8 @@ function TerminalPane() {
       return
     }
     term.open(el)
+    // 强制自动换行（DECAWM on）：超长行在窗口宽度处换行，不被截断
+    try { term.write('\x1b[?7h') } catch {}
     const focusTerm = () => { try { term.focus() } catch {} }
     focusTerm()
     el.addEventListener('pointerdown', focusTerm)
@@ -1127,7 +1129,7 @@ function TerminalPane() {
       setFailed(T('pane.termFail'))
       return
     }
-    ws.onopen = () => { focusTerm() }
+    ws.onopen = () => { focusTerm(); try { term.write('\x1b[?7h') } catch {} }
     ws.onmessage = (ev) => { try { term.write(String(ev.data)) } catch {} }
     ws.onclose = () => { if (!disposed) { try { term.write('\r\n[连接已关闭]') } catch {} } }
     ws.onerror = () => { if (!disposed) setFailed(T('pane.termFail')) }
