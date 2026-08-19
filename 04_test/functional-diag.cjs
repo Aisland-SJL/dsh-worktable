@@ -651,12 +651,30 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.tabOpened=st.spec.main[0].tabs.length===1;
       out.tabType=st.spec.main[0].tabs[0].content.type;
       out.dialog=!!vis('.dsh-wt_customCard');
+      // 默认模式 = 发送到会话：第一个选择器是会话下拉
       var sel=vis('.dsh-wt_selectBtn');
       out.selectValue=sel?String(sel.textContent).trim():null;
-      out.defaultIsCurrent=false;
       var send=vis('.dsh-wt_customSend');
       out.sendDisabled=send?send.disabled:null;
-      // 新建模式的分组选择：项目选择器之后应有分组选择器；点开应含 未分组/现有组/新建分组
+      var sbtns=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.selectBtnCount=sbtns.length;
+      out.sessionSelect=sbtns.length>=2;
+      if(sbtns[0]){ sbtns[0].click(); }
+      await new Promise(function(r){setTimeout(r,250)});
+      var list=[].slice.call(document.querySelectorAll('.dsh-wt_selectList')).find(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      out.listOpen=!!list;
+      out.groupHeaders=list?list.querySelectorAll('.dsh-wt_selectGroup').length:0;
+      var gh=list?list.querySelector('.dsh-wt_selectGroup'):null;
+      out.groupFontSize=gh?getComputedStyle(gh).fontSize:null;
+      out.groupWeight=gh?getComputedStyle(gh).fontWeight:null;
+      out.groupBorderLeft=gh?getComputedStyle(gh).borderLeftWidth:null;
+      out.dividers=list?list.querySelectorAll('.dsh-wt_selectDivider').length:0;
+      out.itemCount=list?list.querySelectorAll('.dsh-wt_selectItem').length:0;
+      out.currentBadge=list?list.querySelectorAll('.dsh-wt_selectCurrent').length:0;
+      // 切到第二个模式「新建对话」：出现分组选择
+      var modeBtns=[].slice.call(document.querySelectorAll('.dsh-wt_customModeBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
+      if(modeBtns[1]){ modeBtns[1].click(); }
+      await new Promise(function(r){setTimeout(r,250)});
       var nbtns=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
       out.newSelectCount=nbtns.length;
       var gbtn=nbtns[1];
@@ -685,25 +703,6 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       if(noneItem){ noneItem.click(); }
       await new Promise(function(r){setTimeout(r,250)});
       out.groupInputsAfterNone=[].slice.call(document.querySelectorAll('.dsh-wt_customPathInput')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');}).length;
-      // 切到「发送到会话」模式：出现自制会话下拉，点开看分组与当前标记
-      var modeBtns=[].slice.call(document.querySelectorAll('.dsh-wt_customModeBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
-      if(modeBtns[1]){ modeBtns[1].click(); }
-      await new Promise(function(r){setTimeout(r,250)});
-      var sbtns=[].slice.call(document.querySelectorAll('.dsh-wt_selectBtn')).filter(function(el){return (getComputedStyle(el).visibility!=='hidden');});
-      out.selectBtnCount=sbtns.length;
-      out.sessionSelect=sbtns.length>=2;
-      if(sbtns[0]){ sbtns[0].click(); }
-      await new Promise(function(r){setTimeout(r,250)});
-      var list=[].slice.call(document.querySelectorAll('.dsh-wt_selectList')).find(function(el){return (getComputedStyle(el).visibility!=='hidden');});
-      out.listOpen=!!list;
-      out.groupHeaders=list?list.querySelectorAll('.dsh-wt_selectGroup').length:0;
-      var gh=list?list.querySelector('.dsh-wt_selectGroup'):null;
-      out.groupFontSize=gh?getComputedStyle(gh).fontSize:null;
-      out.groupWeight=gh?getComputedStyle(gh).fontWeight:null;
-      out.groupBorderLeft=gh?getComputedStyle(gh).borderLeftWidth:null;
-      out.dividers=list?list.querySelectorAll('.dsh-wt_selectDivider').length:0;
-      out.itemCount=list?list.querySelectorAll('.dsh-wt_selectItem').length:0;
-      out.currentBadge=list?list.querySelectorAll('.dsh-wt_selectCurrent').length:0;
       st.close();
     }catch(err){ out.err=String(err) }
     return JSON.stringify(out);

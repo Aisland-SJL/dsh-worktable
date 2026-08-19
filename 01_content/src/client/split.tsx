@@ -1330,7 +1330,7 @@ function CustomPane(props: { paneTitle?: string }) {
   const [requirement, setRequirement] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projects, setProjects] = useState<{ id: string; name: string }[]>(() => custom?.getProjects?.() ?? [])
-  const [mode, setMode] = useState<'new' | 'existing'>('new')
+  const [mode, setMode] = useState<'new' | 'existing'>('existing')
   const [sessionGroups, setSessionGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
   // 分组（宿主工作区）三态：未分组 / 现有组 / 新建组
@@ -1408,8 +1408,8 @@ function CustomPane(props: { paneTitle?: string }) {
       <div className="dsh-wt_customCard">
         <span className="dsh-wt_customTitle">✨ {T('custom.title')}</span>
         <div className="dsh-wt_customModes">
-          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'new' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('new')}>{T('custom.modeNew')}</button>
           <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'existing' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('existing')}>{T('custom.modeSend')}</button>
+          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'new' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('new')}>{T('custom.modeNew')}</button>
         </div>
         <p className="dsh-wt_customHint">{mode === 'new' ? T('custom.hint') : T('custom.hintSend')}</p>
         <textarea

@@ -586,20 +586,15 @@ function WorktableSection(props: any) {
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
-  // 新建项目强制工作文件夹：父目录（必填）+ 名称（留空 = 用项目名）
+  // 新建项目强制工作文件夹：经「选择位置…」弹窗选定（系统资源管理器式选择窗）
   const [wsFolderParent, setWsFolderParent] = useState('')
-  const [wsFolderName, setWsFolderName] = useState('')
   const [wsFolderError, setWsFolderError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组 */
   const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
   const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
-  /** 绑定弹窗内的项目文件夹编辑区 */
-  const [bindFolderEdit, setBindFolderEdit] = useState(false)
-  const [bindFolderParent, setBindFolderParent] = useState('')
-  const [bindFolderName, setBindFolderName] = useState('')
-  const [bindFolderError, setBindFolderError] = useState(false)
+
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
   const [customLayoutText, setCustomLayoutText] = useState('')
@@ -912,26 +907,26 @@ function buildCustomLayoutPrompt(req: string): string {
     const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
     setBindPick({ id, x, y })
     setBindGroups([])
-    setBindFolderEdit(false)
-    setBindFolderError(false)
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
   }, [])
 
-  /** 保存绑定弹窗里的项目文件夹（建目录 + 持久化） */
-  const saveBindFolder = async () => {
-    if (!bindPick) return
-    const parent = bindFolderParent.trim()
-    const name = bindFolderName.trim()
-    if (!parent || !name) { setBindFolderError(true); return }
-    const folderPath = parent.replace(/[\\/]+$/, '') + '\\' + name.replace(/[\\/]+/g, '')
+  /** 弹出系统文件夹选择窗（宿主 pickDirectory）；选中后回调 */
+  const pickFolder = async (apply: (p: string) => void) => {
     try {
-      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
-      const d = await r.json()
-      if (!r.ok || !d?.ok) { setBindFolderError(true); return }
-    } catch { setBindFolderError(true); return }
-    persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: folderPath } }))
-    setBindFolderEdit(false)
-    setBindFolderError(false)
+      const ws = sessionBridge?.workspaces as any
+      if (ws && typeof ws.pickDirectory === 'function') {
+        const p = await ws.pickDirectory()
+        if (p && typeof p === 'string') apply(p)
+      }
+    } catch { /* 取消或不可用 */ }
+  }
+
+  /** 绑定弹窗「更改」：弹窗选择文件夹，直接作为项目文件夹 */
+  const changeBindFolder = () => {
+    if (!bindPick) return
+    pickFolder((p) => {
+      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
+    })
   }
 
   /** 绑定 / 解绑会话 */
@@ -1114,22 +1109,19 @@ function buildCustomLayoutPrompt(req: string): string {
     persistProjects((prev) => ({ ...prev, shortcuts: prev.shortcuts.filter((s) => s.id !== id) }))
   }
 
-  // ── 布局（新建工作区） ── 强制项目文件夹：父目录必填，文件夹名留空 = 用项目名；保存时建目录
+  // ── 布局（新建工作区） ── 强制项目文件夹：必须经「选择位置…」选定；路径即为项目文件夹
   const saveLayout = async () => {
     const name = wsName.trim()
     if (!name) { setWsError(true); return }
-    const parent = wsFolderParent.trim()
-    if (!parent) { setWsFolderError(true); return }
-    const folderName = (wsFolderName.trim() || name).replace(/[\\/]+/g, '')
-    const folderPath = parent.replace(/[\\/]+$/, '') + '\\' + folderName
+    const folderPath = wsFolderParent.trim()
+    if (!folderPath) { setWsFolderError(true); return }
     try {
-      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
-      const d = await r.json()
-      if (!r.ok || !d?.ok) { setWsFolderError(true); return }
-    } catch { setWsFolderError(true); return }
+      // 轻量兜底：选中的路径理应存在，mkdir 幂等无害
+      await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
+    } catch { /* 非致命 */ }
     const layout = buildLayout(wsPreset, name)
     persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout], folders: { ...prev.folders, [layout.id]: folderPath } }))
-    setWsName(''); setWsFolderParent(''); setWsFolderName(''); setWsError(false); setWsFolderError(false)
+    setWsName(''); setWsFolderParent(''); setWsError(false); setWsFolderError(false)
     setAddOpen(false)
     openSplit(layout)
     reportUsed(layout.id)
@@ -1550,13 +1542,10 @@ function buildCustomLayoutPrompt(req: string): string {
               onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
             <div className="dsh-wt_addFolderRow">
               <span className="dsh-wt_customLabel">{t('add.folderParent')}</span>
-              <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderParentPh')} value={wsFolderParent}
-                onChange={(e) => { setWsFolderParent(e.target.value); setWsFolderError(false) }} />
-            </div>
-            <div className="dsh-wt_addFolderRow">
-              <span className="dsh-wt_customLabel">{t('add.folderName')}</span>
-              <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderNamePh')} value={wsFolderName}
-                onChange={(e) => { setWsFolderName(e.target.value); setWsFolderError(false) }} />
+              <span className={'dsh-wt_addFolderPath' + (wsFolderParent ? '' : ' dsh-wt_addFolderPathNone')} title={wsFolderParent || ''}>
+                {wsFolderParent || t('add.folderNone')}
+              </span>
+              <button type="button" className="dsh-wt_bindFolderChange" onClick={() => { pickFolder((p) => { setWsFolderParent(p); setWsFolderError(false) }); setWsError(false) }}>{t('add.folderPick')}</button>
             </div>
             <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
           </div>
@@ -1728,32 +1717,11 @@ function buildCustomLayoutPrompt(req: string): string {
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
               <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
-              <button
-                type="button"
-                className="dsh-wt_bindFolderChange"
-                onClick={() => {
-                  const cur = projects.folders[bindPick.id] ?? ''
-                  setBindFolderParent(cur.replace(/[\\/][^\\/]*$/, ''))
-                  setBindFolderName(cur.split(/[\\/]/).pop() ?? '')
-                  setBindFolderEdit((v) => !v)
-                  setBindFolderError(false)
-                }}
-              >{t('bind.folderChange')}</button>
+              <button type="button" className="dsh-wt_bindFolderChange" onClick={changeBindFolder}>{t('bind.folderChange')}</button>
             </div>
-            {bindFolderEdit ? (
-              <div className="dsh-wt_bindFolderForm">
-                <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderParentPh')} value={bindFolderParent}
-                  onChange={(e) => { setBindFolderParent(e.target.value); setBindFolderError(false) }} />
-                <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderNamePh')} value={bindFolderName}
-                  onChange={(e) => { setBindFolderName(e.target.value); setBindFolderError(false) }} />
-                <button type="button" className="dsh-wt_customLayoutBtn" onClick={saveBindFolder}>{t('add.layoutSave')}</button>
-                {bindFolderError && <p className="dsh-wt_addError">{t('add.folderRequired')}</p>}
-              </div>
-            ) : (
-              <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
-                {projects.folders[bindPick.id] ?? t('bind.folderNone')}
-              </div>
-            )}
+            <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
+              {projects.folders[bindPick.id] ?? t('bind.folderNone')}
+            </div>
           </div>
           {(() => {
             const sid = projects.bindings[bindPick.id]
