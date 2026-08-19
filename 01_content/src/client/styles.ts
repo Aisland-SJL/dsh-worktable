@@ -164,7 +164,7 @@ export const css = [
   '.dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:17px;height:7px;transform:translate(-50%,-50%)}',
   '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-sizing:border-box;border:1.2px solid currentColor;background:transparent}',
   '.dsh-wt_bindCircles::before{left:0}',
-  '.dsh-wt_bindCircles::after{left:11px}',
+  '.dsh-wt_bindCircles::after{left:10px}',
   '.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after{background:currentColor}',
 
   // 布局条目卡片
@@ -175,7 +175,8 @@ export const css = [
   '.dsh-wt_layoutIcon{flex:none;font-size:15px}',
   '.dsh-wt_layoutText{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}',
   '.dsh-wt_layoutName{font-size:12px;font-weight:400;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-  '.dsh-wt_layoutArrow{flex:none;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:20px}',
+  // 箭头与项目名同一行高 + 字面中心对齐
+  '.dsh-wt_layoutArrow{flex:none;display:inline-flex;align-items:center;height:18px;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:18px}',
   // 项目卡片统一：所有入驻项目卡片（data-wt-id 通用标记）与布局卡片同款常显框
   '.dsh-wt_projects [data-wt-id]{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
   '.dsh-wt_projects [data-wt-id]:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',

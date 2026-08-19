@@ -814,6 +814,18 @@
   functional-diag ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（圆点间距 4px + 布局卡箭头垂直对齐）
+
+- 用户反馈：① ○○/●● 间距再收一点（5px → 4px）；② 布局卡右侧 › 箭头纵坐标偏下，
+  要对齐项目标签栏中心。
+- 处理：圆点 second circle left 11px → 10px；箭头由 line-height 20px 裸文本改为
+  inline-flex + align-items:center + height/line-height 18px（与项目名同高），
+  去掉字形下沉带来的下偏（先试 translateY(-1px) 过矫 1.5px 偏高，去掉后误差 -0.5px）。
+- 验证（arrow-mini.cjs）：gap=4 ✓；箭头字面中心 531.5 vs 卡片/项目名中心 532（偏差 -0.5px，
+  亚像素级）；functional-diag ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 
