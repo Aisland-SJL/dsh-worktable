@@ -805,6 +805,16 @@
   侧栏内）✓；未绑定/已绑定颜色与实心空心不变；functional-diag ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（绑定图标两点间距加大）
+
+- 用户反馈：○○/●● 两个点挨得太近，分开一点（实心空心一起改）。
+- 处理：圆点定位 left 0 / 7px → 0 / 11px，圆 6px 不变 → 间距 1px → 5px；容器 14px → 17px
+  （22×22 按钮底内居中不变）。
+- 验证（bindicon-mini.cjs）：circleLeft=0px / circle2Left=11px / gap=5，空心与实心两态一致；
+  functional-diag ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

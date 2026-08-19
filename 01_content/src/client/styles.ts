@@ -155,16 +155,16 @@ export const css = [
   '.dsh-wt_presetAddText{font-size:10px;line-height:13px}',
   // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆绘制，黑白单色克制：
   // 未绑定次级灰空心、已绑定主色实心，不用强调色；hover 区域 = 22×22 圆角矩形按钮底，
-  // 气泡向左伸出（留在侧栏内，不被右侧对话区遮挡），垂直居中于按钮）
+  // 气泡为 body 级元素向右伸出（跨层显示），垂直居中于按钮）
   '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:22px;height:22px;margin:0;display:block;border-radius:6px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}',
   '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}',
   // 气泡为 body 级独立元素（.dsh-wt_bindTip），此处只保留按钮本体样式
   '.dsh-wt_bindTip{position:fixed;transform:translateY(-50%);padding:5px 9px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;pointer-events:none;z-index:1200;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none}',
-  '.dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:14px;height:7px;transform:translate(-50%,-50%)}',
+  '.dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:17px;height:7px;transform:translate(-50%,-50%)}',
   '.dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:\'\';position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-sizing:border-box;border:1.2px solid currentColor;background:transparent}',
   '.dsh-wt_bindCircles::before{left:0}',
-  '.dsh-wt_bindCircles::after{left:7px}',
+  '.dsh-wt_bindCircles::after{left:11px}',
   '.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after{background:currentColor}',
 
   // 布局条目卡片
