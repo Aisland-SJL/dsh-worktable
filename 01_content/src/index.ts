@@ -38,6 +38,13 @@ const FILE_TYPES: Record<string, string> = {
 
 const SITE_PREFIX = '/api/worktable/site'
 
+// 原生皮肤模板（esbuild text loader 嵌入；/api/worktable/template 路由直接下发）
+// @ts-ignore
+import dshellCss from '../template/dshell.css'
+// @ts-ignore
+import dshellHtml from '../template/dshell.html'
+const TEMPLATE_PREFIX = '/api/worktable/template'
+
 /**
  * 从本插件模块位置向祖先方向查找并加载 node_modules 包（如 ws / node-pty）。
  * 本包经 junction 链接进 profile，普通 import 可能解析不到 profile 级依赖；
@@ -236,6 +243,28 @@ export function apply(ctx: Context) {
 
   // 本地站点（目录级静态托管）：点开 index.html 时挂载整个所在目录，
   // 让 ./assets/... 等相对引用正常解析（前缀路由，余下路径 = <rootToken>/<相对路径>）。
+  // 原生皮肤模板：HTML 骨架 + 设计系统样式表（随插件分发，主题自动适配）
+  webServer.register({
+    kind: 'prefix',
+    path: TEMPLATE_PREFIX,
+    handler: (req: any, res: any) => {
+      try {
+        if (req.method !== 'GET') { res.writeHead(405); res.end(); return }
+        const pathname = new URL(req.url ?? '/', 'http://dsh.internal').pathname
+        const rel = pathname.slice(TEMPLATE_PREFIX.length)
+        if (rel === '/dshell.css') {
+          res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'no-store' })
+          res.end(dshellCss)
+        } else {
+          res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
+          res.end(dshellHtml)
+        }
+      } catch (err) {
+        res.writeHead(404); res.end(String(err))
+      }
+    },
+  })
+
   webServer.register({
     kind: 'prefix',
     path: SITE_PREFIX,

@@ -29,6 +29,7 @@ await build({
   format: 'esm',
   target: ['node22'],
   external: ['@deepseek-ai/*', 'node:*', 'ws', 'node-pty'],
+  loader: { '.css': 'text', '.html': 'text' }, // 原生皮肤模板以文本嵌入服务端 bundle
 })
 
 await build({

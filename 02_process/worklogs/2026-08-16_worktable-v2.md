@@ -964,6 +964,20 @@
   ERROR_COUNT: 0（终端窗不在回归范围内，视觉部分请用户重启后确认）。
 - 备注：-NoProfile 为服务端改动，需重启 dsh web 生效；字体/换行转义为客户端改动，F5 生效。
 
+## 补记（原生皮肤模板 + 知识包接入）
+
+- 用户目标：参照「Oil Creator」爆改 DSH 的效果，让自定义窗口内容与 DSH 原生风格一致。
+- 实现：① 新增 01_content/template/dshell.css（设计系统：全部走 --dsw-alias-* 主题变量，
+  含卡片/按钮(绿pill+幽灵)/状态徽标(绿黄点)/标签页/列表/统计/进度/输入/表格/键值对/滚动条）
+  与 dshell.html（起始骨架示例）；② esbuild text loader 把两者嵌入服务端 bundle，
+  新增前缀路由 /api/worktable/template 下发；③ 窗口任务知识包新增：产出 HTML 必须
+  <link href="/api/worktable/template/dshell.css">，组件类参考模板——界面自动原生质感。
+- 验证：lib/index.js 含 dshell.css/.html 与路由 ✓；lib/client.js 知识包含模板引用 ✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：模板路由为服务端改动，需重启 dsh web 后生效（重启后浏览器可直开
+  /api/worktable/template/dshell.html 预览模板）。
+
+
 
 
 

@@ -1,0 +1,78 @@
+<!doctype html>
+<!-- dsh-worktable 原生皮肤模板：新页面以此为基础，替换下面示例内容即可。
+     样式表由插件提供（随主题自动适配），不要复制或改写它。 -->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>我的窗口</title>
+  <link rel="stylesheet" href="/api/worktable/template/dshell.css" />
+</head>
+<body>
+  <div class="dshell">
+    <!-- 标题区 -->
+    <h1 class="dshell-title">窗口标题</h1>
+    <p class="dshell-sub">一句话说明这个窗口做什么。</p>
+
+    <!-- 状态徽标：已完成 dshell-badgeDone / 进行中 dshell-badgeWait / 默认 -->
+    <div>
+      <span class="dshell-badge dshell-badgeDone">已完成</span>
+      <span class="dshell-badge dshell-badgeWait">进行中</span>
+      <span class="dshell-badge">未开始</span>
+    </div>
+
+    <!-- 标签页 -->
+    <div class="dshell-tabs">
+      <button class="dshell-tab dshell-tabOn">概览</button>
+      <button class="dshell-tab">详情</button>
+      <button class="dshell-tab">设置</button>
+    </div>
+
+    <!-- 统计卡片网格 -->
+    <div class="dshell-grid">
+      <div class="dshell-stat">
+        <div class="dshell-statLabel">总数</div>
+        <div class="dshell-statValue">128</div>
+        <div class="dshell-statDelta">+12.4%</div>
+      </div>
+      <div class="dshell-stat">
+        <div class="dshell-statLabel">进行中</div>
+        <div class="dshell-statValue">7</div>
+      </div>
+      <div class="dshell-stat">
+        <div class="dshell-statLabel">已完成</div>
+        <div class="dshell-statValue">121</div>
+      </div>
+    </div>
+
+    <!-- 列表 -->
+    <div class="dshell-list">
+      <div class="dshell-listItem">
+        <span class="dshell-listItemTitle">条目一：示例内容标题</span>
+        <span class="dshell-listItemMeta">昨天</span>
+      </div>
+      <div class="dshell-listItem">
+        <span class="dshell-listItemTitle">条目二：示例内容标题</span>
+        <span class="dshell-badge dshell-badgeDone">已发布</span>
+      </div>
+    </div>
+
+    <!-- 卡片 + 键值对 -->
+    <div class="dshell-card">
+      <h2 class="dshell-sub" style="margin:0 0 8px">详情</h2>
+      <div class="dshell-kv">
+        <div class="dshell-kvRow"><span class="dshell-kvKey">字段 A</span><span class="dshell-kvValue">值 A</span></div>
+        <div class="dshell-kvRow"><span class="dshell-kvKey">字段 B</span><span class="dshell-kvValue">值 B</span></div>
+      </div>
+      <div class="dshell-divider"></div>
+      <div class="dshell-progress"><div class="dshell-progressBar" style="width:72%"></div></div>
+    </div>
+
+    <!-- 操作区 -->
+    <div style="display:flex;gap:8px">
+      <button class="dshell-btn">主要操作</button>
+      <button class="dshell-btn dshell-btnGhost">次要操作</button>
+    </div>
+  </div>
+</body>
+</html>
