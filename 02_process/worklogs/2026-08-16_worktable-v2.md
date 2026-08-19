@@ -833,6 +833,18 @@
 - 验证：functional-diag ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（箭头对齐正主：入驻项目卡自带箭头）
+
+- 用户反馈：箭头两次改动「没动」——原因：用户看的是入驻项目卡（旅行 Atlas / 建筑审图）
+  自己的 › 箭头（.ta_cardArrow / .pr_cardArrow），此前两轮改的是布局卡 .dsh-wt_layoutArrow。
+- 处理：桥注入时给入驻卡文本为 › 的 span 子元素加 .dsh-wt_resArrow 类（通用，不限具体卡片），
+  CSS：button[data-wt-id] > .dsh-wt_resArrow = 18px 行高 + inline-flex 居中 + translateY(-1px)
+  （字面框偏下补偿，与布局卡同款）。
+- 验证（carddom-mini.cjs）：ta/pr 箭头均注入 dsh-wt_resArrow、h=20→18px、字面中心高于
+  卡片中心 1.5px（墨迹视觉居中）；functional-diag ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；代理已恢复，积压提交已全部推送。
+
+
 
 
 

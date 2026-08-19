@@ -1168,6 +1168,10 @@ function buildCustomLayoutPrompt(req: string): string {
           bindBtn.setAttribute('data-wt-bind', id)
           const bound = projects.bindings[id]
           bindBtn.setAttribute('data-bound', bound ? 'true' : 'false')
+          // 入驻卡自带箭头（文本 ›）：加统一对齐类，视觉居中（字面框偏下补偿 1px）
+          const kids = Array.from(el.children)
+          const arrow = kids.find((k: any) => k.tagName === 'SPAN' && String((k as HTMLElement).textContent ?? '').trim() === '›')
+          if (arrow) (arrow as HTMLElement).classList.add('dsh-wt_resArrow')
           const tip = bound ? t('bind.tipBound', { name: boundSessionTitle(bound) }) : t('bind.tipUnbound')
           bindBtn.setAttribute('data-tip', tip)
           bindBtn.setAttribute('aria-label', tip)

@@ -177,6 +177,8 @@ export const css = [
   '.dsh-wt_layoutName{font-size:12px;font-weight:400;line-height:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   // 箭头与项目名同一行高 + 字面中心对齐；› 墨迹在字面框内偏下，整体上移 1px 使视觉居中
   '.dsh-wt_layoutArrow{flex:none;display:inline-flex;align-items:center;height:18px;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:14px;line-height:18px;transform:translateY(-1px)}',
+  // 入驻项目卡自带箭头（桥注入 .dsh-wt_resArrow）：与布局卡同款视觉居中
+  'button[data-wt-id] > .dsh-wt_resArrow{display:inline-flex;align-items:center;height:18px;line-height:18px;transform:translateY(-1px)}',
   // 项目卡片统一：所有入驻项目卡片（data-wt-id 通用标记）与布局卡片同款常显框
   '.dsh-wt_projects [data-wt-id]{border-color:var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
   '.dsh-wt_projects [data-wt-id]:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
