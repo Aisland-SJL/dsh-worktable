@@ -942,6 +942,17 @@
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（窗口任务提示词按任务分形式）
+
+- 用户反馈：几乎所有自定义窗口都用 HTML 实现，质疑是否该有更合适的形式。
+- 处理：buildWindowTaskText 第 4 条改为「产出形式请按任务类型选择（不要一律用 HTML）」表——
+  交互小工具/看板/表单/图表→单文件 HTML；文档/演示→.pptx/.md/.xlsx 真实文件；视频/动画→
+  .mp4/.gif/Lottie；已有内置能力→建议改用内置窗，不要重复造轮子；知识包装载方式同步中性化。
+- 验证（promptform-mini.cjs）：hasTable/hasPptx/hasMp4/hasBuiltinAdvice/noPriorityHtml/
+  knowledgeNeutral/stillHasHtmlForTools 全 true；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；组件窗（配置驱动）方向另行讨论。
+
+
 
 
 
