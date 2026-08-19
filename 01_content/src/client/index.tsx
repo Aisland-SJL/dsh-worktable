@@ -475,6 +475,7 @@ export async function createCustomSession(projectId: string, projectName: string
   if (workspaceId) createOpts = { workspaceId }
   else if (folder) createOpts = { cwd: folder }
   const sessionId = await b.sessions.create(createOpts)
+  markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
   return sessionId
@@ -485,6 +486,7 @@ export async function sendCustomToSession(sessionId: string, projectId: string, 
   const b = sessionBridge
   if (!b) throw new Error('bridge unavailable')
   const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'send')
+  markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
 }
@@ -496,6 +498,15 @@ const projectAttachRef: { sessionId: string | null; attached: string | null } = 
 const suppressRestoreRef: { current: boolean } = { current: false }
 /** 项目绑定表的最新快照（组件每渲染同步，供模块级联动逻辑读取） */
 const projectBindingsRef: { current: Record<string, string> } = { current: {} }
+/** 插件自己发起的会话切换（新建/发送/回切）：联动逻辑不得因此自动关项目 */
+const pluginOpenedSessionsRef: { current: Set<string> } = { current: new Set<string>() }
+function markPluginSessionOpen(sessionId: string) {
+  if (sessionId) {
+    const s = pluginOpenedSessionsRef.current
+    if (s.size > 50) s.clear()
+    s.add(sessionId)
+  }
+}
 let lastSessionScopeId = ''
 
 /** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
@@ -527,8 +538,13 @@ function syncSessionScope(list: any) {
         if (current && splitStore.active && splitStore.spec) {
           const attached = projectAttachRef.attached
           if (attached && current !== attached) {
-            suppressRestoreRef.current = true
-            splitStore.close()
+            // 插件自身发起的切换（新建/发送到会话）不关项目——用户要继续在项目里跟新对话沟通
+            const pluginSwitch = pluginOpenedSessionsRef.current.has(current)
+            pluginOpenedSessionsRef.current.delete(current)
+            if (!pluginSwitch) {
+              suppressRestoreRef.current = true
+              splitStore.close()
+            }
           }
         }
       }

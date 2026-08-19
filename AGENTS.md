@@ -36,6 +36,10 @@ node --check lib/index.js
 - **项目×对话联动**：打开项目记录「打开前会话」（projectAttachRef.sessionId）；项目打开期间切到
   非绑定会话 = 自动关项目（suppressRestoreRef 跳过回切）；✕/反选关项目 = 回切「打开前会话」。
   未绑定项目的归属会话 = 打开前会话。
+  **例外**：插件自身发起的会话切换（新建对话 sessions.open(新会话)、发送到会话）不得触发
+  自动关项目——createCustomSession/sendCustomToSession 用 markPluginSessionOpen 豁免
+  （pluginOpenedSessionsRef），用户要继续在项目里跟新对话沟通；同时 CustomPane 在发送成功后
+  调用 autoBind：项目未绑定则自动绑定到新建/选中的会话。
 - **项目文件夹**：projects.v1.folders = { 项目id → 绝对路径 }；新建项目强制填写（父目录必填，
   文件夹名留空 = 用项目名），保存时走 /api/worktable/mkdir 建目录；绑定面板可改。自定义窗口
   新建会话（未选分组时）用 sessions.create({cwd: 项目文件夹})，提示词携带文件夹与「所有产出

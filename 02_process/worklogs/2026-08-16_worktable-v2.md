@@ -878,6 +878,20 @@
 - 备注：纯客户端改动，F5 即生效；无头环境 pickDirectory 不弹真实对话框（挂起），真实 GUI 中
   由用户手势触发原生 Windows 文件夹选择窗。
 
+## 补记（修复：新建对话后项目被误关 + 未自动绑定）
+
+- 用户反馈：自定义窗「新建对话」发送后，项目界面自动关闭跳到新对话；且项目未自动绑定新对话
+  （项目当时无绑定）——两处都不对：用户要继续在项目里跟新对话沟通，且按规则应自动绑定。
+- 根因：createCustomSession 里 sessions.open(新会话) 触发「项目打开期间切到非归属会话 →
+  自动关项目」联动；项目一关，CustomPane 的 autoBind 拿不到 splitStore.spec.id → 绑定失败。
+- 修复：pluginOpenedSessionsRef + markPluginSessionOpen——插件自身发起的会话切换（新建/发送）
+  在联动检测中被消费豁免，不关项目；autoBind 随即可正常执行（项目仍打开）。
+- 验证（probe-batch8.cjs，真实发送一条消息后归档）：projectStillOpen=true ✓、
+  binding=新会话且 boundToNew=true ✓、完成页提示「已自动把这个项目绑定到这个对话…」✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 ## 补记（提示词零泄漏硬约束）
 
 - 用户提醒：新建对话的分组下拉里出现的个人分组（Projects / DeepseekHarness 等）绝不能写进
