@@ -977,6 +977,19 @@
 - 备注：模板路由为服务端改动，需重启 dsh web 后生效（重启后浏览器可直开
   /api/worktable/template/dshell.html 预览模板）。
 
+## 补记（绑定圆点新增「工作中」状态：蓝色交替闪烁）
+
+- 用户要求：绑定对话正在处理任务时（DSH 原生转圈标记同款场景），双圆点蓝色发光、两个点
+  交替亮灭。
+- 实现：bindNotifyMap 增 'busy'（byId[sid].running === true，优先级 busy>done>need，无 ack）；
+  卡片 data-bound=busy；CSS 蓝色 #4f8ef7 + drop-shadow 发光 + dsh-wt-busyA/B 关键帧（1s
+  ease-in-out，两圆相位差半周期交替亮灭）；hover 气泡追加「对话正在处理任务…」。
+- 验证（probe-busy.cjs，桩注入 running）：busyAttr=busy、色 rgb(79,142,247)、beforeAnim=
+  dsh-wt-busyA/afterAnim=dsh-wt-busyB、glow/fill 齐备、tip 含「处理任务」✓；running=false+
+  completed=true → 切回 done 绿 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

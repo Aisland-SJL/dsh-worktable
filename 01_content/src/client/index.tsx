@@ -1043,12 +1043,16 @@ function buildCustomLayoutPrompt(req: string): string {
   }, [])
 
   /** 项目 → 提醒态：绑定会话 completed=done / pendingInteraction=need（ack 过则不亮） */
-  const bindNotifyMap: Record<string, 'done' | 'need'> = useMemo(() => {
-    const map: Record<string, 'done' | 'need'> = {}
+  const bindNotifyMap: Record<string, 'done' | 'need' | 'busy'> = useMemo(() => {
+    const map: Record<string, 'done' | 'need' | 'busy'> = {}
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
     const ack = loadNotifyAck()
     for (const [pid, sid] of Object.entries(projects.bindings)) {
-      const state = sessionNotifyState(byId[sid])
+      const e = byId[sid]
+      if (!e) continue
+      // 优先级：工作中（蓝色交替闪烁）> 完成（绿）> 待决（黄）
+      if (e.running === true) { map[pid] = 'busy'; continue }
+      const state = sessionNotifyState(e)
       if (state && ack[sid] !== state) map[pid] = state
     }
     return map
@@ -1361,7 +1365,7 @@ function buildCustomLayoutPrompt(req: string): string {
           const arrow = kids.find((k: any) => k.tagName === 'SPAN' && String((k as HTMLElement).textContent ?? '').trim() === '›')
           if (arrow) (arrow as HTMLElement).classList.add('dsh-wt_resArrow')
           const tip = bound
-            ? t('bind.tipBound', { name: boundSessionTitle(bound) }) + (bindNotifyMap[id] === 'done' ? t('bind.tipDone') : bindNotifyMap[id] === 'need' ? t('bind.tipNeed') : '')
+            ? t('bind.tipBound', { name: boundSessionTitle(bound) }) + (bindNotifyMap[id] === 'busy' ? t('bind.tipBusy') : bindNotifyMap[id] === 'done' ? t('bind.tipDone') : bindNotifyMap[id] === 'need' ? t('bind.tipNeed') : '')
             : t('bind.tipUnbound')
           bindBtn.setAttribute('data-tip', tip)
           bindBtn.setAttribute('aria-label', tip)
@@ -1939,7 +1943,7 @@ function buildCustomLayoutPrompt(req: string): string {
               tabIndex={0}
               data-bound={bindNotifyMap[l.id] ?? (projects.bindings[l.id] ? 'true' : 'false')}
               data-tip={projects.bindings[l.id]
-                ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) + (bindNotifyMap[l.id] === 'done' ? t('bind.tipDone') : bindNotifyMap[l.id] === 'need' ? t('bind.tipNeed') : '')
+                ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) + (bindNotifyMap[l.id] === 'busy' ? t('bind.tipBusy') : bindNotifyMap[l.id] === 'done' ? t('bind.tipDone') : bindNotifyMap[l.id] === 'need' ? t('bind.tipNeed') : '')
                 : t('bind.tipUnbound')}
               aria-label={projects.bindings[l.id] ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) : t('bind.tipUnbound')}
               onClick={(e) => { e.stopPropagation(); openBindPick(l.id, e.currentTarget as HTMLElement) }}
