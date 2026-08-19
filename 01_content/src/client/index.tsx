@@ -856,7 +856,8 @@ function bindInfoOf(groups: { title: string; sessions: { id: string; title: stri
   return { folder: '', title: sid }
 }
 
-/** 自定义布局提示词模板（复制到剪贴板，可发给任意 dsh 会话让 agent 实现） */
+/** 自定义布局提示词模板（复制到剪贴板，可发给任意 dsh 会话让 agent 实现）。
+ *  零泄漏硬约束：禁止写入用户的个人工作区分组名/项目名/私人路径——本提示词会被发给别人的 DSH。 */
 function buildCustomLayoutPrompt(req: string): string {
   return [
     '【为 dsh-worktable（工作台）插件增加一个新的布局预设】',

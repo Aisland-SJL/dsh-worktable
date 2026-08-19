@@ -878,6 +878,17 @@
 - 备注：纯客户端改动，F5 即生效；无头环境 pickDirectory 不弹真实对话框（挂起），真实 GUI 中
   由用户手势触发原生 Windows 文件夹选择窗。
 
+## 补记（提示词零泄漏硬约束）
+
+- 用户提醒：新建对话的分组下拉里出现的个人分组（Projects / DeepseekHarness 等）绝不能写进
+  对外生成的提示词（尤其「＋自定义」剪贴板提示词——会发给别人的 DSH）。
+- 核查：buildCustomLayoutPrompt 只含插件通用知识（预设列表/字段/构建方式，无任何个人路径与
+  分组名）✓；buildWindowTaskText 含项目名/窗口N/项目文件夹（仅发用户自己的会话）✓；分组
+  下拉选择只用于 sessions.create 的 workspaceId，不进任何文本 ✓。
+- 固化：AGENTS.md「提示词零泄漏（硬约束）」+ PRD §13 条目 + buildCustomLayoutPrompt 代码注释。
+- 备注：本次无行为改动，仅规则固化与文档；重建后提交。
+
+
 
 
 ## 补记（箭头再上移 0.5px）
