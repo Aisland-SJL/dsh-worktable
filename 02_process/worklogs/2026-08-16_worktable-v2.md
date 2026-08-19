@@ -914,6 +914,20 @@
   ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（未分组会话入列表 + 新建面板文件夹行左对齐）
+
+- 用户反馈：① 新建布局面板「项目文件夹」行左侧有空隙、地址栏太短；② 绑定对话与发送到会话
+  的列表里都没有「未分组」的对话。
+- 处理：① 文件夹行标签去掉 86px 右对齐固定宽（width:auto/text-align:left，与名称输入框左缘
+  对齐），地址显示条 flex:1 拉长，面板 320 → 360 宽；② fetchSessionGroups 增「未分组」组——
+  收集所有工作区已归属会话后，把 snap.ids 中不属于任何工作区（且非 archived/子代理）的会话
+  归入「📁 未分组」组，排在列表最前。绑定弹窗与发送到会话共用该函数，一处修复两处生效。
+- 验证（probe-batch9.cjs）：期望未分组 5 个 → 组标题 [📁 未分组, 📁 Projects, 📁 DeepseekHarness]、
+  列表 19 项（14+5）✓；文件夹行 text-align=left、标签左缘 304 ≈ 行左缘 302、与名称输入框对齐 ✓；
+  functional-diag 全 20 STEP（groupHeaders 3 / itemCount 19）ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

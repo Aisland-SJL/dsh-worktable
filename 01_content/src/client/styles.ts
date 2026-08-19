@@ -226,10 +226,10 @@ export const css = [
   '.dsh-wt_customPathInput{flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none}',
   '.dsh-wt_customPathInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   // 新建项目强制文件夹：两行（父目录/名称）
-  '.dsh-wt_addFolderRow{display:flex;align-items:center;gap:8px;margin-top:6px}',
+  '.dsh-wt_addFolderRow{display:flex;align-items:center;gap:8px;margin-top:6px;padding:0 2px}',
   '.dsh-wt_addFolderPath{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-primary,#e6e8eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_addFolderPathNone{color:var(--dsw-alias-label-tertiary,#6b7280);border-style:dashed}',
-  '.dsh-wt_addFolderRow .dsh-wt_customLabel{width:86px;text-align:right}',
+  '.dsh-wt_addFolderRow .dsh-wt_customLabel{flex:none;width:auto;text-align:left}',
   // 绑定弹窗内的项目文件夹区
   '.dsh-wt_bindFolderBox{margin-top:8px;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px}',
   '.dsh-wt_bindFolderRow{display:flex;align-items:center;justify-content:space-between}',

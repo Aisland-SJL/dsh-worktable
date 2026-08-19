@@ -325,22 +325,33 @@ async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions
     } catch {}
     const titleOf = (sid: string) => byId[sid]?.title ?? byId[sid]?.displayTitle ?? sid
     const mk = (sid: string) => ({ id: sid, title: titleOf(sid), isCurrent: sid === current })
-    // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组
+    // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组；
+    // 不属于任何工作区的会话收进「未分组」组（绑定弹窗/发送到会话都要能看到它们）
     try {
       const r = await fetch('/api/worktable/workspaces')
       const d = await r.json()
       const order: string[] = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : []
       const archived: string[] = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : []
       const table = d?.tables?.workspaces ?? {}
+      const accounted = new Set<string>()
       const groups = order
-        .map((wid: string) => ({
-          title: (table[wid]?.title ?? wid) as string,
-          sessions: ((table[wid]?.sessionIds ?? []) as string[])
-            .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
-            .map(mk),
-        }))
+        .map((wid: string) => {
+          const sessIds = ((table[wid]?.sessionIds ?? []) as string[])
+          sessIds.forEach((sid) => accounted.add(sid))
+          return {
+            title: (table[wid]?.title ?? wid) as string,
+            sessions: sessIds
+              .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
+              .map(mk),
+          }
+        })
         .filter((g) => g.sessions.length > 0)
-      if (groups.length > 0) return { groups, current }
+      const allIds: string[] = Array.isArray(snap?.ids) ? snap.ids : []
+      const ungrouped = allIds.filter((sid) => !accounted.has(sid) && !archived.includes(sid) && !subKids.has(sid))
+      const withUngrouped = ungrouped.length > 0
+        ? [{ title: '未分组', sessions: ungrouped.map(mk) }, ...groups]
+        : groups
+      if (withUngrouped.length > 0) return { groups: withUngrouped, current }
     } catch {}
     // 回退：平铺（排除子代理）
     const ids: string[] = Array.isArray(snap?.ids) ? snap.ids : []
@@ -1534,7 +1545,7 @@ function buildCustomLayoutPrompt(req: string): string {
 
       {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => setAddOpen(false)} />}
       {addOpen && (
-        <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 320, zIndex: 80 }}>
+        <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 360, zIndex: 80 }}>
           <span className="dsh-wt_menuLabel">{t('add.chooseLayout')}</span>
           <div className="dsh-wt_presets">
             {PRESET_DEFS.map((def) => (
