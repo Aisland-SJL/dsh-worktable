@@ -33,6 +33,15 @@ node --check lib/index.js
   聊天窗恒在右侧；缩略图在 presetThumb() 加分支。
 - **对话绑定**：projects.v1.bindings = { 项目id → 会话id }；打开项目时引擎自动
   sessions.open(绑定会话)（openSplit / DOM 桥两处入口）；未绑定/解绑 = 不切换。
+- **项目×对话联动**：打开项目记录「打开前会话」（projectAttachRef.sessionId）；项目打开期间切到
+  非绑定会话 = 自动关项目（suppressRestoreRef 跳过回切）；✕/反选关项目 = 回切「打开前会话」。
+  未绑定项目的归属会话 = 打开前会话。
+- **项目文件夹**：projects.v1.folders = { 项目id → 绝对路径 }；新建项目强制填写（父目录必填，
+  文件夹名留空 = 用项目名），保存时走 /api/worktable/mkdir 建目录；绑定面板可改。自定义窗口
+  新建会话（未选分组时）用 sessions.create({cwd: 项目文件夹})，提示词携带文件夹与「所有产出
+  放进该文件夹」指令——用户要求项目产出文件不得落到默认位置。
+- **窗口任务提示词**：buildWindowTaskText 统一组装（窗口身份「项目+窗口N」+ 项目文件夹 +
+  插件知识包）；知识包注明「不要重新侦察插件源码」，改提示词时保持这个原则。
 
 ## 安装 / 重启
 

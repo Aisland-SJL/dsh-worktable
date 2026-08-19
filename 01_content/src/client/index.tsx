@@ -53,6 +53,8 @@ type ProjectsState = {
   layouts: LayoutSpec[]
   /** 项目 → 绑定会话：打开该项目时右侧对话窗自动切换到这个会话（空/缺 = 不换）。 */
   bindings: Record<string, string>
+  /** 项目 → 工作文件夹（绝对路径）：该项目所有产出文件都放这里；新建项目时强制填写。 */
+  folders: Record<string, string>
 }
 
 const PERSIST_KEY = 'dsh.worktable.view.v1'
@@ -227,6 +229,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   shortcuts: [],
   layouts: [],
   bindings: {},
+  folders: {},
 }
 
 function loadView(): ViewState {
@@ -272,6 +275,7 @@ function loadProjects(): ProjectsState {
         ? p.layouts.filter((l: any) => l && typeof l.id === 'string' && typeof l.title === 'string' && Array.isArray(l.main))
         : [],
       bindings: p.bindings && typeof p.bindings === 'object' ? p.bindings : {},
+      folders: p.folders && typeof p.folders === 'object' ? p.folders : {},
     }
   } catch {
     return { ...DEFAULT_PROJECTS }
@@ -405,23 +409,44 @@ async function promptIntoSession(sessionId: string, text: string): Promise<void>
 /** 新建会话的分组选择：未分组 / 加入现有分组 / 新建一个分组（父目录 + 名称） */
 export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId: string } | { kind: 'new'; parent: string; name: string }
 
-/** 自定义窗口任务：新建一个专属会话（可选指定分组），注入工作台背景 + 用户需求，并打开该会话 */
-export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup): Promise<string> {
+/** 插件知识包：附在窗口任务提示词里，让接收方跳过对插件源码的重新侦察，直接干活 */
+const KNOWLEDGE_PACK = [
+  '【插件知识包·请直接采用，不要重新侦察插件源码】',
+  '- dsh-worktable 是本机 DeepSeek Harness 的自建容器插件（仓库 E:\\AI_Workspace\\DeepseekHarness\\Projects\\dsh-worktable，插件包根目录 01_content/）。',
+  '- 窗口（内容窗）模型：每个窗 = 一个标签页；未指派时显示选择器（浏览器/动画/资源管理器/终端/✨自定义）；',
+  '  窗内容还可放 iframe 网页与文件预览（.md/.txt/.tsx/.css/.html 等）。',
+  '- 把窗口做成内容的常用方式：① 产出单文件 HTML（放项目文件夹）→ 用户在资源管理器里点击即以整目录静态托管渲染；',
+  '  ② 给一个可直接嵌入的 URL；③ 需要新窗类型时改插件 01_content/src/client/split.tsx 的 BuiltinType 与选择器。',
+  '- 服务端能力：/api/worktable/fs（列目录）、/api/worktable/write（写文件）、/api/worktable/mkdir（建目录）、',
+  '  /api/worktable/git（git 状态）、/api/worktable/site（静态托管）。',
+  '- 改完插件在 01_content 目录执行 npm run build；重启 dsh web 或浏览器 F5 生效。',
+  '- 所有产出文件一律放进本任务标注的项目文件夹，保持用户目录干净。',
+].join('\n')
+
+/** 组装窗口任务提示词（新建/发送两模式共用；导出到 window 供自测校验） */
+function buildWindowTaskText(projectId: string, projectName: string, windowLabel: string, requirement: string, folder: string | null, mode: 'new' | 'send'): string {
+  const win = windowLabel || '一个内容窗'
+  const folderLine = folder
+    ? '项目文件夹：' + folder + '（本项目所有产出文件一律放进这个文件夹；不要写到别的默认位置）。'
+    : '本项目暂未设置专属文件夹：产出文件先向用户确认存放位置，不要随便写。'
+  const lines = [
+    '【工作台自定义窗口任务】',
+    '以下内容由 dsh-worktable（工作台）插件' + (mode === 'new' ? '自动发送' : '发送') + '：用户想把「' + projectName + '」项目中的「' + win + '」窗口打造成他想要的内容。',
+    '1. dsh-worktable 是侧边栏底部的自建「工作台」插件（官方文档没有它的说明，不了解之处可直接向用户提问）。',
+    '2. 用户需求：' + requirement,
+    '3. ' + folderLine,
+    '4. 请帮助完成「' + win + '」窗口的自定义设计：优先直接产出可放进窗口的内容（页面/HTML/方案），说明放进窗口的方式；',
+    '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
+    KNOWLEDGE_PACK,
+  ]
+  return lines.join('\n')
+}
+
+/** 自定义窗口任务：新建一个专属会话（可选指定分组/项目文件夹），注入窗口身份 + 知识包，并打开该会话 */
+export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup, windowLabel = '', folder: string | null = null): Promise<string> {
   const b = sessionBridge
   if (!b || typeof b.sessions?.create !== 'function') throw new Error('sessions unavailable')
-  const text = [
-    '【工作台自定义窗口任务】',
-    '以下背景由 dsh-worktable（工作台）插件自动附加，用于帮助你理解任务：',
-    '1. dsh-worktable 是什么：它是本机 DeepSeek Harness 的自建容器插件——侧边栏底部的「工作台」区块管理多个项目；',
-    '   每个项目打开后是一个平铺工作区（若干内容窗 + 对话窗）；内容窗可放浏览器、资源管理器、终端、',
-    '   文件预览（MD/TXT/代码/本地网页）等，支持 6 种布局预设、变更视图、窗内容以标签页组织、状态持久化。',
-    '   它是用户自建的工具，官方文档中没有它的说明；不了解之处可直接向用户提问。',
-    '2. 本对话的用途：专门负责「' + projectName + '」项目中一个窗口（内容窗）的自定义设计——',
-    '   用户希望把这个窗口做成自定义内容。',
-    '3. 用户需求：' + requirement,
-    '4. 请基于以上背景，帮助用户完成这个窗口的自定义设计（例如产出可直接放入窗口的内容、页面或实现方案）；',
-    '   该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
-  ].join('\n')
+  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'new')
   // 分组解析：existing → 直接带 workspaceId 建会话；new → 先建目录并注册为工作区
   let workspaceId: string | null = null
   const g = group ?? { kind: 'none' as const }
@@ -445,26 +470,33 @@ export async function createCustomSession(projectId: string, projectName: string
     workspaceId = view?.workspaceId ?? view?.id ?? null
     if (!workspaceId) throw new Error('workspace create failed')
   }
-  const sessionId = await b.sessions.create(workspaceId ? { workspaceId } : {})
+  // 会话工作目录优先级：显式分组（workspaceId）> 项目文件夹（cwd）> 默认
+  let createOpts: any = {}
+  if (workspaceId) createOpts = { workspaceId }
+  else if (folder) createOpts = { cwd: folder }
+  const sessionId = await b.sessions.create(createOpts)
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
   return sessionId
 }
 
-/** 把自定义需求直接发到用户选定的已有会话（默认当前会话） */
-export async function sendCustomToSession(sessionId: string, projectName: string, requirement: string): Promise<void> {
+/** 把自定义需求直接发到用户选定的已有会话（默认当前会话），带窗口身份 + 知识包 */
+export async function sendCustomToSession(sessionId: string, projectId: string, projectName: string, requirement: string, windowLabel = '', folder: string | null = null): Promise<void> {
   const b = sessionBridge
   if (!b) throw new Error('bridge unavailable')
-  const text = [
-    '【工作台自定义窗口任务】',
-    '以下内容由 dsh-worktable（工作台）插件发送：用户正在自定义「' + projectName + '」项目中的一个窗口。',
-    '1. dsh-worktable 是侧边栏底部的自建「工作台」插件（官方文档没有它的说明，不了解之处可向用户提问）；',
-    '2. 用户需求：' + requirement,
-    '3. 请帮助完成该窗口的自定义设计（内容/页面/实现方案），该窗口位于「' + projectName + '」项目内。',
-  ].join('\n')
+  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'send')
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
 }
+
+// ── 项目 × 对话联动（模块级）──
+/** 打开项目前所处的会话（关项目时回切）；attached = 该项目绑定的会话（无绑定 = 打开前会话） */
+const projectAttachRef: { sessionId: string | null; attached: string | null } = { sessionId: null, attached: null }
+/** 因「切换会话」而自动关项目时置位，跳过回切 */
+const suppressRestoreRef: { current: boolean } = { current: false }
+/** 项目绑定表的最新快照（组件每渲染同步，供模块级联动逻辑读取） */
+const projectBindingsRef: { current: Record<string, string> } = { current: {} }
+let lastSessionScopeId = ''
 
 /** 会话作用域快照（模块级；apply 里订阅 ctx.sessions.list 写入，组件与引擎只读） */
 const sessionScopeStore: {
@@ -488,6 +520,19 @@ function syncSessionScope(list: any) {
       jobs: (snap?.jobsBySession?.[current] ?? []) as any[],
       subagents,
     }
+    // 项目×对话联动：项目打开期间切到「非该项目绑定」的会话 → 自动关项目（保留用户新选的会话）
+    try {
+      if (current !== lastSessionScopeId) {
+        lastSessionScopeId = current
+        if (current && splitStore.active && splitStore.spec) {
+          const attached = projectAttachRef.attached
+          if (attached && current !== attached) {
+            suppressRestoreRef.current = true
+            splitStore.close()
+          }
+        }
+      }
+    } catch { /* 联动失败不影响主流程 */ }
   } catch {
     sessionScopeStore.snapshot = { sessionId: '', cwd: '', jobs: [], subagents: [] }
   }
@@ -541,11 +586,20 @@ function WorktableSection(props: any) {
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
+  // 新建项目强制工作文件夹：父目录（必填）+ 名称（留空 = 用项目名）
+  const [wsFolderParent, setWsFolderParent] = useState('')
+  const [wsFolderName, setWsFolderName] = useState('')
+  const [wsFolderError, setWsFolderError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组 */
   const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
   const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
+  /** 绑定弹窗内的项目文件夹编辑区 */
+  const [bindFolderEdit, setBindFolderEdit] = useState(false)
+  const [bindFolderParent, setBindFolderParent] = useState('')
+  const [bindFolderName, setBindFolderName] = useState('')
+  const [bindFolderError, setBindFolderError] = useState(false)
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
   const [customLayoutText, setCustomLayoutText] = useState('')
@@ -595,8 +649,9 @@ function WorktableSection(props: any) {
         },
         currentProjectId: () => (splitStore.active && splitStore.spec ? splitStore.spec.id : null),
         getSessions: () => fetchSessionGroups(),
-        sendToSession: (sessionId, projectName, requirement) => sendCustomToSession(sessionId, projectName, requirement),
-        submit: (projectId, projectName, requirement, group) => createCustomSession(projectId, projectName, requirement, group),
+        getProjectFolder: (id: string) => projectsRef.current.projects.folders[id] ?? null,
+        sendToSession: (sessionId, projectId, projectName, requirement, windowLabel) => sendCustomToSession(sessionId, projectId, projectName, requirement, windowLabel, projectsRef.current.projects.folders[projectId] ?? null),
+        submit: (projectId, projectName, requirement, group, windowLabel) => createCustomSession(projectId, projectName, requirement, group, windowLabel, projectsRef.current.projects.folders[projectId] ?? null),
         // 分组（宿主工作区）数据源：读 ctx.workspaces 快照，供新建对话选分组
         getWorkspaces: () => {
           try {
@@ -652,9 +707,18 @@ function WorktableSection(props: any) {
     return () => { registryStore.listeners.delete(sync) }
   }, [])
 
-  // 分栏引擎激活态 → activeSplitId（卡片据此显示选中效果）
+  // 分栏引擎激活态 → activeSplitId（卡片据此显示选中效果）；关闭项目 → 回切打开前的会话
   useEffect(() => splitStore.subscribe(() => {
     setActiveSplitId(splitStore.active && splitStore.spec ? splitStore.spec.id : null)
+    if (!splitStore.active) {
+      if (!suppressRestoreRef.current) {
+        const prev = projectAttachRef.sessionId
+        if (prev) { try { sessionBridge?.sessions?.open?.(prev) } catch {} }
+      }
+      projectAttachRef.sessionId = null
+      projectAttachRef.attached = null
+    }
+    suppressRestoreRef.current = false
   }), [])
 
   // 引擎内 spec 变更（窗内容/聊天位置/窗位互换）→ 回写持久化：
@@ -830,8 +894,15 @@ function buildCustomLayoutPrompt(req: string): string {
   const openSplit = useCallback((spec: LayoutSpec) => {
     engineIdsRef.current.add(spec.id)
     splitStore.open(projects.views[spec.id] ?? spec)
-    const bound = projectsRef.current.projects.bindings[spec.id]
-    if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+    if (splitStore.active && splitStore.spec?.id === spec.id) {
+      // 记录打开前会话（关项目时回切）与该项目「归属会话」（切到别的会话 = 自动关项目）
+      let prev: string | null = null
+      try { prev = sessionBridge?.list?.getSnapshot?.()?.current ?? null } catch {}
+      projectAttachRef.sessionId = prev
+      projectAttachRef.attached = projectsRef.current.projects.bindings[spec.id] ?? prev
+      const bound = projectsRef.current.projects.bindings[spec.id]
+      if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+    }
   }, [projects.views])
 
   /** 打开对话绑定弹窗：抓取会话分组 + 锚点定位 */
@@ -841,8 +912,27 @@ function buildCustomLayoutPrompt(req: string): string {
     const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
     setBindPick({ id, x, y })
     setBindGroups([])
+    setBindFolderEdit(false)
+    setBindFolderError(false)
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
   }, [])
+
+  /** 保存绑定弹窗里的项目文件夹（建目录 + 持久化） */
+  const saveBindFolder = async () => {
+    if (!bindPick) return
+    const parent = bindFolderParent.trim()
+    const name = bindFolderName.trim()
+    if (!parent || !name) { setBindFolderError(true); return }
+    const folderPath = parent.replace(/[\\/]+$/, '') + '\\' + name.replace(/[\\/]+/g, '')
+    try {
+      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
+      const d = await r.json()
+      if (!r.ok || !d?.ok) { setBindFolderError(true); return }
+    } catch { setBindFolderError(true); return }
+    persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: folderPath } }))
+    setBindFolderEdit(false)
+    setBindFolderError(false)
+  }
 
   /** 绑定 / 解绑会话 */
   const setProjectBinding = (id: string, sessionId: string | null) => {
@@ -891,6 +981,7 @@ function buildCustomLayoutPrompt(req: string): string {
     [registeredIds, projects.removed],
   )
   projectsRef.current = { projects, metas, aliveRegisteredIds }
+  projectBindingsRef.current = projects.bindings
   const allIds = useMemo(() => [...aliveRegisteredIds, ...layoutIds], [aliveRegisteredIds, layoutIds])
   const effectiveOrder = useMemo(() => {
     const known = new Set(allIds)
@@ -1023,13 +1114,22 @@ function buildCustomLayoutPrompt(req: string): string {
     persistProjects((prev) => ({ ...prev, shortcuts: prev.shortcuts.filter((s) => s.id !== id) }))
   }
 
-  // ── 布局（新建工作区） ──
-  const saveLayout = () => {
+  // ── 布局（新建工作区） ── 强制项目文件夹：父目录必填，文件夹名留空 = 用项目名；保存时建目录
+  const saveLayout = async () => {
     const name = wsName.trim()
     if (!name) { setWsError(true); return }
+    const parent = wsFolderParent.trim()
+    if (!parent) { setWsFolderError(true); return }
+    const folderName = (wsFolderName.trim() || name).replace(/[\\/]+/g, '')
+    const folderPath = parent.replace(/[\\/]+$/, '') + '\\' + folderName
+    try {
+      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
+      const d = await r.json()
+      if (!r.ok || !d?.ok) { setWsFolderError(true); return }
+    } catch { setWsFolderError(true); return }
     const layout = buildLayout(wsPreset, name)
-    persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout] }))
-    setWsName(''); setWsError(false)
+    persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout], folders: { ...prev.folders, [layout.id]: folderPath } }))
+    setWsName(''); setWsFolderParent(''); setWsFolderName(''); setWsError(false); setWsFolderError(false)
     setAddOpen(false)
     openSplit(layout)
     reportUsed(layout.id)
@@ -1396,7 +1496,14 @@ function buildCustomLayoutPrompt(req: string): string {
             className="dsh-wt_iconBtn"
             aria-label={t('menu.add')}
             title={t('menu.add')}
-            onClick={() => { setAddOpen((v) => !v); setViewOptionsOpen(false) }}
+            onClick={() => {
+              setAddOpen((v) => !v); setViewOptionsOpen(false)
+              // 父目录默认 = 当前会话工作目录（不落 C 盘默认位置）
+              if (!wsFolderParent) {
+                const cwd = sessionScopeStore.snapshot?.cwd ?? ''
+                if (cwd) setWsFolderParent(cwd)
+              }
+            }}
           >{ICON_ADD}</button>
         </div>
       </div>
@@ -1441,9 +1548,20 @@ function buildCustomLayoutPrompt(req: string): string {
           <div className="dsh-wt_addForm">
             <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
               onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
+            <div className="dsh-wt_addFolderRow">
+              <span className="dsh-wt_customLabel">{t('add.folderParent')}</span>
+              <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderParentPh')} value={wsFolderParent}
+                onChange={(e) => { setWsFolderParent(e.target.value); setWsFolderError(false) }} />
+            </div>
+            <div className="dsh-wt_addFolderRow">
+              <span className="dsh-wt_customLabel">{t('add.folderName')}</span>
+              <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderNamePh')} value={wsFolderName}
+                onChange={(e) => { setWsFolderName(e.target.value); setWsFolderError(false) }} />
+            </div>
             <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
           </div>
           {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
+          {wsFolderError && <p className="dsh-wt_addError">{t('add.folderRequired')}</p>}
         </div>
       )}
 
@@ -1606,6 +1724,37 @@ function buildCustomLayoutPrompt(req: string): string {
       {bindPick && (
         <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
           <span className="dsh-wt_menuLabel">{t('bind.title')}</span>
+          {/* 项目文件夹（工作目录）：所有产出文件放这里，可随时更改 */}
+          <div className="dsh-wt_bindFolderBox">
+            <div className="dsh-wt_bindFolderRow">
+              <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
+              <button
+                type="button"
+                className="dsh-wt_bindFolderChange"
+                onClick={() => {
+                  const cur = projects.folders[bindPick.id] ?? ''
+                  setBindFolderParent(cur.replace(/[\\/][^\\/]*$/, ''))
+                  setBindFolderName(cur.split(/[\\/]/).pop() ?? '')
+                  setBindFolderEdit((v) => !v)
+                  setBindFolderError(false)
+                }}
+              >{t('bind.folderChange')}</button>
+            </div>
+            {bindFolderEdit ? (
+              <div className="dsh-wt_bindFolderForm">
+                <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderParentPh')} value={bindFolderParent}
+                  onChange={(e) => { setBindFolderParent(e.target.value); setBindFolderError(false) }} />
+                <input className="dsh-wt_customPathInput" type="text" placeholder={t('add.folderNamePh')} value={bindFolderName}
+                  onChange={(e) => { setBindFolderName(e.target.value); setBindFolderError(false) }} />
+                <button type="button" className="dsh-wt_customLayoutBtn" onClick={saveBindFolder}>{t('add.layoutSave')}</button>
+                {bindFolderError && <p className="dsh-wt_addError">{t('add.folderRequired')}</p>}
+              </div>
+            ) : (
+              <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
+                {projects.folders[bindPick.id] ?? t('bind.folderNone')}
+              </div>
+            )}
+          </div>
           {(() => {
             const sid = projects.bindings[bindPick.id]
             if (!sid) {
@@ -1764,7 +1913,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
-  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces } catch {}
+  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText } catch {}
 
 
   ctx.effect(() => {

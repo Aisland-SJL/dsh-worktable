@@ -1323,7 +1323,9 @@ function SelectPop(props: {
 }
 
 /** 自定义窗口：居中对话框。两种模式：新建专属会话 / 发送到已有会话（默认当前会话）。 */
-function CustomPane() {
+function CustomPane(props: { paneTitle?: string }) {
+  const paneTitle = props.paneTitle ?? ''
+  try { (window as any).__dshLastCustomPaneTitle = paneTitle } catch {}
   const custom = splitEnv?.custom
   const [requirement, setRequirement] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
@@ -1372,11 +1374,11 @@ function CustomPane() {
           if (!newGroupParent.trim() || !newGroupName.trim()) { setFail(T('custom.groupNeedPath')); return }
           group = { kind: 'new', parent: newGroupParent.trim(), name: newGroupName.trim() }
         }
-        const sid = await custom.submit(projectId, pname, text, group)
+        const sid = await custom.submit(projectId, pname, text, group, paneTitle)
         setBindNote((custom.autoBind?.(sid) ?? 'none') as any)
       } else {
         if (!sessionId) return
-        await custom.sendToSession(sessionId, pname, text)
+        await custom.sendToSession(sessionId, projectId, pname, text, paneTitle)
         setBindNote((custom.autoBind?.(sessionId) ?? 'none') as any)
       }
       setDone(true)
@@ -1497,7 +1499,7 @@ function CustomPane() {
 }
 
 /** 单个标签页的内容渲染 */
-function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
+function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTitle?: string }) {
   const content = props.tab.content
   if (content.kind === 'iframe') {
     return <iframe className="dsh-wt_paneFrame" src={content.url} title={props.tab.title} />
@@ -1511,7 +1513,7 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number }) {
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
   if (content.type === 'terminal') return <TerminalPane />
-  if (content.type === 'custom') return <CustomPane />
+  if (content.type === 'custom') return <CustomPane paneTitle={props.paneTitle ?? ''} />
   return (
     <div className="dsh-wt_paneWip">
       <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>
@@ -1551,7 +1553,7 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
           </span>
         ))}
       </div>
-      <PaneTabBody tab={tabs[active]} row={row} index={index} />
+      <PaneTabBody tab={tabs[active]} row={row} index={index} paneTitle={pane.title} />
     </>
   )
 }

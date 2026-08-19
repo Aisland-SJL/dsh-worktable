@@ -844,6 +844,26 @@
   卡片中心 1.5px（墨迹视觉居中）；functional-diag ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；代理已恢复，积压提交已全部推送。
 
+## 补记（项目文件夹强制绑定 + 项目×对话联动 + 窗口提示词升级）
+
+- 用户要求三项：① 所有项目绑定工作文件夹——新建时强制填写（父目录+名称，保存建目录），
+  绑定面板里「绑定对话」上方可改；项目产出文件尽可能都进该文件夹；② 项目×对话联动——项目
+  打开期间切到其他对话 = 自动关项目（保留新对话）；✕/反选关项目 = 自动回切「打开前会话」；
+  ③ 自定义窗口提示词带窗口身份（项目+窗口N）+ 更多注入（插件知识包），解决接收会话
+  从头侦察插件源码导致的响应过慢。
+- 实现：① projects.v1.folders（项目id→绝对路径）；saveLayout 强制父目录 + mkdir 建目录；
+  绑定弹窗加「📁 项目文件夹」区（显示/更改/保存）；新建对话未选分组时 sessions.create({cwd:
+  项目文件夹})；② 模块级 projectAttachRef/suppressRestoreRef + syncSessionScope 检测「切到非
+  归属会话 → splitStore.close()」+ splitStore 订阅「关闭 → sessions.open(打开前会话)」；
+  ③ buildWindowTaskText 统一组装（窗口身份+文件夹+KNOWLEDGE_PACK「不要重新侦察插件源码」），
+  两模式共用；CustomPane 经 PaneBody 传入窗格标题（窗口N）。
+- 验证（probe-batch6.cjs）：提示词含窗口2/项目/文件夹/知识包 ✓；新建面板 3 输入、folders 持久化
+  + 目录真实创建 ✓；绑定面板文件夹区（未设置态/表单/保存）✓；联动：切会话→projectAutoClosed+
+  keptNewSession ✓、st.close→restoredToPrev ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；测试目录已清理。用户贴的接收会话记录（glob 超时/反复 Read
+  插件源码）即知识包要解决的痛点。
+
+
 ## 补记（箭头再上移 0.5px）
 
 - 用户反馈：入驻卡箭头还是有点偏下，再往上一点点。

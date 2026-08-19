@@ -225,6 +225,18 @@ export const css = [
   // 新建分组：父目录 / 名称单行输入
   '.dsh-wt_customPathInput{flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none}',
   '.dsh-wt_customPathInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  // 新建项目强制文件夹：两行（父目录/名称）
+  '.dsh-wt_addFolderRow{display:flex;align-items:center;gap:8px;margin-top:6px}',
+  '.dsh-wt_addFolderRow .dsh-wt_customLabel{width:86px;text-align:right}',
+  // 绑定弹窗内的项目文件夹区
+  '.dsh-wt_bindFolderBox{margin-top:8px;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px}',
+  '.dsh-wt_bindFolderRow{display:flex;align-items:center;justify-content:space-between}',
+  '.dsh-wt_bindFolderLabel{font-size:12px;line-height:18px;color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_bindFolderChange{flex:none;padding:1px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_bindFolderChange:hover{color:var(--dsw-alias-label-primary,#e6e8eb);border-color:var(--dsw-alias-border-l2,#3a4150)}',
+  '.dsh-wt_bindFolderPath{margin-top:4px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.dsh-wt_bindFolderPathNone{color:var(--dsw-alias-label-tertiary,#6b7280)}',
+  '.dsh-wt_bindFolderForm{display:flex;flex-direction:column;gap:6px;margin-top:6px}',
   // 自定义布局弹窗（＋磁贴）：描述输入 + 复制提示词 + Toast
   '.dsh-wt_customLayoutInput{width:100%;box-sizing:border-box;min-height:110px;margin-top:8px;padding:8px 10px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;outline:none;resize:vertical}',
   '.dsh-wt_customLayoutInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
