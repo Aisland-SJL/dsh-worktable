@@ -927,6 +927,22 @@
   functional-diag 全 20 STEP（groupHeaders 3 / itemCount 19）ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（任务完成/待决提醒镜像到项目卡）
+
+- 用户要求：绑定对话出现原生小绿点（任务完成）/小黄点（需要判断）时，项目卡上的两个圆点
+  同步变绿/变黄并发光；点一下项目恢复常态实心。
+- 实现：syncSessionScope 额外把完整会话快照写入 sessionsSnapshotStore 并通知监听；
+  组件按 bindings × byId.completed/pendingInteraction（含 notifyAck.v1 ack 过滤）算出
+  bindNotifyMap；卡片 data-bound 扩展 done/need 两态（CSS 绿 #3fb950 / 黄 #d29922 + 实心 +
+  drop-shadow 发光）；点开项目（openSplit / DOM 桥）ack 当前状态恢复实心；hover 气泡追加
+  「任务已完成，点击项目查看」「需要你的决定，点击项目处理」。
+- 验证（probe-batch10.cjs，桩注入快照状态）：completed→data-bound=done、色 rgb(63,185,80)、
+  实心、drop-shadow 发光、tip 含「已完成」✓；点项目→ack=done、恢复 data-bound=true ✓；
+  pendingInteraction→need、黄 rgb(210,153,34)、发光、tip 含「决定」✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

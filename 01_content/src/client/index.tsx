@@ -525,6 +525,32 @@ const sessionScopeStore: {
   snapshot: { sessionId: string; cwd: string; jobs: any[]; subagents: any[] } | null
 } = { snapshot: null }
 
+/** 完整会话快照（模块级）：项目卡片的任务完成/待决提醒镜像数据源 */
+const sessionsSnapshotStore: { snapshot: any | null; listeners: Set<() => void> } = { snapshot: null, listeners: new Set() }
+
+/** 提醒确认（ack）持久化：会话 id → 已确认的状态（'done' | 'need'） */
+function loadNotifyAck(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem('dsh.worktable.notifyAck.v1')
+    const p = raw ? JSON.parse(raw) : {}
+    return p && typeof p === 'object' ? p : {}
+  } catch { return {} }
+}
+function saveNotifyAck(sid: string, state: string) {
+  try {
+    const ack = loadNotifyAck()
+    ack[sid] = state
+    localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(ack))
+  } catch {}
+}
+/** 会话状态 → 提醒类型：completed=完成(绿) / pendingInteraction=待决(黄) */
+function sessionNotifyState(entry: any): 'done' | 'need' | null {
+  if (!entry) return null
+  if (entry.completed === true) return 'done'
+  if (entry.pendingInteraction != null) return 'need'
+  return null
+}
+
 function syncSessionScope(list: any) {
   try {
     const snap = list.getSnapshot()
@@ -542,6 +568,11 @@ function syncSessionScope(list: any) {
       jobs: (snap?.jobsBySession?.[current] ?? []) as any[],
       subagents,
     }
+    // 完整快照 + 通知监听（项目卡片提醒镜像）
+    try {
+      sessionsSnapshotStore.snapshot = snap
+      sessionsSnapshotStore.listeners.forEach((l) => { try { l() } catch {} })
+    } catch {}
     // 项目×对话联动：项目打开期间切到「非该项目绑定」的会话 → 自动关项目（保留用户新选的会话）
     try {
       if (current !== lastSessionScopeId) {
@@ -605,6 +636,7 @@ function WorktableSection(props: any) {
   }
 
   const [view, setView] = useState<ViewState>(loadView)
+  const [notifyTick, setNotifyTick] = useState(0)
   const [projects, setProjects] = useState<ProjectsState>(loadProjects)
   const [metas, setMetas] = useState<Record<string, ProjectMeta>>({})
   const [registeredIds, setRegisteredIds] = useState<string[]>(() => [...registryStore.ids])
@@ -925,6 +957,7 @@ function buildCustomLayoutPrompt(req: string): string {
       projectAttachRef.attached = projectsRef.current.projects.bindings[spec.id] ?? prev
       const bound = projectsRef.current.projects.bindings[spec.id]
       if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+      ackProjectNotify(spec.id)
     }
   }, [projects.views])
 
@@ -993,6 +1026,34 @@ function buildCustomLayoutPrompt(req: string): string {
     setCopiedToast(ok ? 'ok' : 'fail')
     if (copyToastTimerRef.current != null) window.clearTimeout(copyToastTimerRef.current)
     copyToastTimerRef.current = window.setTimeout(() => setCopiedToast(null), 6000)
+  }
+
+  // 会话快照变化 → 重渲染（驱动项目卡片的完成/待决提醒镜像）
+  useEffect(() => {
+    const l = () => setNotifyTick((t) => t + 1)
+    sessionsSnapshotStore.listeners.add(l)
+    return () => { sessionsSnapshotStore.listeners.delete(l) }
+  }, [])
+
+  /** 项目 → 提醒态：绑定会话 completed=done / pendingInteraction=need（ack 过则不亮） */
+  const bindNotifyMap: Record<string, 'done' | 'need'> = useMemo(() => {
+    const map: Record<string, 'done' | 'need'> = {}
+    const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
+    const ack = loadNotifyAck()
+    for (const [pid, sid] of Object.entries(projects.bindings)) {
+      const state = sessionNotifyState(byId[sid])
+      if (state && ack[sid] !== state) map[pid] = state
+    }
+    return map
+  }, [projects.bindings, notifyTick])
+
+  /** 点开项目 = 确认提醒：ack 当前会话状态，圆点恢复常态实心 */
+  const ackProjectNotify = (projectId: string) => {
+    const sid = projectsRef.current.projects.bindings[projectId]
+    if (!sid) return
+    const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
+    const state = sessionNotifyState(byId[sid])
+    if (state) saveNotifyAck(sid, state)
   }
 
   // ── 有效排序 ──
@@ -1287,12 +1348,14 @@ function buildCustomLayoutPrompt(req: string): string {
           }
           bindBtn.setAttribute('data-wt-bind', id)
           const bound = projects.bindings[id]
-          bindBtn.setAttribute('data-bound', bound ? 'true' : 'false')
+          bindBtn.setAttribute('data-bound', bindNotifyMap[id] ?? (bound ? 'true' : 'false'))
           // 入驻卡自带箭头（文本 ›）：加统一对齐类，视觉居中（字面框偏下补偿 1px）
           const kids = Array.from(el.children)
           const arrow = kids.find((k: any) => k.tagName === 'SPAN' && String((k as HTMLElement).textContent ?? '').trim() === '›')
           if (arrow) (arrow as HTMLElement).classList.add('dsh-wt_resArrow')
-          const tip = bound ? t('bind.tipBound', { name: boundSessionTitle(bound) }) : t('bind.tipUnbound')
+          const tip = bound
+            ? t('bind.tipBound', { name: boundSessionTitle(bound) }) + (bindNotifyMap[id] === 'done' ? t('bind.tipDone') : bindNotifyMap[id] === 'need' ? t('bind.tipNeed') : '')
+            : t('bind.tipUnbound')
           bindBtn.setAttribute('data-tip', tip)
           bindBtn.setAttribute('aria-label', tip)
           const icon = el.children[0] as HTMLElement | null
@@ -1321,7 +1384,7 @@ function buildCustomLayoutPrompt(req: string): string {
     const mo = new MutationObserver(sync)
     mo.observe(document.body, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [aliveRegisteredIds, projects.iconOverrides, projects.views, activeSplitId, projects.bindings])
+  }, [aliveRegisteredIds, projects.iconOverrides, projects.views, activeSplitId, projects.bindings, bindNotifyMap])
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -1360,6 +1423,7 @@ function buildCustomLayoutPrompt(req: string): string {
       // 无视图覆盖：项目自带打开行为照旧，仅当绑定了会话时切换右侧对话窗
       const bound = projectsRef.current.projects.bindings[pid]
       if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+      ackProjectNotify(pid)
     }
     document.addEventListener('click', onDocClick, true)
     return () => document.removeEventListener('click', onDocClick, true)
@@ -1866,8 +1930,10 @@ function buildCustomLayoutPrompt(req: string): string {
               className={'dsh-wt_bindBtn'}
               role="button"
               tabIndex={0}
-              data-bound={projects.bindings[l.id] ? 'true' : 'false'}
-              data-tip={projects.bindings[l.id] ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) : t('bind.tipUnbound')}
+              data-bound={bindNotifyMap[l.id] ?? (projects.bindings[l.id] ? 'true' : 'false')}
+              data-tip={projects.bindings[l.id]
+                ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) + (bindNotifyMap[l.id] === 'done' ? t('bind.tipDone') : bindNotifyMap[l.id] === 'need' ? t('bind.tipNeed') : '')
+                : t('bind.tipUnbound')}
               aria-label={projects.bindings[l.id] ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[l.id]) }) : t('bind.tipUnbound')}
               onClick={(e) => { e.stopPropagation(); openBindPick(l.id, e.currentTarget as HTMLElement) }}
             ><span className="dsh-wt_bindCircles" aria-hidden /></span>
@@ -1909,7 +1975,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
-  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText } catch {}
+  try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText; (window as any).__dshSyncSessionScope = () => syncSessionScope(sessionBridge?.list) } catch {}
 
 
   ctx.effect(() => {

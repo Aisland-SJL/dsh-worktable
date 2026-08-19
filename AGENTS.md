@@ -51,6 +51,10 @@ node --check lib/index.js
   DeepseekHarness）、其他用户的项目名与私人路径。剪贴板提示词会发给别人的 DSH，必须只含
   插件通用知识；窗口任务提示词只发用户自己的会话，允许携带该项目自己的文件夹路径。
   分组下拉只是会话创建工作区的选择，绝不进入任何提示词文本。
+- **任务完成/待决提醒镜像**：绑定会话在宿主快照 byId 里 completed=true → 项目卡双圆点变
+  绿色发光（data-bound=done）；pendingInteraction != null → 黄色发光（data-bound=need）；
+  点开项目 = ack（notifyAck.v1 按会话存状态）恢复常态实心。数据源 = sessionsSnapshotStore
+  （syncSessionScope 写入完整快照并通知监听者）；跨状态（done↔need）会重新点亮。
 
 ## 安装 / 重启
 
