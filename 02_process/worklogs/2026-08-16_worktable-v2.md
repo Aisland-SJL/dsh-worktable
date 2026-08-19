@@ -844,6 +844,16 @@
   卡片中心 1.5px（墨迹视觉居中）；functional-diag ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；代理已恢复，积压提交已全部推送。
 
+## 补记（箭头再上移 0.5px）
+
+- 用户反馈：入驻卡箭头还是有点偏下，再往上一点点。
+- 处理：.dsh-wt_resArrow 与 .dsh-wt_layoutArrow 的 translateY(-1px) → -1.5px（两处同款保持
+  一致）。
+- 验证（carddom-mini.cjs）：ta/pr 箭头字面中心高于卡片中心 2px（墨迹视觉居中）；functional-diag
+  ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 
