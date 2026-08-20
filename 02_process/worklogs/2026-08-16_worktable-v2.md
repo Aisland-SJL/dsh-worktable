@@ -1202,3 +1202,21 @@
   三阶段全流程与主题切换全 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；face.history 为非公开接口（只读、失败静默回退内存路径），
   AGENTS.md 已注明。
+
+## 补记（控制室第二轮打磨：标签不可关 + 小卡片多留白 + 霓虹描边发光 + 命名纠正）
+
+- 用户反馈：① 控制室标签上的 ✕ 关掉后回不去（不可逆）——要么没有标签栏，要么关不掉；
+  ② 卡片太大把空间占满——要小一点、留白多一点；③ 发光理解错了：要的是「整个卡片」的
+  光（像侧栏绑定双圆点那种发光质感），不是圆点发光——做整卡光晕描边；④ 命名纠正：侧栏
+  最上面区块标题叫「工作台」（整个插件），第一个默认项目叫「控制室」（工作台的控制室）。
+- 实现：① PaneBody 标签渲染改 map 回调：content.type==='console' 的标签 locked——不渲染
+  ✕ 关闭按钮、禁拖拽（标签栏保留标题，保证可回）；② 网格 max-width 720px 居中 + gap 16px
+  + 面板 padding 22px（卡片实测 229px 宽，1:1）；③ 光效重做：glowDone/glowNeed = 亮色
+  描边（rgba 0.9 边框）+ 双层外发光（8px 高亮 + 26px 泛光）+ 微弱内辉光（inset），删掉
+  原来过强的 radial 背景 tint；busy 旋转描边峰值改 #5aa0ff + 卡片蓝色外发光；④ locale
+  title 回「工作台」/Worktable，console.name 保持「控制室」/Console。
+- 验证（probe-batch16 更新）：sectionTitle=工作台 ✓、consoleName=控制室 ✓、
+  consoleTabCloseGone=true（控制室标签无 ✕）✓、cardWidth 229/1:1 ✓、glowDoneBorder
+  rgba(63,185,80,0.9) + 双层 box-shadow ✓、busy 旋转描边 #5aa0ff ✓；三阶段流程 + 主题
+  全 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

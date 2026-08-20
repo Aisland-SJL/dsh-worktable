@@ -1742,12 +1742,15 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   return (
     <>
       <div className="dsh-wt_tabBar">
-        {tabs.map((t, i) => (
+        {tabs.map((t, i) => {
+          // 控制室标签不可关闭：关掉后窗格变选择器，用户回不到控制室（不可逆操作）
+          const locked = t.content?.kind === 'builtin' && t.content.type === 'console'
+          return (
           <span
             key={t.id}
             className={'dsh-wt_tab' + (i === active ? ' dsh-wt_tabOn' : '')}
             title={t.title}
-            draggable
+            draggable={!locked}
             onDragStart={(e: any) => { dragTab = { row, index, tabId: t.id }; try { e.dataTransfer.effectAllowed = 'move' } catch {} }}
             onDragEnd={() => { dragTab = null; setDropTarget(null) }}
             onClick={() => splitStore.setActiveTab(row, index, t.id)}
@@ -1762,14 +1765,17 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
               >↻</button>
             )}
             <span className="dsh-wt_tabTitle">{t.title}</span>
-            <button
-              type="button"
-              className="dsh-wt_tabClose"
-              title={T('pane.closeTab')}
-              onClick={(e) => { e.stopPropagation(); splitStore.closeTab(row, index, t.id) }}
-            >✕</button>
+            {!locked && (
+              <button
+                type="button"
+                className="dsh-wt_tabClose"
+                title={T('pane.closeTab')}
+                onClick={(e) => { e.stopPropagation(); splitStore.closeTab(row, index, t.id) }}
+              >✕</button>
+            )}
           </span>
-        ))}
+          )
+        })}
       </div>
       <PaneTabBody tab={tabs[active]} row={row} index={index} paneTitle={pane.title} reloadKey={reloadKeys[tabs[active].id] ?? 0} />
     </>
