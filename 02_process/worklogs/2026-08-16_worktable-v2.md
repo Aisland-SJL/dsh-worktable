@@ -1220,3 +1220,14 @@
   rgba(63,185,80,0.9) + 双层 box-shadow ✓、busy 旋转描边 #5aa0ff ✓；三阶段流程 + 主题
   全 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室坏存档自愈：旧版「关标签」坑出不可逆状态）
+
+- 事故：用户在被修复前点掉了控制室标签的 ✕，窗格退化成选择器并持久化进
+  views['wt-console']（tabs 空）——重开控制室也只显示选择器，回不去。
+- 实现：specHasConsoleTab 健全性检查 + 双通道自愈：① 挂载时（useEffect 监听
+  views[CONSOLE_ID]）发现坏存档立即重建 buildConsoleSpec 并写回；② openConsole 打开时
+  再查一遍，坏则重建 + persistProjects 写回。探测种子改为植入坏存档验证。
+- 验证：probe-batch16 healTabs=1、healType='console' ✓，全流程 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；用户 F5 后坏存档自动修复，点「控制室」卡片即恢复面板。

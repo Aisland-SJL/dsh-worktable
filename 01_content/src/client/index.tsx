@@ -311,6 +311,11 @@ let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: an
 const CONSOLE_ID = 'wt-console'
 const CONSOLE_ICON = '🖥️'
 
+/** 控制室布局是否健全：主窗格首格存在 console 类型标签（旧版关标签的坏存档没有它） */
+function specHasConsoleTab(spec: LayoutSpec | undefined): boolean {
+  return !!spec?.main?.[0]?.tabs?.some((t) => t.content?.kind === 'builtin' && t.content.type === 'console')
+}
+
 /** 控制室默认布局：单一锁死大窗格（项目卡片网格）+ 右侧对话 */
 function buildConsoleSpec(t: (key: string) => string): LayoutSpec {
   return {
@@ -1083,6 +1088,16 @@ function WorktableSection(props: any) {
     })
   }
 
+  // 自愈：启动时若控制室存档是坏布局（旧版关掉控制室标签造成窗格退化成选择器），立即重建默认面板
+  useEffect(() => {
+    const saved = projects.views[CONSOLE_ID]
+    if (!specHasConsoleTab(saved)) {
+      const spec = buildConsoleSpec((k) => t(k as WorktableKey))
+      persistProjects((prev) => ({ ...prev, views: { ...prev.views, [CONSOLE_ID]: spec } }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projects.views[CONSOLE_ID]])
+
   // 子座位注册变化 → 刷新 id 序列
   useEffect(() => {
     const sync = () => setRegisteredIds([...registryStore.ids])
@@ -1302,7 +1317,11 @@ function buildCustomLayoutPrompt(req: string): string {
 
   /** 打开「工作台」控制室：已绑定 → 打开并切换绑定对话；explicitBound 供强制绑定流程传入刚绑定的会话 */
   const openConsole = useCallback((explicitBound?: string | null) => {
-    const spec = projects.views[CONSOLE_ID] ?? buildConsoleSpec((k) => t(k as WorktableKey))
+    const saved = projects.views[CONSOLE_ID]
+    // 自愈：坏存档（旧版关掉控制室标签导致窗格退化成选择器）→ 重建默认面板并写回
+    const broken = !specHasConsoleTab(saved)
+    const spec = broken ? buildConsoleSpec((k) => t(k as WorktableKey)) : (saved as LayoutSpec)
+    if (broken) persistProjects((prev) => ({ ...prev, views: { ...prev.views, [CONSOLE_ID]: spec } }))
     engineIdsRef.current.add(CONSOLE_ID)
     splitStore.open(spec)
     if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {

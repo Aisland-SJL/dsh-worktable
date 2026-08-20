@@ -26,7 +26,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await send('Runtime.enable');
   await send('Page.enable');
   await send('Page.addScriptToEvaluateOnNewDocument', {
-    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:['t-bind'],lastUsed:{},hidden:[],nameOverrides:{},iconOverrides:{},shortcuts:[],layouts:[{id:'t-bind',title:'\u7ed1\u5b9a\u6d4b\u8bd5',icon:'\ud83e\uddea',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null,tabs:[],active:0}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}],bindings:{},folders:{},views:{},removed:[]})); } }catch(e){}",
+    source: "try{ if(location.origin==='http://127.0.0.1:3080'){ localStorage.setItem('dsh.worktable.view.v1', JSON.stringify({query:'',searchOpen:false,orderBy:'manual',dock:'footer',floatTop:null,sortMigratedV2:true})); localStorage.setItem('dsh.worktable.projects.v1', JSON.stringify({order:['t-bind'],lastUsed:{},hidden:[],nameOverrides:{},iconOverrides:{},shortcuts:[],layouts:[{id:'t-bind',title:'\u7ed1\u5b9a\u6d4b\u8bd5',icon:'\ud83e\uddea',top:null,left:null,main:[{id:'p1',title:'\u5185\u5bb91',min:200,content:null,tabs:[],active:0}],leftWidth:{default:260,min:160,max:480},chatWidth:{default:360,min:240,max:600},topHeight:{default:200,min:120,max:480},chatSide:'right',chatFullHeight:false}],bindings:{},folders:{},views:{\"wt-console\":{\"id\":\"wt-console\",\"title\":\"kz\",\"top\":null,\"main\":[{\"id\":\"console\",\"title\":\"kz\",\"min\":240,\"tabs\":[],\"active\":0}],\"chatWidth\":{\"default\":340,\"min\":280,\"max\":600},\"topHeight\":{\"default\":200,\"min\":120,\"max\":480},\"chatSide\":\"right\"}},removed:[]})); } }catch(e){}",
   });
   await send('Page.navigate', { url: 'http://127.0.0.1:3080/' });
   const evaluate = async (expr) => {
@@ -45,6 +45,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var vis = function(sel){ return [].slice.call(document.querySelectorAll(sel)).find(function(el){ return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0); }); };
     var st = window.__dshWorktable.splitStore;
     try {
+      // 自愈验证：种子里的坏存档（控制室标签被关掉）应被挂载时修复
+      var seeded = JSON.parse(localStorage.getItem('dsh.worktable.projects.v1'));
+      var cv = seeded && seeded.views && seeded.views['wt-console'];
+      out.healTabs = cv && cv.main && cv.main[0] && cv.main[0].tabs ? cv.main[0].tabs.length : null;
+      out.healType = cv && cv.main && cv.main[0] && cv.main[0].tabs && cv.main[0].tabs[0] ? cv.main[0].tabs[0].content.type : null;
       var cs = getComputedStyle(document.body);
       out.themeFill = cs.getPropertyValue('--dsw-alias-fill-l1').trim() || null;
       out.htmlDataTheme = document.documentElement.getAttribute('data-theme');
