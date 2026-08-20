@@ -1284,3 +1284,11 @@
   backgroundImage + 30px 格子 ✓、busyFilter drop-shadow 辉光 ✓、真实 busy 会话旋转
   生效 ✓；全流程 + 主题 + 自愈 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第六轮微调：预览文字缩到 60%）
+
+- 用户反馈：文字整体太大（尤其抓取的信息预览）——预览字缩到现在的 60%，给卡片更多余地。
+- 实现：.dsh-wt_consolePreview font-size 14→8.5px、line-height 20→13px（仍 4 行截断，
+  同空间能容纳更多对话内容）。
+- 验证：probe-batch16 previewFont 8.5px ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

@@ -408,7 +408,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleStatus-need{color:var(--dsw-alias-state-warning,#d29922)}',
   '.dsh-wt_consoleStatus-done{color:var(--dsw-alias-state-success,#3fb950)}',
   '.dsh-wt_consoleRuntime{flex:none;font-size:17px;font-weight:600;line-height:24px;color:var(--wt-text2);font-variant-numeric:tabular-nums}',
-  '.dsh-wt_consolePreview{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:20px;color:var(--wt-text2);word-break:break-word}',
+  '.dsh-wt_consolePreview{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:8.5px;line-height:13px;color:var(--wt-text2);word-break:break-word}',
   '.dsh-wt_consolePreviewNone{color:var(--wt-text3);font-style:italic;-webkit-line-clamp:1}',
   // 三色光效：整卡霓虹描边光晕（像侧栏双圆点的发光质感）——完成=绿、待决=黄；工作=蓝色描边顺时针旋转
   '.dsh-wt_consoleCard-glowDone{border-color:rgba(63,185,80,.9);box-shadow:0 0 8px rgba(63,185,80,.5),0 0 26px rgba(63,185,80,.3),inset 0 0 16px rgba(63,185,80,.07)}',
