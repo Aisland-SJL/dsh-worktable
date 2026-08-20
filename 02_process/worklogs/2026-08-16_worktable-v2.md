@@ -1133,3 +1133,10 @@
   收起（toggledClosed）且主弹窗保持 ✓、unbindInRow1/RightAligned ✓；functional-diag
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（更改按钮加 ↻ 符号）
+
+- 用户反馈：项目文件夹框第一行的「更改」按钮加刷新符号，与下方「解绑 ✕」的符号对应。
+- 实现：bindFolderChange 按钮文案改「↻ 更改」；probe-batch15 增 box0ChangeHasRefresh 断言。
+- 验证：box0ChangeHasRefresh ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

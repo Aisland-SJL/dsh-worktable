@@ -1967,7 +1967,7 @@ function buildCustomLayoutPrompt(req: string): string {
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
               <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
-              <button type="button" className="dsh-wt_bindFolderChange" onClick={changeBindFolder}>{t('bind.folderChange')}</button>
+              <button type="button" className="dsh-wt_bindFolderChange" onClick={changeBindFolder}>↻ {t('bind.folderChange')}</button>
             </div>
             <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
               {projects.folders[bindPick.id] ?? t('bind.folderNone')}
