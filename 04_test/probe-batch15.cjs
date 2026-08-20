@@ -61,12 +61,18 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.box1Label = boxes[1] ? boxes[1].querySelector('.dsh-wt_bindFolderLabel').textContent : null;
       out.box0Path = boxes[0] ? boxes[0].querySelector('.dsh-wt_bindFolderPath').textContent : null;
       out.box0Change = !!(boxes[0] && boxes[0].querySelector('.dsh-wt_bindFolderChange'));
+      // 弹窗左上角不再有「绑定对话」标题；两个框标题字号一致
+      out.popTitleGone = !pop.querySelector('.dsh-wt_menuLabel');
+      var lb0 = boxes[0] && boxes[0].querySelector('.dsh-wt_bindFolderLabel');
+      var lb1 = boxes[1] && boxes[1].querySelector('.dsh-wt_bindFolderLabel');
+      out.fontSizes = { folder: lb0 ? getComputedStyle(lb0).fontSize : null, bind: lb1 ? getComputedStyle(lb1).fontSize : null };
+      out.fontSame = !!(lb0 && lb1 && getComputedStyle(lb0).fontSize === getComputedStyle(lb1).fontSize);
       // 未绑定态：行显示 未绑定对话·点击选择；无解绑；无右侧列表
       var rowNone = boxes[1] && boxes[1].querySelector('.dsh-wt_bindConvRow');
       out.unboundRow = rowNone ? rowNone.textContent : null;
       out.unbindAbsent = !pop.querySelector('.dsh-wt_bindUnbind');
       out.listClosed0 = !vis('.dsh-wt_bindListPop');
-      // 点击行 → 右侧弹列表
+      // 点击行 → 右侧弹列表；再点一下 → 反选收起
       if (rowNone) { rowNone.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
       await sleep(400);
       var lpop = vis('.dsh-wt_bindListPop');
@@ -76,7 +82,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         out.debug = { prLeft: Math.round(pr.left), prRight: Math.round(pr.right), lrLeft: Math.round(lr.left), innerW: window.innerWidth };
         out.listOnRight = lr.left >= pr.right - 1;
         out.itemCount = lpop.querySelectorAll('.dsh-wt_selectItem').length;
-        var item = lpop.querySelector('.dsh-wt_selectItem');
+        var rowNow = vis('.dsh-wt_bindPop .dsh-wt_bindConvRow');
+        if (rowNow) { rowNow.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
+        await sleep(400);
+        out.toggledClosed = !vis('.dsh-wt_bindListPop');
+        out.mainOpenAfterToggle = !!vis('.dsh-wt_bindPop');
+        if (rowNow) { rowNow.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
+        await sleep(400);
+        lpop = vis('.dsh-wt_bindListPop');
+        var item = lpop && lpop.querySelector('.dsh-wt_selectItem');
         if (item) { item.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
         await sleep(400);
       }
@@ -87,6 +101,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.boundFolderText = vis('.dsh-wt_bindPop .dsh-wt_bindFolder') ? vis('.dsh-wt_bindPop .dsh-wt_bindFolder').textContent : null;
       out.chevron = !!vis('.dsh-wt_bindPop .dsh-wt_bindConvChevron');
       out.unbindPresent = !!vis('.dsh-wt_bindPop .dsh-wt_bindUnbind');
+      // 解绑按钮在第一行最右（与 💬 绑定对话 同一行右对齐）
+      var ubRow = vis('.dsh-wt_bindPop .dsh-wt_bindUnbind');
+      if (ubRow) {
+        var row1 = boxes[1].querySelector('.dsh-wt_bindFolderRow');
+        var rr = row1.getBoundingClientRect(); var ur = ubRow.getBoundingClientRect();
+        out.unbindInRow1 = row1.contains(ubRow);
+        out.unbindRightAligned = (rr.right - ur.right) < 16;
+      }
       var saved = JSON.parse(localStorage.getItem('dsh.worktable.projects.v1'));
       out.savedBinding = saved.bindings['t-bind'];
       // 解绑 → 恢复未绑定

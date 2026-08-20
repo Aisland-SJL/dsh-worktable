@@ -1119,3 +1119,17 @@
   点行右侧弹列表（listOnRight、23 项）✓；选后列表收起、主弹窗显示新绑定（名称/▾/解绑）✓；
   解绑回未绑定态 ✓；backdrop 关闭 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（绑定弹窗微调：去弹窗标题 + 解绑入行右对齐 + 列表反选收起）
+
+- 用户反馈：① 两个框标题字号是否一致——实测两处同为 12px（同一 .dsh-wt_bindFolderLabel
+  类），探针加 fontSame 断言锁定；② 弹窗左上角「绑定对话」四字标题去掉（弹窗不止绑定
+  对话，还有项目文件夹）；③ 点「绑定对话」行弹出右侧列表后，再点一下反选收起（toggle）；
+  ④ 解绑按钮放到 💬 绑定对话第一行最右（与 更改 同排右对齐格式）。
+- 实现：bindPop 删 menuLabel；bindUnbind 移入绑定框第一行（flex:none、与 folderChange 同款
+  紧凑样式，保留 danger hover）；两处 bindConvRow onClick 改 setBindListOpen(v => !v)；
+  解绑按钮不再占用框内下方。
+- 验证（probe-batch15.cjs 更新）：popTitleGone ✓、fontSame（12px/12px）✓、列表开→再点
+  收起（toggledClosed）且主弹窗保持 ✓、unbindInRow1/RightAligned ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

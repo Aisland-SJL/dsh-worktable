@@ -1963,7 +1963,6 @@ function buildCustomLayoutPrompt(req: string): string {
       {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { setBindPick(null); setBindListOpen(false) }} />}
       {bindPick && (
         <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
-          <span className="dsh-wt_menuLabel">{t('bind.title')}</span>
           {/* 项目文件夹框（格式基准）：第一行 emoji+标题，第二行路径；可随时更改 */}
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
@@ -1974,23 +1973,26 @@ function buildCustomLayoutPrompt(req: string): string {
               {projects.folders[bindPick.id] ?? t('bind.folderNone')}
             </div>
           </div>
-          {/* 绑定对话框（与项目文件夹同格式）：第一行 💬+标题；第二行 分组 | 对话名（点击右侧弹列表）；框内下方：说明 + 解绑 */}
+          {/* 绑定对话框（与项目文件夹同格式）：第一行 💬+标题（最右解绑）；第二行 分组 | 对话名（点击右侧弹列表，再点反选收起）；框内下方：说明 */}
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
               <span className="dsh-wt_bindFolderLabel">💬 {t('bind.title')}</span>
+              {projects.bindings[bindPick.id] && (
+                <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
+              )}
             </div>
             {(() => {
               const sid = projects.bindings[bindPick.id]
               if (!sid) {
                 return (
-                  <button type="button" className="dsh-wt_bindConvRow dsh-wt_bindConvRowNone" title={t('bind.tipUnbound')} onClick={() => setBindListOpen(true)}>
+                  <button type="button" className="dsh-wt_bindConvRow dsh-wt_bindConvRowNone" title={t('bind.tipUnbound')} onClick={() => setBindListOpen((v) => !v)}>
                     <span className="dsh-wt_bindNoneText">{t('bind.unbound')} · {t('bind.clickPick')}</span>
                   </button>
                 )
               }
               const info = bindInfoOf(bindGroups, sid)
               return (
-                <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen(true)}>
+                <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen((v) => !v)}>
                   <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
                   <span className="dsh-wt_bindSep" aria-hidden>|</span>
                   <span className="dsh-wt_bindConvName" title={info.title}>{info.title}</span>
@@ -1999,9 +2001,6 @@ function buildCustomLayoutPrompt(req: string): string {
               )
             })()}
             <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
-            {projects.bindings[bindPick.id] && (
-              <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
-            )}
           </div>
         </div>
       )}

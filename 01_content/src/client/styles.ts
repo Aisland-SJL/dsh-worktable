@@ -276,7 +276,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_bindHint{margin:6px 0 2px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2)}',
   // 自定义窗完成页：自动绑定提示
   '.dsh-wt_customDoneBind{margin:6px 0 0;font-size:11px;line-height:16px;color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
-  '.dsh-wt_bindUnbind{display:inline-flex;align-items:center;gap:4px;margin:4px 0 0;padding:3px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
+  '.dsh-wt_bindUnbind{flex:none;display:inline-flex;align-items:center;gap:4px;padding:1px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
   '.dsh-wt_bindUnbind:hover{color:var(--dsw-alias-state-danger,#f85149);border-color:var(--dsw-alias-state-danger,#f85149)}',
   '.dsh-wt_bindList{max-height:280px;overflow:auto;position:static}',
   '.dsh-wt_bindListPop{display:flex;flex-direction:column;padding:6px}',
