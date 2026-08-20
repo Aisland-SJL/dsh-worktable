@@ -138,6 +138,10 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_paneBar{flex:none;display:flex;align-items:center;height:22px;padding:0 8px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}',
   '.dsh-wt_paneTitle{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
   '.dsh-wt_paneFrame{flex:1;width:100%;border:0;background:#010409;min-height:0}',
+  // iframe 内容标签：容器 + 右上角常驻刷新按钮
+  '.dsh-wt_frameWrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}',
+  '.dsh-wt_frameRefresh{position:absolute;top:6px;right:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:13px;line-height:1;cursor:pointer;opacity:.72;z-index:5}',
+  '.dsh-wt_frameRefresh:hover{opacity:1;border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_splitDivider{background:var(--dsw-alias-border-l2,#3a4150);cursor:col-resize;touch-action:none;box-sizing:border-box}',
   '.dsh-wt_splitDividerH{cursor:row-resize}',
   '.dsh-wt_splitDivider:hover,.dsh-wt_splitDividerH:hover{background:var(--dsw-alias-state-accent-primary,#4f8ef7)}',

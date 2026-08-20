@@ -360,14 +360,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     await new Promise(function(r){setTimeout(r,300)});
     out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_layout');
     try{ out.layoutsLeft=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts.length }catch(e){ out.layoutsLeft='ERR' }
-    // 真删除：「已删除的项目」区块出现，重新添加可逆（无恢复默认按钮）
+    // 真删除：「已删除的项目」区块已移除——删除即彻底移出工作台（无重新添加入口）
     out.removedSection=!!document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved');
     out.resetBtnGone=!document.querySelector('.dsh-wt_manageReset');
-    var readdBtn=document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved .dsh-wt_manageBtn');
-    if(readdBtn){ readdBtn.click(); }
-    await new Promise(function(r){setTimeout(r,300)});
-    try{ out.removedAfterReadd=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).removed }catch(e){ out.removedAfterReadd='ERR' }
-    out.prBackAfterReadd=document.querySelectorAll('.dsh-wt_projects .pr_card').length;
+    out.prGoneAfterDelete=document.querySelectorAll('.dsh-wt_projects .pr_card').length===0;
     var done=document.querySelector('.dsh-wt_manageDone');
     if(done){ done.click(); }
     await new Promise(function(r){setTimeout(r,200)});

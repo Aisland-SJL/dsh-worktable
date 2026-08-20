@@ -1352,13 +1352,7 @@ function buildCustomLayoutPrompt(req: string): string {
     })
   }
 
-  /** 重新添加已删除的入驻项目（删除 ↔ 重新添加 完全可逆） */
-  const readdProject = (id: string) => {
-    persistProjects((prev) => ({
-      ...prev,
-      removed: prev.removed.filter((x) => x !== id),
-    }))
-  }
+
 
   // ── 快捷方式（表单已移除，仅保留存量条目的删除能力） ──
   const removeShortcut = (id: string) => {
@@ -1441,13 +1435,20 @@ function buildCustomLayoutPrompt(req: string): string {
     return def ? def.id : '2h'
   }
 
-  // ── 删除（全部走二次确认；常驻项目 = 移出工作台，插件不卸载） ──
+  // ── 删除（全部走二次确认；项目彻底移出工作台：对话与项目文件均保留，仅清理本地关联状态） ──
   const removeProject = (id: string) => {
-    persistProjects((prev) => ({
-      ...prev,
-      removed: prev.removed.includes(id) ? prev.removed : [...prev.removed, id],
-      hidden: prev.hidden.filter((x) => x !== id),
-    }))
+    persistProjects((prev) => {
+      const next = {
+        ...prev,
+        removed: prev.removed.includes(id) ? prev.removed : [...prev.removed, id],
+        hidden: prev.hidden.filter((x) => x !== id),
+        order: prev.order.filter((x) => x !== id),
+      }
+      if (next.bindings[id]) { next.bindings = { ...next.bindings }; delete next.bindings[id] }
+      if (next.folders[id]) { next.folders = { ...next.folders }; delete next.folders[id] }
+      if (next.views[id]) { next.views = { ...next.views }; delete next.views[id] }
+      return next
+    })
   }
   const askDelete = (kind: 'layout' | 'shortcut' | 'project', id: string, name: string) => {
     setRequestDelete({ kind, id, name })
@@ -1925,18 +1926,6 @@ function buildCustomLayoutPrompt(req: string): string {
               <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => askDelete('shortcut', s.id, s.name)}>✕</button>
             </div>
           ))}
-          {projects.removed.length > 0 && (
-            <>
-              <div className="dsh-wt_menuSep" />
-              <span className="dsh-wt_menuLabel">{t('manage.removed')}</span>
-              {projects.removed.map((rid) => (
-                <div key={rid} className="dsh-wt_manageRow dsh-wt_manageRowOff dsh-wt_manageRowRemoved">
-                  <span className="dsh-wt_manageScName">{projects.nameOverrides[rid] ?? metas[rid]?.name ?? rid}</span>
-                  <button type="button" className="dsh-wt_manageBtn" title={t('manage.readd')} onClick={() => readdProject(rid)}>↺</button>
-                </div>
-              ))}
-            </>
-          )}
         </div>
       )}
 

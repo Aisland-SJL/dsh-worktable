@@ -1076,6 +1076,20 @@
   （remounted=true）✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（移除「已删除项目」区块 + iframe 标签右上角刷新）
+
+- 用户反馈：① 设置里的「已删除的项目」区块不要了——删除项目就是彻底移出工作台（对话与
+  项目文件本就保留）；② 做好的网页窗口（iframe 标签）右上角没有刷新按钮。
+- 处理：① 移除设置面板「已删除的项目」区块与 readdProject；removeProject 删除时同步清理
+  bindings/folders/views/order 本地关联状态；确认文案改为「彻底移除（对话与项目文件保留）」；
+  ② 新增 IframePane 组件（iframe 标签统一外壳）：右上角常驻 ↻（重挂载整页刷新），
+  PaneTabBody 的 iframe 分支改走它。
+- 验证（probe-batch13.cjs）：iframe 标签 frameWrap/刷新按钮（title=刷新）✓、点击后 iframe
+  重挂载 ✓；删除常驻项目后 removedSectionGone=true、行数 2→1 ✓；functional-diag 全 20 STEP
+  （STEP10 断言按新行为重写）ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；重启不会自动出现该按钮，必须本次改动生效。
+
+
 
 
 

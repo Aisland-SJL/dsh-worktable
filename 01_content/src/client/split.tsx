@@ -891,6 +891,23 @@ function BrowserPane() {
   )
 }
 
+/** iframe 内容标签（网页/站点产物）：右上角常驻刷新按钮（重挂载整页刷新，跨域可靠） */
+function IframePane(props: { url: string; title?: string }) {
+  const [reloadKey, setReloadKey] = useState(0)
+  return (
+    <div className="dsh-wt_frameWrap">
+      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={props.url} title={props.title ?? ''} />
+      <button
+        type="button"
+        className="dsh-wt_frameRefresh"
+        title={T('pane.refresh')}
+        aria-label={T('pane.refresh')}
+        onClick={() => setReloadKey((k) => k + 1)}
+      >↻</button>
+    </div>
+  )
+}
+
 /** 动画播放窗：iframe 壳 + 地址栏（站内自带项目/场景列表、播放、画幅切换、导出等全部控件） */
 function AnimPane() {
   const [url, setUrl] = useState('')
@@ -1534,7 +1551,7 @@ function CustomPane(props: { paneTitle?: string }) {
 function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTitle?: string }) {
   const content = props.tab.content
   if (content.kind === 'iframe') {
-    return <iframe className="dsh-wt_paneFrame" src={content.url} title={props.tab.title} />
+    return <IframePane url={content.url} title={content.title ?? props.tab.title} />
   }
   if (content.kind === 'file') {
     return <FileViewer path={content.path} />
