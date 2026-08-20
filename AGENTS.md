@@ -75,6 +75,25 @@ node --check lib/index.js
   ackProjectNotify 同步 ack 子代理。
   **ack 生命周期**：ack 只在「同一轮待决未解决」期间压制提醒；状态转移（needNow 真↔假）时
   clearNotifyAck 自动清除旧 ack——原生 UI 每个新问题都重新亮黄，镜像必须同样重新点亮。
+- **「工作台」控制室项目（默认自带）**：
+  - 固定 id `wt-console`（CONSOLE_ID），卡片恒排项目列表第一位（order 0）、不可删除
+    （不进设置管理列表 + removeProject 兜底拒绝）；图标 🖥️，名称走 locale console.name。
+  - 点开：已绑定 → openConsole（默认布局 buildConsoleSpec：单一大窗格 content
+    {kind:'builtin',type:'console'} + 右侧对话，spec 持久化在 views['wt-console']）；
+    未绑定 → 强制绑定弹窗（左「加入现有对话」列表 / 右「新建对话」：分组 无/现有/新建，
+    建空会话 sessions.create 后自动绑定并打开控制室）。绑定也走 projects.v1.bindings。
+  - 控制室面板（split.tsx ConsolePane）：卡片网格每行 3 张、超出换行；每卡 = 图标/名称/
+    三态圆点（need>done>busy>idle，不过滤 ack，永远显示事实状态）/运行时长（后台任务
+    JobView.startedAt 或会话面 turnTimings 未结束轮次）/子代理数（byId.parentId +
+    subagentsByParent 双通道计数）/最近消息预览（会话面快照 nodes 末条文本，纯读内存
+    零 Token）。数据组装 = index.tsx getConsoleCards（env.console 注入），刷新走
+    consoleListeners（项目/会话快照变化推送）+ 面板每秒 tick。
+  - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；💬 = 跳绑定对话
+    （markPluginSessionOpen 豁免联动，控制室保持打开）；工作台自己的卡片点击无操作。
+  - 主题：面板三选一开关（深色/白色/跟随系统，存 view.v1 consoleTheme）；system 读宿主
+    html 的 color-scheme（DSH 深色/白色/跟随系统设置都会反映到它）+ prefers-color-scheme
+    兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量 --wt-*（宿主不发布
+    --dsw-alias-*，工作台全站一直靠回退色渲染——控制室自带主题作用域，不受其影响）。
 
 ## 安装 / 重启
 

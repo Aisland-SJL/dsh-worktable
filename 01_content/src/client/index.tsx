@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
-import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane } from './split'
+import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -25,6 +25,8 @@ type ViewState = {
   orderBy: OrderBy
   dock: DockMode
   floatTop: number | null
+  /** 控制室面板主题：dark/light/system（system = 跟随宿主 color-scheme，即 DSH 深色/白色/跟随系统设置） */
+  consoleTheme?: 'dark' | 'light' | 'system'
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -249,6 +251,7 @@ function loadView(): ViewState {
       orderBy,
       dock: p.dock === 'float' ? 'float' : 'footer',
       floatTop: typeof p.floatTop === 'number' ? p.floatTop : null,
+      consoleTheme: p.consoleTheme === 'dark' || p.consoleTheme === 'light' || p.consoleTheme === 'system' ? p.consoleTheme : 'system',
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -303,6 +306,64 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
+
+/** 控制室（工作台自己）项目：固定 id、固定排项目列表第一位、不可删除 */
+const CONSOLE_ID = 'wt-console'
+const CONSOLE_ICON = '🖥️'
+
+/** 控制室默认布局：单一锁死大窗格（项目卡片网格）+ 右侧对话 */
+function buildConsoleSpec(): LayoutSpec {
+  return {
+    id: CONSOLE_ID,
+    title: '工作台',
+    icon: CONSOLE_ICON,
+    top: null,
+    main: [{
+      id: 'console',
+      title: '控制室',
+      min: 240,
+      tabs: [{ id: 'c1', title: '控制室', content: { kind: 'builtin', type: 'console' } }],
+      active: 0,
+    }],
+    chatWidth: { default: 340, min: 280, max: 600 },
+    topHeight: { default: 200, min: 120, max: 480 },
+    chatSide: 'right',
+  }
+}
+
+/** 控制室面板刷新总线（项目/会话快照变化时推送，ConsolePane 订阅重渲染） */
+const consoleListeners = new Set<() => void>()
+const notifyConsole = () => consoleListeners.forEach((l) => { try { l() } catch {} })
+
+/** 宿主工作区列表（分组选择数据源；读 ctx.workspaces 快照） */
+function listWorkspaces(): { id: string; title: string; path: string }[] {
+  try {
+    const snap = sessionBridge?.workspaces?.list?.getSnapshot?.()
+    const items = snap?.items ?? []
+    return items.map((w: any) => ({
+      id: w.workspaceId ?? w.id,
+      title: w.title ?? '',
+      path: w.path ?? '',
+    }))
+  } catch { return [] }
+}
+
+/** 从会话快照节点里提取最近一条文本（纯读内存镜像，零 Token；无则 ''） */
+function lastTextOf(sid: string): string {
+  try {
+    const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+    const nodes: any[] = face?.nodes ?? []
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const n = nodes[i]
+      const blocks = Array.isArray(n?.blocks) ? n.blocks : (Array.isArray(n?.content) ? n.content : [])
+      for (const b of blocks) {
+        const s = typeof b?.text === 'string' ? b.text.trim().replace(/\s+/g, ' ') : ''
+        if (s) return s
+      }
+    }
+  } catch {}
+  return ''
+}
 
 /** 会话分组列表（模块级，供自定义窗会话选择与对话绑定弹窗共用） */
 async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]; current: string }> {
@@ -715,6 +776,15 @@ function WorktableSection(props: any) {
   const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
   const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
   const [bindListOpen, setBindListOpen] = useState(false)
+  /** 控制室强制绑定弹窗：未绑定点开「工作台」时弹出（左加入现有对话 / 右新建对话） */
+  const [consoleBind, setConsoleBind] = useState<{ x: number; y: number } | null>(null)
+  const [consoleGroups, setConsoleGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
+  const [consoleMode, setConsoleMode] = useState<'none' | 'existing' | 'new'>('none')
+  const [consoleWsId, setConsoleWsId] = useState('')
+  const [consoleParent, setConsoleParent] = useState('')
+  const [consoleName, setConsoleName] = useState('')
+  const [consoleErr, setConsoleErr] = useState(false)
+  const [consoleBusy, setConsoleBusy] = useState(false)
 
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
@@ -743,6 +813,102 @@ function WorktableSection(props: any) {
   const projectsRef = useRef<{ projects: ProjectsState; metas: Record<string, ProjectMeta>; aliveRegisteredIds: string[] }>(
     { projects, metas, aliveRegisteredIds: registeredIds },
   )
+  /** 控制室动作引用（每渲染同步，供 env 闭包读取） */
+  const actionsRef = useRef<{ openSplit: (spec: LayoutSpec) => void; openConsole: (explicitBound?: string | null) => void } | null>(null)
+  /** 视图状态最新快照（供 env 闭包读取控制室主题） */
+  const viewRef = useRef(view)
+  viewRef.current = view
+
+  /** 控制室卡片数据组装（env 闭包调用；只读镜像：状态/时长/子代理/预览全部来自宿主内存快照，零轮询零 Token） */
+  const getConsoleCards = (): ConsoleCardData[] => {
+    const pr = projectsRef.current
+    const snap = sessionsSnapshotStore.snapshot
+    const byId: Record<string, any> = snap?.byId ?? {}
+    const jobsMap: Record<string, any[]> = snap?.jobsBySession ?? {}
+    const now = Date.now()
+    const kidsSetOf = (sid: string): Set<string> => {
+      const set = new Set<string>()
+      for (const [cid, ce] of Object.entries<any>(byId)) if (ce?.parentId === sid) set.add(cid)
+      const v = (snap?.subagentsByParent ?? {})[sid]
+      const arr = Array.isArray(v) ? v : (v?.entries ?? v?.items ?? [])
+      if (Array.isArray(arr)) arr.forEach((c: any) => {
+        const cid = c?.sessionId ?? c?.id
+        if (typeof cid === 'string') set.add(cid)
+      })
+      return set
+    }
+    // 三态判定（同卡片提醒逻辑，但不过滤 ack——监控室永远显示事实状态）
+    const statusOf = (sid: string | undefined): ConsoleCardData['status'] => {
+      if (!sid) return 'idle'
+      const e = byId[sid]
+      if (!e) return 'idle'
+      if (sessionNotifyState(e) === 'need') return 'need'
+      for (const cid of kidsSetOf(sid)) {
+        if (byId[cid] && sessionNotifyState(byId[cid]) === 'need') return 'need'
+      }
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+        if (Array.isArray(face?.pending) && face.pending.length > 0) return 'need'
+      } catch {}
+      if (e.completed === true) return 'done'
+      if (e.running === true) return 'busy'
+      return 'idle'
+    }
+    // 运行时长：本会话正在运行的后台任务最早 startedAt 起算；无任务时读会话面 turnTimings 未结束轮次
+    const runtimeOf = (sid: string | undefined): number | null => {
+      if (!sid) return null
+      const e = byId[sid]
+      if (!e || e.running !== true) return null
+      let start: number | null = null
+      const jobs = jobsMap[sid] ?? []
+      for (const j of jobs) {
+        if (j?.status === 'running' && typeof j.startedAt === 'number' && (start == null || j.startedAt < start)) start = j.startedAt
+      }
+      if (start != null) return Math.max(0, now - start)
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+        const timings = face?.turnTimings
+        if (timings instanceof Map) {
+          for (const t of Array.from(timings.values()).reverse()) {
+            if (t && typeof t.startTime === 'number' && t.endTime == null) return Math.max(0, now - t.startTime)
+          }
+        } else if (timings && typeof timings === 'object') {
+          for (const k of Object.keys(timings).reverse()) {
+            const t = (timings as any)[k]
+            if (t && typeof t.startTime === 'number' && t.endTime == null) return Math.max(0, now - t.startTime)
+          }
+        }
+      } catch {}
+      return null
+    }
+    const make = (id: string, name: string, icon: string, self: boolean): ConsoleCardData => {
+      const sid = pr.projects.bindings[id]
+      return {
+        id, name, icon,
+        status: statusOf(sid),
+        runtimeMs: runtimeOf(sid),
+        kids: sid ? kidsSetOf(sid).size : 0,
+        preview: sid ? lastTextOf(sid) : '',
+        bound: !!sid,
+        self,
+      }
+    }
+    const cards: ConsoleCardData[] = []
+    cards.push(make(CONSOLE_ID, t('console.name'), CONSOLE_ICON, true))
+    const ids = [...pr.aliveRegisteredIds, ...pr.projects.layouts.map((l) => l.id)]
+    const known = new Set(ids)
+    const stored = pr.projects.order.filter((id) => known.has(id))
+    const ordered = [...stored, ...ids.filter((id) => !stored.includes(id))].filter((id) => id !== CONSOLE_ID)
+    for (const id of ordered) {
+      const meta = pr.metas[id]
+      const layout = pr.projects.layouts.find((l) => l.id === id)
+      if (!meta && !layout) continue
+      const name = pr.projects.nameOverrides[id] ?? meta?.name ?? layout?.title ?? id
+      const icon = meta?.icon ?? layout?.icon ?? '🧱'
+      cards.push(make(id, name, icon, false))
+    }
+    return cards
+  }
 
   // 会话作用域（当前会话 + 工作目录）与后台任务：注入分栏引擎环境
   // 注意：不走 props.useSessions hook（其宿主包装在部分版本会触发 useSyncExternalStore
@@ -791,6 +957,31 @@ function WorktableSection(props: any) {
           if (already) return 'kept'
           persistProjects((prev) => (prev.bindings[pid] ? prev : { ...prev, bindings: { ...prev.bindings, [pid]: sessionId } }))
           return 'auto'
+        },
+      },
+      // 控制室：卡片数据订阅 + 打开项目 / 跳绑定对话
+      console: {
+        subscribe: (fn) => { consoleListeners.add(fn); return () => { consoleListeners.delete(fn) } },
+        getCards: () => getConsoleCards(),
+        getTheme: () => viewRef.current.consoleTheme ?? 'system',
+        setTheme: (th: 'dark' | 'light' | 'system') => persistView({ consoleTheme: th }),
+        onOpen: (id) => {
+          if (id === CONSOLE_ID) return
+          const pr = projectsRef.current.projects
+          const layout = pr.layouts.find((l) => l.id === id)
+          const view = pr.views[id]
+          if (view || layout) actionsRef.current?.openSplit((view ?? layout) as LayoutSpec)
+          else {
+            // 入驻项目无视图覆盖：仅切换其绑定对话（对齐卡片自带打开行为）
+            const bound = pr.bindings[id]
+            if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+          }
+        },
+        onJump: (id) => {
+          const sid = projectsRef.current.projects.bindings[id]
+          if (!sid) return
+          markPluginSessionOpen(sid) // 插件发起的切换：不触发「切会话关项目」联动
+          try { sessionBridge?.sessions?.open?.(sid) } catch {}
         },
       },
     }
@@ -853,7 +1044,7 @@ function WorktableSection(props: any) {
 
   // 分栏引擎 UI 文案（窗选择器等）
   useEffect(() => {
-    setSplitT((k) => t(k as WorktableKey))
+    setSplitT((k, p) => t(k as WorktableKey, p as Record<string, string> | undefined))
     return () => setSplitT(null)
   }, [t])
 
@@ -1033,6 +1224,80 @@ function buildCustomLayoutPrompt(req: string): string {
     }
   }, [projects.views])
 
+  /** 打开「工作台」控制室：已绑定 → 打开并切换绑定对话；explicitBound 供强制绑定流程传入刚绑定的会话 */
+  const openConsole = useCallback((explicitBound?: string | null) => {
+    const spec = projects.views[CONSOLE_ID] ?? buildConsoleSpec()
+    engineIdsRef.current.add(CONSOLE_ID)
+    splitStore.open(spec)
+    if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {
+      let prev: string | null = null
+      try { prev = sessionBridge?.list?.getSnapshot?.()?.current ?? null } catch {}
+      projectAttachRef.sessionId = prev
+      const bound = explicitBound !== undefined ? explicitBound : projectsRef.current.projects.bindings[CONSOLE_ID]
+      projectAttachRef.attached = bound ?? prev
+      if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+      ackProjectNotify(CONSOLE_ID)
+      try { notifyConsole() } catch {}
+    }
+  }, [projects.views])
+
+  /** 控制室卡片点击：已绑定 → 打开控制室；未绑定 → 强制绑定弹窗 */
+  const clickConsoleCard = (anchor: HTMLElement) => {
+    if (projectsRef.current.projects.bindings[CONSOLE_ID]) { openConsole(); return }
+    const r = anchor.getBoundingClientRect()
+    setConsoleBind({
+      x: clamp(Math.round(r.right + 8), 8, window.innerWidth - 640),
+      y: clamp(Math.round(r.top), 8, window.innerHeight - 460),
+    })
+    setConsoleGroups([])
+    fetchSessionGroups().then((res) => setConsoleGroups(res.groups)).catch(() => setConsoleGroups([]))
+  }
+
+  /** 强制绑定：加入现有对话（绑定后直接打开控制室） */
+  const bindConsoleExisting = (sid: string) => {
+    persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sid } }))
+    setConsoleBind(null)
+    openConsole(sid)
+  }
+
+  /** 强制绑定：新建空会话并绑定（分组同自定义窗：无 / 现有 / 新建） */
+  const bindConsoleNew = async () => {
+    const b = sessionBridge
+    if (!b || typeof b.sessions?.create !== 'function') { setConsoleErr(true); return }
+    if (consoleMode === 'new' && (!consoleParent.trim() || !consoleName.trim())) { setConsoleErr(true); return }
+    setConsoleBusy(true); setConsoleErr(false)
+    try {
+      let workspaceId: string | null = null
+      if (consoleMode === 'existing' && consoleWsId) workspaceId = consoleWsId
+      else if (consoleMode === 'new') {
+        const ws = b.workspaces as any
+        const parent = consoleParent.replace(/[\\/]+$/, '')
+        const name = consoleName.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
+        const full = parent + '\\' + name
+        try { await ws?.createDirectory?.(parent, name) } catch {}
+        try {
+          const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parent, name }) })
+          const d = await r.json()
+          if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
+        } catch { /* 目录建不出的错误最终由 workspace.create 暴露 */ }
+        const view = await ws.create({ path: full })
+        workspaceId = view?.workspaceId ?? view?.id ?? null
+        if (!workspaceId) throw new Error('workspace create failed')
+      }
+      const folder = projectsRef.current.projects.folders[CONSOLE_ID] ?? null
+      let createOpts: any = {}
+      if (workspaceId) createOpts = { workspaceId }
+      else if (folder) createOpts = { cwd: folder }
+      const sessionId = await b.sessions.create(createOpts)
+      markPluginSessionOpen(sessionId)
+      persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId } }))
+      setConsoleBind(null)
+      openConsole(sessionId)
+    } catch { setConsoleErr(true) } finally { setConsoleBusy(false) }
+  }
+
+  actionsRef.current = { openSplit, openConsole }
+
   /** 打开对话绑定弹窗：抓取会话分组 + 锚点定位 */
   const openBindPick = useCallback((id: string, anchor: HTMLElement) => {
     const r = anchor.getBoundingClientRect()
@@ -1101,12 +1366,15 @@ function buildCustomLayoutPrompt(req: string): string {
     copyToastTimerRef.current = window.setTimeout(() => setCopiedToast(null), 6000)
   }
 
-  // 会话快照变化 → 重渲染（驱动项目卡片的完成/待决提醒镜像）
+  // 会话快照变化 → 重渲染（驱动项目卡片的完成/待决提醒镜像 + 控制室面板）
   useEffect(() => {
-    const l = () => setNotifyTick((t) => t + 1)
+    const l = () => { setNotifyTick((t) => t + 1); notifyConsole() }
     sessionsSnapshotStore.listeners.add(l)
     return () => { sessionsSnapshotStore.listeners.delete(l) }
   }, [])
+
+  // 项目表变化 → 控制室卡片刷新（打开中的面板即时更新）
+  useEffect(() => { notifyConsole() }, [projects])
 
   /** 自动挂载：绑定会话完成 → 读项目文件夹 widget-result.json → 产物自动挂进对应窗口 */
   const tryAutoMount = useCallback(async (projectId: string, sid: string) => {
@@ -1439,7 +1707,9 @@ function buildCustomLayoutPrompt(req: string): string {
   }
 
   // ── 删除（全部走二次确认；项目彻底移出工作台：对话与项目文件均保留，仅清理本地关联状态） ──
+  // 「工作台」控制室项目不可删除（界面不提供入口，这里兜底拒绝）
   const removeProject = (id: string) => {
+    if (id === CONSOLE_ID) return
     persistProjects((prev) => {
       const next = {
         ...prev,
@@ -2038,6 +2308,65 @@ function buildCustomLayoutPrompt(req: string): string {
         )
       })()}
 
+      {/* 控制室强制绑定弹窗：左「加入现有对话」+ 右「新建对话」，选定/建成后自动打开控制室 */}
+      {consoleBind && <div className="dsh-wt_popBackdrop" style={{ zIndex: 85 }} onClick={() => setConsoleBind(null)} />}
+      {consoleBind && (
+        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop" style={{ position: 'fixed', left: consoleBind.x, top: consoleBind.y, width: 560, zIndex: 86 }}>
+          <div className="dsh-wt_consoleBindCols">
+            <div className="dsh-wt_consoleBindCol">
+              <span className="dsh-wt_consoleBindLabel">➕ {t('console.joinExisting')}</span>
+              <div className="dsh-wt_selectList dsh-wt_consoleBindList">
+                {consoleGroups.map((g, gi) => (
+                  <Fragment key={g.title || 'g' + gi}>
+                    {g.title && (
+                      <>
+                        <div className="dsh-wt_selectDivider" />
+                        <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                      </>
+                    )}
+                    {g.sessions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={'dsh-wt_selectItem' + (projects.bindings[CONSOLE_ID] === s.id ? ' dsh-wt_selectItemOn' : '')}
+                        onClick={() => bindConsoleExisting(s.id)}
+                      >
+                        <span className="dsh-wt_selectItemTitle">{s.title}</span>
+                        {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+                      </button>
+                    ))}
+                  </Fragment>
+                ))}
+                {consoleGroups.length === 0 && <div className="dsh-wt_consoleBindEmpty">{t('console.noSessions')}</div>}
+              </div>
+            </div>
+            <div className="dsh-wt_consoleBindCol dsh-wt_consoleBindColNew">
+              <span className="dsh-wt_consoleBindLabel">✨ {t('console.newConv')}</span>
+              <select className="dsh-wt_consoleSelect" value={consoleMode} onChange={(e) => setConsoleMode(e.target.value as 'none' | 'existing' | 'new')}>
+                <option value="none">{t('console.groupNone')}</option>
+                <option value="existing">{t('console.groupExisting')}</option>
+                <option value="new">{t('console.groupNew')}</option>
+              </select>
+              {consoleMode === 'existing' && (
+                <select className="dsh-wt_consoleSelect" value={consoleWsId} onChange={(e) => setConsoleWsId(e.target.value)}>
+                  {listWorkspaces().map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
+                </select>
+              )}
+              {consoleMode === 'new' && (
+                <>
+                  <input className="dsh-wt_consoleInput" placeholder={t('console.newParentPh')} value={consoleParent} onChange={(e) => setConsoleParent(e.target.value)} />
+                  <input className="dsh-wt_consoleInput" placeholder={t('console.newNamePh')} value={consoleName} onChange={(e) => setConsoleName(e.target.value)} />
+                </>
+              )}
+              {consoleErr && <p className="dsh-wt_consoleErr">{t('console.bindFail')}</p>}
+              <button type="button" className="dsh-wt_consoleCreateBtn" disabled={consoleBusy} onClick={bindConsoleNew}>
+                {consoleBusy ? '…' : t('console.createBind')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {customOpen && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setCustomOpen(false)} />}
       {customOpen && (
         <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 340, zIndex: 84 }}>
@@ -2078,6 +2407,34 @@ function buildCustomLayoutPrompt(req: string): string {
       )}
 
       <div className="dsh-wt_projects" data-managing={viewOptionsOpen ? 'true' : undefined}>
+        {/* 「工作台」控制室项目：固定首位、不可删除；未绑定点开 = 强制绑定弹窗 */}
+        <button
+          type="button"
+          className="dsh-wt_layout dsh-wt_consoleEntry"
+          data-on={activeSplitId === CONSOLE_ID ? 'true' : 'false'}
+          style={{ order: 0, position: 'relative' }}
+          title={t('console.name')}
+          onClick={(e) => clickConsoleCard(e.currentTarget as HTMLElement)}
+        >
+          <span className="dsh-wt_layoutIcon">{CONSOLE_ICON}</span>
+          <span className="dsh-wt_layoutText">
+            <span className="dsh-wt_layoutName">{t('console.name')}</span>
+          </span>
+          <span
+            className={'dsh-wt_bindBtn'}
+            role="button"
+            tabIndex={0}
+            data-bound={bindNotifyMap[CONSOLE_ID] ?? (projects.bindings[CONSOLE_ID] ? 'true' : 'false')}
+            data-tip={projects.bindings[CONSOLE_ID]
+              ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[CONSOLE_ID]) })
+              : t('bind.tipUnbound')}
+            aria-label={projects.bindings[CONSOLE_ID]
+              ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[CONSOLE_ID]) })
+              : t('bind.tipUnbound')}
+            onClick={(e) => { e.stopPropagation(); openBindPick(CONSOLE_ID, e.currentTarget as HTMLElement) }}
+          ><span className="dsh-wt_bindCircles" aria-hidden /></span>
+          <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
+        </button>
         {renderProjectSlot
           ? renderProjectSlot('sidebar.worktable.project', ownerProps)
           : <div className="dsh-wt_empty">{t('empty')}</div>}

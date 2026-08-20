@@ -1142,3 +1142,34 @@
 - 备注：纯客户端改动，F5 即生效。
 - 微调：用户指出两按钮符号一前一后不对称——统一为符号都在文字后：
   「更改 ↻」+「解绑 ✕」；probe-batch15 断言改 box0ChangeText/box0ChangeSymAtEnd。
+
+## 补记（控制室「工作台」项目：默认卡片 + 强制绑定 + 3 列监控面板 + 主题开关）
+
+- 用户需求（定案）：工作台自带一个默认项目「工作台」（固定首位、不可删除），点开未绑定
+  强制绑定（左「加入现有对话」/右「新建对话」，新建同自定义窗分组选择）；面板 = 大窗格内
+  每行 3 张卡片（布局选择窗式排法），每卡显示三态圆点/运行时长/子代理数/最近消息预览；
+  覆盖所有项目；不要「停止对话」；风格 DSH 简洁 + 苹果式；主题跟随 DSH 深色/白色/跟随系统，
+  不方便就加三选一开关。
+- 调研结论（只读侦察宿主类型包）：SessionSummary 有 running/pendingInteraction/completed/
+  updatedAt；jobsBySession 的 JobView 有 startedAt/finishedAt；subagentsByParent 目录计数；
+  SessionFace.getSnapshot().nodes 有对话文本 → 监控四要素全部来自宿主内存快照，零轮询零
+  Token（模型不参与显示）。宿主**不发布 --dsw-alias-***（全文档无解析），但 html 上有
+  color-scheme（当前 dark）——DSH 主题设置会反映到它，作为「跟随系统」的宿主信号。
+- 实现：① index.tsx 新增 CONSOLE_ID 'wt-console' + buildConsoleSpec（单大窗格 console 类型）；
+  侧栏首位渲染控制室入口卡（dsh-wt_layout + dsh-wt_consoleEntry，order 0）；设置管理列表
+  不含它 + removeProject 兜底拒绝。② 强制绑定弹窗 dsh-wt_consoleBindPop（左会话列表 / 右
+  分组 select+目录输入+新建并绑定，bindConsoleExisting/bindConsoleNew，建空会话
+  sessions.create + markPluginSessionOpen + 自动绑定 + openConsole）。③ split.tsx 新增
+  BuiltinType 'console' + ConsolePane（网格 3 列；env.console = subscribe/getCards/onOpen/
+  onJump/getTheme/setTheme；getConsoleCards 组装四要素：状态聚合同提醒逻辑但不过滤 ack、
+  时长 = 运行任务最早 startedAt 或 turnTimings 未结束轮、子代理双通道计数、预览 = 会话面
+  nodes 末条文本）；卡片点击开项目、💬 跳绑定对话（豁免联动，控制室不关）。④ 主题：面板
+  三选一（深色/白色/跟随系统，view.v1.consoleTheme）；system 读 html color-scheme +
+  prefers-color-scheme；--wt-* 作用域变量 + data-wt-theme=light 浅色整套；样式全走变量
+  （DSH 简洁 + 苹果式：12px 圆角卡、999px 徽章、悬浮轻抬）。⑤ setSplitT 桥加 params 支持。
+- 验证（probe-batch16.cjs 三阶段 + theme-probe.cjs）：入口卡首位/order0/🖥️/设置无删除入口 ✓；
+  未绑定点开强制弹窗（左 23 会话/右三选一）✓；加入现有 → 绑定持久化 + 控制室打开 ✓；
+  网格 3 列、首卡自己、圆点/徽章/预览齐 ✓；点卡片开项目 ✓；💬 跳转控制室保持 ✓；解绑后
+  新建对话路径（分组默认无）✓；主题深/白/跟随切换 + data-wt-theme 落定 + 持久化 ✓；
+  functional-diag 全 20 STEP（布局卡选择器收窄排除控制室卡）ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；AGENTS.md 已补控制室规则。

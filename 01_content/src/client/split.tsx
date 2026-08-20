@@ -23,7 +23,7 @@ hljs.registerLanguage('json', hljsJson)
  * 内容与 chatSide 的变更经 onSpecMutated 回调交给工作台持久化（布局条目）。
  */
 
-export type BuiltinType = 'browser' | 'anim' | 'explorer' | 'scm' | 'tasks' | 'terminal' | 'custom'
+export type BuiltinType = 'browser' | 'anim' | 'explorer' | 'scm' | 'tasks' | 'terminal' | 'custom' | 'console'
 
 export type SplitContent =
   | { kind: 'iframe'; url: string; title?: string }
@@ -131,6 +131,7 @@ const BUILTIN_ICONS: Record<BuiltinType, string> = {
   tasks: '✅',
   terminal: '▸_',
   custom: '✨',
+  console: '🖥️',
 }
 
 const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
@@ -141,6 +142,7 @@ const BUILTIN_LABEL_KEYS: Record<BuiltinType, string> = {
   tasks: 'pane.tasks',
   terminal: 'pane.terminal',
   custom: 'pane.custom',
+  console: 'pane.console',
 }
 
 function tabTitleOf(content: SplitContent): string {
@@ -170,11 +172,11 @@ function sameContent(a: SplitContent, b: SplitContent): boolean {
 }
 
 /** 分栏 UI 文案提供者（由工作台注入 locale t） */
-let uiT: ((key: string) => string) | null = null
-export function setSplitT(fn: ((key: string) => string) | null) {
+let uiT: ((key: string, params?: Record<string, string>) => string) | null = null
+export function setSplitT(fn: ((key: string, params?: Record<string, string>) => string) | null) {
   uiT = fn
 }
-const T = (key: string): string => (uiT ? uiT(key) : key)
+const T = (key: string, params?: Record<string, string>): string => (uiT ? uiT(key, params) : key)
 
 /** 工作区环境（由工作台注入：当前会话作用域与后台任务列表） */
 export type SplitScope = { sessionId: string; cwd: string }
@@ -187,6 +189,25 @@ export type SplitJob = {
   startedAt: number
   finishedAt?: number
 }
+/** 控制室卡片数据（index.tsx 组装；纯读镜像，零轮询零 Token） */
+export type ConsoleCardData = {
+  id: string
+  name: string
+  icon: string
+  /** 三态 + 空闲：need(待决黄) > done(完成绿) > busy(工作中蓝) > idle */
+  status: 'idle' | 'busy' | 'need' | 'done'
+  /** 正在运行时的本轮已用毫秒；非运行态 null */
+  runtimeMs: number | null
+  /** 子代理数量 */
+  kids: number
+  /** 最近一条消息预览（单行文本，可能为空） */
+  preview: string
+  /** 是否绑定对话 */
+  bound: boolean
+  /** 是否为「工作台」自己（卡片点击无操作） */
+  self: boolean
+}
+
 type SplitEnv = {
   getScope: () => SplitScope | null
   getJobs: () => SplitJob[]
@@ -198,6 +219,15 @@ type SplitEnv = {
     getSessions: () => Promise<{ groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]; current: string }>
     submit: (projectId: string, projectName: string, requirement: string) => Promise<void>
     sendToSession: (sessionId: string, projectName: string, requirement: string) => Promise<void>
+  }
+  /** 控制室：卡片数据订阅 + 打开项目 / 跳绑定对话 + 主题 */
+  console?: {
+    subscribe: (fn: () => void) => () => void
+    getCards: () => ConsoleCardData[]
+    onOpen: (id: string) => void
+    onJump: (id: string) => void
+    getTheme: () => 'dark' | 'light' | 'system'
+    setTheme: (th: 'dark' | 'light' | 'system') => void
   }
 }
 let splitEnv: SplitEnv | null = null
@@ -919,6 +949,118 @@ function AnimPane(props: { reloadKey: number }) {
   )
 }
 
+/** 控制室面板：项目卡片网格（每行 3 张、超出换行）；数据由工作台组装推送（纯读镜像）。
+ *  主题：dark/light 直接生效；system = 跟随宿主 html 的 color-scheme（DSH 深色/白色/跟随系统都会反映到它） */
+function ConsolePane() {
+  const [, setTick] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
+  const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>(() => splitEnv?.console?.getTheme?.() ?? 'system')
+  const [sysDark, setSysDark] = useState(() => {
+    try { return window.matchMedia('(prefers-color-scheme: dark)').matches } catch { return true }
+  })
+  useEffect(() => {
+    const env = splitEnv?.console
+    if (!env) return
+    const bump = () => { setTick((t) => t + 1); setThemeMode(env.getTheme?.() ?? 'system') }
+    const un = env.subscribe(bump)
+    bump()
+    return un
+  }, [])
+  // 跟随系统：监听 OS 深浅切换（仅 themeMode==='system' 时影响渲染）
+  useEffect(() => {
+    let mq: MediaQueryList | null = null
+    try { mq = window.matchMedia('(prefers-color-scheme: dark)') } catch {}
+    if (!mq) return
+    const f = (e: any) => setSysDark(!!e?.matches)
+    try { mq.addEventListener('change', f) } catch { try { (mq as any).addListener(f) } catch {} }
+    return () => { try { mq.removeEventListener('change', f) } catch { try { (mq as any).removeListener(f) } catch {} } }
+  }, [])
+  // 运行时长的分钟级刷新：每秒重渲染一次（仅控制室开着时存在）
+  useEffect(() => {
+    const iv = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(iv)
+  }, [])
+  void now
+  const env = splitEnv?.console
+  const cards = env ? env.getCards() : []
+  const resolvedTheme: 'dark' | 'light' = (() => {
+    if (themeMode !== 'system') return themeMode
+    try {
+      const cs = getComputedStyle(document.documentElement).colorScheme || ''
+      if (cs.includes('dark') && !cs.includes('light')) return 'dark'
+      if (cs.includes('light') && !cs.includes('dark')) return 'light'
+    } catch {}
+    return sysDark ? 'dark' : 'light'
+  })()
+  const setTheme = (th: 'dark' | 'light' | 'system') => { setThemeMode(th); env?.setTheme?.(th) }
+  const fmtDur = (ms: number) => {
+    const s = Math.max(0, Math.floor(ms / 1000))
+    const h = Math.floor(s / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    const ss = s % 60
+    return h > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0') : m + ':' + String(ss).padStart(2, '0')
+  }
+  const statusLabel: Record<string, string> = { idle: T('console.idle'), busy: T('console.busy'), need: T('console.need'), done: T('console.done') }
+  const themeOpts: { mode: 'dark' | 'light' | 'system'; key: string }[] = [
+    { mode: 'dark', key: 'console.themeDark' },
+    { mode: 'light', key: 'console.themeLight' },
+    { mode: 'system', key: 'console.themeSystem' },
+  ]
+  return (
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme}>
+      <div className="dsh-wt_consoleHead">
+        <span className="dsh-wt_consoleTitle">🖥️ {T('console.title')}</span>
+        <div className="dsh-wt_consoleTheme" role="group" aria-label={T('console.themeLabel')}>
+          {themeOpts.map((o) => (
+            <button
+              key={o.mode}
+              type="button"
+              className={'dsh-wt_consoleThemeBtn' + (themeMode === o.mode ? ' dsh-wt_consoleThemeBtnOn' : '')}
+              onClick={() => setTheme(o.mode)}
+            >{T(o.key)}</button>
+          ))}
+        </div>
+      </div>
+      <div className="dsh-wt_consoleGrid">
+        {cards.map((c) => (
+          <div
+            key={c.id}
+            role={c.self ? undefined : 'button'}
+            tabIndex={c.self ? -1 : 0}
+            className={'dsh-wt_consoleCard' + (c.self ? ' dsh-wt_consoleCardSelf' : '')}
+            title={c.name}
+            onClick={() => { if (!c.self && env) env.onOpen(c.id) }}
+          >
+            <div className="dsh-wt_consoleCardHead">
+              <span className="dsh-wt_consoleIcon" aria-hidden>{c.icon}</span>
+              <span className="dsh-wt_consoleName">{c.name}</span>
+              <span className={'dsh-wt_consoleDot dsh-wt_consoleDot-' + c.status} aria-hidden />
+            </div>
+            <div className="dsh-wt_consoleBadges">
+              <span className={'dsh-wt_consoleBadge dsh-wt_consoleBadge-' + c.status}>{statusLabel[c.status]}</span>
+              {c.runtimeMs != null && <span className="dsh-wt_consoleBadge">⏱ {fmtDur(c.runtimeMs)}</span>}
+              <span className="dsh-wt_consoleBadge">{T('console.kids')} {c.kids}</span>
+            </div>
+            <div className={'dsh-wt_consolePreview' + (c.preview ? '' : ' dsh-wt_consolePreviewNone')} title={c.preview}>
+              {c.preview || (c.bound ? T('console.noPreview') : T('console.unboundShort'))}
+            </div>
+            {c.bound && !c.self && (
+              <button
+                type="button"
+                className="dsh-wt_consoleJump"
+                title={T('console.jump')}
+                aria-label={T('console.jump')}
+                onClick={(e) => { e.stopPropagation(); env?.onJump(c.id) }}
+              >💬</button>
+            )}
+          </div>
+        ))}
+      </div>
+      {cards.length === 0 && <div className="dsh-wt_consoleEmpty">{T('console.empty')}</div>}
+    </div>
+  )
+}
+
 /** 文件夹图标（重绘 SVG，与 better-sidebar 同款风格） */
 function FolderIcon() {
   return (
@@ -1542,6 +1684,7 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTit
   }
   if (content.type === 'browser') return <BrowserPane reloadKey={props.reloadKey} />
   if (content.type === 'anim') return <AnimPane reloadKey={props.reloadKey} />
+  if (content.type === 'console') return <ConsolePane />
   if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />

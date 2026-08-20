@@ -89,8 +89,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   const step6 = await evaluate(`(async function(){
     var out={};
-    out.cards=document.querySelectorAll('.dsh-wt_layout').length;
-    var card=document.querySelector('.dsh-wt_layout');
+    out.cards=document.querySelectorAll('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)').length;
+    var card=document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)');
     if(card){
       var ic=card.querySelector('.dsh-wt_layoutIcon');
       out.icon0=ic?ic.textContent:null;
@@ -222,7 +222,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     try{
       var st=window.__dshWorktable.splitStore;
       // A) 布局项目：卡片打开 → 加终端标签 → 关闭 → 再开 → 标签还在
-      var layCard=document.querySelector('.dsh-wt_layout');
+      var layCard=document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)');
       if(layCard){ layCard.click(); }
       await new Promise(function(r){setTimeout(r,400)});
       out.layoutOpenId=st.spec?st.spec.id:null;
@@ -231,7 +231,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       try{ out.layoutSavedTabs=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts[0].main[0].tabs.length }catch(e){ out.layoutSavedTabs='ERR' }
       st.close();
       await new Promise(function(r){setTimeout(r,300)});
-      layCard=document.querySelector('.dsh-wt_layout');
+      layCard=document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)');
       if(layCard){ layCard.click(); }
       await new Promise(function(r){setTimeout(r,400)});
       out.layoutRestoredTabs=st.spec?st.spec.main[0].tabs.length:null;
@@ -312,10 +312,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var out={};
     var prIcon=document.querySelector('.dsh-wt_projects .pr_cardIcon');
     var taIcon=document.querySelector('.dsh-wt_projects .ta_cardIcon');
-    var layIcon=document.querySelector('.dsh-wt_layoutIcon');
+    var layIcon=document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry) .dsh-wt_layoutIcon');
     var scIcon=document.querySelector('.dsh-wt_shortcutIcon');
     var taName=document.querySelector('.dsh-wt_projects .ta_cardName');
-    var laName=document.querySelector('.dsh-wt_layoutName');
+    var laName=document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry) .dsh-wt_layoutName');
     if(prIcon) out.prIconSize=getComputedStyle(prIcon).fontSize;
     if(taIcon) out.taIconBeforeSize=getComputedStyle(taIcon,'::before').fontSize;
     if(layIcon) out.layIconSize=getComputedStyle(layIcon).fontSize;
@@ -323,7 +323,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     if(taName) out.taNameWeight=getComputedStyle(taName).fontWeight;
     if(laName) out.laNameWeight=getComputedStyle(laName).fontWeight;
     function h(sel){ var el=document.querySelector(sel); return el?Math.round(el.getBoundingClientRect().height):null; }
-    out.heights={ta:h('.dsh-wt_projects .ta_card'),pr:h('.dsh-wt_projects .pr_card'),layout:h('.dsh-wt_layout'),shortcut:h('.dsh-wt_shortcut')};
+    out.heights={ta:h('.dsh-wt_projects .ta_card'),pr:h('.dsh-wt_projects .pr_card'),layout:h('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)'),shortcut:h('.dsh-wt_shortcut')};
     out.cardsBefore={ta:document.querySelectorAll('.dsh-wt_projects .ta_card').length,pr:document.querySelectorAll('.dsh-wt_projects .pr_card').length};
     var btn=document.querySelector('.dsh-wt_actions .dsh-wt_iconBtn:nth-child(2)');
     if(btn){ btn.click(); }
@@ -358,7 +358,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var del2=document.querySelector('.dsh-wt_confirmDelete');
     if(del2){ del2.click(); }
     await new Promise(function(r){setTimeout(r,300)});
-    out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_layout');
+    out.layoutGoneAfterDelete=!document.querySelector('.dsh-wt_projects .dsh-wt_layout:not(.dsh-wt_consoleEntry)');
     try{ out.layoutsLeft=JSON.parse(localStorage.getItem('dsh.worktable.projects.v1')).layouts.length }catch(e){ out.layoutsLeft='ERR' }
     // 真删除：「已删除的项目」区块已移除——删除即彻底移出工作台（无重新添加入口）
     out.removedSection=!!document.querySelector('.dsh-wt_settings .dsh-wt_manageRowRemoved');
