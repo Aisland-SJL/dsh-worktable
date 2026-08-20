@@ -1029,6 +1029,19 @@
   functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（终端左上角「小输入框」修复：xterm.css 内联注入）
+
+- 用户反馈：终端窗左上角仍有一个像很小输入框的东西。
+- 排查：直连终端 WS 抓原始输出 = 干净 PS 提示符（-NoProfile 已生效）；真正元凶是 xterm 的
+  隐藏输入 textarea——xterm.css 被打进 lib/client.css，而宿主只加载 JS 不加载独立 css 文件，
+  该样式从未注入，textarea 裸露可见。
+- 修复：client 构建加 text loader，styles.ts 内联 import 'xterm/css/xterm.css' 拼入注入样式串；
+  split.tsx 移除独立 css import。
+- 验证（termtextarea-mini.cjs）：终端 tab 打开后 textarea opacity=0 / z-index=-5 / 7×14px
+  不可见 ✓。
+- 备注：纯客户端改动，F5 即生效。回归期间发现宿主侧故障（见下条）导致全量回归无法通过。
+
+
 
 
 

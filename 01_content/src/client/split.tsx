@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { Terminal } from 'xterm'
-import 'xterm/css/xterm.css'
+
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js/lib/core'
 import hljsTypescript from 'highlight.js/lib/languages/typescript'

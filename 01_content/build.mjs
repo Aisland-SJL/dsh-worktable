@@ -43,6 +43,7 @@ await build({
   target: ['es2022'],
   jsx: 'automatic',
   external: ['@deepseek-ai/*', 'react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'scheduler'],
+  loader: { '.css': 'text' }, // xterm.css 以文本内联进样式串（宿主不加载独立 css 文件）
   banner: clientBanner,
   footer: clientFooter,
 })
