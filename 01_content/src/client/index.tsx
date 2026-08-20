@@ -710,9 +710,11 @@ function WorktableSection(props: any) {
   const [wsFolderError, setWsFolderError] = useState(false)
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
-  /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组 */
+  /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组；
+   *  bindListOpen = 右侧对话列表弹层（点「绑定对话」行弹出） */
   const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
   const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
+  const [bindListOpen, setBindListOpen] = useState(false)
 
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
@@ -1037,6 +1039,7 @@ function buildCustomLayoutPrompt(req: string): string {
     const x = clamp(Math.round(r.right + 8), 8, window.innerWidth - 300)
     const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
     setBindPick({ id, x, y })
+    setBindListOpen(false)
     setBindGroups([])
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
   }, [])
@@ -1060,7 +1063,7 @@ function buildCustomLayoutPrompt(req: string): string {
     })
   }
 
-  /** 绑定 / 解绑会话 */
+  /** 绑定 / 解绑会话（弹窗保持打开，绑定结果即时显示在「绑定对话」框里） */
   const setProjectBinding = (id: string, sessionId: string | null) => {
     persistProjects((prev) => {
       const next = { ...prev.bindings }
@@ -1068,7 +1071,7 @@ function buildCustomLayoutPrompt(req: string): string {
       else delete next[id]
       return { ...prev, bindings: next }
     })
-    setBindPick(null)
+    setBindListOpen(false)
   }
 
   /** 复制自定义布局提示词到剪贴板（失败则全选输入框手动复制） */
@@ -1957,11 +1960,11 @@ function buildCustomLayoutPrompt(req: string): string {
         </div>
       )}
 
-      {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setBindPick(null)} />}
+      {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { setBindPick(null); setBindListOpen(false) }} />}
       {bindPick && (
         <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
           <span className="dsh-wt_menuLabel">{t('bind.title')}</span>
-          {/* 项目文件夹（工作目录）：所有产出文件放这里，可随时更改 */}
+          {/* 项目文件夹框（格式基准）：第一行 emoji+标题，第二行路径；可随时更改 */}
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
               <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
@@ -1971,29 +1974,44 @@ function buildCustomLayoutPrompt(req: string): string {
               {projects.folders[bindPick.id] ?? t('bind.folderNone')}
             </div>
           </div>
-          {(() => {
-            const sid = projects.bindings[bindPick.id]
-            if (!sid) {
+          {/* 绑定对话框（与项目文件夹同格式）：第一行 💬+标题；第二行 分组 | 对话名（点击右侧弹列表）；框内下方：说明 + 解绑 */}
+          <div className="dsh-wt_bindFolderBox">
+            <div className="dsh-wt_bindFolderRow">
+              <span className="dsh-wt_bindFolderLabel">💬 {t('bind.title')}</span>
+            </div>
+            {(() => {
+              const sid = projects.bindings[bindPick.id]
+              if (!sid) {
+                return (
+                  <button type="button" className="dsh-wt_bindConvRow dsh-wt_bindConvRowNone" title={t('bind.tipUnbound')} onClick={() => setBindListOpen(true)}>
+                    <span className="dsh-wt_bindNoneText">{t('bind.unbound')} · {t('bind.clickPick')}</span>
+                  </button>
+                )
+              }
+              const info = bindInfoOf(bindGroups, sid)
               return (
-                <div className="dsh-wt_bindStatus dsh-wt_bindStatusNone">
-                  <span className="dsh-wt_bindMini" aria-hidden><span className="dsh-wt_bindCircles" /></span>
-                  <span className="dsh-wt_bindNoneText">{t('bind.unbound')}</span>
-                </div>
+                <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen(true)}>
+                  <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
+                  <span className="dsh-wt_bindSep" aria-hidden>|</span>
+                  <span className="dsh-wt_bindConvName" title={info.title}>{info.title}</span>
+                  <span className="dsh-wt_bindConvChevron" aria-hidden>▾</span>
+                </button>
               )
-            }
-            const info = bindInfoOf(bindGroups, sid)
-            return (
-              <div className="dsh-wt_bindStatus">
-                <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
-                <span className="dsh-wt_bindSep" aria-hidden>|</span>
-                <span className="dsh-wt_bindConv" title={info.title}>{info.title}</span>
-              </div>
-            )
-          })()}
-          <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
-          {projects.bindings[bindPick.id] && (
-            <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
-          )}
+            })()}
+            <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
+            {projects.bindings[bindPick.id] && (
+              <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
+            )}
+          </div>
+        </div>
+      )}
+      {/* 对话列表弹层：点「绑定对话」行弹出（优先右侧，放不下翻到左侧）；选中即绑定并收起 */}
+      {bindPick && bindListOpen && (() => {
+        // 主弹窗实际渲染宽 = 280 + 菜单内边距/边框（约 292），右侧列表按 300 偏移避免重叠
+        const rightFits = bindPick.x + 300 + 260 <= window.innerWidth - 8
+        const listLeft = rightFits ? bindPick.x + 300 : Math.max(8, bindPick.x - 268)
+        return (
+        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop" style={{ position: 'fixed', left: listLeft, top: clamp(bindPick.y, 8, window.innerHeight - 348), width: 260, zIndex: 86 }}>
           <div className="dsh-wt_selectList dsh-wt_bindList">
             {bindGroups.map((g, gi) => (
               <Fragment key={g.title || 'g' + gi}>
@@ -2008,7 +2026,7 @@ function buildCustomLayoutPrompt(req: string): string {
                     key={s.id}
                     type="button"
                     className={'dsh-wt_selectItem' + (projects.bindings[bindPick.id] === s.id ? ' dsh-wt_selectItemOn' : '')}
-                    onClick={() => setProjectBinding(bindPick.id, s.id)}
+                    onClick={() => { setProjectBinding(bindPick.id, s.id); setBindListOpen(false) }}
                   >
                     <span className="dsh-wt_selectItemTitle">{s.title}</span>
                     {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
@@ -2018,7 +2036,8 @@ function buildCustomLayoutPrompt(req: string): string {
             ))}
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {customOpen && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setCustomOpen(false)} />}
       {customOpen && (

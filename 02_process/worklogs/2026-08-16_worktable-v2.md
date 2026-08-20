@@ -1103,7 +1103,19 @@
   tasks 非网页标签无 ↻ ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
 
+## 补记（绑定弹窗精简：两框统一格式 + 右侧弹列表）
 
-
-
-
+- 用户反馈：绑定对话弹窗内容太多太丑，要求精简。定案：① 点开只显示「项目文件夹」+
+  「绑定对话」两个框，说明简化；② 底部对话列表去掉，改在点击「绑定对话」行时于右侧
+  弹出列表；③ 「绑定对话」按「项目文件夹」格式做完整框：第一行 💬 emoji + 「绑定对话」
+  标题，第二行现在显示的 分组 | 对话名，下方简单说明、再下方解绑，全部框在框里。
+- 实现：bindPick 弹窗重构——两个 .dsh-wt_bindFolderBox 同格式框；绑定对话行
+  .dsh-wt_bindConvRow（未绑定态「未绑定对话 · 点击选择对话」，已绑定态 📂分组|名称+▾），
+  点击开 bindListOpen 右侧 .dsh-wt_bindListPop（优先右侧 x+300，放不下翻左侧）；选会话后
+  列表收起、主弹窗保持打开即时显示绑定结果（setProjectBinding 不再 setBindPick(null)，
+  改 setBindListOpen(false)）；说明 bind.hint 简化为一句话；解绑按钮入框。
+  样式：删 bindStatus/bindMini/bindConv，新增 bindConvRow/ConvName/ConvChevron/bindListPop。
+- 验证（probe-batch15.cjs）：两框同格式（📁 项目文件夹 / 💬 绑定对话）✓；主弹窗无列表 ✓；
+  点行右侧弹列表（listOnRight、23 项）✓；选后列表收起、主弹窗显示新绑定（名称/▾/解绑）✓；
+  解绑回未绑定态 ✓；backdrop 关闭 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
