@@ -1,0 +1,293 @@
+做第一个改动。我们给工作台的所有生成的项目也绑定工作区，什么意思呢？就是首先第一个改动是在他工作台添加项目的时候，你不仅要选择项目的名称，你还要选择项目的工作目录或者叫工作文件夹，强行逼着用户去建立一个对应的工作项目文件夹。然后已经建好的项目呢？也可以更改这个文件夹，你点击这个每个项目的绑定对话的两个点icon，你上面不是绑定对话吗？绑定对话的上方，再往上你再做一个类似的结构，是项目文件夹，这个文件夹也可以后面改，这个意思是说后续任何这个项目产生的文件，你要尽可能的都放在他选的这个文件夹里面，注意这件这件事情是你自己的一个代码上的修改，就是用户选择了这个文件夹之后，以后用户对这个项目做的任何内容，你尽可能的都要在他选择的文件夹里面去生成项目，而不要生成到你的C盘的你的默认位置，那样是不对的，这件事情就是为了让用户的文件夹足够的干净，让用户不要因为不知道你生成的文件放在哪里而去不敢生成。
+
+第二个改动：我们假设用户在某一个项目及其绑定的对话中处理问题的时候他突然想切换到一个其他的对话。那如果他点击那个其他对话，目前的这个项目并不会自动退出，而只会把目前项目界面的那个对话替换成他选的那个对话。这里不太好，因为这件事情会让用户再手点一次他所在的那个项目，做一个反选，把项目关掉。这件事情是很麻烦的，因为当用户在这个项目的界面中选择其他对话的时候，他一定是想切换到其他的内容，而不是在继续深耕此此项目的内容，所以你没有必要再保留这个。所以我的意思就是当用户切换到其他对话，你就自动把他所在的这个项目界面给关掉。
+此外，如果用户如果用户在处理某一个项目及其对话的时候，用户做了一个反选的操作，就是他点击反选关掉了这个项目，或者他用叉号关掉了这个项目，这个时候你要自动跳跳，转到他上一个存在的对话，而不是目前这个对话。你懂这个操作吗？因为按目前的逻辑来说，假设我们假设用户在对话A中进行了一段操作，然后这个时候他切换到了项目B，项目B绑定对话B，那么而当他关掉项目B的时候，他目前界面上的对话就变成了跟项目B绑定的那个对话B，而不是他之前的对话A。所以你要在用户关掉这个项目的时候，把对话也切换成上一个，让对话跟项目的绑定关系更加紧密。
+
+第三个改动，新建窗口的时候，首先你的自动生成的提示词里面，要带上窗口信息，就是要告诉对话，用户是在哪个窗口中发送的这段消息，这代表用户想把哪个窗口打造成他希望的内容，这一点你没有。然后，我试了几次，我发现对话在接到窗口发过去的提示词后，他的反应太慢，或者说处理时间太长，我把其中一个对话，从他接到窗口自动发送的信息，到他做出反应，所做的内容信息，你看看这其中有没有能简化的步骤，比如用户写好窗口作用后点击发送到A对话，这时候你给过去的信息是否可以带更多的注入信息？或者别的方法，你想想办法，我先给你看一下那个对话接到信号后的处理：上下文注入
+~/.dsh/AGENTS.md, AGENTS.md
+上下文注入
+@deepseek-ai/dsh-system-prompt
+上下文注入
+skill-catalog
+Think
+Let me understand the situation. The user has a "工作台" (worktable) plugin in DeepSeek Harness. They want to customize a window in project "2342" to be a calculator. This is a task where I should help produce content that can be put into the window.
+我来先做只读侦察，了解一下工作台插件是怎么组织窗口内容的（这决定了「计算器」以什么形式放进 2342 项目的窗口最合适）。
+
+失败
+Glob
+Error: tool call timed out after 30000ms
+Glob
+**/*worktable*
+Think
+The workspace glob timed out (probably too big). Let me try a narrower search. Maybe list the workspace root directory first.
+工作区根目录搜索超时了，我先看一下目录结构，缩小范围。
+
+Pwsh
+List workspace root directory
+Pwsh
+List .dsh home directory
+Think
+The workspace root is small. The worktable plugin must be elsewhere. Let me search:
+工作区根目录很小，插件不在这里。我去 DSH 本体检出目录和 .dsh 下找找 worktable 插件。
+
+Pwsh
+Find worktable dirs in DSH checkout
+Pwsh
+Search .dsh for worktable files
+Think
+Found the plugin: `C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable`. Let me inspect its structure to understand how content windows work, what content types are supported, and where project "2342" state lives.
+找到了插件本体：C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable。我看看它的结构和窗口内容类型定义。
+
+Pwsh
+List dsh-worktable plugin files
+Think
+Hmm, no output. Maybe the filter on node_modules is excluding everything (because the full path contains node_modules). Let me just list top-level and go down.
+过滤条件把路径都排掉了（路径本身含 node_modules）。换个方式列。
+
+Pwsh
+List worktable plugin files by relative path
+Think
+The plugin has:
+插件结构清楚了，关键代码在 src/index.ts 和 src/client/*。我读一下主入口和客户端代码，重点看内容窗支持哪些类型、本地网页怎么加载。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\index.ts
+Think
+Now I understand the server side. The worktable serves local files via `/api/worktable/file?path=...` and local sites via `/api/worktable/site/<rootToken>/<rel>`. Also there's a `/api/worktable/workspaces` that reads `~/.dsh/storages/workspace.json` — this is the list of workspaces for custom window session grouping.
+服务端看明白了。继续读客户端两个文件，重点看「内容窗类型」「本地网页预览」和「自定义窗口会话分组」的实现。
+
+Pwsh
+Check client source file sizes
+Think
+The client files are large (90KB and 72KB). Let me grep for relevant concepts: pane types, browser, preview, iframe, custom, session grouping, workspaces. Let me grep for key terms in index.tsx and split.tsx.
+文件较大，我用 grep 定位关键概念（窗类型、iframe/预览、自定义窗口、分组）。
+
+Grep
+iframe|kind: 'browser'|kind: 'preview'|'custom'|workspace\.json|localStorage|windowId|sessionId
+Think
+Now I understand the pane content model:
+内容模型清楚了：custom 窗会绑定一个 DSH 会话（本对话就是它的产物）。我再看两处关键代码：CustomPane 的配置/展示逻辑，以及本地 html 如何在窗内打开；同时查一下「2342」项目在 workspace.json 里的信息。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\split.tsx
+Pwsh
+Read workspace.json workspaces list
+Think
+Now I understand:
+CustomPane 只是「建会话发需求」的对话框，本对话正是它的产物。要真正让窗口显示计算器，关键看窗内容如何渲染/切换。继续读几段：BrowserPane、FileViewer、窗类型选择器和持久化模型。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\split.tsx
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\split.tsx
+Think
+Now I have a full picture:
+内容窗机制完全清楚了：资源管理器里点击 .html 会以「目录级静态托管」方式开成 iframe 标签页。我再确认两件事：工作台里「项目」是怎么定义的（2342 对应什么目录），以及 Projects 目录现状。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\index.tsx
+Pwsh
+List Projects folder contents
+Think
+Interesting. `Projects` folder contains various projects (AiLearn, auto-robot, building-agent, dsh-animator, dsh-planreview, dsh-reminder, dsh-travelatlas, dsh-usage, dsh-worktable) but no "2342" folder.
+Projects 里没有 2342 文件夹。我搜一下会话记录，找到「2342」项目对应的会话和它的工作目录。
+
+Grep
+2342
+Think
+No "2342" in session files. Let me check where project ids come from in the worktable. Maybe projects are the better-sidebar items or workspace groups. Let me search index.tsx for "getProjects" and "currentProjectId" implementation.
+会话记录里没有 2342。看看工作台「项目」列表的数据来源。
+
+Grep
+getProjects|currentProjectId|PROJECTS_KEY|projects\.map|p\.id
+Think
+So projects are stored in localStorage under `dsh.worktable.projects.v1` — not accessible from here directly. Project "2342" is probably a project the user created in the worktable, with id "2342". The project's window (custom pane) created this session.
+「项目」列表存在浏览器 localStorage（dsh.worktable.projects.v1），服务端读不到。我看看插件的 package.json 和构建/加载方式，判断改插件新增「计算器」窗类型是否可行、代价多大。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\package.json
+Think
+So dsh-worktable:
+工作台插件的开发源应该就在工作区 Projects\dsh-worktable。确认一下它和 profile 里那个是否是同一份（junction 链接），以及 lib 构建产物情况。
+
+失败
+Pwsh
+Check plugin source repo and lib build
+Think
+The junction: `profiles\web\node_modules\dsh-worktable` → `E:\AI_Workspace\DeepseekHarness\Projects\dsh-worktable\01_content`. And the source repo has `00_index`, `01_content`, `02_process`, `03_local`, `04_test` folders, plus AGENTS.md, README.md, LICENSE, .gitignore. The `lib` build doesn't exist in 01_content directly? Exit code 1 was from the last Get-ChildItem (lib not found). Let me look at 01_content structure.
+链接确认：profile 里的插件 junction 指向 Projects\dsh-worktable\01_content。看一下这个目录的结构和构建脚本。
+
+Pwsh
+List 01_content plugin source tree
+Think
+Now everything is clear:
+插件源仓库和构建链路都清楚了。看一下项目自己的 AGENTS.md/README 和 build.mjs，了解构建与规范约定。
+
+Read
+Projects\dsh-worktable\AGENTS.md
+Read
+Projects\dsh-worktable\01_content\build.mjs
+上下文注入
+Projects\dsh-worktable\AGENTS.md
+Think
+Now I have the full picture. Let me also quickly check the plugin's README.md for the pane types and how the "custom" window concept is described, plus check the PRD maybe. Actually, I have enough for planning. But a few more things worth checking for the plan:
+再确认最后一块拼图：工作台「项目」对象（id/name）到底怎么生成——这决定 2342 项目有没有对应目录、内容文件放哪最顺手。
+
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\index.tsx
+Think
+OK so projects = registered alive projects (from better-sidebar slots? "aliveRegisteredIds") + custom layouts (presets). "2342" is probably the id of a registered project (maybe a better-sidebar project with id "2342") or a layout. Either way, it's a localStorage project; no folder mapping. The custom window of project 2342 spawned this session; this session's cwd is the main workspace `E:\AI_Workspace\DeepseekHarness`.
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\split.tsx
+Read
+C:\Users\SJL\.dsh\profiles\web\node_modules\dsh-worktable\src\client\split.tsx
+Think
+Recon complete. I now understand:
+侦察完毕，情况已经完全清楚了。先同步一下我掌握的关键事实，再问你几个问题定方案。
+
+侦察结论（工作台插件 Projects\dsh-worktable，profile 通过 junction 加载 01_content）：
+
+内容窗的内容模型 = 标签页：内置窗（浏览器/动画/资源管理器/SCM/任务/终端/✨自定义） + iframe 网页 + 文件预览。未指派时显示选择器（当前 5 个磁贴）。
+「✨自定义」窗只是个对话框：负责建会话、把需求发给会话——本对话就是它在 2342 项目里的产物。它本身不渲染内容，所以「窗口变计算器」需要换一种内容形态。
+插件有完整源码和构建链：01_content/src/client/split.tsx + npm run build 出 lib/client.js；bundle 只在启动时组合，改插件必须重建并重启 dsh web。
+本地 HTML 可经 /api/worktable/site/<目录>/<文件> 目录级托管在窗口里完整渲染（资源管理器点 .html 即此路径）。
+2342 是 localStorage 里的工作台项目（无对应磁盘目录）；本会话 cwd 是 E:\AI_Workspace\DeepseekHarness。
+基于此，需要你定三件事：
+
+提问
+3/3 已回答
+
+
+自定义窗口的时候，你现在是新建对话以及发送到对话，默认是新建对话，把这两个换一个，你把默认变成【发送到对话】。两者换一个位置就行，【发动到对话】变成第一个，【新建对话】变成第二个。
+
+
+
+第一个改动是 新建布局时候 在：【项目文件夹
+E:\AI_Workspace\DeepseekHarness\Projects
+选择位置…】这一行，你的项目文件夹和那个地址 最好左对齐，现在左边有一段空隙，往左移动一点，然后把地址栏拉长一点
+
+第二个问题是，绑定对话 和 窗口的发送到对话 都不能选择【未分组对话】 列表里没有 未分组的对话
+
+
+"E:\AI_Workspace\MediaLab\ProductionLab\04_Project\FitnessWeb"在这个文件夹里你可以看到一个健身网站的项目，我希望你首先不要动这个项目，然后你将这个项目的文件夹结构及代码完整镜像到你的工作目录中"E:\AI_Workspace\DeepseekHarness\Projects\FitnessWeb"，然后我希望在本窗口中预览该网页，以后你帮我搭建该网页的设计与信息
+
+
+[
+    {
+        "domain": ".x.com",
+        "expirationDate": 1818233854.0211,
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "auth_token",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "33bdfe19d345dc777d23febadf696887828c98e4"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1800145440.806814,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "guest_id",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "v1%3A176593104162820880"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1818698386.035009,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "twid",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "u%3D2815174332"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1787164177.988143,
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "__cf_bm",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "mKgX6Jll.GoZF1gaY9dYAzydSIRNhNErIPcglrYaI0g-1787162377.9095926-1.0.1.1-JODqx8m432mID.LyAI5xlAgfp0beyKp0uilJm2_5lE_hhtn6lEurkuPPfalNAqpOx9DSjMf7zJRF1eTnLvqkawXiXljbMvqbGgo3PJlyxSeiJzesKMDxM9NjHAtxHXLj"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1821257854.64504,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "ct0",
+        "path": "/",
+        "sameSite": "lax",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "0b19ce63dc884283bed67b770b4a5565af048776846463ac90f7859cd07d718260e33eafdcde3c69af8dc5beaef5d94c0a1254170e26441e0a702d67706840db6cc0469ee38cee4f0e60b3f3d074a7e8"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1821722386.034834,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "guest_id_ads",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "v1%3A176593104162820880"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1821722386.034945,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "guest_id_marketing",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "v1%3A176593104162820880"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1821257854.020862,
+        "hostOnly": false,
+        "httpOnly": true,
+        "name": "kdt",
+        "path": "/",
+        "sameSite": null,
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "G0d44dZmTh88sIJGqK19XLfasLZmcdxTuD6zcKXo"
+    },
+    {
+        "domain": ".x.com",
+        "expirationDate": 1800491094.562787,
+        "hostOnly": false,
+        "httpOnly": false,
+        "name": "personalization_id",
+        "path": "/",
+        "sameSite": "no_restriction",
+        "secure": true,
+        "session": false,
+        "storeId": null,
+        "value": "\"v1_BhEoSYaSGzUyazKZ2i/ueg==\""
+    }
+]

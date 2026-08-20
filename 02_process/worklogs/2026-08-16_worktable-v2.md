@@ -1089,24 +1089,19 @@
   （STEP10 断言按新行为重写）ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；重启不会自动出现该按钮，必须本次改动生效。
 
+## 补记（刷新按钮统一到标签栏最左）
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- 用户定案：网页窗的刷新不要「地址栏 ↻ + 悬浮 ↻」两套格式——做成网页后地址栏会消失，
+  悬浮按钮也找不准。统一方案：**每个网页类标签（iframe / 浏览器 / 动画）在标签栏最左侧、
+  标签名之前固定一个 ↻**，点击重挂载该标签内容（并切到该标签）；非网页标签不放。
+- 实现：PaneBody 增加 reloadKeys（按标签 id 计数）+ refreshableTab 判定，tab 首子元素
+  渲染 .dsh-wt_tabRefresh；reloadKey 经 PaneTabBody 传入 IframePane/BrowserPane/AnimPane
+  作为 iframe key。撤掉 BrowserPane/AnimPane 地址栏 ↻（只留 ↗）、撤掉 IframePane 的
+  .dsh-wt_frameWrap/.dsh-wt_frameRefresh 悬浮按钮及样式（styles.ts 换为 .dsh-wt_tabRefresh）。
+- 验证（probe-batch14.cjs）：iframe/浏览器/动画三类标签 ↻ 均在最左（title=刷新）且点击后
+  iframe 重挂载 ✓；地址栏只剩 ↗（goCount=1）✓；frameWrap/frameRefresh 不再出现 ✓；
+  tasks 非网页标签无 ↻ ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
 
 
 

@@ -864,11 +864,10 @@ function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', 
   }
 }
 
-/** 浏览器内置窗：地址栏 + 刷新 + iframe（刷新 = 重新挂载 iframe，跨域也可靠） */
-function BrowserPane() {
+/** 浏览器内置窗：地址栏 + 前往；刷新统一在标签栏最左（重挂载 iframe，跨域也可靠） */
+function BrowserPane(props: { reloadKey: number }) {
   const [url, setUrl] = useState('https://example.com')
   const [src, setSrc] = useState('https://example.com')
-  const [reloadKey, setReloadKey] = useState(0)
   const go = () => {
     const u = url.trim()
     setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
@@ -883,36 +882,22 @@ function BrowserPane() {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') go() }}
         />
-        <button type="button" className="dsh-wt_browserGo" title={T('pane.refresh')} aria-label={T('pane.refresh')} onClick={() => setReloadKey((k) => k + 1)}>↻</button>
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={src} title="browser" />
+      <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={src} title="browser" />
     </>
   )
 }
 
-/** iframe 内容标签（网页/站点产物）：右上角常驻刷新按钮（重挂载整页刷新，跨域可靠） */
-function IframePane(props: { url: string; title?: string }) {
-  const [reloadKey, setReloadKey] = useState(0)
-  return (
-    <div className="dsh-wt_frameWrap">
-      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={props.url} title={props.title ?? ''} />
-      <button
-        type="button"
-        className="dsh-wt_frameRefresh"
-        title={T('pane.refresh')}
-        aria-label={T('pane.refresh')}
-        onClick={() => setReloadKey((k) => k + 1)}
-      >↻</button>
-    </div>
-  )
+/** iframe 内容标签（网页/站点产物）：刷新统一在标签栏最左（重挂载整页刷新，跨域可靠） */
+function IframePane(props: { url: string; title?: string; reloadKey: number }) {
+  return <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={props.url} title={props.title ?? ''} />
 }
 
 /** 动画播放窗：iframe 壳 + 地址栏（站内自带项目/场景列表、播放、画幅切换、导出等全部控件） */
-function AnimPane() {
+function AnimPane(props: { reloadKey: number }) {
   const [url, setUrl] = useState('')
   const [src, setSrc] = useState('about:blank')
-  const [reloadKey, setReloadKey] = useState(0)
   const go = () => {
     const u = url.trim()
     setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
@@ -927,10 +912,9 @@ function AnimPane() {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') go() }}
         />
-        <button type="button" className="dsh-wt_browserGo" title={T('pane.refresh')} aria-label={T('pane.refresh')} onClick={() => setReloadKey((k) => k + 1)}>↻</button>
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={src} title="anim" />
+      <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={src} title="anim" />
     </>
   )
 }
@@ -1548,16 +1532,16 @@ function CustomPane(props: { paneTitle?: string }) {
 }
 
 /** 单个标签页的内容渲染 */
-function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTitle?: string }) {
+function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTitle?: string; reloadKey: number }) {
   const content = props.tab.content
   if (content.kind === 'iframe') {
-    return <IframePane url={content.url} title={content.title ?? props.tab.title} />
+    return <IframePane url={content.url} title={content.title ?? props.tab.title} reloadKey={props.reloadKey} />
   }
   if (content.kind === 'file') {
     return <FileViewer path={content.path} />
   }
-  if (content.type === 'browser') return <BrowserPane />
-  if (content.type === 'anim') return <AnimPane />
+  if (content.type === 'browser') return <BrowserPane reloadKey={props.reloadKey} />
+  if (content.type === 'anim') return <AnimPane reloadKey={props.reloadKey} />
   if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
@@ -1571,13 +1555,25 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTit
   )
 }
 
-/** 窗内容：标签页模型（无标签 = 6 选 1 选择器；标签可切换/关闭，关完回到选择器） */
+/** 需要标签栏刷新按钮的内容类型：网页类（iframe / 浏览器 / 动画）统一在标签最左放 ↻ */
+function refreshableTab(t: PaneTab): boolean {
+  const c = t.content
+  return c.kind === 'iframe' || (c.kind === 'builtin' && (c.type === 'browser' || c.type === 'anim'))
+}
+
+/** 窗内容：标签页模型（无标签 = 6 选 1 选择器；标签可切换/关闭，关完回到选择器）
+ *  网页类标签最左侧固定一个 ↻ 刷新按钮（标签名之前），点击重挂载该标签内容。 */
 function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   const { pane, row, index } = props
   const tabs = pane.tabs ?? []
   const active = Math.min(pane.active ?? 0, Math.max(0, tabs.length - 1))
+  const [reloadKeys, setReloadKeys] = useState<Record<string, number>>({})
   if (tabs.length === 0) {
     return <PanePicker row={row} index={index} />
+  }
+  const refreshTab = (t: PaneTab) => {
+    setReloadKeys((m) => ({ ...m, [t.id]: (m[t.id] ?? 0) + 1 }))
+    splitStore.setActiveTab(row, index, t.id)
   }
   return (
     <>
@@ -1592,6 +1588,15 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
             onDragEnd={() => { dragTab = null; setDropTarget(null) }}
             onClick={() => splitStore.setActiveTab(row, index, t.id)}
           >
+            {refreshableTab(t) && (
+              <button
+                type="button"
+                className="dsh-wt_tabRefresh"
+                title={T('pane.refresh')}
+                aria-label={T('pane.refresh')}
+                onClick={(e) => { e.stopPropagation(); refreshTab(t) }}
+              >↻</button>
+            )}
             <span className="dsh-wt_tabTitle">{t.title}</span>
             <button
               type="button"
@@ -1602,7 +1607,7 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
           </span>
         ))}
       </div>
-      <PaneTabBody tab={tabs[active]} row={row} index={index} paneTitle={pane.title} />
+      <PaneTabBody tab={tabs[active]} row={row} index={index} paneTitle={pane.title} reloadKey={reloadKeys[tabs[active].id] ?? 0} />
     </>
   )
 }
