@@ -1067,6 +1067,16 @@
   reopenKeepsLock=true ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；夹具目录已清理。
 
+## 补记（浏览器/动画窗加刷新按钮）
+
+- 用户反馈：浏览器窗缺刷新按钮。
+- 实现：BrowserPane 与 AnimPane 地址栏在 ↗ 前加 ↻（title/aria=刷新）；刷新 = reloadKey 递增
+  重新挂载 iframe（React key 重挂载，跨域页面也能可靠整页刷新，不受 iframe 跨域限制）。
+- 验证（probe-refresh.cjs）：按钮 2 个（↻刷新 + ↗）✓；点击后 iframe 元素身份变化
+  （remounted=true）✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
+
+
 
 
 

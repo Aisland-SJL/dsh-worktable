@@ -864,10 +864,11 @@ function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', 
   }
 }
 
-/** 浏览器内置窗：地址栏 + iframe */
+/** 浏览器内置窗：地址栏 + 刷新 + iframe（刷新 = 重新挂载 iframe，跨域也可靠） */
 function BrowserPane() {
   const [url, setUrl] = useState('https://example.com')
   const [src, setSrc] = useState('https://example.com')
+  const [reloadKey, setReloadKey] = useState(0)
   const go = () => {
     const u = url.trim()
     setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
@@ -882,9 +883,10 @@ function BrowserPane() {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') go() }}
         />
+        <button type="button" className="dsh-wt_browserGo" title={T('pane.refresh')} aria-label={T('pane.refresh')} onClick={() => setReloadKey((k) => k + 1)}>↻</button>
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe className="dsh-wt_paneFrame" src={src} title="browser" />
+      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={src} title="browser" />
     </>
   )
 }
@@ -893,6 +895,7 @@ function BrowserPane() {
 function AnimPane() {
   const [url, setUrl] = useState('')
   const [src, setSrc] = useState('about:blank')
+  const [reloadKey, setReloadKey] = useState(0)
   const go = () => {
     const u = url.trim()
     setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
@@ -907,9 +910,10 @@ function AnimPane() {
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') go() }}
         />
+        <button type="button" className="dsh-wt_browserGo" title={T('pane.refresh')} aria-label={T('pane.refresh')} onClick={() => setReloadKey((k) => k + 1)}>↻</button>
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe className="dsh-wt_paneFrame" src={src} title="anim" />
+      <iframe key={reloadKey} className="dsh-wt_paneFrame" src={src} title="anim" />
     </>
   )
 }
