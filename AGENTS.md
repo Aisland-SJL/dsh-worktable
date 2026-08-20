@@ -46,6 +46,11 @@ node --check lib/index.js
   放进该文件夹」指令——用户要求项目产出文件不得落到默认位置。
 - **窗口任务提示词**：buildWindowTaskText 统一组装（窗口身份「项目+窗口N」+ 项目文件夹 +
   插件知识包）；知识包注明「不要重新侦察插件源码」，改提示词时保持这个原则。
+- **自动挂载（widget-result.json 握手）**：提示词第 6 条要求 agent 完成后在项目文件夹写
+  widget-result.json {window:'窗口N', path, kind:html|url|file}；客户端监听绑定会话 completed →
+  buildMountContent 转换产物 → 项目开着直接 openTab 进「窗口N」（windowLabelToPane 按窗口
+  编号规则定位），项目没开暂存 pendingMountRef（localStorage，打开项目时补挂）；
+  mountConsumedRef 保证一次完成只消费一次。
 - **原生皮肤模板**：01_content/template/dshell.css + dshell.html（esbuild text loader 嵌入服务端
   bundle，/api/worktable/template 路由下发）；知识包要求产出 HTML 一律引用该样式表，组件类
   参考模板。新增组件样式只加到 dshell.css，保持单一来源。

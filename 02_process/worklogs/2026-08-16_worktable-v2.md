@@ -1041,6 +1041,20 @@
   不可见 ✓。
 - 备注：纯客户端改动，F5 即生效。回归期间发现宿主侧故障（见下条）导致全量回归无法通过。
 
+## 补记（自动挂载：完成后产物自动进窗口）
+
+- 用户要求：窗口任务完成后，产物应自动显示在窗口里，而不是让用户手动去资源管理器找 HTML。
+- 实现：① 提示词第 6 条加「产物清单握手」——agent 完成后在项目文件夹写 widget-result.json
+  {window:'窗口N', path, kind:html|url|file}；② 客户端监听绑定会话 completed（mountConsumedRef
+  一次完成只消费一次）→ 读清单 → buildMountContent（html=目录级托管 iframe / url=外链 /
+  file=文件预览）→ 项目开着 openTab 进「窗口N」（windowLabelToPane 按左栏→顶行→主行编号
+  规则定位，找不到落主行首格）；项目没开则暂存 pendingMountRef（localStorage）打开时补挂。
+- 验证（probe-batch11.cjs）：提示词含握手 ✓；tabsBefore=0 → 伪造完成 → 自动挂出 iframe 标签
+  （site URL 指向夹具 page.html，title=page.html）✓；关项目后再完成 → pendingStored ✓ →
+  重开项目 mountedAfterReopen ✓；宿主重启后 functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；夹具目录已清理。
+
+
 
 
 

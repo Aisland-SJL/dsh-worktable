@@ -455,6 +455,7 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
     '   - 视频 / 动画 → 生成 .mp4 / .gif（或 Lottie JSON）文件放进项目文件夹；',
     '   - 工作台已有内置窗能力（资源管理器 / 终端 / 浏览器 / 动画站）→ 不要重复造轮子，直接建议用户改用内置窗。',
     '5. 完成内容后，用一两句话说明用户把它放进窗口的步骤。该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
+    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json，内容示例 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进「' + win + '」窗口，用户无需手动操作。',
     KNOWLEDGE_PACK,
   ]
   return lines.join('\n')
@@ -550,6 +551,44 @@ function saveNotifyAck(sid: string, state: string) {
     localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(ack))
   } catch {}
 }
+/** 自动挂载：已消费过完成事件的会话集（一次完成只挂载一次） */
+const mountConsumedRef: { current: Set<string> } = { current: new Set<string>() }
+/** 待挂载（项目未打开时暂存）：projectId → 挂载内容；刷新后从 localStorage 恢复 */
+const pendingMountRef: { current: Record<string, any> } = { current: (() => {
+  try { return JSON.parse(localStorage.getItem('dsh.worktable.pendingMount.v1') ?? '{}') ?? {} } catch { return {} }
+})() }
+
+/** 「窗口N」→ 窗格位置（左栏 → 顶行 → 主行 编号规则，与 AGENTS.md 窗口编号一致） */
+function windowLabelToPane(spec: any, label: string): { row: 'left' | 'top' | 'main'; index: number } | null {
+  const m = /^窗口(\d+)$/.exec(String(label ?? '').trim())
+  if (!m) return null
+  const n = parseInt(m[1], 10)
+  if (!Number.isFinite(n) || n < 1) return null
+  let idx = n - 1
+  if (spec?.left) {
+    if (idx === 0) return { row: 'left', index: 0 }
+    idx -= 1
+  }
+  const top = spec?.top ?? []
+  if (idx < top.length) return { row: 'top', index: idx }
+  idx -= top.length
+  const main = spec?.main ?? []
+  if (idx < main.length) return { row: 'main', index: idx }
+  return null
+}
+
+/** 产物清单 → 窗口内容（html=目录级托管 iframe / url=外链 iframe / file=文件预览） */
+function buildMountContent(folder: string, d: any): any {
+  const p = String(d?.path ?? '').trim()
+  if (!p) return null
+  if (d?.kind === 'url') return { kind: 'iframe', url: p, title: p }
+  const full = p.indexOf(':') >= 0 ? p : (folder + '\\' + p.replace(/^[\\/]+/, ''))
+  if (d?.kind === 'file') return { kind: 'file', path: full }
+  const dir = full.replace(/[\\/][^\\/]*$/, '')
+  const name = full.split(/[\\/]/).pop() ?? full
+  return { kind: 'iframe', url: '/api/worktable/site/' + encodeURIComponent(dir) + '/' + encodeURIComponent(name), title: name }
+}
+
 /** 每会话最近一次观察到的「需要判断」布尔值：状态转移时清除旧 ack（新一轮待决重新点亮） */
 const notifyStateSeenRef: { current: Record<string, boolean> } = { current: {} }
 /** 清除某会话的 ack 记录（状态转移时调用，保证新问题不会被旧确认压住） */
@@ -979,6 +1018,13 @@ function buildCustomLayoutPrompt(req: string): string {
       const bound = projectsRef.current.projects.bindings[spec.id]
       if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
       ackProjectNotify(spec.id)
+      // 补挂：此前项目未打开时暂存的产物，现在自动挂进主行第一格
+      const pending = pendingMountRef.current[spec.id]
+      if (pending) {
+        try { splitStore.openTab('main', 0, pending) } catch {}
+        delete pendingMountRef.current[spec.id]
+        try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
+      }
     }
   }, [projects.views])
 
@@ -1055,6 +1101,46 @@ function buildCustomLayoutPrompt(req: string): string {
     sessionsSnapshotStore.listeners.add(l)
     return () => { sessionsSnapshotStore.listeners.delete(l) }
   }, [])
+
+  /** 自动挂载：绑定会话完成 → 读项目文件夹 widget-result.json → 产物自动挂进对应窗口 */
+  const tryAutoMount = useCallback(async (projectId: string, sid: string) => {
+    const folder = projectsRef.current.projects.folders[projectId]
+    if (!folder) return
+    try {
+      const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
+      if (!r.ok) return
+      const d = await r.json().catch(() => null)
+      if (!d) return
+      const content = buildMountContent(folder, d)
+      if (!content) return
+      if (splitStore.active && splitStore.spec?.id === projectId) {
+        // 项目开着：直接挂进「窗口N」对应窗格（找不到就落主行第一格）
+        const pane = windowLabelToPane(splitStore.spec, d.window)
+        splitStore.openTab(pane?.row ?? 'main', pane?.index ?? 0, content)
+      } else {
+        // 项目没开：暂存，打开项目时补挂
+        pendingMountRef.current[projectId] = content
+        try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
+      }
+    } catch { /* 无清单文件 = 不挂载 */ }
+  }, [])
+
+  // 完成事件 → 尝试自动挂载（一次完成只消费一次）
+  useEffect(() => {
+    const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
+    for (const [pid, sid] of Object.entries(projects.bindings)) {
+      const e = byId[sid]
+      if (!e) continue
+      if (e.completed === true) {
+        if (!mountConsumedRef.current.has(sid)) {
+          mountConsumedRef.current.add(sid)
+          tryAutoMount(pid, sid)
+        }
+      } else {
+        mountConsumedRef.current.delete(sid)
+      }
+    }
+  }, [notifyTick, projects.bindings, tryAutoMount])
 
   /** 收集某会话的子代理 id 集：byId 的 parentId 标注 + subagentsByParent 目录双通道 */
   const collectKids = useCallback((sid: string): Set<string> => {
