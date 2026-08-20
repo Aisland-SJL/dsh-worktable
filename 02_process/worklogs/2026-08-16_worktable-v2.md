@@ -1140,3 +1140,5 @@
 - 实现：bindFolderChange 按钮文案改「↻ 更改」；probe-batch15 增 box0ChangeHasRefresh 断言。
 - 验证：box0ChangeHasRefresh ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+- 微调：用户指出两按钮符号一前一后不对称——统一为符号都在文字后：
+  「更改 ↻」+「解绑 ✕」；probe-batch15 断言改 box0ChangeText/box0ChangeSymAtEnd。

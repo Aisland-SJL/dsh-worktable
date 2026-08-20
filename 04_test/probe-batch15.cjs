@@ -62,7 +62,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.box0Path = boxes[0] ? boxes[0].querySelector('.dsh-wt_bindFolderPath').textContent : null;
       var chg = boxes[0] && boxes[0].querySelector('.dsh-wt_bindFolderChange');
       out.box0Change = !!chg;
-      out.box0ChangeHasRefresh = chg ? chg.textContent.indexOf('\u21bb') >= 0 : false;
+      out.box0ChangeText = chg ? chg.textContent.trim() : null;
+      out.box0ChangeSymAtEnd = chg ? chg.textContent.trim().lastIndexOf('\u21bb') === chg.textContent.trim().length - 1 : false;
       // 弹窗左上角不再有「绑定对话」标题；两个框标题字号一致
       out.popTitleGone = !pop.querySelector('.dsh-wt_menuLabel');
       var lb0 = boxes[0] && boxes[0].querySelector('.dsh-wt_bindFolderLabel');
