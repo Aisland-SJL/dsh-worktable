@@ -232,6 +232,8 @@ type SplitEnv = {
     onAck: (id: string) => void
     /** 冷会话消息预热（打开控制室时拉最近消息） */
     refreshPreviews: () => void
+    /** 创建卡片：打开「添加项目」流程（同侧栏 ＋） */
+    onAdd: () => void
     getTheme: () => 'dark' | 'light' | 'system'
     setTheme: (th: 'dark' | 'light' | 'system') => void
   }
@@ -1055,27 +1057,27 @@ function ConsolePane() {
               <span className="dsh-wt_consoleName">{c.name}</span>
               <span className={'dsh-wt_consoleDot dsh-wt_consoleDot-' + c.status} aria-hidden />
             </div>
+            <div className="dsh-wt_consoleDivider" aria-hidden />
             <div className="dsh-wt_consoleStatusRow">
               <span className={'dsh-wt_consoleStatus dsh-wt_consoleStatus-' + c.status}>{statusLabel[c.status]}</span>
               {c.runtimeMs != null && <span className="dsh-wt_consoleRuntime">⏱ {fmtDur(c.runtimeMs)}</span>}
             </div>
-            <div className="dsh-wt_consoleBadges">
-              <span className="dsh-wt_consoleBadge">{T('console.kids')} {c.kids}</span>
-            </div>
             <div className={'dsh-wt_consolePreview' + (c.preview ? '' : ' dsh-wt_consolePreviewNone')} title={c.preview}>
               {c.preview || (c.bound ? T('console.noPreview') : T('console.unboundShort'))}
             </div>
-            {c.bound && !c.self && (
-              <button
-                type="button"
-                className="dsh-wt_consoleJump"
-                title={T('console.jump')}
-                aria-label={T('console.jump')}
-                onClick={(e) => { e.stopPropagation(); env?.onJump(c.id) }}
-              >💬</button>
-            )}
           </div>
         ))}
+        {/* 创建卡片：永远最后一位；点击 = 侧栏工作台「添加项目」同款流程 */}
+        <div
+          role="button"
+          tabIndex={0}
+          className="dsh-wt_consoleCard dsh-wt_consoleAdd"
+          title={T('console.addProject')}
+          onClick={() => env?.onAdd?.()}
+        >
+          <span className="dsh-wt_consoleAddPlus" aria-hidden>＋</span>
+          <span className="dsh-wt_consoleAddLabel">{T('console.addProject')}</span>
+        </div>
       </div>
       {cards.length === 0 && <div className="dsh-wt_consoleEmpty">{T('console.empty')}</div>}
     </div>

@@ -1231,3 +1231,21 @@
 - 验证：probe-batch16 healTabs=1、healType='console' ✓，全流程 ✓；functional-diag
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；用户 F5 后坏存档自动修复，点「控制室」卡片即恢复面板。
+
+## 补记（控制室第三轮打磨：下沉居中 + 4 倍间距 + 1.2 倍卡片 + 创建卡 + 去子代理/💬 + 入口无描边）
+
+- 用户反馈：① 卡片太靠上 → 网格下沉（margin-top clamp(32px,9vh,110px)，接近画面中部）；
+  ② 卡间距太小 → gap 16→64px（4 倍）；③ 卡片整体放大 1.2 倍（padding 19/图标 28/
+  名字 17.5/状态 20/时长 15）；④ 删掉右上角隐藏的 💬 跳转按钮（无意义）；⑤ 网格最后
+  一位永远是一张「创建卡片」（虚线 + 居中加号），点击 = 侧栏工作台「添加项目」同款流程
+  （openAddPanel 共用：setAddOpen + 默认父目录取当前会话 cwd）；⑥ 侧栏控制室入口卡去掉
+  描边（border transparent），渐变颜色提亮提饱和（rgba(109,164,255,.30)→
+  rgba(167,130,255,.22)），保留微光；⑦ 子代理徽章全删（都是 0 无信息）；⑧ 卡片名字下方
+  加横向分隔线（标题/状态/预览层次分明）；⑨ 预览字改小（11px）行数提到 4 行，抓取切
+  220 字符；⑩ 名字字号变大且**所有卡片共用类名**——以后新建的项目卡片自动同字号。
+- 验证（probe-batch16 更新）：gridGap 64px / gridMarginTop 72px ✓、nameFont 17.5px /
+  previewFont 11px / statusFont 20px ✓、dividerExists ✓、kidsGone/jumpGone ✓、
+  addCardLast（＋）且点击开添加面板（addPopOpened）✓、入口 border rgba(0,0,0,0) +
+  渐变 ✓、真实运行会话 busy 旋转光弧动效生效 ✓；全流程 + 主题 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

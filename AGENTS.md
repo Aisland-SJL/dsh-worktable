@@ -84,12 +84,11 @@ node --check lib/index.js
     建空会话 sessions.create 后自动绑定并打开控制室）。绑定也走 projects.v1.bindings。
   - 控制室面板（split.tsx ConsolePane）：卡片网格每行 3 张、超出换行；每卡 = 图标/名称/
     三态圆点（need>done>busy>idle，不过滤 ack，永远显示事实状态）/运行时长（后台任务
-    JobView.startedAt 或会话面 turnTimings 未结束轮次）/子代理数（byId.parentId +
-    subagentsByParent 双通道计数）/最近消息预览（会话面快照 nodes 末条文本，纯读内存
-    零 Token）。数据组装 = index.tsx getConsoleCards（env.console 注入），刷新走
-    consoleListeners（项目/会话快照变化推送）+ 面板每秒 tick。
-  - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；💬 = 跳绑定对话
-    （markPluginSessionOpen 豁免联动，控制室保持打开）；工作台自己的卡片点击无操作。
+    JobView.startedAt 或会话面 turnTimings 未结束轮次）/最近消息预览（会话面快照 nodes
+    末条文本，纯读内存零 Token）。数据组装 = index.tsx getConsoleCards（env.console 注入），
+    刷新走 consoleListeners（项目/会话快照变化推送）+ 面板每秒 tick。
+  - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；工作台自己的卡片
+    点击无操作。💬 跳转按钮已删除（用户定案无意义）。
   - 主题：面板三选一开关（图标按钮 🌙/☀️/🖥️，title/aria 保留文字；存 view.v1 consoleTheme）；
     system 读宿主 html 的 color-scheme（DSH 深色/白色/跟随系统设置都会反映到它）+
     prefers-color-scheme 兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量
@@ -104,8 +103,10 @@ node --check lib/index.js
     「控制室」（console.name/console.title locale，工作台的控制室）。
   - 控制室标签不可关：PaneBody 对 content.type==='console' 的标签 locked（不渲染 ✕、
     禁拖拽）——关掉会退化成窗格选择器，不可逆。
-  - 布局尺度：网格 max-width 720px 居中、gap 16px、面板 padding 22px；卡片 1:1（实测
-    ~229px 宽），保持留白。
+  - 布局尺度：网格 gap 64px（4 倍间距）、margin-top clamp(32px,9vh,110px) 下沉居中；
+    卡片 1:1 整体 1.2 倍（名字 17.5px/状态 20px/预览 11px 四行截断）；标题下横向分隔线；
+    无子代理徽章、无 💬 跳转按钮（已删）；网格最后一位恒为「创建卡片」（虚线＋），点击 =
+    侧栏「添加项目」同款 openAddPanel 流程；入口卡无描边（透明 border + 提亮渐变 + 微光）。
   - 冷会话消息预览（方案 A）：binding() 对冷会话不载入文本；预热走 face.history({maxMessages:2})
     （运行期内建方法、非公开接口，只读无副作用）尾部扫 user/message 与 assistant/message 的
     text 块 → previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s

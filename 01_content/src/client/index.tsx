@@ -372,8 +372,8 @@ async function coldPreviewOf(face: any): Promise<string> {
     for (const b of blocks) {
       const s = typeof b?.text === 'string' ? b.text.trim().replace(/\s+/g, ' ') : ''
       if (!s) continue
-      if (b?.type === 'text') return s.slice(0, 140)
-      if (!fallback) fallback = s.slice(0, 140)
+      if (b?.type === 'text') return s.slice(0, 220)
+      if (!fallback) fallback = s.slice(0, 220)
     }
     return fallback
   }
@@ -986,6 +986,16 @@ function WorktableSection(props: any) {
     return cards
   }
 
+  /** 打开「添加项目」面板（侧栏 ＋ 与控制室创建卡共用）：默认父目录 = 当前会话工作目录 */
+  const openAddPanel = () => {
+    setAddOpen(true)
+    setViewOptionsOpen(false)
+    if (!wsFolderParent) {
+      const cwd = sessionScopeStore.snapshot?.cwd ?? ''
+      if (cwd) setWsFolderParent(cwd)
+    }
+  }
+
   // 会话作用域（当前会话 + 工作目录）与后台任务：注入分栏引擎环境
   // 注意：不走 props.useSessions hook（其宿主包装在部分版本会触发 useSyncExternalStore
   // 崩溃），改为 apply 里订阅 ctx.sessions.list 后写入模块级 store，此处直接读取。
@@ -1046,6 +1056,7 @@ function WorktableSection(props: any) {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
           sweepPreviews()
         },
+        onAdd: () => openAddPanel(),
         onOpen: (id) => {
           if (id === CONSOLE_ID) return
           const pr = projectsRef.current.projects

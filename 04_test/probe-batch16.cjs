@@ -135,16 +135,31 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.gridFound = !!grid;
       if (grid) {
         out.gridCols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+        out.gridGap = getComputedStyle(grid).columnGap;
+        out.gridMarginTop = getComputedStyle(grid).marginTop;
         var cards = grid.querySelectorAll('.dsh-wt_consoleCard');
         out.cardCount = cards.length;
         var c0 = cards[0];
         out.firstCardSelf = !!(c0 && c0.classList.contains('dsh-wt_consoleCardSelf'));
         out.firstCardIcon = c0 ? c0.querySelector('.dsh-wt_consoleIcon').textContent : null;
         out.firstCardDot = c0 && c0.querySelector('.dsh-wt_consoleDot') ? c0.querySelector('.dsh-wt_consoleDot').className.replace('dsh-wt_consoleDot','').trim() : null;
-        out.firstCardBadges = c0 ? c0.querySelectorAll('.dsh-wt_consoleBadge').length : 0;
+        out.nameFont = c0 && c0.querySelector('.dsh-wt_consoleName') ? getComputedStyle(c0.querySelector('.dsh-wt_consoleName')).fontSize : null;
+        out.dividerExists = !!(c0 && c0.querySelector('.dsh-wt_consoleDivider'));
+        out.kidsGone = !(c0 && c0.querySelector('.dsh-wt_consoleBadge'));
+        out.jumpGone = !(c0 && c0.querySelector('.dsh-wt_consoleJump'));
+        out.previewFont = c0 && c0.querySelector('.dsh-wt_consolePreview') ? getComputedStyle(c0.querySelector('.dsh-wt_consolePreview')).fontSize : null;
         out.firstCardHasPreview = !!(c0 && c0.querySelector('.dsh-wt_consolePreview'));
         out.anyLayoutCard = [].slice.call(cards).some(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0; });
-        out.layoutCardHasJump = [].slice.call(cards).some(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0 && !!c.querySelector('.dsh-wt_consoleJump'); });
+        // 创建卡片永远最后一位；点击打开「添加项目」面板
+        var addCard = grid.lastElementChild;
+        out.addCardLast = !!(addCard && addCard.classList.contains('dsh-wt_consoleAdd'));
+        out.addPlus = addCard && addCard.querySelector('.dsh-wt_consoleAddPlus') ? addCard.querySelector('.dsh-wt_consoleAddPlus').textContent : null;
+        if (addCard) { addCard.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
+        await sleep(500);
+        out.addPopOpened = !!vis('.dsh-wt_add');
+        var bd = vis('.dsh-wt_popBackdrop');
+        if (bd) { bd.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
+        await sleep(300);
         // 新版 UI：正方形比例、大字号状态、光效 CSS 接线（注入类验证，不依赖真实会话状态）
         var cardEl = c0;
         if (cardEl) {
@@ -226,13 +241,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.bindPopNotShown = !vis('.dsh-wt_consoleBindPop');
       var grid = vis('.dsh-wt_consoleGrid');
       var lc = grid && [].slice.call(grid.querySelectorAll('.dsh-wt_consoleCard')).find(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0; });
-      out.layoutJumpBtn = !!(lc && lc.querySelector('.dsh-wt_consoleJump'));
+      out.jumpBtnGone = !(lc && lc.querySelector('.dsh-wt_consoleJump'));
       out.layoutCardStatus = lc && lc.querySelector('.dsh-wt_consoleDot') ? lc.querySelector('.dsh-wt_consoleDot').className.replace('dsh-wt_consoleDot','').trim() : null;
-      if (lc && lc.querySelector('.dsh-wt_consoleJump')) {
-        lc.querySelector('.dsh-wt_consoleJump').dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
-        await sleep(700);
-        out.specAfterJump = st.active && st.spec ? st.spec.id : null;
-      }
       st.close(); await sleep(300);
     } catch (e) { out.err = String(e && e.stack || e); }
     return out;
