@@ -121,12 +121,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       }
       out.bindPopClosed = !vis('.dsh-wt_consoleBindPop');
       out.specId = st.active && st.spec ? st.spec.id : null;
-      // 控制室标签关不掉：标签栏存在但该标签无 ✕
-      var tabBar = vis('.dsh-wt_tabBar');
-      var ctab = tabBar && tabBar.querySelector('.dsh-wt_tab');
-      out.consoleTabExists = !!ctab;
-      out.consoleTabCloseGone = !!(ctab && !ctab.querySelector('.dsh-wt_tabClose'));
-      out.consoleTabTitle = ctab ? (ctab.textContent || '').trim() : null;
+      // 顶部只留一个「控制室」（侧栏入口卡）：分栏标题栏 / 标签栏 / 面板内标题全部不再显示
+      out.consoleTabBarGone = !vis('.dsh-wt_tabBar');
+      out.splitTitleGone = !document.querySelector('.dsh-wt_splitTitle');
+      out.paneTitleGone = !vis('.dsh-wt_consoleTitle');
       out.mainType = st.spec && st.spec.main[0] && st.spec.main[0].tabs && st.spec.main[0].tabs[0] ? st.spec.main[0].tabs[0].content.type : null;
       var saved = JSON.parse(localStorage.getItem('dsh.worktable.projects.v1'));
       out.savedConsoleBinding = saved.bindings['wt-console'];
@@ -169,9 +167,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           var statusEl = cardEl.querySelector('.dsh-wt_consoleStatus');
           out.statusFont = statusEl ? getComputedStyle(statusEl).fontSize : null;
           cardEl.classList.add('dsh-wt_consoleCard-busy');
+          await sleep(300);
           var bs = getComputedStyle(cardEl, '::before');
           out.busyBgImage = bs.backgroundImage ? bs.backgroundImage.slice(0, 60) : null;
           out.busyAnim = bs.animationName;
+          out.busyShadow = getComputedStyle(cardEl).boxShadow.slice(0, 90);
           cardEl.classList.remove('dsh-wt_consoleCard-busy');
           cardEl.classList.add('dsh-wt_consoleCard-glowDone');
           await sleep(300);
@@ -215,6 +215,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var vis = function(sel){ return [].slice.call(document.querySelectorAll(sel)).find(function(el){ return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0); }); };
     var st = window.__dshWorktable.splitStore;
     try {
+      // 分隔线粗细：开一个带顶行的临时布局量高度（DIVIDER 6→4）
+      st.open({id:'t-div',title:'d',top:[{id:'tp',title:'t',min:60,content:{kind:'builtin',type:'browser'}}],main:[{id:'mp',title:'m',min:60,content:null}],chatWidth:{default:320,min:240,max:600}});
+      await sleep(500);
+      var dv = vis('.dsh-wt_splitDividerH');
+      out.dividerH = dv ? Math.round(dv.getBoundingClientRect().height) : null;
+      st.close(); await sleep(300);
       var tcard = [].slice.call(document.querySelectorAll('.dsh-wt_projects .dsh-wt_layout')).find(function(b){ return (b.textContent||'').indexOf('绑定测试') >= 0; });
       out.tCardFound = !!tcard;
       var bb = tcard && tcard.querySelector('.dsh-wt_bindBtn');

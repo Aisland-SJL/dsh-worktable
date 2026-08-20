@@ -1249,3 +1249,21 @@
   渐变 ✓、真实运行会话 busy 旋转光弧动效生效 ✓；全流程 + 主题 ✓；functional-diag
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第四轮：卡片 80% + 顶部只留一个「控制室」+ 工作光效增强 + 分隔线变细）
+
+- 用户反馈：① 卡片再缩到 80%（间距不变，两侧向中间收）；② 顶部出现四个「控制室」
+  （分栏标题栏 / 标签栏 / 面板内标题 / 侧栏入口卡）——尽量去掉只留一个；③ 「工作中」
+  旋转光效几乎看不到，要外层描边、更明显；④ 分栏可拖分隔线太粗（DIVIDER 6→4）。
+- 实现：① 网格 max-width 640px + 左右 auto（间距 64px 不变，卡片 171px≈80%），卡片
+  内部同步 0.8（min-height 136/padding 15/图标 22/名字 14/状态 16/时长 12/预览 10）；
+  ② 顶部三处标题全去：分栏标题栏对 wt-console 不渲染 title（保留 ⇄/✕）、PaneBody
+  singleConsole（唯一标签是 console）整个标签栏不渲染、ConsolePane 头去掉标题只留
+  主题开关（右对齐）——现在全页只剩侧栏入口卡一个「控制室」；③ busy 光效增强：描边
+  环加厚（inset -3/padding 3）、峰值 #8fc0ff、光弧 140°、外发光双层 10px+34px 高亮；
+  ④ DIVIDER 常量 6→4（split 分隔线/抓取条变细）。
+- 验证（probe-batch16 更新）：consoleTabBarGone/splitTitleGone/paneTitleGone ✓、
+  cardWidth 171 / nameFont 14 / statusFont 16 / previewFont 10 ✓、gridGap 64px 不变 ✓、
+  busyShadow 双层外发光（10px .55 + 34px .4）+ 新配色 ✓、dividerH=4 ✓；全流程 + 主题 +
+  自愈 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

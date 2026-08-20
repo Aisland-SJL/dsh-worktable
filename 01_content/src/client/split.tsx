@@ -118,7 +118,7 @@ type SplitState = {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
-const DIVIDER = 6
+const DIVIDER = 4
 const BAR_H = 26
 const PERSIST_KEY = 'dsh.worktable.split.v2'
 
@@ -1021,7 +1021,6 @@ function ConsolePane() {
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme}>
       <div className="dsh-wt_consoleHead">
-        <span className="dsh-wt_consoleTitle">🖥️ {T('console.title')}</span>
         <div className="dsh-wt_consoleTheme" role="group" aria-label={T('console.themeLabel')}>
           {themeOpts.map((o) => (
             <button
@@ -1741,8 +1740,11 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
     setReloadKeys((m) => ({ ...m, [t.id]: (m[t.id] ?? 0) + 1 }))
     splitStore.setActiveTab(row, index, t.id)
   }
+  // 唯一标签是控制室 → 整个标签栏不渲染（不可关、不可换，标签栏无信息价值；去掉顶部多余标题）
+  const singleConsole = tabs.length === 1 && tabs[0].content?.kind === 'builtin' && tabs[0].content.type === 'console'
   return (
     <>
+      {!singleConsole && (
       <div className="dsh-wt_tabBar">
         {tabs.map((t, i) => {
           // 控制室标签不可关闭：关掉后窗格变选择器，用户回不到控制室（不可逆操作）
@@ -1779,6 +1781,7 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
           )
         })}
       </div>
+      )}
       <PaneTabBody tab={tabs[active]} row={row} index={index} paneTitle={pane.title} reloadKey={reloadKeys[tabs[active].id] ?? 0} />
     </>
   )
@@ -1909,7 +1912,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
     <>
       {/* 标题栏 */}
       <div className="dsh-wt_splitBar" style={{ position: 'fixed', left: g.left, top: barTop, width: hasLeft || chatFull ? contentW : (hasTop ? colW : contentW), zIndex: 70 }}>
-        <span className="dsh-wt_splitTitle">{spec.title}</span>
+        {spec.id !== 'wt-console' && <span className="dsh-wt_splitTitle">{spec.title}</span>}
         {!hasLeft && (
           <button
             type="button"
