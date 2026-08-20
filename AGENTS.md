@@ -94,18 +94,21 @@ node --check lib/index.js
     prefers-color-scheme 兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量
     --wt-*（宿主不发布 --dsw-alias-*，工作台全站一直靠回退色渲染——控制室自带主题作用域，
     不受其影响）。
-  - 状态光效（整卡霓虹描边，参考侧栏双圆点发光质感）：工作=蓝色描边光晕顺时针绕卡旋转
+  - 状态光效（整卡霓虹描边，参考侧栏双圆点发光质感）：工作=蓝色彗星式光点顺时针绕卡旋转
     （.dsh-wt_consoleCard-busy ::before conic-gradient + @property --consoleAngle +
-    consoleAngleSpin；环 inset -3/padding 3、峰值 #8fc0ff、外发光双层 10px+34px）；完成=绿光、
-    待决=黄光（-glowDone/-glowNeed：亮色描边 + 双层外发光 + 微弱内辉光；glow 字段 = done/need
-    且本轮未 ack，点卡片先 onAck 熄光再进入，与提醒 ack 生命周期一致）。
+    consoleAngleSpin；环 inset -4/padding 4、高亮段 #dcebff→#9cc6ff、filter drop-shadow
+    rgba(140,190,255,.85) 光点自带辉光、外发光双层 10px+34px）；完成=绿光、待决=黄光
+    （-glowDone/-glowNeed：亮色描边 + 双层外发光 + 微弱内辉光；glow 字段 = done/need 且
+    本轮未 ack，点卡片先 onAck 熄光再进入，与提醒 ack 生命周期一致）。
   - 命名：侧栏区块标题 = 「工作台」（title locale，整个插件）；默认项目卡名与面板标题 =
     「控制室」（console.name/console.title locale，工作台的控制室）。
   - 控制室标签不可关：PaneBody 对 content.type==='console' 的标签 locked（不渲染 ✕、
     禁拖拽）——关掉会退化成窗格选择器，不可逆。
-  - 布局尺度：网格 gap 64px（4 倍间距）不变、max-width 640px 左右居中（卡片 80%，实测
-    171px 1:1：名字 14/状态 16/预览 10 四行截断）；标题下横向分隔线；无子代理徽章、无
-    💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
+  - 布局尺度：网格 gap 64px（4 倍间距）不变、max-width 856px 左右居中；卡片 1:1（面积
+    2×边长 1.4，实测 236px：名字 20/状态 22/预览 14 四行截断）；标题下横向分隔线；无子代理
+    徽章、无 💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
+  - 背景：--wt-bg 深色 #0a0d13 + 30px 浅色井字格线（--wt-grid .028/.045，两条
+    linear-gradient），工作台/蓝图质感。
   - 顶部标题克制：控制室页只保留侧栏入口卡一个「控制室」——分栏标题栏对 wt-console
     不渲染 title（保留 ⇄/✕）、PaneBody singleConsole 不渲染标签栏、ConsolePane 头只留
     主题开关（右对齐）。

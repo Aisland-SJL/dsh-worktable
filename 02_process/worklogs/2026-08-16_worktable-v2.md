@@ -1267,3 +1267,20 @@
   busyShadow 双层外发光（10px .55 + 34px .4）+ 新配色 ✓、dividerH=4 ✓；全流程 + 主题 +
   自愈 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第五轮：面积×2（边长 1.4）+ 移动光点更亮 + 深色井字格背景）
+
+- 用户反馈：① 上一版把「边长 0.8」当成了比例（面积≈0.64，看着像 1/4）——改为面积
+  ×2、边长 ×1.4（卡片 236px）；② 旋转的移动光点本身不明显（不只光晕要明显）；
+  ③ 背景整体更深色 + 很浅的井字格（像工作台/蓝图，格子 ≈ 两个字宽）。
+- 实现：① 网格 max-width 856px、卡片 min-height 192/padding 21/圆角 16，字号同步
+  ×1.4（名字 20/状态 22/时长 17/预览 14/图标 31/加号 34）；② busy 光弧改成彗星式：
+  环加厚 inset -4/padding 4、高亮段 #dcebff→#9cc6ff（近白色光点）、加上
+  filter drop-shadow(0 0 8px rgba(140,190,255,.85)) 让移动光点自带辉光；
+  ③ 背景 --wt-bg 深到 #0a0d13 + 两条 linear-gradient 画 30px 井字格线
+  （--wt-grid 很浅：暗色 .028 / 浅色 .045），background-size 30px 30px。
+- 验证（probe-batch16 更新）：cardWidth 236 / gridMaxW 856 ✓、nameFont 20 /
+  statusFont 22 / previewFont 14 ✓、consoleBgColor rgb(10,13,19) + 井字格
+  backgroundImage + 30px 格子 ✓、busyFilter drop-shadow 辉光 ✓、真实 busy 会话旋转
+  生效 ✓；全流程 + 主题 + 自愈 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
