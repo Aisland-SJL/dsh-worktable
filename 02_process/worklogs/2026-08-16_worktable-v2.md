@@ -1054,6 +1054,20 @@
   重开项目 mountedAfterReopen ✓；宿主重启后 functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；夹具目录已清理。
 
+## 补记（挂载锁死：产物成为窗口固定内容）
+
+- 用户要求：用户已明确用 HTML 时，挂载完成后产物必须与该窗口「锁死」——下次进入工作台
+  窗口直接显示页面，不能丢失或重置。
+- 实现：splitStore 新增 lockPane(row,index,content)——清空该窗格原有标签、产物作为唯一标签
+  （active 0）并 onSpecMutated 持久化；tryAutoMount 改用 lockPane；待挂载记录带
+  {content,row,index}（用项目已保存 spec 解析「窗口N」），补挂同样 lockPane；提示词第 6 条
+  增加锁定语义说明。
+- 验证（probe-batch12.cjs）：窗口先放浏览器标签 → 完成事件 → tabsAfterLock=1 且唯一内容为
+  产物 iframe（原标签被替换）✓；lockedPersisted=true（写回 projects.v1）✓；关掉重开
+  reopenKeepsLock=true ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；夹具目录已清理。
+
+
 
 
 

@@ -51,6 +51,9 @@ node --check lib/index.js
   buildMountContent 转换产物 → 项目开着直接 openTab 进「窗口N」（windowLabelToPane 按窗口
   编号规则定位），项目没开暂存 pendingMountRef（localStorage，打开项目时补挂）；
   mountConsumedRef 保证一次完成只消费一次。
+  **锁死语义**：挂载用 splitStore.lockPane——清空该窗格原有标签，把产物作为唯一固定标签
+  （active 0），onSpecMutated 立即持久化；用户下次打开工作台窗口直接显示产物，不丢失不重置。
+  待挂载记录带 {content,row,index}，补挂同样 lockPane。
 - **原生皮肤模板**：01_content/template/dshell.css + dshell.html（esbuild text loader 嵌入服务端
   bundle，/api/worktable/template 路由下发）；知识包要求产出 HTML 一律引用该样式表，组件类
   参考模板。新增组件样式只加到 dshell.css，保持单一来源。

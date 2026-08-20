@@ -105,6 +105,8 @@ type SplitState = {
   setTopW(i: number, w: number): void
   setPaneContent(row: PaneRow, i: number, content: SplitContent | null): void
   openTab(row: PaneRow, i: number, content: SplitContent): void
+  /** 锁定窗格：清空原有标签，把内容作为该窗唯一的固定标签（挂载产物的「锁死」语义） */
+  lockPane(row: PaneRow, i: number, content: SplitContent): void
   closeTab(row: PaneRow, i: number, tabId: string): void
   setActiveTab(row: PaneRow, i: number, tabId: string): void
   moveTab(fromRow: PaneRow, fromI: number, tabId: string, toRow: PaneRow, toI: number): void
@@ -584,6 +586,30 @@ export const splitStore: SplitState = {
 
   setPaneContent(row, i, content) {
     if (content) this.openTab(row, i, content)
+  },
+
+  lockPane(row, i, content) {
+    const spec = this.spec
+    if (!spec) return
+    const tab: PaneTab = { id: 't' + Date.now().toString(36), title: tabTitleOf(content), content, active: 0 }
+    const mutate = (pane: SplitPane): SplitPane => ({ ...pane, content: null, tabs: [tab], active: 0 })
+    if (row === 'left') {
+      if (!spec.left || i !== 0) return
+      this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (!top[i]) return
+      top[i] = mutate(top[i])
+      this.spec = { ...spec, top }
+    } else {
+      const main = [...spec.main]
+      if (!main[i]) return
+      main[i] = mutate(main[i])
+      this.spec = { ...spec, main }
+    }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
   },
 
   openTab(row, i, content) {

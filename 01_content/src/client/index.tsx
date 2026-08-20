@@ -455,7 +455,7 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
     '   - 视频 / 动画 → 生成 .mp4 / .gif（或 Lottie JSON）文件放进项目文件夹；',
     '   - 工作台已有内置窗能力（资源管理器 / 终端 / 浏览器 / 动画站）→ 不要重复造轮子，直接建议用户改用内置窗。',
     '5. 完成内容后，用一两句话说明用户把它放进窗口的步骤。该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
-    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json，内容示例 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进「' + win + '」窗口，用户无需手动操作。',
+    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json，内容示例 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进「' + win + '」窗口，用户无需手动操作；挂载后该产物会作为「' + win + '」窗口的固定内容锁定保存，用户下次打开工作台时窗口直接显示它，不会丢失或重置。',
     KNOWLEDGE_PACK,
   ]
   return lines.join('\n')
@@ -1021,7 +1021,10 @@ function buildCustomLayoutPrompt(req: string): string {
       // 补挂：此前项目未打开时暂存的产物，现在自动挂进主行第一格
       const pending = pendingMountRef.current[spec.id]
       if (pending) {
-        try { splitStore.openTab('main', 0, pending) } catch {}
+        try {
+          if (pending.content && typeof pending.row === 'string') splitStore.lockPane(pending.row, pending.index ?? 0, pending.content)
+          else splitStore.openTab('main', 0, pending)
+        } catch {}
         delete pendingMountRef.current[spec.id]
         try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
       }
@@ -1114,12 +1117,14 @@ function buildCustomLayoutPrompt(req: string): string {
       const content = buildMountContent(folder, d)
       if (!content) return
       if (splitStore.active && splitStore.spec?.id === projectId) {
-        // 项目开着：直接挂进「窗口N」对应窗格（找不到就落主行第一格）
+        // 项目开着：锁死挂进「窗口N」对应窗格（清空原内容、唯一标签；找不到就落主行第一格）
         const pane = windowLabelToPane(splitStore.spec, d.window)
-        splitStore.openTab(pane?.row ?? 'main', pane?.index ?? 0, content)
+        splitStore.lockPane(pane?.row ?? 'main', pane?.index ?? 0, content)
       } else {
-        // 项目没开：暂存，打开项目时补挂
-        pendingMountRef.current[projectId] = content
+        // 项目没开：按项目已保存的 spec 解析目标窗格，暂存，打开项目时锁死补挂
+        const saved = projectsRef.current.projects.views[projectId] ?? projectsRef.current.projects.layouts.find((l) => l.id === projectId)
+        const pane = windowLabelToPane(saved, d.window)
+        pendingMountRef.current[projectId] = { content, row: pane?.row ?? 'main', index: pane?.index ?? 0 }
         try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
       }
     } catch { /* 无清单文件 = 不挂载 */ }
