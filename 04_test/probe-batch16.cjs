@@ -59,7 +59,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await sleep(400);
       var rows = document.querySelectorAll('.dsh-wt_settings .dsh-wt_manageRow');
       out.manageRows = rows.length;
-      out.consoleInManage = [].slice.call(rows).some(function(r){ return (r.textContent||'').indexOf('工作台') >= 0; });
+      out.consoleInManage = [].slice.call(rows).some(function(r){ return (r.textContent||'').indexOf('控制室') >= 0; });
       var done = document.querySelector('.dsh-wt_manageDone');
       if (done) { done.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
       await sleep(300);
@@ -75,7 +75,39 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         var labels = bpop.querySelectorAll('.dsh-wt_consoleBindLabel');
         out.leftLabel = labels[0] ? labels[0].textContent : null;
         out.rightLabel = labels[1] ? labels[1].textContent : null;
-        var item = bpop.querySelector('.dsh-wt_consoleBindList .dsh-wt_selectItem');
+        // 选一个「确实有历史文本」的会话（逐个冷拉 2 条消息验证；保证预热断言可测）
+        var svc = window.__dshSessions;
+        var snap = svc && svc.list ? svc.list.getSnapshot() : null;
+        var byId = snap && snap.byId ? snap.byId : {};
+        var ids = snap && snap.ids ? snap.ids : [];
+        var chosen = null;
+        for (var k = 0; k < Math.min(ids.length, 12) && !chosen; k++) {
+          var sid = ids[k];
+          try {
+            var face = svc.binding(sid).session;
+            var r1 = await face.history({ maxMessages: 2 });
+            var evs = (r1 && r1.result && r1.result.value && r1.result.value.events) || [];
+            for (var i = evs.length - 1; i >= 0 && !chosen; i--) {
+              var ev = evs[i] && evs[i].event;
+              var d = ev && ev.data ? ev.data : {};
+              var blocks = null;
+              if (ev && ev.type === 'user/message') blocks = d.content || d.blocks;
+              else if (ev && ev.type === 'assistant/message') { var mm = d.message || d; blocks = mm.content || mm.blocks; }
+              if (Array.isArray(blocks)) {
+                for (var b = 0; b < blocks.length; b++) {
+                  if (blocks[b] && typeof blocks[b].text === 'string' && blocks[b].text.trim()) {
+                    var titleOf = byId[sid] && (byId[sid].title || byId[sid].displayTitle);
+                    chosen = { title: titleOf, sid: sid };
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {}
+        }
+        out.chosenTitle = chosen ? chosen.title : null;
+        var item = chosen ? [].slice.call(bpop.querySelectorAll('.dsh-wt_consoleBindList .dsh-wt_selectItem')).find(function(it){ return String(it.textContent) === String(chosen.title); }) : null;
+        if (!item) item = bpop.querySelector('.dsh-wt_consoleBindList .dsh-wt_selectItem');
         if (item) { item.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
         await sleep(900);
       }
@@ -99,6 +131,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         out.firstCardHasPreview = !!(c0 && c0.querySelector('.dsh-wt_consolePreview'));
         out.anyLayoutCard = [].slice.call(cards).some(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0; });
         out.layoutCardHasJump = [].slice.call(cards).some(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0 && !!c.querySelector('.dsh-wt_consoleJump'); });
+        // 新版 UI：正方形比例、大字号状态、光效 CSS 接线（注入类验证，不依赖真实会话状态）
+        var cardEl = c0;
+        if (cardEl) {
+          var cr = cardEl.getBoundingClientRect();
+          out.cardAspect = Math.round((cr.width / Math.max(1, cr.height)) * 100) / 100;
+          var statusEl = cardEl.querySelector('.dsh-wt_consoleStatus');
+          out.statusFont = statusEl ? getComputedStyle(statusEl).fontSize : null;
+          cardEl.classList.add('dsh-wt_consoleCard-busy');
+          var bs = getComputedStyle(cardEl, '::before');
+          out.busyBgImage = bs.backgroundImage ? bs.backgroundImage.slice(0, 60) : null;
+          out.busyAnim = bs.animationName;
+          cardEl.classList.remove('dsh-wt_consoleCard-busy');
+          cardEl.classList.add('dsh-wt_consoleCard-glowDone');
+          await sleep(300);
+          var gs = getComputedStyle(cardEl, '::after');
+          out.glowDoneBg = gs.backgroundImage ? gs.backgroundImage.slice(0, 60) : null;
+          out.glowDoneShadow = getComputedStyle(cardEl).boxShadow.slice(0, 60);
+          cardEl.classList.remove('dsh-wt_consoleCard-glowDone');
+          cardEl.classList.add('dsh-wt_consoleCard-glowNeed');
+          await sleep(300);
+          out.glowNeedShadow = getComputedStyle(cardEl).boxShadow.slice(0, 60);
+          cardEl.classList.remove('dsh-wt_consoleCard-glowNeed');
+        }
+        var entry = vis('.dsh-wt_projects .dsh-wt_consoleEntry');
+        if (entry) {
+          var ecs = getComputedStyle(entry);
+          out.entryBgGradient = ecs.backgroundImage.indexOf('linear-gradient') >= 0;
+          out.entryBorder = ecs.borderColor;
+        }
+        // 冷会话预热：等 sweep 拉取后，自己卡片预览应有真实文本
+        await sleep(4200);
+        var selfPrev2 = c0 && c0.querySelector('.dsh-wt_consolePreview');
+        out.selfPreviewAfterSweep = selfPrev2 ? selfPrev2.textContent.slice(0, 60) : null;
+        out.selfPreviewFilled = !!(selfPrev2 && !selfPrev2.classList.contains('dsh-wt_consolePreviewNone'));
         var lcard = [].slice.call(cards).find(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0; });
         if (lcard) { lcard.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
         await sleep(800);

@@ -206,6 +206,8 @@ export type ConsoleCardData = {
   bound: boolean
   /** 是否为「工作台」自己（卡片点击无操作） */
   self: boolean
+  /** 完成/待决且未被确认：卡片发对应色光（点击确认后熄灭） */
+  glow: boolean
 }
 
 type SplitEnv = {
@@ -226,6 +228,10 @@ type SplitEnv = {
     getCards: () => ConsoleCardData[]
     onOpen: (id: string) => void
     onJump: (id: string) => void
+    /** 点发光卡片：确认（熄灭光）再打开 */
+    onAck: (id: string) => void
+    /** 冷会话消息预热（打开控制室时拉最近消息） */
+    refreshPreviews: () => void
     getTheme: () => 'dark' | 'light' | 'system'
     setTheme: (th: 'dark' | 'light' | 'system') => void
   }
@@ -975,6 +981,10 @@ function ConsolePane() {
     try { mq.addEventListener('change', f) } catch { try { (mq as any).addListener(f) } catch {} }
     return () => { try { mq.removeEventListener('change', f) } catch { try { (mq as any).removeListener(f) } catch {} } }
   }, [])
+  // 打开控制室 = 预热所有绑定会话的最近消息（冷会话走宿主 history 只读通道）
+  useEffect(() => {
+    splitEnv?.console?.refreshPreviews?.()
+  }, [])
   // 运行时长的分钟级刷新：每秒重渲染一次（仅控制室开着时存在）
   useEffect(() => {
     const iv = window.setInterval(() => setNow(Date.now()), 1000)
@@ -1001,10 +1011,10 @@ function ConsolePane() {
     return h > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0') : m + ':' + String(ss).padStart(2, '0')
   }
   const statusLabel: Record<string, string> = { idle: T('console.idle'), busy: T('console.busy'), need: T('console.need'), done: T('console.done') }
-  const themeOpts: { mode: 'dark' | 'light' | 'system'; key: string }[] = [
-    { mode: 'dark', key: 'console.themeDark' },
-    { mode: 'light', key: 'console.themeLight' },
-    { mode: 'system', key: 'console.themeSystem' },
+  const themeOpts: { mode: 'dark' | 'light' | 'system'; icon: string; key: string }[] = [
+    { mode: 'dark', icon: '🌙', key: 'console.themeDark' },
+    { mode: 'light', icon: '☀️', key: 'console.themeLight' },
+    { mode: 'system', icon: '🖥️', key: 'console.themeSystem' },
   ]
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme}>
@@ -1016,8 +1026,10 @@ function ConsolePane() {
               key={o.mode}
               type="button"
               className={'dsh-wt_consoleThemeBtn' + (themeMode === o.mode ? ' dsh-wt_consoleThemeBtnOn' : '')}
+              title={T(o.key)}
+              aria-label={T(o.key)}
               onClick={() => setTheme(o.mode)}
-            >{T(o.key)}</button>
+            ><span aria-hidden>{o.icon}</span></button>
           ))}
         </div>
       </div>
@@ -1027,18 +1039,27 @@ function ConsolePane() {
             key={c.id}
             role={c.self ? undefined : 'button'}
             tabIndex={c.self ? -1 : 0}
-            className={'dsh-wt_consoleCard' + (c.self ? ' dsh-wt_consoleCardSelf' : '')}
+            className={'dsh-wt_consoleCard' + (c.self ? ' dsh-wt_consoleCardSelf' : '')
+              + (c.status === 'busy' ? ' dsh-wt_consoleCard-busy' : '')
+              + (c.glow && c.status === 'done' ? ' dsh-wt_consoleCard-glowDone' : '')
+              + (c.glow && c.status === 'need' ? ' dsh-wt_consoleCard-glowNeed' : '')}
             title={c.name}
-            onClick={() => { if (!c.self && env) env.onOpen(c.id) }}
+            onClick={() => {
+              if (c.self || !env) return
+              if (c.glow) env.onAck?.(c.id) // 点发光卡片：先确认熄光，再进入
+              env.onOpen(c.id)
+            }}
           >
             <div className="dsh-wt_consoleCardHead">
               <span className="dsh-wt_consoleIcon" aria-hidden>{c.icon}</span>
               <span className="dsh-wt_consoleName">{c.name}</span>
               <span className={'dsh-wt_consoleDot dsh-wt_consoleDot-' + c.status} aria-hidden />
             </div>
+            <div className="dsh-wt_consoleStatusRow">
+              <span className={'dsh-wt_consoleStatus dsh-wt_consoleStatus-' + c.status}>{statusLabel[c.status]}</span>
+              {c.runtimeMs != null && <span className="dsh-wt_consoleRuntime">⏱ {fmtDur(c.runtimeMs)}</span>}
+            </div>
             <div className="dsh-wt_consoleBadges">
-              <span className={'dsh-wt_consoleBadge dsh-wt_consoleBadge-' + c.status}>{statusLabel[c.status]}</span>
-              {c.runtimeMs != null && <span className="dsh-wt_consoleBadge">⏱ {fmtDur(c.runtimeMs)}</span>}
               <span className="dsh-wt_consoleBadge">{T('console.kids')} {c.kids}</span>
             </div>
             <div className={'dsh-wt_consolePreview' + (c.preview ? '' : ' dsh-wt_consolePreviewNone')} title={c.preview}>

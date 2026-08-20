@@ -6,7 +6,7 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
-  'title': '工作台',
+  'title': '控制室',
   'rail.title': '工作台（展开侧边栏查看）',
   'handle.title': '按住拖动位置 · 双击复位',
   'handle.aria': '拖动工作台位置',
@@ -113,7 +113,7 @@ export const zh = {
   'customLayout.copyFail': '复制失败，请手动全选输入框内容复制。',
   'custom.autoBound': '已自动把这个项目绑定到这个对话（卡片上的 ●● 按钮可更换或解绑）。',
   'custom.keptBinding': '该项目已有绑定的对话，按规则未自动更改。',
-  'console.name': '工作台',
+  'console.name': '控制室',
   'console.title': '控制室',
   'console.themeLabel': '面板主题',
   'console.themeDark': '深色',
@@ -167,7 +167,7 @@ export type WorktableKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
-  'title': 'Worktable',
+  'title': 'Console',
   'rail.title': 'Worktable (expand sidebar to view)',
   'handle.title': 'Drag to move · double-click to reset',
   'handle.aria': 'Drag worktable position',
@@ -274,7 +274,7 @@ export const en = {
   'customLayout.copyFail': 'Copy failed — select the text above and copy it manually.',
   'custom.autoBound': 'This project was auto-bound to this conversation (use the ●● button on its card to change or unbind).',
   'custom.keptBinding': 'This project already has a bound conversation, so it was not auto-changed.',
-  'console.name': 'Worktable',
+  'console.name': 'Console',
   'console.title': 'Console',
   'console.themeLabel': 'Panel theme',
   'console.themeDark': 'Dark',

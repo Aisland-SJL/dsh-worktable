@@ -1173,3 +1173,32 @@
   新建对话路径（分组默认无）✓；主题深/白/跟随切换 + data-wt-theme 落定 + 持久化 ✓；
   functional-diag 全 20 STEP（布局卡选择器收窄排除控制室卡）ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；AGENTS.md 已补控制室规则。
+
+## 补记（控制室 UI 打磨：光效卡片 + 正方形布局 + 主题图标 + 冷会话预览预热 + 统一命名）
+
+- 用户反馈：① 卡片太长信息太少 → 改正方形（1:1 圆角卡），信息放大（状态 17px 大字、
+  子代理 12px 徽章、预览 12.5px 两行截断）；② 状态可视化：工作 = 蓝色描边光晕顺时针
+  绕卡旋转（conic-gradient + @property --consoleAngle 动画）、完成 = 背景绿光、待决 =
+  背景黄光（radial 泛光 + 外发光），点发光卡片先确认熄光再进入；③ 命名统一「控制室」
+  （侧栏区块标题 + 默认项目卡 + 面板标题）；④ 入口卡差异化（渐变底 + 青蓝描边 + 微光，
+  统筹主程序感）；⑤ 主题三选一改图标按钮（🌙/☀️/🖥️，title/aria 保留文字）；⑥ 预览
+  方案 A：冷会话最近消息预热。
+- 冷读调研（probe-preview-cold/cold2/dbg.cjs）：binding() 实例化冷会话 nodes 为空；
+  loadOlder 无效；**face.history({maxMessages:N})（运行期内建方法）返回 {ok,value:
+  {events,hasMore}} 原始事件流**——尾部扫 user/message（data.content）与
+  assistant/message（data.message.content）可提取最近一条 text 块文本（实测拿
+  到真实文本）✓。纯只读拉取，无副作用不激活 agent。
+- 实现：index.tsx 新增 previewCache/previewFetching/coldPreviewOf/sweepPreviews/
+  schedulePreviewSweep；打开控制室即 sweep（openConsole + ConsolePane mount 双触发），
+  控制室开着时会话快照变化防抖 6s 再扫；getConsoleCards 预览 = cache ?? lastTextOf。
+  卡片 glow 字段 = done/need 且未 ack；env.console 增 onAck（ackProjectNotify +
+  setNotifyTick + notifyConsole）与 refreshPreviews；ackRef 每渲染同步。ConsolePane：
+  状态行大字号、正方形卡、三光效类接线、发光卡点击先 ack。样式：--wt-* 主题作用域内
+  新增状态色/徽章/两行截断/radial 泛光/旋转描边（@property + mask 挖空描边环）/入口卡
+  渐变描边/主题图标按钮。
+- 验证（probe-batch16 扩展）：cardAspect=1、statusFont 17px、busy 旋转动画
+  consoleAngleSpin + conic 描边 ✓、绿/黄泛光与外发光 rgba 值 ✓、入口卡渐变+青蓝描边 ✓、
+  主题按钮 🌙☀️🖥️ ✓、冷会话预热 selfPreviewFilled（真实文本「新包已生效…」）✓；
+  三阶段全流程与主题切换全 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；face.history 为非公开接口（只读、失败静默回退内存路径），
+  AGENTS.md 已注明。

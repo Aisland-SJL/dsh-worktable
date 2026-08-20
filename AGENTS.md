@@ -90,10 +90,21 @@ node --check lib/index.js
     consoleListeners（项目/会话快照变化推送）+ 面板每秒 tick。
   - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；💬 = 跳绑定对话
     （markPluginSessionOpen 豁免联动，控制室保持打开）；工作台自己的卡片点击无操作。
-  - 主题：面板三选一开关（深色/白色/跟随系统，存 view.v1 consoleTheme）；system 读宿主
-    html 的 color-scheme（DSH 深色/白色/跟随系统设置都会反映到它）+ prefers-color-scheme
-    兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量 --wt-*（宿主不发布
-    --dsw-alias-*，工作台全站一直靠回退色渲染——控制室自带主题作用域，不受其影响）。
+  - 主题：面板三选一开关（图标按钮 🌙/☀️/🖥️，title/aria 保留文字；存 view.v1 consoleTheme）；
+    system 读宿主 html 的 color-scheme（DSH 深色/白色/跟随系统设置都会反映到它）+
+    prefers-color-scheme 兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量
+    --wt-*（宿主不发布 --dsw-alias-*，工作台全站一直靠回退色渲染——控制室自带主题作用域，
+    不受其影响）。
+  - 状态光效：工作=蓝色描边光晕顺时针绕卡旋转（.dsh-wt_consoleCard-busy ::before
+    conic-gradient + @property --consoleAngle + consoleAngleSpin）；完成=绿光、待决=黄光
+    （-glowDone/-glowNeed：radial 泛光 + 外发光；glow 字段 = done/need 且本轮未 ack，
+    点卡片先 onAck 熄光再进入，与提醒 ack 生命周期一致）。
+  - 命名统一「控制室」：侧栏区块标题、默认项目卡名、面板标题均为 console.name/title 系列
+    locale（不再是「工作台」）。
+  - 冷会话消息预览（方案 A）：binding() 对冷会话不载入文本；预热走 face.history({maxMessages:2})
+    （运行期内建方法、非公开接口，只读无副作用）尾部扫 user/message 与 assistant/message 的
+    text 块 → previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s
+    触发；失败静默回退内存路径 lastTextOf。拉取是带宽成本不是 Token 成本。
 
 ## 安装 / 重启
 

@@ -312,10 +312,10 @@ const CONSOLE_ID = 'wt-console'
 const CONSOLE_ICON = '🖥️'
 
 /** 控制室默认布局：单一锁死大窗格（项目卡片网格）+ 右侧对话 */
-function buildConsoleSpec(): LayoutSpec {
+function buildConsoleSpec(t: (key: string) => string): LayoutSpec {
   return {
     id: CONSOLE_ID,
-    title: '工作台',
+    title: t('console.name'),
     icon: CONSOLE_ICON,
     top: null,
     main: [{
@@ -346,6 +346,70 @@ function listWorkspaces(): { id: string; title: string; path: string }[] {
       path: w.path ?? '',
     }))
   } catch { return [] }
+}
+
+/** 冷会话最近消息缓存与预热：宿主 history 只读通道（face.history 为运行期内建方法，非公开接口，
+ *  只读侦察确认可用；拉取是带宽成本不是 Token 成本，模型不参与）。 */
+const previewCache = new Map<string, string>()
+const previewFetching = new Set<string>()
+let previewSweepBusy = false
+let previewTimer: number | null = null
+
+/** 从 history 事件流尾部提取最近一条成品消息文本（优先 text 块，回退任意文本） */
+async function coldPreviewOf(face: any): Promise<string> {
+  if (!face || typeof face.history !== 'function') return ''
+  const r1 = await face.history({ maxMessages: 2 })
+  const evs = r1?.result?.value?.events
+  if (!Array.isArray(evs)) return ''
+  const textOf = (blocks: any): string => {
+    let fallback = ''
+    if (!Array.isArray(blocks)) return ''
+    for (const b of blocks) {
+      const s = typeof b?.text === 'string' ? b.text.trim().replace(/\s+/g, ' ') : ''
+      if (!s) continue
+      if (b?.type === 'text') return s.slice(0, 140)
+      if (!fallback) fallback = s.slice(0, 140)
+    }
+    return fallback
+  }
+  for (let i = evs.length - 1; i >= 0; i--) {
+    const ev = evs[i]?.event
+    if (!ev) continue
+    const d = ev.data ?? {}
+    if (ev.type === 'user/message') {
+      const s = textOf(d.content ?? d.blocks)
+      if (s) return s
+    } else if (ev.type === 'assistant/message') {
+      const m = d.message ?? d
+      const s = textOf(m.content ?? m.blocks)
+      if (s) return s
+    }
+  }
+  return ''
+}
+
+/** 预热所有已绑定会话的最近消息（逐个只读拉取；已在拉/已拉过未完成的跳过，失败静默回退内存路径） */
+async function sweepPreviews() {
+  if (previewSweepBusy) return
+  previewSweepBusy = true
+  try {
+    const sids = Array.from(new Set(Object.values(projectBindingsRef.current).filter((x): x is string => !!x)))
+    for (const sid of sids) {
+      if (previewFetching.has(sid)) continue
+      previewFetching.add(sid)
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session
+        const txt = await coldPreviewOf(face)
+        if (txt) { previewCache.set(sid, txt); notifyConsole() }
+      } catch {} finally { previewFetching.delete(sid) }
+    }
+  } finally { previewSweepBusy = false }
+}
+
+/** 防抖调度：控制室开着且会话快照变化时刷新预览（合并 6s 内的连续变化） */
+function schedulePreviewSweep() {
+  if (previewTimer != null) return
+  previewTimer = window.setTimeout(() => { previewTimer = null; sweepPreviews() }, 6000)
 }
 
 /** 从会话快照节点里提取最近一条文本（纯读内存镜像，零 Token；无则 ''） */
@@ -815,6 +879,8 @@ function WorktableSection(props: any) {
   )
   /** 控制室动作引用（每渲染同步，供 env 闭包读取） */
   const actionsRef = useRef<{ openSplit: (spec: LayoutSpec) => void; openConsole: (explicitBound?: string | null) => void } | null>(null)
+  /** 提醒确认动作引用（每渲染同步；env 闭包用） */
+  const ackRef = useRef<((projectId: string) => void) | null>(null)
   /** 视图状态最新快照（供 env 闭包读取控制室主题） */
   const viewRef = useRef(view)
   viewRef.current = view
@@ -881,16 +947,21 @@ function WorktableSection(props: any) {
       } catch {}
       return null
     }
+    const ackMap = loadNotifyAck()
     const make = (id: string, name: string, icon: string, self: boolean): ConsoleCardData => {
       const sid = pr.projects.bindings[id]
+      const status = statusOf(sid)
+      // 发光 = 完成/待决且本轮未被确认；点卡片确认后熄灭
+      const glow = !!sid && ((status === 'done' && ackMap[sid] !== 'done') || (status === 'need' && ackMap[sid] !== 'need'))
       return {
         id, name, icon,
-        status: statusOf(sid),
+        status,
         runtimeMs: runtimeOf(sid),
         kids: sid ? kidsSetOf(sid).size : 0,
-        preview: sid ? lastTextOf(sid) : '',
+        preview: sid ? (previewCache.get(sid) ?? lastTextOf(sid)) : '',
         bound: !!sid,
         self,
+        glow,
       }
     }
     const cards: ConsoleCardData[] = []
@@ -965,6 +1036,11 @@ function WorktableSection(props: any) {
         getCards: () => getConsoleCards(),
         getTheme: () => viewRef.current.consoleTheme ?? 'system',
         setTheme: (th: 'dark' | 'light' | 'system') => persistView({ consoleTheme: th }),
+        onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
+        refreshPreviews: () => {
+          if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
+          sweepPreviews()
+        },
         onOpen: (id) => {
           if (id === CONSOLE_ID) return
           const pr = projectsRef.current.projects
@@ -1226,7 +1302,7 @@ function buildCustomLayoutPrompt(req: string): string {
 
   /** 打开「工作台」控制室：已绑定 → 打开并切换绑定对话；explicitBound 供强制绑定流程传入刚绑定的会话 */
   const openConsole = useCallback((explicitBound?: string | null) => {
-    const spec = projects.views[CONSOLE_ID] ?? buildConsoleSpec()
+    const spec = projects.views[CONSOLE_ID] ?? buildConsoleSpec((k) => t(k as WorktableKey))
     engineIdsRef.current.add(CONSOLE_ID)
     splitStore.open(spec)
     if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {
@@ -1238,8 +1314,10 @@ function buildCustomLayoutPrompt(req: string): string {
       if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
       ackProjectNotify(CONSOLE_ID)
       try { notifyConsole() } catch {}
+      // 打开即预热所有绑定会话的最近消息（冷会话走 history 只读通道）
+      try { sweepPreviews() } catch {}
     }
-  }, [projects.views])
+  }, [projects.views, t])
 
   /** 控制室卡片点击：已绑定 → 打开控制室；未绑定 → 强制绑定弹窗 */
   const clickConsoleCard = (anchor: HTMLElement) => {
@@ -1366,9 +1444,13 @@ function buildCustomLayoutPrompt(req: string): string {
     copyToastTimerRef.current = window.setTimeout(() => setCopiedToast(null), 6000)
   }
 
-  // 会话快照变化 → 重渲染（驱动项目卡片的完成/待决提醒镜像 + 控制室面板）
+  // 会话快照变化 → 重渲染（驱动项目卡片的完成/待决提醒镜像 + 控制室面板 + 预览防抖刷新）
   useEffect(() => {
-    const l = () => { setNotifyTick((t) => t + 1); notifyConsole() }
+    const l = () => {
+      setNotifyTick((t) => t + 1)
+      notifyConsole()
+      if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) schedulePreviewSweep()
+    }
     sessionsSnapshotStore.listeners.add(l)
     return () => { sessionsSnapshotStore.listeners.delete(l) }
   }, [])
@@ -1493,6 +1575,7 @@ function buildCustomLayoutPrompt(req: string): string {
       if (st === 'done') saveNotifyAck(sid, 'done')
     }
   }
+  ackRef.current = ackProjectNotify
 
   // ── 有效排序 ──
   // 手动：持久化 order（过滤已卸载 id）→ 新注册 id 与布局 id 追加尾部；
