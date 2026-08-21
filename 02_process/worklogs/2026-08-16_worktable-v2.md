@@ -1460,3 +1460,15 @@
 - 验证（probe-batch18 重跑）：promptOk:true、promptErr:null（模型真实接受消息）✓；
   functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（第十九轮：模型继承用户选择）
+
+- 用户反馈：修复后默认又变 Flash——应该继承用户习惯，用户用 Pro 就用 Pro，不要自己选。
+- 演进：① 最初「目录首个」→ 用户不满；② 加当前会话继承（仅新会话 routable=false 时）→
+  探测发现默认选择已被此前测试污染成 flash（新会话 routable=true，继承分支被跳过）；
+  ③ 定稿：ensureSessionModel 改为「无条件继承当前会话模型」（相同则跳过），仅在无当前
+  会话且新会话选择不可用时才走 最近会话众数 → 家族词 → 目录首个 兜底。selectModel 顺带
+  把继承的 Pro 写回默认，修复此前测试造成的 flash 默认污染。
+- 验证（probe-batch18）：先切到 Pro 会话（deepseek-v4-pro）再新建 → repairedSelection =
+  deepseek-v4-pro、promptOk:true ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

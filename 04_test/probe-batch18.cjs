@@ -45,6 +45,28 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var vis = function(sel){ return [].slice.call(document.querySelectorAll(sel)).find(function(el){ return (getComputedStyle(el).visibility!=='hidden'&&el.getBoundingClientRect().height>0); }); };
     var st = window.__dshWorktable.splitStore;
     try {
+      // 模拟用户真实场景：先切到一个 Pro 模型的会话（用户正在用 Pro）
+      var hApi = window.__dshHostApi && window.__dshHostApi.sessions;
+      var snap0 = window.__dshSessions.list.getSnapshot();
+      var proSid = null;
+      for (var k = 0; k < Math.min((snap0.ids || []).length, 10); k++) {
+        var sid2 = snap0.ids[k];
+        try {
+          var mr = await hApi.models({ sessionId: sid2 });
+          if (mr && mr.result && mr.result.ok && mr.result.value.routable && (mr.result.value.current.model || '').indexOf('pro') >= 0) { proSid = sid2; break; }
+        } catch (e) {}
+      }
+      out.proSessionFound = !!proSid;
+      if (proSid) { window.__dshSessions.open(proSid); }
+      await sleep(700);
+      // 诊断：①分支会看到的 current 与模型
+      var snapChk = window.__dshSessions.list.getSnapshot();
+      out.curAfterOpen = snapChk.current;
+      try {
+        var cRes = await hApi.models({ sessionId: snapChk.current });
+        out.curModel = cRes && cRes.result && cRes.result.ok ? cRes.result.value.current.model : null;
+        out.curRoutable = cRes && cRes.result && cRes.result.ok ? cRes.result.value.routable : null;
+      } catch (e) { out.curModel = 'err'; }
       // 控制室未绑定 → 点开 → 强制绑定 → 新建并绑定
       var card = vis('.dsh-wt_projects .dsh-wt_consoleEntry');
       card.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true}));
@@ -65,6 +87,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       out.agentPreset = row ? (row.agentPreset || '(none)') : '(missing)';
       var face = svc.binding(sid).session;
       out.hasPrompt = typeof face.prompt === 'function';
+      // 修复后实际选中的模型（继承结果）
+      try {
+        var mRes = await window.__dshHostApi.sessions.models({ sessionId: sid });
+        out.repairedSelection = mRes && mRes.result && mRes.result.ok ? { provider: mRes.result.value.current.provider, model: mRes.result.value.current.model, routable: mRes.result.value.routable } : null;
+      } catch (e) { out.repairedSelection = 'err:' + String(e); }
       var r1 = null;
       try {
         r1 = await face.prompt([{ type: 'text', text: '回复一个字：好' }], 'queue');

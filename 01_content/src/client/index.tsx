@@ -340,9 +340,32 @@ async function ensureSessionPreset(sessionId: string): Promise<void> {
   } catch { /* 修复失败不阻断主流程，错误仍按原路径提示 */ }
 }
 
+/** 按「用户既有选择」在可用目录里找最贴近的模型（不擅自选）：
+ *  1) id 完全一致；2) id/名称含基准模型的家族词（pro/max/mini/flash…）；3) 目录首个。 */
+function pickInheritedModel(groups: any[], baseModel: string | undefined): { provider: string; model: string } | null {
+  if (!Array.isArray(groups) || groups.length === 0) return null
+  const flat: { provider: string; model: string; name: string }[] = []
+  for (const g of groups) {
+    if (!g?.id || !Array.isArray(g.models)) continue
+    for (const m of g.models) if (m?.id) flat.push({ provider: g.id, model: m.id, name: String(m.name ?? '') })
+  }
+  if (flat.length === 0) return null
+  const base = String(baseModel ?? '').toLowerCase()
+  if (base) {
+    const exact = flat.find((f) => f.model.toLowerCase() === base)
+    if (exact) return { provider: exact.provider, model: exact.model }
+    const tokens = base.split(/[-_.]/).filter((t) => t && (/^(pro|max|mini|flash|lite|ultra|plus|sonnet|opus|haiku|turbo)$/i.test(t) || t.length >= 4))
+    for (const tok of tokens) {
+      const hit = flat.find((f) => f.model.toLowerCase().includes(tok) || f.name.toLowerCase().includes(tok))
+      if (hit) return { provider: hit.provider, model: hit.model }
+    }
+  }
+  return { provider: flat[0].provider, model: flat[0].model }
+}
+
 /** 新会话模型选择修复（真正的根因修复）：当前选择指向已删 provider（routable=false）时，
- *  用 session.selectModel 切到模型目录里第一个可用 provider 的首个模型——
- *  该 API 同时把新选择存为默认，顺带修复后续所有新会话。 */
+ *  不擅自选模型——① 优先继承用户当前会话正在用的模型；② 兜底按失效选择里的模型家族词
+ *  找同款；③ 最后才目录首个。session.selectModel 同时把新选择存为默认，顺带修复后续新会话。 */
 async function ensureSessionModel(sessionId: string): Promise<void> {
   const api = hostApi?.sessions
   if (!api || typeof api.models !== 'function' || typeof api.selectModel !== 'function') return
@@ -350,13 +373,58 @@ async function ensureSessionModel(sessionId: string): Promise<void> {
     const mRes = await api.models({ sessionId })
     if (!mRes?.result?.ok) return
     const val = mRes.result.value
-    if (val?.routable === true) return
     const groups = val?.groups
-    if (!Array.isArray(groups) || groups.length === 0) return
-    const g = groups[0]
-    const model = g?.models?.[0]?.id
-    if (!g?.id || !model) return
-    await api.selectModel({ sessionId, provider: g.id, model })
+    let target: { provider: string; model: string } | null = null
+    let effort: string | undefined
+    // ① 无条件继承用户当前会话的选择（用户正在用哪个模型，新会话就用哪个）
+    try {
+      const cur = sessionBridge?.list?.getSnapshot?.()?.current
+      if (cur && cur !== sessionId) {
+        const cRes = await api.models({ sessionId: cur })
+        if (cRes?.result?.ok) {
+          const cval = cRes.result.value
+          if (cval?.routable === true && cval?.current?.provider && cval?.current?.model) {
+            const same = val?.current?.provider === cval.current.provider && val?.current?.model === cval.current.model
+            if (!same) {
+              target = { provider: cval.current.provider, model: cval.current.model }
+              effort = typeof cval.current.reasoningEffort === 'string' ? cval.current.reasoningEffort : undefined
+            }
+          }
+        }
+      }
+    } catch {}
+    // ② 无当前会话且新会话选择不可用 → 最近会话众数（用户习惯）
+    if (!target && val?.routable !== true) {
+      try {
+        const snap = sessionBridge?.list?.getSnapshot?.()
+        const byId: Record<string, any> = snap?.byId ?? {}
+        const ids: string[] = (snap?.ids ?? []).filter((x: string) => x !== sessionId)
+        const scored: { key: string; provider: string; model: string; effort?: string; count: number }[] = []
+        await Promise.all(ids.slice(0, 6).map(async (sid) => {
+          const row = byId[sid]
+          if (row?.blank === true) return
+          try {
+            const r2 = await api.models({ sessionId: sid })
+            if (!r2?.result?.ok) return
+            const cv = r2.result.value
+            if (cv?.routable !== true || !cv?.current?.provider || !cv?.current?.model) return
+            const key = cv.current.provider + '|' + cv.current.model
+            const found = scored.find((s) => s.key === key)
+            if (found) found.count++
+            else scored.push({ key, provider: cv.current.provider, model: cv.current.model, effort: typeof cv.current.reasoningEffort === 'string' ? cv.current.reasoningEffort : undefined, count: 1 })
+          } catch {}
+        }))
+        scored.sort((a, b) => b.count - a.count)
+        if (scored[0]) {
+          target = { provider: scored[0].provider, model: scored[0].model }
+          effort = scored[0].effort
+        }
+      } catch {}
+    }
+    // ③/④ 兜底（仅当新会话选择不可用）：家族词 → 目录首个
+    if (!target && val?.routable !== true) target = pickInheritedModel(groups, val?.current?.model)
+    if (!target) return
+    await api.selectModel({ sessionId, provider: target.provider, model: target.model, ...(effort !== undefined ? { reasoningEffort: effort } : {}) })
   } catch { /* 修复失败不阻断主流程，错误仍按原路径提示 */ }
 }
 

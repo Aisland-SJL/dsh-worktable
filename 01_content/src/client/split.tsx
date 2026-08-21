@@ -27,7 +27,7 @@ export type BuiltinType = 'browser' | 'anim' | 'explorer' | 'scm' | 'tasks' | 't
 
 export type SplitContent =
   | { kind: 'iframe'; url: string; title?: string }
-  | { kind: 'builtin'; type: BuiltinType }
+  | { kind: 'builtin'; type: BuiltinType; url?: string }
   | { kind: 'file'; path: string }
 
 /** 一个内容标签页 */
@@ -650,6 +650,27 @@ export const splitStore: SplitState = {
     this.notify()
   },
 
+  /** 更新指定标签页的内容（浏览器/动画窗地址栏回车时回写），并持久化到布局条目 */
+  setTabContent(row, index, tabId, content) {
+    const spec = this.spec
+    if (!spec) return
+    const mutate = (pane: SplitPane): SplitPane => {
+      const tabs = (pane.tabs ?? []).map((t) => (t.id === tabId ? { ...t, content, title: tabTitleOf(content) } : t))
+      return { ...pane, tabs }
+    }
+    if (row === 'left') {
+      if (spec.left && index === 0) this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (top[index]) { top[index] = mutate(top[index]); this.spec = { ...spec, top } }
+    } else {
+      const main = [...spec.main]
+      if (main[index]) { main[index] = mutate(main[index]); this.spec = { ...spec, main } }
+    }
+    this.onSpecMutated?.(this.spec)
+    this.notify()
+  },
+
   openTab(row, i, content) {
     const spec = this.spec
     if (!spec) return
@@ -903,12 +924,18 @@ function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', 
 }
 
 /** 浏览器内置窗：地址栏 + 前往；刷新统一在标签栏最左（重挂载 iframe，跨域也可靠） */
-function BrowserPane(props: { reloadKey: number }) {
-  const [url, setUrl] = useState('https://example.com')
-  const [src, setSrc] = useState('https://example.com')
+function BrowserPane(props: { row: PaneRow; index: number; tabId: string; content: SplitContent; reloadKey: number }) {
+  const initial = props.content?.url || 'https://example.com'
+  const [url, setUrl] = useState(initial)
+  const [src, setSrc] = useState(initial)
   const go = () => {
     const u = url.trim()
-    setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
+    const ok = /^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank'
+    setSrc(ok)
+    if (ok !== 'about:blank') {
+      // 地址回写：刷新/重开布局时保持当前网址
+      splitStore.setTabContent(props.row, props.index, props.tabId, { kind: 'builtin', type: 'browser', url: ok })
+    }
   }
   return (
     <>
@@ -933,12 +960,17 @@ function IframePane(props: { url: string; title?: string; reloadKey: number }) {
 }
 
 /** 动画播放窗：iframe 壳 + 地址栏（站内自带项目/场景列表、播放、画幅切换、导出等全部控件） */
-function AnimPane(props: { reloadKey: number }) {
-  const [url, setUrl] = useState('')
-  const [src, setSrc] = useState('about:blank')
+function AnimPane(props: { row: PaneRow; index: number; tabId: string; content: SplitContent; reloadKey: number }) {
+  const initial = props.content?.url || ''
+  const [url, setUrl] = useState(initial)
+  const [src, setSrc] = useState(initial || 'about:blank')
   const go = () => {
     const u = url.trim()
-    setSrc(/^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank')
+    const ok = /^(\/|https?:\/\/)/i.test(u) ? u : 'about:blank'
+    setSrc(ok)
+    if (ok !== 'about:blank') {
+      splitStore.setTabContent(props.row, props.index, props.tabId, { kind: 'builtin', type: 'anim', url: ok })
+    }
   }
   return (
     <>
@@ -1704,8 +1736,8 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTit
   if (content.kind === 'file') {
     return <FileViewer path={content.path} />
   }
-  if (content.type === 'browser') return <BrowserPane reloadKey={props.reloadKey} />
-  if (content.type === 'anim') return <AnimPane reloadKey={props.reloadKey} />
+  if (content.type === 'browser') return <BrowserPane row={props.row} index={props.index} tabId={props.tab.id} content={content} reloadKey={props.reloadKey} />
+  if (content.type === 'anim') return <AnimPane row={props.row} index={props.index} tabId={props.tab.id} content={content} reloadKey={props.reloadKey} />
   if (content.type === 'console') return <ConsolePane />
   if (content.type === 'explorer') return <ExplorerPane row={props.row} index={props.index} />
   if (content.type === 'scm') return <GitPane />
