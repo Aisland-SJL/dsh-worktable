@@ -318,6 +318,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await sleep(400);
       out.themeAttrLight = con ? con.getAttribute('data-wt-theme') : null;
       out.cardBgLight = cc ? getComputedStyle(cc).backgroundColor : null;
+      out.lightSheen = cc ? getComputedStyle(cc).backgroundImage.slice(0, 70) : null;
+      out.lightEdge = cc ? getComputedStyle(cc, '::after').backgroundImage.slice(0, 70) : null;
+      out.lightEdgeOpacity = cc ? getComputedStyle(cc, '::after').opacity : null;
       if (btns[2]) { btns[2].dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }
       await sleep(400);
       out.themeAttrSystem = con ? con.getAttribute('data-wt-theme') : null;
