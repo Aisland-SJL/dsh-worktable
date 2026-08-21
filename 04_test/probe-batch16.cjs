@@ -140,10 +140,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         out.consoleBgImage = conEl ? getComputedStyle(conEl).backgroundImage.slice(0, 60) : null;
         out.consoleBgSize = conEl ? getComputedStyle(conEl).backgroundSize : null;
         out.consoleBgColor = conEl ? getComputedStyle(conEl).backgroundColor : null;
-        var sweep = conEl ? getComputedStyle(conEl, '::before') : null;
-        out.sweepAnim = sweep ? sweep.animationName : null;
-        out.sweepContent = sweep ? (sweep.content !== 'none') : null;
-        out.sweepDur = sweep ? sweep.animationDuration : null;
+        out.panelSweepGone = !!(conEl && getComputedStyle(conEl, '::before').content === 'none');
+        var sweepRuleFound = false;
+        try {
+          for (var si = 0; si < document.styleSheets.length && !sweepRuleFound; si++) {
+            var rules; try { rules = document.styleSheets[si].cssRules; } catch (e) { continue; }
+            for (var ri = 0; ri < rules.length; ri++) {
+              if (rules[ri].cssText && rules[ri].cssText.indexOf('.dsh-wt_consoleSweep') >= 0) { sweepRuleFound = true; break; }
+            }
+          }
+        } catch (e) {}
+        out.sweepRuleFound = sweepRuleFound;
         var cards = grid.querySelectorAll('.dsh-wt_consoleCard');
         out.cardCount = cards.length;
         var c0 = cards[0];

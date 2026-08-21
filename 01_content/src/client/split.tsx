@@ -1060,6 +1060,7 @@ function ConsolePane() {
               <span className={'dsh-wt_consoleStatus dsh-wt_consoleStatus-' + c.status}>{statusLabel[c.status]}</span>
               {c.runtimeMs != null && <span className="dsh-wt_consoleRuntime">{fmtDur(c.runtimeMs)}</span>}
             </div>
+            {c.status === 'busy' && <span className="dsh-wt_consoleSweep" aria-hidden />}
             <div className={'dsh-wt_consolePreview' + (c.preview ? '' : ' dsh-wt_consolePreviewNone')} title={c.preview}>
               {c.preview || (c.bound ? T('console.noPreview') : T('console.unboundShort'))}
             </div>

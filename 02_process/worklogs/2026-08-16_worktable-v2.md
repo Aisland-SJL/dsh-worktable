@@ -1393,3 +1393,13 @@
 - 验证（probe-batch16）：sweepAnim consoleSweep / sweepContent ✓ / sweepDur 3.2s ✓；
   functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；本地 ahead 4 待补推。
+
+## 补记（控制室第十四轮：流光移到「工作中」卡片）
+
+- 用户澄清：流光不是整个面板，而是正在处理中的任务卡片才有光晕；其他状态无光晕。
+- 实现：删掉 .dsh-wt_console::before 面板级流光；新增 .dsh-wt_consoleSweep 层（absolute
+  inset 0、115° 反光带、consoleSweep 3.2s 动画），ConsolePane 仅在 status==='busy'
+  时渲染该 span；浅色主题对应白 55% 光带。
+- 验证（probe-batch16）：panelSweepGone（面板 ::before content none）✓、sweepRuleFound
+  （样式表含 .dsh-wt_consoleSweep）✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；本地 ahead 5 待补推。
