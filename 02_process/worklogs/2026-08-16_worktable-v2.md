@@ -1381,3 +1381,15 @@
   30% 处 5%→7%、渐隐延长到 60%；浅色 30% 处 .55→.65。
 - 验证：构建通过；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；本地 ahead 3 待补推。
+
+## 补记（控制室第十三轮：面板镜面流光）
+
+- 用户需求：控制室主界面加一个周期性的克制动效——像玻璃被擦亮一样，每隔几秒一条光晕
+  从左上角斜扫到右下角，让用户感知面板「在运行」。
+- 实现：.dsh-wt_console::before 镜面流光带（115° 斜向渐变白 7% 光带，inset -10%/-20%）；
+  consoleSweep 关键帧：每 3.2s 一轮，0% 淡出于左上（translate -12%,-12%）→ 35%–55%
+  完全显现 → 92% 淡出于右下（translate 12%,12%）；ease-in-out 起收克制；pointer-events
+  穿透、z-index 2 浮于卡片之上；浅色主题光带白 40%。纯 CSS 零脚本。
+- 验证（probe-batch16）：sweepAnim consoleSweep / sweepContent ✓ / sweepDur 3.2s ✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；本地 ahead 4 待补推。
