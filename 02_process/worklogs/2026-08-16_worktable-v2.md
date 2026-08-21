@@ -1342,3 +1342,14 @@
   cleanSample「结论：完成了。 之后 结束」（围栏+行内代码全部滤除）✓、真实会话全代码消息
   正确回退显示「暂无消息」✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第九轮：去磨砂 + 运行时右对齐）
+
+- 用户反馈：① 井字格透过来但被磨砂模糊了——去掉磨砂玻璃效果，透明度再加；② 工作时
+  右侧计时小表的 ⏱ logo 丑——去掉图标、时间右对齐。
+- 实现：① 卡片与创建卡删除 backdrop-filter（blur 全部去掉）；底再降：暗 .18→.12、
+  浅 .28→.2、创建卡 .2→.14；② ConsolePane 运行时 span 去掉 ⏱；statusRow 改
+  justify-content:space-between——状态在左、时间贴右。
+- 验证（probe-batch16）：cardBlur 'none' ✓、cardBgColor rgba(18,23,32,.12) ✓、
+  statusRowJustify 'space-between' ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
