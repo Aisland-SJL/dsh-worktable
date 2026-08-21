@@ -1430,3 +1430,17 @@
   100% .01），处处非零、软肩过渡，不再有整齐边线；浅色主题对应 .1/.3/.55/.3/.1。
 - 验证：构建通过；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（第十七轮：修复新会话继承已删模型导致窗口建不出来）
+
+- 事故：用户删掉 OpenAI GPT 默认模型后，自定义窗口「新建」流程创建会话继承到失效预设，
+  prompt 报 session.prompt: model-unavailable: no adapter serves provider "openai"，
+  窗口无法建立。
+- 侦察（只读）：宿主 ui-agent-preset 插件的新会话座位用 api.agentPresets.list/select
+  （select 仅对 blank 会话生效）；创建出的新会话是 blank → 可直接应用部署默认预设。
+- 实现：apply 里从 ctx.get('connection').api 捕获 presetApi；新增 ensureSessionPreset
+  （list 取 presets → 默认 isDefault ?? 首个 → select 应用到新会话 → noteAgentPreset 同步
+  列表镜像；失败静默不阻断）；createCustomSession 与 bindConsoleNew 两处 create 后调用。
+- 验证（probe-batch16 阶段3 扩展）：新建会话 agentPreset='standard'（部署默认预设已应用）✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效；未启用 agentPresets 的宿主自动跳过（无行为变化）。

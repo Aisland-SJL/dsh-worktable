@@ -31,6 +31,11 @@ node --check lib/index.js
 - **预设追加规则**：新布局预设只允许追加到 `PRESET_DEFS` 末尾（选择器里的「＋自定义」磁贴
   永远是最后一个）；字段 leftCount/topCount/contentCount/chatFull/topHeightDefault/topHeightRatio，
   聊天窗恒在右侧；缩略图在 presetThumb() 加分支。
+- **新会话预设修复**：新建会话（createCustomSession / bindConsoleNew）创建后调用
+  ensureSessionPreset——用宿主 api.agentPresets.list/select 显式应用「部署默认预设」
+  （isDefault ?? 首个；select 仅对 blank 会话生效），修复用户删掉默认模型后新会话继承
+  失效预设、prompt 报 model-unavailable 建不出窗口的问题；失败静默、无 agentPresets
+  API 的宿主自动跳过。
 - **对话绑定**：projects.v1.bindings = { 项目id → 会话id }；打开项目时引擎自动
   sessions.open(绑定会话)（openSplit / DOM 桥两处入口）；未绑定/解绑 = 不切换。
 - **项目×对话联动**：打开项目记录「打开前会话」（projectAttachRef.sessionId）；项目打开期间切到
@@ -108,7 +113,7 @@ node --check lib/index.js
     2×边长 1.4，实测 236px：名字 20/状态 22/预览 8.5 四行截断）；标题下横向分隔线；无子代理
     徽章、无 💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
   - 背景：--wt-bg 深色 #0a0d13 + 30px 浅色井字格线（--wt-grid .045/.07，两条
-    linear-gradient），工作台/蓝图质感；玻璃贴片半透明底（暗 .18/浅 .28）+ backdrop blur 4px。
+    linear-gradient），工作台/蓝图质感；玻璃贴片半透明底（暗 .24/浅 .34，无磨砂模糊）。
   - 顶部标题克制：控制室页只保留侧栏入口卡一个「控制室」——分栏标题栏对 wt-console
     不渲染 title（保留 ⇄/✕）、PaneBody singleConsole 不渲染标签栏、ConsolePane 头只留
     主题开关（右对齐）。

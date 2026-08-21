@@ -329,6 +329,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       var saved2 = JSON.parse(localStorage.getItem('dsh.worktable.projects.v1'));
       out.newBindingSet = !!saved2.bindings['wt-console'];
       out.newBindingDiffers = saved2.bindings['wt-console'] !== undefined;
+      // 预设修复验证：新建会话应被应用「部署默认预设」（agentPreset 非空）
+      var newSid = saved2.bindings['wt-console'];
+      try {
+        var snap3 = window.__dshSessions && window.__dshSessions.list ? window.__dshSessions.list.getSnapshot() : null;
+        var nrow = snap3 && snap3.byId ? snap3.byId[newSid] : null;
+        out.newSessionAgentPreset = nrow && nrow.agentPreset ? nrow.agentPreset : (nrow ? '(none)' : '(missing)');
+      } catch (e) { out.newSessionAgentPreset = 'err:' + String(e); }
       // 主题：三选一开关 + data-wt-theme 落定 + 持久化
       var con = vis('.dsh-wt_console');
       out.themeAttr0 = con ? con.getAttribute('data-wt-theme') : null;

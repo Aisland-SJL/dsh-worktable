@@ -307,6 +307,27 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
 
+/** 宿主 API 客户端（apply 时从 connection 服务取；agentPresets 用于修复新会话继承已删预设的 bug） */
+let presetApi: { agentPresets?: any } | null = null
+
+/** 新会话显式应用「部署默认预设」：宿主新会话座位同款逻辑（api.agentPresets.select，仅对 blank 会话生效）。
+ *  修复：用户删掉默认模型后，新建会话继承到失效预设，prompt 报 model-unavailable 导致窗口建不出来。 */
+async function ensureSessionPreset(sessionId: string): Promise<void> {
+  const api = presetApi?.agentPresets
+  if (!api || typeof api.list !== 'function' || typeof api.select !== 'function') return
+  try {
+    const listRes = await api.list({})
+    const presets = listRes?.result?.ok ? listRes?.result?.value?.presets : null
+    if (!Array.isArray(presets) || presets.length === 0) return
+    const fallback = presets.find((p: any) => p?.isDefault)?.id ?? presets[0]?.id
+    if (!fallback) return
+    const selRes = await api.select({ sessionId, agentPreset: fallback })
+    if (selRes?.result?.ok) {
+      try { sessionBridge?.sessions?.noteAgentPreset?.(sessionId, fallback) } catch {}
+    }
+  } catch { /* 修复失败不阻断主流程，错误仍按原路径提示 */ }
+}
+
 /** 控制室（工作台自己）项目：固定 id、固定排项目列表第一位、不可删除 */
 const CONSOLE_ID = 'wt-console'
 const CONSOLE_ICON = '🖥️'
@@ -640,6 +661,7 @@ export async function createCustomSession(projectId: string, projectName: string
   if (workspaceId) createOpts = { workspaceId }
   else if (folder) createOpts = { cwd: folder }
   const sessionId = await b.sessions.create(createOpts)
+  await ensureSessionPreset(sessionId) // 新会话应用部署默认预设（修复继承已删模型 → model-unavailable）
   markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
@@ -1432,6 +1454,7 @@ function buildCustomLayoutPrompt(req: string): string {
       if (workspaceId) createOpts = { workspaceId }
       else if (folder) createOpts = { cwd: folder }
       const sessionId = await b.sessions.create(createOpts)
+      await ensureSessionPreset(sessionId) // 同样修复：管理对话新建后首次发消息不再继承已删模型
       markPluginSessionOpen(sessionId)
       persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId } }))
       setConsoleBind(null)
@@ -2680,6 +2703,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
+  try { presetApi = ctx.get?.('connection')?.api ?? null } catch { presetApi = null }
   try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText; (window as any).__dshSyncSessionScope = () => syncSessionScope(sessionBridge?.list) } catch {}
 
 
