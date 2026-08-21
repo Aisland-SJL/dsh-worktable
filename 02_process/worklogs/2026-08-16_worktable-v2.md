@@ -1318,3 +1318,13 @@
 - 验证（probe-batch16 更新）：cardBgLight rgba(255,255,255,.55) ✓、lightSheen /
   lightEdge（黑角 .4）+ opacity .9 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第七轮附二：玻璃通透度加强）
+
+- 用户反馈：看不到背景网格线——玻璃通透度不够，要能感觉出半透模式。
+- 实现：暗色底 rgba(23,28,37,.5→.32 更深但更透)、backdrop blur 16→8px（1px 网格线
+  不再被糊没）、内层高光微降；浅色底 rgba(255,255,255,.55→.42)、高光带 85%→60%；
+  网格线提亮（暗 .028→.045 / 浅 .045→.07）；创建卡底 .3→.2。
+- 验证（probe-batch16）：cardBlur blur(8px) ✓、网格线 alpha .043 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

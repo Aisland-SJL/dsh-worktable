@@ -382,8 +382,8 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_subSection{flex:none;padding:6px 8px 2px;font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683)}',
   // 控制室面板：项目卡片网格（每行 3 张、超出换行；DSH 简洁 + 苹果式卡片）。
   // 主题变量自带作用域：dark 缺省；data-wt-theme=light 换浅色；system 由面板读宿主 color-scheme 落成 dark/light。
-  '.dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.028);--wt-shadow:0 6px 20px rgba(0,0,0,.35);flex:1;min-height:0;overflow:auto;padding:22px;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px;background-color:var(--wt-bg)}',
-  '.dsh-wt_console[data-wt-theme=light]{--wt-bg:#eef1f5;--wt-card:#ffffff;--wt-cardHover:#f7f9fb;--wt-border:#d8dee6;--wt-borderHover:#b9c4d2;--wt-grid:rgba(27,31,36,.045);--wt-text:#1c2128;--wt-text2:#57606a;--wt-text3:#8b949e;--wt-chip:rgba(27,31,36,.07);--wt-shadow:0 6px 20px rgba(31,41,55,.10)}',
+  '.dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);flex:1;min-height:0;overflow:auto;padding:22px;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px;background-color:var(--wt-bg)}',
+  '.dsh-wt_console[data-wt-theme=light]{--wt-bg:#eef1f5;--wt-card:#ffffff;--wt-cardHover:#f7f9fb;--wt-border:#d8dee6;--wt-borderHover:#b9c4d2;--wt-grid:rgba(27,31,36,.07);--wt-text:#1c2128;--wt-text2:#57606a;--wt-text3:#8b949e;--wt-chip:rgba(27,31,36,.07);--wt-shadow:0 6px 20px rgba(31,41,55,.10)}',
   '.dsh-wt_consoleHead{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:12px}',
   '.dsh-wt_consoleTitle{font-size:14px;font-weight:700;line-height:20px;color:var(--wt-text)}',
   '.dsh-wt_consoleTheme{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}',
@@ -391,10 +391,10 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}',
   '.dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}',
   '.dsh-wt_consoleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);max-width:856px;margin-left:auto;margin-right:auto}',
-  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.02) 34%,rgba(0,0,0,.10) 100%),rgba(23,28,37,.5);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}',
+  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.015) 34%,rgba(0,0,0,.10) 100%),rgba(18,23,32,.32);backdrop-filter:blur(8px) saturate(1.25);-webkit-backdrop-filter:blur(8px) saturate(1.25);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}',
   // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
   '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
-  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,.85) 0%,rgba(255,255,255,.35) 40%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.55);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.22) 40%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.42);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}',
   '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard::after{background:conic-gradient(from 45deg,rgba(27,31,36,.4) 0deg,rgba(255,255,255,1) 90deg,rgba(27,31,36,.4) 180deg,rgba(255,255,255,1) 270deg,rgba(27,31,36,.4) 360deg);opacity:.9}',
   // 状态光效卡片：玻璃边缘让位给霓虹描边/旋转光环
   '.dsh-wt_consoleCard-glowDone::after,.dsh-wt_consoleCard-glowNeed::after{opacity:0}',
@@ -426,7 +426,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleEmpty{padding:40px 0;text-align:center;font-size:12px;color:var(--wt-text3)}',
   // 创建卡片：虚线 + 居中加号，永远最后一位
   // 创建卡片：玻璃底 + 虚线边，永远最后一位
-  '.dsh-wt_consoleAdd{justify-content:center;align-items:center;gap:10px;background:rgba(23,28,37,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1.5px dashed var(--wt-borderHover)}',
+  '.dsh-wt_consoleAdd{justify-content:center;align-items:center;gap:10px;background:rgba(18,23,32,.2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1.5px dashed var(--wt-borderHover)}',
   '.dsh-wt_consoleAdd::after{display:none}',
   '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleAdd{background:rgba(255,255,255,.45)}',
   '.dsh-wt_consoleAdd:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:rgba(23,28,37,.45)}',
