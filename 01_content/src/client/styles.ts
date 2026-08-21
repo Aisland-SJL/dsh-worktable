@@ -391,8 +391,14 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}',
   '.dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}',
   '.dsh-wt_consoleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);max-width:856px;margin-left:auto;margin-right:auto}',
-  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:var(--wt-card);border:1px solid var(--wt-border);border-radius:16px;cursor:pointer;transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease;overflow:hidden}',
-  '.dsh-wt_consoleCard:hover{transform:translateY(-2px);border-color:var(--wt-borderHover);box-shadow:var(--wt-shadow)}',
+  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.02) 34%,rgba(0,0,0,.10) 100%),rgba(23,28,37,.5);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}',
+  // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
+  '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,.9) 0%,rgba(255,255,255,.45) 40%,rgba(31,41,55,.05) 100%),rgba(255,255,255,.5);box-shadow:0 10px 28px rgba(31,41,55,.12),inset 0 1px 0 rgba(255,255,255,.9)}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard::after{background:conic-gradient(from 45deg,rgba(27,31,36,.24) 0deg,rgba(255,255,255,.95) 90deg,rgba(27,31,36,.24) 180deg,rgba(255,255,255,.95) 270deg,rgba(27,31,36,.24) 360deg);opacity:.85}',
+  // 状态光效卡片：玻璃边缘让位给霓虹描边/旋转光环
+  '.dsh-wt_consoleCard-glowDone::after,.dsh-wt_consoleCard-glowNeed::after{opacity:0}',
+  '.dsh-wt_consoleCard:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.09)}',
   '.dsh-wt_consoleCardSelf{cursor:default;opacity:.97}',
   '.dsh-wt_consoleCardHead{display:flex;align-items:center;gap:13px;min-width:0}',
   '.dsh-wt_consoleIcon{flex:none;font-size:31px;line-height:1}',
@@ -419,8 +425,11 @@ export const css = xtermCss + '\n' + [
   '@keyframes consoleAngleSpin{to{--consoleAngle:360deg}}',
   '.dsh-wt_consoleEmpty{padding:40px 0;text-align:center;font-size:12px;color:var(--wt-text3)}',
   // 创建卡片：虚线 + 居中加号，永远最后一位
-  '.dsh-wt_consoleAdd{justify-content:center;align-items:center;gap:10px;background:transparent;border:1.5px dashed var(--wt-borderHover)}',
-  '.dsh-wt_consoleAdd:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--wt-chip)}',
+  // 创建卡片：玻璃底 + 虚线边，永远最后一位
+  '.dsh-wt_consoleAdd{justify-content:center;align-items:center;gap:10px;background:rgba(23,28,37,.3);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1.5px dashed var(--wt-borderHover)}',
+  '.dsh-wt_consoleAdd::after{display:none}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleAdd{background:rgba(255,255,255,.35)}',
+  '.dsh-wt_consoleAdd:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:rgba(23,28,37,.45)}',
   '.dsh-wt_consoleAddPlus{font-size:34px;line-height:1;color:var(--wt-text2);font-weight:400}',
   '.dsh-wt_consoleAdd:hover .dsh-wt_consoleAddPlus{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_consoleAddLabel{font-size:17px;font-weight:600;color:var(--wt-text2)}',

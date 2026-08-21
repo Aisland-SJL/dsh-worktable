@@ -1292,3 +1292,18 @@
   同空间能容纳更多对话内容）。
 - 验证：probe-batch16 previewFont 8.5px ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第七轮：iOS 玻璃拟态贴片）
+
+- 用户需求：贴片大小不变，重设计成苹果 iOS 玻璃风格——① 边缘四角渐变描边（左上/右下
+  =白、右上/左下=黑，薄玻璃质感）；② 内部玻璃渐变光晕。
+- 实现：① 卡片基底改半透明 rgba(23,28,37,.5) + backdrop-filter blur(16px) saturate(1.25)
+  （背景井字格透过来，真玻璃感）+ 内层斜向高光 linear-gradient(135deg 白 8%→2%→黑 10%) +
+  inset 顶部 1px 高光；② 边缘用 ::after 挖空环（padding 1px + mask xor）：
+  conic-gradient(from 45deg, 黑40%→白55%→黑→白→黑)，左上/右下白、右上/左下黑；
+  ③ 浅色主题对应白底玻璃版（白 90%→45% + 深灰边）；④ 光效状态（glowDone/glowNeed）隐藏
+  玻璃边让位霓虹描边；创建卡片同玻璃底（虚线边，::after 隐藏）。
+- 验证（probe-batch16 更新）：cardSheen 斜向高光 ✓、cardBlur blur(16px) ✓、glassEdge
+  conic 四角渐变（opacity .5）✓；全流程 + 光效 + 主题 ✓；functional-diag 全 20 STEP
+  ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
