@@ -1054,7 +1054,6 @@ function ConsolePane() {
             <div className="dsh-wt_consoleCardHead">
               <span className="dsh-wt_consoleIcon" aria-hidden>{c.icon}</span>
               <span className="dsh-wt_consoleName">{c.name}</span>
-              <span className={'dsh-wt_consoleDot dsh-wt_consoleDot-' + c.status} aria-hidden />
             </div>
             <div className="dsh-wt_consoleDivider" aria-hidden />
             <div className="dsh-wt_consoleStatusRow">

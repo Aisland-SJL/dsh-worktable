@@ -353,6 +353,18 @@ function listWorkspaces(): { id: string; title: string; path: string }[] {
   } catch { return [] }
 }
 
+/** 预览文本清洗：去掉围栏代码块（```…```，含 dsh-ui 等）与行内代码，压缩空白；
+ *  代码为主的片段会被滤空 → 调用方回退到更早的消息。只清洗显示用副本，不改原文。 */
+function cleanPreviewText(raw: string): string {
+  let s = String(raw ?? '')
+  s = s.replace(/```[a-zA-Z0-9_+-]*[\s\S]*?```/g, ' ')
+  s = s.replace(/```[a-zA-Z0-9_+-]*[\s\S]*$/g, ' ')
+  s = s.replace(/`[^`\n]{1,200}`/g, ' ')
+  s = s.replace(/```/g, ' ')
+  s = s.replace(/\s+/g, ' ').trim()
+  return s
+}
+
 /** 冷会话最近消息缓存与预热：宿主 history 只读通道（face.history 为运行期内建方法，非公开接口，
  *  只读侦察确认可用；拉取是带宽成本不是 Token 成本，模型不参与）。 */
 const previewCache = new Map<string, string>()
@@ -360,20 +372,20 @@ const previewFetching = new Set<string>()
 let previewSweepBusy = false
 let previewTimer: number | null = null
 
-/** 从 history 事件流尾部提取最近一条成品消息文本（优先 text 块，回退任意文本） */
+/** 从 history 事件流尾部提取最近一条成品消息文本（优先 text 块；清洗代码后仍太短则回退更早消息） */
 async function coldPreviewOf(face: any): Promise<string> {
   if (!face || typeof face.history !== 'function') return ''
-  const r1 = await face.history({ maxMessages: 2 })
+  const r1 = await face.history({ maxMessages: 6 })
   const evs = r1?.result?.value?.events
   if (!Array.isArray(evs)) return ''
   const textOf = (blocks: any): string => {
     let fallback = ''
     if (!Array.isArray(blocks)) return ''
     for (const b of blocks) {
-      const s = typeof b?.text === 'string' ? b.text.trim().replace(/\s+/g, ' ') : ''
+      const s = typeof b?.text === 'string' ? b.text.trim() : ''
       if (!s) continue
-      if (b?.type === 'text') return s.slice(0, 220)
-      if (!fallback) fallback = s.slice(0, 220)
+      if (b?.type === 'text') return s
+      if (!fallback) fallback = s
     }
     return fallback
   }
@@ -381,14 +393,12 @@ async function coldPreviewOf(face: any): Promise<string> {
     const ev = evs[i]?.event
     if (!ev) continue
     const d = ev.data ?? {}
-    if (ev.type === 'user/message') {
-      const s = textOf(d.content ?? d.blocks)
-      if (s) return s
-    } else if (ev.type === 'assistant/message') {
-      const m = d.message ?? d
-      const s = textOf(m.content ?? m.blocks)
-      if (s) return s
-    }
+    let raw = ''
+    if (ev.type === 'user/message') raw = textOf(d.content ?? d.blocks)
+    else if (ev.type === 'assistant/message') { const m = d.message ?? d; raw = textOf(m.content ?? m.blocks) }
+    if (!raw) continue
+    const clean = cleanPreviewText(raw)
+    if (clean.length >= 8) return clean.slice(0, 220)
   }
   return ''
 }
@@ -417,7 +427,7 @@ function schedulePreviewSweep() {
   previewTimer = window.setTimeout(() => { previewTimer = null; sweepPreviews() }, 6000)
 }
 
-/** 从会话快照节点里提取最近一条文本（纯读内存镜像，零 Token；无则 ''） */
+/** 从会话快照节点里提取最近一条文本（纯读内存镜像，零 Token；代码清洗后无则 ''） */
 function lastTextOf(sid: string): string {
   try {
     const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
@@ -425,10 +435,16 @@ function lastTextOf(sid: string): string {
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i]
       const blocks = Array.isArray(n?.blocks) ? n.blocks : (Array.isArray(n?.content) ? n.content : [])
+      let raw = ''
       for (const b of blocks) {
-        const s = typeof b?.text === 'string' ? b.text.trim().replace(/\s+/g, ' ') : ''
-        if (s) return s
+        const s = typeof b?.text === 'string' ? b.text.trim() : ''
+        if (!s) continue
+        if (b?.type === 'text') { raw = s; break }
+        if (!raw) raw = s
       }
+      if (!raw) continue
+      const clean = cleanPreviewText(raw)
+      if (clean.length >= 8) return clean.slice(0, 220)
     }
   } catch {}
   return ''

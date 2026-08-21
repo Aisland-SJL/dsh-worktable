@@ -145,7 +145,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         var c0 = cards[0];
         out.firstCardSelf = !!(c0 && c0.classList.contains('dsh-wt_consoleCardSelf'));
         out.firstCardIcon = c0 ? c0.querySelector('.dsh-wt_consoleIcon').textContent : null;
-        out.firstCardDot = c0 && c0.querySelector('.dsh-wt_consoleDot') ? c0.querySelector('.dsh-wt_consoleDot').className.replace('dsh-wt_consoleDot','').trim() : null;
+        out.dotGone = !(c0 && c0.querySelector('.dsh-wt_consoleDot'));
         out.nameFont = c0 && c0.querySelector('.dsh-wt_consoleName') ? getComputedStyle(c0.querySelector('.dsh-wt_consoleName')).fontSize : null;
         out.dividerExists = !!(c0 && c0.querySelector('.dsh-wt_consoleDivider'));
         out.kidsGone = !(c0 && c0.querySelector('.dsh-wt_consoleBadge'));
@@ -207,6 +207,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         await sleep(4200);
         var selfPrev2 = c0 && c0.querySelector('.dsh-wt_consolePreview');
         out.selfPreviewAfterSweep = selfPrev2 ? selfPrev2.textContent.slice(0, 60) : null;
+        var BT = String.fromCharCode(96);
+        out.selfPreviewHasBacktick = selfPrev2 ? selfPrev2.textContent.indexOf(BT) >= 0 : null;
+        out.selfPreviewHasFence = selfPrev2 ? selfPrev2.textContent.indexOf(BT + BT + BT) >= 0 : null;
+        // 清洗正则逻辑断言（与插件 cleanPreviewText 同构）
+        var f1 = new RegExp(BT + '{3}[a-zA-Z0-9_+-]*[\\\\s\\\\S]*?' + BT + '{3}', 'g');
+        var f2 = new RegExp(BT + '[^' + BT + '\\\\n]{1,200}' + BT, 'g');
+        var sample = '结论：完成了。' + BT + BT + BT + 'dsh-ui\\n{\"json\":1}' + BT + BT + BT + ' 之后' + BT + 'inline' + BT + '结束';
+        var cleaned = sample.replace(f1, ' ').replace(f2, ' ').replace(BT + '{3}', ' ').replace(/\\s+/g, ' ').trim();
+        out.cleanSample = cleaned;
         out.selfPreviewFilled = !!(selfPrev2 && !selfPrev2.classList.contains('dsh-wt_consolePreviewNone'));
         var lcard = [].slice.call(cards).find(function(c){ return (c.textContent||'').indexOf('绑定测试') >= 0; });
         if (lcard) { lcard.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true})); }

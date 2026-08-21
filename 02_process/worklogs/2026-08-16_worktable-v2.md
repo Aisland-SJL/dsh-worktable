@@ -1328,3 +1328,17 @@
 - 验证（probe-batch16）：cardBlur blur(8px) ✓、网格线 alpha .043 ✓；functional-diag
   全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第八轮：更透玻璃 + 去圆点 + 预览过滤代码）
+
+- 用户反馈：① 还是不够透（怀疑内层光晕盖底）——继续加通透度；② 去掉卡片右上角小圆点
+  （整卡光效已表达状态）；③ 预览抓取的信息里混入隐藏代码（围栏/行内）显示很乱——抓取
+  时过滤代码，不改原文内容。
+- 实现：① 暗色底 rgba(18,23,32,.18)（.32→.18）、内层黑尾渐变 .10→.04、blur 8→4px；
+  浅色底 .28、高光带 45%→15%；② ConsolePane 头删掉 .dsh-wt_consoleDot 及其全部样式；
+  ③ cleanPreviewText（去 ```围栏（含 dsh-ui）与行内代码、压缩空白）+ coldPreviewOf
+  逐消息回退（maxMessages 2→6，清洗后不足 8 字符回退更早消息）+ lastTextOf 同样清洗。
+- 验证（probe-batch16）：cardBgDark rgba(18,23,32,.18) / blur(4px) ✓、dotGone ✓、
+  cleanSample「结论：完成了。 之后 结束」（围栏+行内代码全部滤除）✓、真实会话全代码消息
+  正确回退显示「暂无消息」✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

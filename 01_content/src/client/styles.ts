@@ -391,10 +391,10 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}',
   '.dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}',
   '.dsh-wt_consoleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);max-width:856px;margin-left:auto;margin-right:auto}',
-  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.015) 34%,rgba(0,0,0,.10) 100%),rgba(18,23,32,.32);backdrop-filter:blur(8px) saturate(1.25);-webkit-backdrop-filter:blur(8px) saturate(1.25);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}',
+  '.dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.01) 34%,rgba(0,0,0,.04) 100%),rgba(18,23,32,.18);backdrop-filter:blur(4px) saturate(1.25);-webkit-backdrop-filter:blur(4px) saturate(1.25);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}',
   // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
   '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
-  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.22) 40%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.42);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,.15) 40%,rgba(31,41,55,.04) 100%),rgba(255,255,255,.28);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}',
   '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard::after{background:conic-gradient(from 45deg,rgba(27,31,36,.4) 0deg,rgba(255,255,255,1) 90deg,rgba(27,31,36,.4) 180deg,rgba(255,255,255,1) 270deg,rgba(27,31,36,.4) 360deg);opacity:.9}',
   // 状态光效卡片：玻璃边缘让位给霓虹描边/旋转光环
   '.dsh-wt_consoleCard-glowDone::after,.dsh-wt_consoleCard-glowNeed::after{opacity:0}',
@@ -404,10 +404,6 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleIcon{flex:none;font-size:31px;line-height:1}',
   '.dsh-wt_consoleName{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:20px;font-weight:700;line-height:28px;color:var(--wt-text)}',
   '.dsh-wt_consoleDivider{flex:none;height:1px;background:var(--wt-border)}',
-  '.dsh-wt_consoleDot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--wt-text3)}',
-  '.dsh-wt_consoleDot-busy{background:var(--dsw-alias-state-accent-primary,#4f8ef7);box-shadow:0 0 0 4px rgba(79,142,247,.16)}',
-  '.dsh-wt_consoleDot-need{background:var(--dsw-alias-state-warning,#d29922);box-shadow:0 0 0 4px rgba(210,153,34,.16)}',
-  '.dsh-wt_consoleDot-done{background:var(--dsw-alias-state-success,#3fb950);box-shadow:0 0 0 4px rgba(63,185,80,.16)}',
   '.dsh-wt_consoleStatusRow{display:flex;align-items:baseline;gap:9px;min-width:0}',
   '.dsh-wt_consoleStatus{flex:none;font-size:22px;font-weight:700;line-height:30px;color:var(--wt-text2)}',
   '.dsh-wt_consoleStatus-busy{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
