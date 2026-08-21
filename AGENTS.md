@@ -33,9 +33,11 @@ node --check lib/index.js
   聊天窗恒在右侧；缩略图在 presetThumb() 加分支。
 - **新会话预设修复**：新建会话（createCustomSession / bindConsoleNew）创建后调用
   ensureSessionPreset——用宿主 api.agentPresets.list/select 显式应用「部署默认预设」
-  （isDefault ?? 首个；select 仅对 blank 会话生效），修复用户删掉默认模型后新会话继承
-  失效预设、prompt 报 model-unavailable 建不出窗口的问题；失败静默、无 agentPresets
-  API 的宿主自动跳过。
+  （isDefault ?? 首个，失败逐个尝试其余预设；select 仅对 blank 会话生效）。
+- **新会话模型修复（真根因）**：会话级模型选择独立于预设、随默认选择持久化——用户删掉
+  provider 后新会话继承失效选择，prompt 报 model-unavailable。ensureSessionModel 用
+  session.models 查 routable，false 时 session.selectModel 切到 groups[0] 首个可用模型
+  （该 API 同时把新选择存为默认，顺带修复后续所有新会话）。两者都失败静默、缺 API 跳过。
 - **对话绑定**：projects.v1.bindings = { 项目id → 会话id }；打开项目时引擎自动
   sessions.open(绑定会话)（openSplit / DOM 桥两处入口）；未绑定/解绑 = 不切换。
 - **项目×对话联动**：打开项目记录「打开前会话」（projectAttachRef.sessionId）；项目打开期间切到

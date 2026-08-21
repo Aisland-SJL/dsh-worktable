@@ -1444,3 +1444,19 @@
 - 验证（probe-batch16 阶段3 扩展）：新建会话 agentPreset='standard'（部署默认预设已应用）✓；
   functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；未启用 agentPresets 的宿主自动跳过（无行为变化）。
+
+## 补记（第十八轮：模型失效修复——真正根因在会话级模型选择）
+
+- 进展：上一轮预设修复后用户仍报 model-unavailable——端到端探测（probe-batch18：走工作台
+  新建流程后直接 session.prompt）实测 promptOk:false，证实预设应用并未重置会话级模型选择。
+- 根因（只读侦察宿主 api-proxy）：新会话继承的是「默认模型选择」（provider/model，独立于
+  agent 预设，defaults.saveDefaultModelSelection 持久化）；用户删掉 openai provider 后，
+  该选择 routable=false，session.prompt 在 turnAgentFor 处直接拒绝。会话级修复 API =
+  session.models（返回 current/routable/groups）+ session.selectModel。
+- 实现：hostApi 捕获（原 presetApi 更名，调试句柄 __dshHostApi）；新增 ensureSessionModel：
+  session.models 查 routable——false 时取 groups[0] 首个可用模型 session.selectModel
+  （该 API 同时 saveDefaultModelSelection，把新选择存为默认 → 顺带修复后续所有新会话）；
+  createCustomSession / bindConsoleNew 两处 preset 修复后追加调用。
+- 验证（probe-batch18 重跑）：promptOk:true、promptErr:null（模型真实接受消息）✓；
+  functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。

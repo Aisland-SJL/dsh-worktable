@@ -307,24 +307,56 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
 
-/** 宿主 API 客户端（apply 时从 connection 服务取；agentPresets 用于修复新会话继承已删预设的 bug） */
-let presetApi: { agentPresets?: any } | null = null
+/** 宿主 API 客户端（apply 时从 connection 服务取；agentPresets/sessions 用于修复新会话继承失效模型的 bug） */
+let hostApi: { agentPresets?: any; sessions?: any } | null = null
 
 /** 新会话显式应用「部署默认预设」：宿主新会话座位同款逻辑（api.agentPresets.select，仅对 blank 会话生效）。
  *  修复：用户删掉默认模型后，新建会话继承到失效预设，prompt 报 model-unavailable 导致窗口建不出来。 */
 async function ensureSessionPreset(sessionId: string): Promise<void> {
-  const api = presetApi?.agentPresets
+  const api = hostApi?.agentPresets
   if (!api || typeof api.list !== 'function' || typeof api.select !== 'function') return
   try {
     const listRes = await api.list({})
     const presets = listRes?.result?.ok ? listRes?.result?.value?.presets : null
     if (!Array.isArray(presets) || presets.length === 0) return
-    const fallback = presets.find((p: any) => p?.isDefault)?.id ?? presets[0]?.id
-    if (!fallback) return
-    const selRes = await api.select({ sessionId, agentPreset: fallback })
-    if (selRes?.result?.ok) {
-      try { sessionBridge?.sessions?.noteAgentPreset?.(sessionId, fallback) } catch {}
+    // 部署默认优先，若其本身也失效（如引用了被删的 provider），逐个尝试其余预设直到成功
+    const ordered = [...presets]
+    const defIdx = ordered.findIndex((p: any) => p?.isDefault)
+    if (defIdx > 0) ordered.unshift(ordered.splice(defIdx, 1)[0])
+    for (const preset of ordered) {
+      const pid = preset?.id
+      if (!pid) continue
+      try {
+        const selRes = await api.select({ sessionId, agentPreset: pid })
+        if (selRes?.result?.ok) {
+          try { sessionBridge?.sessions?.noteAgentPreset?.(sessionId, pid) } catch {}
+          return
+        }
+        try { if (typeof console !== 'undefined' && console.warn) console.warn('[worktable] preset select failed:', pid, selRes?.result?.error?.message ?? '') } catch {}
+      } catch (err) {
+        try { if (typeof console !== 'undefined' && console.warn) console.warn('[worktable] preset select threw:', pid, String(err)) } catch {}
+      }
     }
+  } catch { /* 修复失败不阻断主流程，错误仍按原路径提示 */ }
+}
+
+/** 新会话模型选择修复（真正的根因修复）：当前选择指向已删 provider（routable=false）时，
+ *  用 session.selectModel 切到模型目录里第一个可用 provider 的首个模型——
+ *  该 API 同时把新选择存为默认，顺带修复后续所有新会话。 */
+async function ensureSessionModel(sessionId: string): Promise<void> {
+  const api = hostApi?.sessions
+  if (!api || typeof api.models !== 'function' || typeof api.selectModel !== 'function') return
+  try {
+    const mRes = await api.models({ sessionId })
+    if (!mRes?.result?.ok) return
+    const val = mRes.result.value
+    if (val?.routable === true) return
+    const groups = val?.groups
+    if (!Array.isArray(groups) || groups.length === 0) return
+    const g = groups[0]
+    const model = g?.models?.[0]?.id
+    if (!g?.id || !model) return
+    await api.selectModel({ sessionId, provider: g.id, model })
   } catch { /* 修复失败不阻断主流程，错误仍按原路径提示 */ }
 }
 
@@ -661,7 +693,8 @@ export async function createCustomSession(projectId: string, projectName: string
   if (workspaceId) createOpts = { workspaceId }
   else if (folder) createOpts = { cwd: folder }
   const sessionId = await b.sessions.create(createOpts)
-  await ensureSessionPreset(sessionId) // 新会话应用部署默认预设（修复继承已删模型 → model-unavailable）
+  await ensureSessionPreset(sessionId) // 新会话应用部署默认预设
+  await ensureSessionModel(sessionId) // 修复继承失效 provider（selectModel 同步存默认，顺带修复后续新会话）
   markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await b.sessions.open?.(sessionId) } catch {}
   await promptIntoSession(sessionId, text)
@@ -1454,7 +1487,8 @@ function buildCustomLayoutPrompt(req: string): string {
       if (workspaceId) createOpts = { workspaceId }
       else if (folder) createOpts = { cwd: folder }
       const sessionId = await b.sessions.create(createOpts)
-      await ensureSessionPreset(sessionId) // 同样修复：管理对话新建后首次发消息不再继承已删模型
+      await ensureSessionPreset(sessionId) // 管理对话同样应用部署默认预设
+      await ensureSessionModel(sessionId) // 管理对话同样修复失效 provider
       markPluginSessionOpen(sessionId)
       persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId } }))
       setConsoleBind(null)
@@ -2703,7 +2737,8 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
-  try { presetApi = ctx.get?.('connection')?.api ?? null } catch { presetApi = null }
+  try { hostApi = ctx.get?.('connection')?.api ?? null } catch { hostApi = null }
+  try { (window as any).__dshHostApi = hostApi } catch {}
   try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText; (window as any).__dshSyncSessionScope = () => syncSessionScope(sessionBridge?.list) } catch {}
 
 
