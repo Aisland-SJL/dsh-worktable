@@ -802,6 +802,25 @@ function syncSessionScope(list: any) {
   }
 }
 
+/** 显示/隐藏切换图标：睁眼/闭眼同族 SVG（对称设计，符合可见性规范） */
+function EyeIcon(props: { closed: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      {props.closed ? (
+        <>
+          <path d="M1.8 8s2.6-3.1 6.2-3.1S14.2 8 14.2 8s-2.6 3.1-6.2 3.1S1.8 8 1.8 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M3.6 8h8.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <path d="M1.8 8s2.6-3.1 6.2-3.1S14.2 8 14.2 8s-2.6 3.1-6.2 3.1S1.8 8 1.8 8Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+          <circle cx="8" cy="8" r="1.7" fill="currentColor" />
+        </>
+      )}
+    </svg>
+  )
+}
+
 /** 管理面板改名输入：本地草稿，blur/Enter 才提交（清空时不会立刻弹回原名） */
 function RenameInput(props: { initial: string; placeholder: string; onCommit: (v: string) => void }) {
   const [val, setVal] = useState(props.initial)
@@ -2079,15 +2098,37 @@ function buildCustomLayoutPrompt(req: string): string {
     : 16
   const popTop = clamp(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540))
 
+  /** 收起态点击项目图标：视图覆盖/布局 → openSplit；入驻无视图 → 切绑定对话 */
+  const openRailProject = (id: string) => {
+    const pr = projectsRef.current.projects
+    const layout = pr.layouts.find((l) => l.id === id)
+    const view = pr.views[id]
+    if (view || layout) openSplit((view ?? layout) as LayoutSpec)
+    else {
+      const bound = pr.bindings[id]
+      if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
+    }
+  }
+
   if (!wide) {
-    const projectIcons = aliveRegisteredIds.map((id) => projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦')
-    const shortcutIcons = projects.shortcuts.map((s) => s.icon)
-    const layoutIcons = projects.layouts.map((l) => l.icon ?? '🧱')
-    const icons = [...projectIcons, ...shortcutIcons, ...layoutIcons]
-    const railNames = [
-      ...aliveRegisteredIds.map((id) => projects.nameOverrides[id] ?? metas[id]?.name ?? id),
-      ...projects.shortcuts.map((s) => s.name),
-      ...projects.layouts.map((l) => projects.nameOverrides[l.id] ?? l.title),
+    // 收起态 = 等行高的正方形圆角按钮，中间只留 emoji；点击 = 进入对应项目
+    const railItems: { icon: string; name: string; onClick: (e: any) => void }[] = [
+      { icon: CONSOLE_ICON, name: t('console.name'), onClick: (e) => clickConsoleCard(e.currentTarget as HTMLElement) },
+      ...aliveRegisteredIds.map((id) => ({
+        icon: projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦',
+        name: projects.nameOverrides[id] ?? metas[id]?.name ?? id,
+        onClick: () => openRailProject(id),
+      })),
+      ...projects.shortcuts.map((s) => ({
+        icon: s.icon,
+        name: s.name,
+        onClick: () => { try { window.open(s.href, '_blank', 'noopener') } catch {} },
+      })),
+      ...projects.layouts.map((l) => ({
+        icon: l.icon ?? '🧱',
+        name: projects.nameOverrides[l.id] ?? l.title,
+        onClick: () => openSplit(l),
+      })),
     ]
     // 浮动态：fixed 定位到拖前高度（左/宽取折叠列实测几何）；停靠态：文档流原位
     const railStyle = isFloat && railRect
@@ -2096,9 +2137,13 @@ function buildCustomLayoutPrompt(req: string): string {
     return (
       <div ref={rootRef} className="dsh-wt_section dsh-wt_rail" style={railStyle}>
         <div className="dsh-wt_divider" />
-        <div className="dsh-wt_railBox" title={railNames.join(' · ') || t('rail.title')}>
-          {icons.length > 0
-            ? icons.map((icon, i) => <span key={i} className="dsh-wt_railIcon">{icon}</span>)
+        <div className="dsh-wt_railBox">
+          {railItems.length > 0
+            ? railItems.map((it, i) => (
+                <button key={i} type="button" className="dsh-wt_railBtn" title={it.name} aria-label={it.name} onClick={it.onClick}>
+                  <span aria-hidden>{it.icon}</span>
+                </button>
+              ))
             : <span className="dsh-wt_railIcon">≡</span>}
         </div>
       </div>
@@ -2302,7 +2347,7 @@ function buildCustomLayoutPrompt(req: string): string {
                     >{projects.iconOverrides[id] ?? meta?.icon ?? '📦'}</span>}
                 <RenameInput initial={display} placeholder={t('manage.renamePh')} onCommit={(v) => renameProject(id, v)} />
                 <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
-                  {isHidden ? '🙈' : '👁'}
+                  <EyeIcon closed={isHidden} />
                 </button>
                 <button type="button" className="dsh-wt_manageBtn" title={t('manage.changeView')} onClick={() => setViewPickFor(id)}>🧩</button>
                 <button

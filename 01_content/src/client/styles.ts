@@ -8,7 +8,9 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_section{box-sizing:border-box;display:flex;flex-direction:column;gap:6px;width:100%;padding:0}',
   '.dsh-wt_float{min-width:176px;max-width:264px;background:var(--dsw-alias-bg-base,#0b0e14);border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;padding:8px;box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}',
   '.dsh-wt_rail{pointer-events:none}',
-  '.dsh-wt_railBox{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;padding:5px 3px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:8px;background:var(--dsw-alias-bg-base,#0b0e14)}',
+  '.dsh-wt_railBox{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:5px 3px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:8px;background:var(--dsw-alias-bg-base,#0b0e14)}',
+  '.dsh-wt_railBtn{flex:none;width:22px;height:22px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:7px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:13px;line-height:1;cursor:pointer;pointer-events:auto}',
+  '.dsh-wt_railBtn:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08));border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_railIcon{font-size:17px;line-height:22px}',
   // 分隔线
   '.dsh-wt_divider{flex:none;height:1px;background:var(--dsw-alias-border-l1,#262b36);margin:2px 0}',

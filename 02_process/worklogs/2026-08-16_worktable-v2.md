@@ -1403,3 +1403,21 @@
 - 验证（probe-batch16）：panelSweepGone（面板 ::before content none）✓、sweepRuleFound
   （样式表含 .dsh-wt_consoleSweep）✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效；本地 ahead 5 待补推。
+
+## 补记（第十五轮：收起态方形按钮 + 管理面板眼睛图标）
+
+- 用户需求（6 点前排队，本轮执行）：① 侧边栏收起时，项目收缩成的小 emoji 不可点、间距
+  太挤——改成「边长=行高的正方形圆角按钮（中间只留 emoji）」，点击 = 进入对应项目；
+  ② 管理面板隐藏/显示图标原来是捂脸猴 🙈 太不正式——换成对称的睁眼/闭眼 SVG 切换。
+- 实现：① !wide 分支重构：railItems 数组（控制室🖥️ + 入驻项目 + 快捷方式 + 布局，各带
+  onClick）——控制室走 clickConsoleCard（未绑定弹强制绑定）、入驻走 openRailProject
+  （视图/布局 openSplit，否则切绑定对话）、快捷方式 window.open、布局 openSplit；
+  渲染为 .dsh-wt_railBtn（22×22、圆角 7px、pointer-events:auto——.dsh-wt_rail 容器
+  原本 pointer-events:none，这是之前不可点的根因）；railBox gap 3→5px。② EyeIcon 组件
+  （12px SVG：睁眼=眼轮廓+瞳孔圆、闭眼=同轮廓+水平线），替换 manage 行 🙈/👁，title
+  照旧 隐藏/显示 切换。
+- 验证（probe-batch17.cjs 新增）：眼睛——hasSvg/monkeyGone ✓、点击隐藏（闭眼线/
+  title=显示/rowOff/持久化）✓、再点恢复 ✓；收起态——宿主 hHd-Xa_toggle 收起后 rail
+  4 个 22×22 按钮（btnRadius 7px、gap 5px、pointer auto）✓、点 🧪 打开 t-bind ✓、
+  重新展开 rail 消失 ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
