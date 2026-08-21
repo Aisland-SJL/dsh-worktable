@@ -1353,3 +1353,13 @@
 - 验证（probe-batch16）：cardBlur 'none' ✓、cardBgColor rgba(18,23,32,.12) ✓、
   statusRowJustify 'space-between' ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（控制室第十轮：质感回调）
+
+- 用户反馈：去掉磨砂后太透、贴片质感弱——① 贴片别那么透；② 添加项目卡片也加质感：
+  中间加不透明度/光晕，像一张小卡片。
+- 实现：① 贴片底回调：暗 .12→.24、浅 .2→.34，内部高光微升（白 6% 起）；② 添加卡：
+  底 .14→.34 + 中心 radial 光晕（暗色白 9% / 浅色白 95% 中心亮点），虚线边保留。
+- 验证：probe-batch16 cardBgColor rgba(18,23,32,.24) ✓、全流程 ✓；functional-diag
+  全 20 STEP ERROR_COUNT: 0。
+- 备注：纯客户端改动，F5 即生效。
