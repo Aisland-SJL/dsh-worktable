@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | <img src="docs/assets/shot-2-console.png" alt="控制室主界面" width="720"> | **🖥️ 控制室主界面** —— 内置默认项目：实时卡片网格监控每个项目（工作中 / 待你决定 / 已完成），蓝图网格上的玻璃拟态卡片 |
-| <img src="docs/assets/shot-1-sidebar.png" alt="工作台侧边栏" width="320"> | **🧩 工作台侧边栏** —— 应用抽屉：项目、快捷方式与固定首位的控制室入口 |
+| <img src="docs/assets/shot-1-sidebar.png" alt="工作台侧边栏" width="720"> | **🧩 工作台侧边栏** —— 应用抽屉：项目、快捷方式与固定首位的控制室入口 |
 | <img src="docs/assets/shot-3-workspace.png" alt="我们的项目" width="720"> | **🪟 我们的项目** —— 每个项目打开为可停靠的分栏工作区（含旅行 Atlas 等入驻应用） |
 
 ---
