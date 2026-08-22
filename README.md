@@ -8,9 +8,9 @@
 
 | | |
 |---|---|
-| <img src="docs/assets/shot-2-console.png" alt="Control room" width="560"> | **🖥️ Control room** — the built-in default project: a live card grid watching every project (working / needs you / done) with glassmorphism cards on a blueprint grid |
-| <img src="docs/assets/shot-1-sidebar.png" alt="Worktable sidebar" width="560"> | **🧩 Worktable sidebar** — the app drawer: projects, shortcuts and the pinned control-room entry |
-| <img src="docs/assets/shot-3-workspace.png" alt="Split workspace" width="560"> | **🪟 Our projects** — every project opens as a dockable split workspace (resident apps like Travel Atlas included) |
+| <img src="docs/assets/shot-2-console.png" width="720" alt="Control room"> | **🖥️ Control room** — the built-in default project: a live card grid watching every project (working / needs you / done) with glassmorphism cards on a blueprint grid |
+| <img src="docs/assets/shot-1-sidebar.png" alt="Worktable sidebar" width="320"> | **🧩 Worktable sidebar** — the app drawer: projects, shortcuts and the pinned control-room entry |
+| <img src="docs/assets/shot-3-workspace.png" alt="Split workspace" width="720"> | **🪟 Our projects** — every project opens as a dockable split workspace (resident apps like Travel Atlas included) |
 
 ---
 
