@@ -1,6 +1,7 @@
 node_modules/
-lib/
+/lib/
 *.log
+*.map
 03_local/
 .DS_Store
 Thumbs.db
