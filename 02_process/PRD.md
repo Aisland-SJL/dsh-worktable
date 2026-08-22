@@ -164,8 +164,13 @@ ctx.slots.register({
   - 排序机制：owner props 下发 order 序列，卡片以 CSS order 参与排序（渲染器 display:contents 锚点已核实，见 §5.3）；
   - 子座位注册跟踪：apply 中 `ctx.slots.subscribe` + `entries()` 维护模块级 id 序列；
 - 持久化：
-  - `dsh.worktable.view.v1`：query/searchOpen/orderBy/dock/floatTop（旧 groupBy 忽略）；
-  - `dsh.worktable.projects.v1`：order/lastUsed/hidden/nameOverrides/shortcuts；
+  - `dsh.worktable.view.v1`：query/searchOpen/orderBy/dock/floatTop/consoleTheme
+    （控制室主题 dark|light|system，缺省 system）；
+  - `dsh.worktable.projects.v1`：order/lastUsed/hidden/nameOverrides/iconOverrides/
+    removed/shortcuts/layouts/views/bindings/folders；
+    - views：入驻项目与「控制室」（wt-console）的视图覆盖（LayoutSpec）；
+    - bindings：项目 → 绑定会话（含 wt-console 管理对话）；
+    - folders：项目 → 项目文件夹（含 wt-console）；
   - 卡片上报的 meta 注册表仅存内存，不持久化；
 - 样式：暗色优先，跟随 `--dsw-alias-*` 设计变量（与 dsh-usage / dsh-travelatlas 一致）。
 
