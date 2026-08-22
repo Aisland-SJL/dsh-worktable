@@ -1472,3 +1472,16 @@
 - 验证（probe-batch18）：先切到 Pro 会话（deepseek-v4-pro）再新建 → repairedSelection =
   deepseek-v4-pro、promptOk:true ✓；functional-diag 全 20 STEP ERROR_COUNT: 0。
 - 备注：纯客户端改动，F5 即生效。
+
+## 补记（第二十轮：宿主 0.1.1-rc.2 升级事故恢复验收）
+
+- 事故：rc.2 升级后 link: 挂载插件（dsh-reminder/dsh-worktable 等）peer 依赖解析回归，
+  插件树加载失败、服务启动崩溃。另一 Agent 完成诊断（loader 原生 ESM import + realpath
+  + 符号链接三者叠加；--preserve-symlinks 破坏 native 模块不可用）并已建好临时修复：
+  E:\AI_Workspace\DeepseekHarness\node_modules junction → C:\Users\SJL\.dsh\profiles\node_modules。
+- 我们侧修复核查：① junction 已就位（覆盖本目录所有 link 插件），上游修好后必须删除；
+  ② dsh-worktable package.json peerDependencies 全部 "*" + optional（干净），inject 里的
+  ui-slots/ui-primitives 是运行时服务注入、无版本解析，不删；无需改代码。
+- 恢复验收：/api/worktable/health {ok:true}、/workspaces 200；functional-diag 全 20 STEP
+  ERROR_COUNT: 0（分栏/绑定/终端/文件/控制室全链路正常）。
+- 备注：待上游 loader 修复 + npm 停更 peer 声明清理后，移除 junction 并再跑一次全量回归。

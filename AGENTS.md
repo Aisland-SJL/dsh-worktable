@@ -128,6 +128,22 @@ node --check lib/index.js
     失败静默回退内存路径 lastTextOf。拉取是带宽成本不是 Token 成本。
   - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。
 
+## 宿主升级事故（0.1.1-rc.2 link 插件回归）
+
+- 现象：rc.2 的 cordis-plugin-loader 对裸包名走原生 ESM import()（realpath 解析），
+  link: 挂载的自研插件（dsh-worktable 等服务端 cordis 插件）找不到 profile 里的 peer
+  依赖，插件树加载失败、服务启动即崩。--preserve-symlinks 不可用（破坏 pnpm 虚拟存储
+  下 sharp/koffi 等 native 模块）。
+- 临时修复（已验证）：在 link 插件共同祖先目录建 junction：
+  `E:\AI_Workspace\DeepseekHarness\node_modules` → `C:\Users\SJL\.dsh\profiles\node_modules`
+  （覆盖本目录下所有 link 插件；另一个 Agent 已建好）。**上游 loader 修复后必须删除该
+  junction**，避免双解析叠加。
+- 我们仓库侧核查结论：package.json peerDependencies 全部 `"*"` + optional（干净）；
+  dsh.client.inject 里的 dsh-client-ui-slots / dsh-client-ui-primitives 是运行时服务注入
+  （无版本解析），工作正常，不删除。
+- 恢复后验收：functional-diag 全 20 STEP ERROR_COUNT: 0；/api/worktable/health ok、
+  /workspaces 200。
+
 ## 安装 / 重启
 
 - 注册：`dsh plugin --profile web add "link:<repo>/01_content"`（写 ~/.dsh，需用户授权）。

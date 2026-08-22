@@ -722,7 +722,7 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
     '   - 视频 / 动画 → 生成 .mp4 / .gif（或 Lottie JSON）文件放进项目文件夹；',
     '   - 工作台已有内置窗能力（资源管理器 / 终端 / 浏览器 / 动画站）→ 不要重复造轮子，直接建议用户改用内置窗。',
     '5. 完成内容后，用一两句话说明用户把它放进窗口的步骤。该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
-    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json，内容示例 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进「' + win + '」窗口，用户无需手动操作；挂载后该产物会作为「' + win + '」窗口的固定内容锁定保存，用户下次打开工作台时窗口直接显示它，不会丢失或重置。',
+    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json。挂载单个窗口时写单对象 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；一次挂载多个窗口（如窗口1 + 窗口2）时写 JSON 数组，每个元素为上述单对象（可引用多个产物文件）。kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进清单对应的各个窗口并锁定保存，用户无需手动操作；用户下次打开工作台时各窗口直接显示产物，不会丢失或重置。',
     KNOWLEDGE_PACK,
   ]
   return lines.join('\n')
@@ -826,6 +826,16 @@ const mountConsumedRef: { current: Set<string> } = { current: new Set<string>() 
 const pendingMountRef: { current: Record<string, any> } = { current: (() => {
   try { return JSON.parse(localStorage.getItem('dsh.worktable.pendingMount.v1') ?? '{}') ?? {} } catch { return {} }
 })() }
+/** 已挂载指纹：projectId → widget-result.json 原文。自愈扫挂据此去重：
+ *  同清单不重复锁定（不覆盖用户后续对窗口的手动调整），清单变化才重新挂载。 */
+const mountedWidgetRef: { current: Record<string, string> } = { current: (() => {
+  try { return JSON.parse(localStorage.getItem('dsh.worktable.mountedWidget.v1') ?? '{}') ?? {} } catch { return {} }
+})() }
+function recordMountedWidget(projectId: string, raw: string) {
+  if (!projectId || !raw) return
+  mountedWidgetRef.current[projectId] = raw
+  try { localStorage.setItem('dsh.worktable.mountedWidget.v1', JSON.stringify(mountedWidgetRef.current)) } catch {}
+}
 
 /** 「窗口N」→ 窗格位置（左栏 → 顶行 → 主行 编号规则，与 AGENTS.md 窗口编号一致） */
 function windowLabelToPane(spec: any, label: string): { row: 'left' | 'top' | 'main'; index: number } | null {
@@ -844,6 +854,14 @@ function windowLabelToPane(spec: any, label: string): { row: 'left' | 'top' | 'm
   const main = spec?.main ?? []
   if (idx < main.length) return { row: 'main', index: idx }
   return null
+}
+
+/** 窗格是否存在于布局 spec（lockPane 对不存在的窗格会静默放弃；据此决定是否记录挂载指纹） */
+function paneExists(spec: any, row: 'left' | 'top' | 'main', index: number): boolean {
+  if (!spec) return false
+  if (row === 'left') return !!spec.left && index === 0
+  if (row === 'top') return !!spec.top && !!spec.top[index]
+  return !!spec.main && !!spec.main[index]
 }
 
 /** 产物清单 → 窗口内容（html=目录级托管 iframe / url=外链 iframe / file=文件预览） */
@@ -1471,12 +1489,20 @@ function buildCustomLayoutPrompt(req: string): string {
       const bound = projectsRef.current.projects.bindings[spec.id]
       if (bound) { try { sessionBridge?.sessions?.open?.(bound) } catch {} }
       ackProjectNotify(spec.id)
-      // 补挂：此前项目未打开时暂存的产物，现在自动挂进主行第一格
+      // 补挂：此前项目未打开时暂存的产物（entries = 多窗口挂载列表），现在自动挂进各目标窗格；
+      // 全部落位成功记录指纹（供自愈扫挂去重）
       const pending = pendingMountRef.current[spec.id]
       if (pending) {
         try {
-          if (pending.content && typeof pending.row === 'string') splitStore.lockPane(pending.row, pending.index ?? 0, pending.content)
-          else splitStore.openTab('main', 0, pending)
+          const entries = Array.isArray(pending.entries)
+            ? pending.entries
+            : (pending.content ? [{ content: pending.content, row: pending.row, index: pending.index ?? 0 }] : [])
+          let allOk = entries.length > 0
+          for (const e of entries) {
+            splitStore.lockPane(e.row, e.index ?? 0, e.content)
+            if (!paneExists(splitStore.spec, e.row, e.index ?? 0)) allOk = false
+          }
+          if (allOk && pending.fingerprint) recordMountedWidget(spec.id, pending.fingerprint)
         } catch {}
         delete pendingMountRef.current[spec.id]
         try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
@@ -1648,30 +1674,60 @@ function buildCustomLayoutPrompt(req: string): string {
   // 项目表变化 → 控制室卡片刷新（打开中的面板即时更新）
   useEffect(() => { notifyConsole() }, [projects])
 
-  /** 自动挂载：绑定会话完成 → 读项目文件夹 widget-result.json → 产物自动挂进对应窗口 */
-  const tryAutoMount = useCallback(async (projectId: string, sid: string) => {
+  /** 执行产物清单挂载：项目开着 → 锁定各「窗口N」；未开 → 待挂载（打开项目时补挂）。
+   *  清单支持单窗口对象（旧格式）与多窗口 JSON 数组（新格式，每元素 {window,path,kind}）。
+   *  rawManifest 传入时免二次读取（自愈扫挂先读原文做指纹去重）。全部落位成功后记录挂载指纹。 */
+  const applyWidgetManifest = useCallback(async (projectId: string, rawManifest: string | null): Promise<void> => {
     const folder = projectsRef.current.projects.folders[projectId]
     if (!folder) return
     try {
-      const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
-      if (!r.ok) return
-      const d = await r.json().catch(() => null)
+      let raw = rawManifest
+      if (raw == null) {
+        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
+        if (!r.ok) return
+        raw = (await r.text()).trim()
+      }
+      if (!raw) return
+      let d: any = null
+      try { d = JSON.parse(raw) } catch {}
       if (!d) return
-      const content = buildMountContent(folder, d)
-      if (!content) return
-      if (splitStore.active && splitStore.spec?.id === projectId) {
-        // 项目开着：锁死挂进「窗口N」对应窗格（清空原内容、唯一标签；找不到就落主行第一格）
-        const pane = windowLabelToPane(splitStore.spec, d.window)
-        splitStore.lockPane(pane?.row ?? 'main', pane?.index ?? 0, content)
+      const items = Array.isArray(d) ? d : [d]
+      const open = splitStore.active && splitStore.spec?.id === projectId
+      const saved = open ? splitStore.spec : (projectsRef.current.projects.views[projectId] ?? projectsRef.current.projects.layouts.find((l) => l.id === projectId))
+      // 逐项解析目标窗格；同窗格冲突时保留先出现者（防止把两个窗口压进同一个窗格互相覆盖）
+      const targets: { row: 'left' | 'top' | 'main'; index: number; content: any }[] = []
+      for (const it of items) {
+        if (!it) continue
+        const content = buildMountContent(folder, it)
+        if (!content) continue
+        const pane = windowLabelToPane(saved, it.window)
+        const row = pane?.row ?? 'main'
+        const index = pane?.index ?? 0
+        if (targets.some((t) => t.row === row && t.index === index)) continue
+        targets.push({ row, index, content })
+      }
+      if (!targets.length) return
+      if (open) {
+        // 项目开着：逐窗锁定；全部落位成功才记录指纹（有失败则留待下次自愈重试）
+        let allOk = true
+        for (const t of targets) {
+          splitStore.lockPane(t.row, t.index, t.content)
+          if (!paneExists(splitStore.spec, t.row, t.index)) allOk = false
+        }
+        if (allOk) recordMountedWidget(projectId, raw)
       } else {
         // 项目没开：按项目已保存的 spec 解析目标窗格，暂存，打开项目时锁死补挂
-        const saved = projectsRef.current.projects.views[projectId] ?? projectsRef.current.projects.layouts.find((l) => l.id === projectId)
-        const pane = windowLabelToPane(saved, d.window)
-        pendingMountRef.current[projectId] = { content, row: pane?.row ?? 'main', index: pane?.index ?? 0 }
+        pendingMountRef.current[projectId] = { entries: targets, fingerprint: raw }
         try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
       }
     } catch { /* 无清单文件 = 不挂载 */ }
   }, [])
+
+  /** 自动挂载：绑定会话完成 → 读项目文件夹 widget-result.json → 产物自动挂进对应窗口 */
+  const tryAutoMount = useCallback(async (projectId: string, sid: string) => {
+    void sid
+    await applyWidgetManifest(projectId, null)
+  }, [applyWidgetManifest])
 
   // 完成事件 → 尝试自动挂载（一次完成只消费一次）
   useEffect(() => {
@@ -1689,6 +1745,30 @@ function buildCustomLayoutPrompt(req: string): string {
       }
     }
   }, [notifyTick, projects.bindings, tryAutoMount])
+
+  // 自愈扫挂：插件加载 / 项目文件夹变化时，扫描每个项目的 widget-result.json 并落位
+  // （「完成事件」通道的兜底：事件丢失、绑定错位、完成时页面未加载等场景下仍能自动挂载；
+  //   按清单原文指纹去重——同清单不重复锁定，用户后续手动改窗口内容不会被覆盖）。
+  useEffect(() => {
+    let cancelled = false
+    const folders = projects.folders ?? {}
+    ;(async () => {
+      for (const pid of Object.keys(folders)) {
+        if (cancelled) return
+        const folder = folders[pid]
+        if (!folder) continue
+        try {
+          const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
+          if (!r.ok) continue
+          const raw = (await r.text()).trim()
+          if (!raw) continue
+          if (mountedWidgetRef.current[pid] === raw) continue
+          await applyWidgetManifest(pid, raw)
+        } catch { /* 单项目失败不影响其余 */ }
+      }
+    })()
+    return () => { cancelled = true }
+  }, [projects.folders, applyWidgetManifest])
 
   /** 收集某会话的子代理 id 集：byId 的 parentId 标注 + subagentsByParent 目录双通道 */
   const collectKids = useCallback((sid: string): Set<string> => {
