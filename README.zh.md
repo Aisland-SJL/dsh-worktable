@@ -4,9 +4,13 @@
 
 **DeepSeek Harness 的 agent 项目工作台**——侧边栏「应用抽屉」把每个项目变成可停靠的窗口，再加一个实时监控所有项目的内置「控制室」。
 
-<img src="docs/assets/shot-1-sidebar.png" alt="侧边栏应用抽屉" width="360"> <img src="docs/assets/shot-2-console.png" alt="控制室" width="360">
+## 📸 截图
 
-<img src="docs/assets/shot-3-workspace.png" alt="分栏工作区" width="720">
+| | |
+|---|---|
+| <img src="docs/assets/shot-2-console.png" alt="控制室主界面" width="560"> | **🖥️ 控制室主界面** —— 内置默认项目：实时卡片网格监控每个项目（工作中 / 待你决定 / 已完成），蓝图网格上的玻璃拟态卡片 |
+| <img src="docs/assets/shot-1-sidebar.png" alt="工作台侧边栏" width="560"> | **🧩 工作台侧边栏** —— 应用抽屉：项目、快捷方式与固定首位的控制室入口 |
+| <img src="docs/assets/shot-3-workspace.png" alt="我们的项目" width="560"> | **🪟 我们的项目** —— 每个项目打开为可停靠的分栏工作区（含旅行 Atlas 等入驻应用） |
 
 ---
 

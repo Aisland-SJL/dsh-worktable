@@ -4,9 +4,13 @@
 
 **An agent-project workbench for DeepSeek Harness** — a sidebar app drawer that turns every project into dockable windows, plus a built-in control room that watches them all in real time.
 
-<img src="docs/assets/shot-1-sidebar.png" alt="Sidebar app drawer" width="360"> <img src="docs/assets/shot-2-console.png" alt="Control room" width="360">
+## 📸 Screenshots
 
-<img src="docs/assets/shot-3-workspace.png" alt="Split workspace" width="720">
+| | |
+|---|---|
+| <img src="docs/assets/shot-2-console.png" alt="Control room" width="560"> | **🖥️ Control room** — the built-in default project: a live card grid watching every project (working / needs you / done) with glassmorphism cards on a blueprint grid |
+| <img src="docs/assets/shot-1-sidebar.png" alt="Worktable sidebar" width="560"> | **🧩 Worktable sidebar** — the app drawer: projects, shortcuts and the pinned control-room entry |
+| <img src="docs/assets/shot-3-workspace.png" alt="Split workspace" width="560"> | **🪟 Our projects** — every project opens as a dockable split workspace (resident apps like Travel Atlas included) |
 
 ---
 
