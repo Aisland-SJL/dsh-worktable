@@ -54,7 +54,9 @@ node --check lib/index.js
   放进该文件夹」指令——用户要求项目产出文件不得落到默认位置。
 - **窗口任务提示词**：buildWindowTaskText 统一组装（窗口身份「项目+窗口N」+ 项目文件夹 +
   插件知识包）；知识包注明「不要重新侦察插件源码」，改提示词时保持这个原则。
-- **自动挂载（widget-result.json 握手）**：提示词第 6 条要求 agent 完成后在项目文件夹写
+- **自动挂载（widget-result.json 握手）**：提示词第 5 条要求 agent 完成后用一句话
+  告知用户挂载结果（不提问、不等确认，例：「已自动挂到窗口N，想调整直接说」）；
+  第 6 条要求 agent 完成后在项目文件夹写
   widget-result.json {window:'窗口N', path, kind:html|url|file}；客户端监听绑定会话 completed →
   buildMountContent 转换产物 → 项目开着直接 openTab 进「窗口N」（windowLabelToPane 按窗口
   编号规则定位），项目没开暂存 pendingMountRef（localStorage，打开项目时补挂）；
