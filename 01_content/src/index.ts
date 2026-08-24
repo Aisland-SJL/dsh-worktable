@@ -16,6 +16,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
  *                                node-pty 与 ws，缺失时该路由不注册、终端窗降级提示）
  */
 
+declare const __WT_VERSION__: string
+const PLUGIN_VERSION = typeof __WT_VERSION__ === 'undefined' ? 'dev' : __WT_VERSION__
+
 export const name = 'dsh-worktable'
 export const inject = ['webServer', 'sessions']
 
@@ -209,7 +212,7 @@ export function apply(ctx: Context) {
     kind: 'exact',
     path: HEALTH_PATH,
     handler: (_req: any, res: any) => {
-      json(res, 200, { plugin: 'dsh-worktable', version: '0.2.0', ok: true })
+      json(res, 200, { plugin: 'dsh-worktable', version: PLUGIN_VERSION, ok: true })
     },
   })
 
@@ -362,7 +365,7 @@ export function apply(ctx: Context) {
         if (!p) { json(res, 400, { error: 'missing path' }); return }
         const abs = pathResolve(p)
         const fsx = await import('node:fs/promises')
-        const parent = abs.split(/[\\/]/).slice(0, -1).join('\\') || '\\'
+        const parent = dirname(abs)
         try { await fsx.access(parent) } catch { json(res, 400, { error: 'parent not found' }); return }
         await fsx.mkdir(abs)
         json(res, 200, { ok: true, path: abs })

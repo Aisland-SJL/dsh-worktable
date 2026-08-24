@@ -98,12 +98,13 @@ node --check lib/index.js
 
 - **Build must run inside `01_content`** — building from the repo root writes `lib/` to the wrong place while the host keeps loading the old bundle
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
-- Regression: `04_test/functional-diag.cjs` (20 steps) plus targeted probes (control room, bind panel, collapsed rail, model inheritance)
+- Regression: `04_test/functional-diag.cjs` (20 steps, strict gate) plus targeted probes (control room, bind panel, collapsed rail, model inheritance), the path matrix (`04_test/pathutil-matrix.cjs`) and update-check scenarios (`04_test/probe-update-scenarios.cjs`)
 
 ---
 
 ## Known limits
 
+- **Platform**: Windows is the fully tested platform. macOS support is experimental: the core file-path code has been adapted for cross-platform use, but no end-to-end test has been completed on macOS hardware.
 - State lives in the browser (`localStorage`) — projects, bindings and views do not sync across machines
 - The terminal pane is a plain PowerShell host on Windows (no PTY feature parity with the native terminal app)
 - Auto-mount requires the agent to actually write `widget-result.json` in the project folder

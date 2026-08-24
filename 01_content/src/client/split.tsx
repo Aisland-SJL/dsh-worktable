@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { parentPathOf } from './pathutil'
 import { Terminal } from 'xterm'
 
 import MarkdownIt from 'markdown-it'
@@ -251,14 +252,6 @@ async function postJson(url: string, body: unknown): Promise<any> {
   })
   if (!res.ok) throw new Error('HTTP ' + res.status)
   return res.json()
-}
-
-function parentPathOf(p: string): string {
-  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
-  if (idx <= 0) return p
-  let parent = p.slice(0, idx)
-  if (/^[A-Za-z]:$/.test(parent)) parent += '\\'
-  return parent
 }
 
 /** 拖拽换位暂存 */

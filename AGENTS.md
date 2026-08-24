@@ -17,6 +17,8 @@
 - **不替换、不禁用任何官方插件**（ui-sidebar / ui-workspace / ui-layout）。
 - 所有状态只存 localStorage（键 `dsh.worktable.view.v1`），不读写工作区文件。
 - dsh-travelatlas 是入驻项目而非本仓库的一部分；协议见 `02_process/PRD.md` §5.3/5.4。
+- **平台边界**：Windows 是当前完整验证平台；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
+  尚未真机端到端验证）。路径拼接必须走 `pathutil.ts` helper 或 Node `path` API，不手写分隔符。
 
 ## 构建与验证
 
@@ -138,8 +140,9 @@ node --check lib/index.js
     previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s 触发；
     失败静默回退内存路径 lastTextOf。拉取是带宽成本不是 Token 成本。
   - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。
-- **更新检查（v0.2.1）**：客户端直连 GitHub Releases API 比版本（只读 GET；自动每天最多
-  一次，手动「立即检查」绕过节流；失败重试 3 次后状态行显示「上次检查未成功」）。
+- **更新检查（v0.2.2）**：客户端直连 GitHub Releases API 比版本（只读 GET；自动每天最多
+  一次，手动「立即检查」绕过节流；单次 8s 超时（AbortController）+ 最多 3 次重试，
+  in-flight 防重入、检查中按钮禁用、组件卸载后停止重试与状态更新；失败后状态行显示「上次检查未成功」）。
   状态四态 idle/checking/uptodate/failed；徽标 = 「工作台」标题右侧琥珀呼吸小圆（SVG 同步
   图标、不显示版本号），仅发现更新时出现；更新卡在设置面板顶部（复制 AI 提示词 + 忽略此
   版本 + 命令框供终端用户手抄），版本号与自动检查开关在面板底部；设置弹窗右上角 ✕ 关闭、

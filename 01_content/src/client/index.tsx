@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
+import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 
 /**
@@ -21,7 +22,7 @@ type DockMode = 'footer' | 'float'
 
 // ── 更新检查（客户端直连 GitHub Releases API，只读 GET；失败静默）──
 declare const __WT_VERSION__: string
-const LOCAL_VERSION = typeof __WT_VERSION__ === 'undefined' ? '0.2.0' : __WT_VERSION__
+const LOCAL_VERSION = typeof __WT_VERSION__ === 'undefined' ? 'dev' : __WT_VERSION__
 const UPDATE_REPO = 'Aisland-SJL/dsh-worktable'
 const UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"'
 const UPGRADE_AI = '帮我升级 dsh-worktable：执行 ' + UPGRADE_CMD + '，完成后提醒我重启 dsh web 并刷新页面'
@@ -729,7 +730,7 @@ export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId
 /** 插件知识包：附在窗口任务提示词里，让接收方跳过对插件源码的重新侦察，直接干活 */
 const KNOWLEDGE_PACK = [
   '【插件知识包·请直接采用，不要重新侦察插件源码】',
-  '- dsh-worktable 是本机 DeepSeek Harness 的自建容器插件（仓库 E:\\AI_Workspace\\DeepseekHarness\\Projects\\dsh-worktable，插件包根目录 01_content/）。',
+  '- dsh-worktable 是 DeepSeek Harness 的自建容器插件（工作台：侧边栏里的项目应用抽屉；不了解的细节可直接向用户提问）。',
   '- 窗口（内容窗）模型：每个窗 = 一个标签页；未指派时显示选择器（浏览器/动画/资源管理器/终端/✨自定义）；',
   '  窗内容还可放 iframe 网页与文件预览（.md/.txt/.tsx/.css/.html 等）。',
   '- 窗口可装载的形式：HTML 单文件（交互 UI，放项目文件夹后在资源管理器点击渲染）、网页 URL、',
@@ -783,7 +784,7 @@ export async function createCustomSession(projectId: string, projectName: string
     const parent = g.parent.replace(/[\\/]+$/, '')
     const name = g.name.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
     if (!parent || !name) throw new Error('invalid group path')
-    const full = parent + '\\' + name
+    const full = joinPath(parent, name)
     try { await ws.createDirectory?.(parent, name) } catch { /* 宿主 browse 能力本机为 native 时不可用 */ }
     try {
       // 兜底：插件服务端 mkdir（父目录必须已存在，避免误建深层目录）
@@ -908,10 +909,10 @@ function buildMountContent(folder: string, d: any): any {
   const p = String(d?.path ?? '').trim()
   if (!p) return null
   if (d?.kind === 'url') return { kind: 'iframe', url: p, title: p }
-  const full = p.indexOf(':') >= 0 ? p : (folder + '\\' + p.replace(/^[\\/]+/, ''))
+  const full = isAbs(p) ? p : joinPath(folder, p)
   if (d?.kind === 'file') return { kind: 'file', path: full }
-  const dir = full.replace(/[\\/][^\\/]*$/, '')
-  const name = full.split(/[\\/]/).pop() ?? full
+  const dir = parentPathOf(full)
+  const name = basenameOf(full)
   return { kind: 'iframe', url: '/api/worktable/site/' + encodeURIComponent(dir) + '/' + encodeURIComponent(name), title: name }
 }
 
@@ -1052,25 +1053,38 @@ function WorktableSection(props: any) {
   const [updateCheckOn, setUpdateCheckOn] = useState<boolean>(() => localStorage.getItem('dsh.worktable.updateCheck.v1') !== '0')
   const [updateCopied, setUpdateCopied] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'uptodate' | 'failed'>('idle')
+  const updateCheckingRef = useRef(false)
+  const updateAliveRef = useRef(true)
+  useEffect(() => () => { updateAliveRef.current = false }, [])
   const checkUpdates = useCallback(async (force = false) => {
+    if (updateCheckingRef.current) return // 防重入：并发点击只保留一个 in-flight
     const last = Number(localStorage.getItem('dsh.worktable.lastUpdateCheck.v1') ?? '0')
     if (!force && Date.now() - last < 24 * 3600 * 1000) return // 自动检查节流；手动「立即检查」绕过节流
+    updateCheckingRef.current = true
     setUpdateStatus('checking')
-    let d: { tag_name?: string; body?: string; html_url?: string } | null = null
-    for (let attempt = 0; attempt < 3 && !d; attempt++) {
-      try {
-        const r = await fetch('https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' })
-        if (r.ok) d = await r.json() as { tag_name?: string; body?: string; html_url?: string }
-        else if (r.status === 403 || r.status === 404) break // 限流/不存在：不再重试
-      } catch { /* 网络抖动：下一轮重试 */ }
+    try {
+      let d: { tag_name?: string; body?: string; html_url?: string } | null = null
+      for (let attempt = 0; attempt < 3 && !d && updateAliveRef.current; attempt++) {
+        const ctrl = new AbortController()
+        const timer = setTimeout(() => ctrl.abort(), 8000) // 单次 8s 超时，计入下一轮重试
+        try {
+          const r = await fetch('https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store', signal: ctrl.signal })
+          if (r.ok) d = await r.json() as { tag_name?: string; body?: string; html_url?: string }
+          else if (r.status === 403 || r.status === 404) break // 限流/不存在：不再重试
+        } catch { /* 网络抖动/超时：下一轮重试 */ }
+        finally { clearTimeout(timer) }
+      }
+      if (!updateAliveRef.current) return // 组件已卸载：不再更新状态
+      if (!d) { setUpdateStatus('failed'); return }
+      localStorage.setItem('dsh.worktable.lastUpdateCheck.v1', String(Date.now()))
+      const tag = (d.tag_name ?? '').replace(/^v/, '')
+      if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) { setUpdateStatus('uptodate'); return }
+      if ((localStorage.getItem('dsh.worktable.skipVersion.v1') ?? '') === tag) { setUpdateStatus('uptodate'); return }
+      setUpdateInfo({ latest: tag, notes: (d.body ?? '').slice(0, 800), url: d.html_url ?? '' })
+      setUpdateStatus('uptodate')
+    } finally {
+      updateCheckingRef.current = false
     }
-    if (!d) { setUpdateStatus('failed'); return }
-    localStorage.setItem('dsh.worktable.lastUpdateCheck.v1', String(Date.now()))
-    const tag = (d.tag_name ?? '').replace(/^v/, '')
-    if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) { setUpdateStatus('uptodate'); return }
-    if ((localStorage.getItem('dsh.worktable.skipVersion.v1') ?? '') === tag) { setUpdateStatus('uptodate'); return }
-    setUpdateInfo({ latest: tag, notes: (d.body ?? '').slice(0, 800), url: d.html_url ?? '' })
-    setUpdateStatus('uptodate')
   }, [])
   useEffect(() => { if (updateCheckOn) void checkUpdates() }, [updateCheckOn, checkUpdates])
   const copyUpgradeAi = async () => {
@@ -1533,7 +1547,7 @@ function buildCustomLayoutPrompt(req: string): string {
   return [
     '【为 dsh-worktable（工作台）插件增加一个新的布局预设】',
     '',
-    '背景：dsh-worktable 是 DeepSeek Harness 的自建容器插件（本机仓库 dsh-worktable，插件包根目录 01_content/）。',
+    '背景：dsh-worktable 是 DeepSeek Harness 的自建容器插件（本机仓库 dsh-worktable；不了解的细节可直接向用户提问）。',
     '侧边栏「工作台」区块管理项目，每个项目打开后是一个平铺工作区（若干内容窗 + 右侧对话窗）。',
     '布局预设定义在 01_content/src/client/index.tsx 的 PRESET_DEFS 数组，选择器缩略图在 presetThumb() 函数。',
     '',
@@ -1646,10 +1660,10 @@ function buildCustomLayoutPrompt(req: string): string {
         const ws = b.workspaces as any
         const parent = consoleParent.replace(/[\\/]+$/, '')
         const name = consoleName.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
-        const full = parent + '\\' + name
+        const full = joinPath(parent, name)
         try { await ws?.createDirectory?.(parent, name) } catch {}
         try {
-          const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parent, name }) })
+          const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
           const d = await r.json()
           if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
         } catch { /* 目录建不出的错误最终由 workspace.create 暴露 */ }
@@ -1764,7 +1778,7 @@ function buildCustomLayoutPrompt(req: string): string {
     try {
       let raw = rawManifest
       if (raw == null) {
-        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
+        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
         if (!r.ok) return
         raw = (await r.text()).trim()
       }
@@ -1839,7 +1853,7 @@ function buildCustomLayoutPrompt(req: string): string {
         const folder = folders[pid]
         if (!folder) continue
         try {
-          const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(folder + '\\widget-result.json'), { cache: 'no-store' })
+          const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
           if (!r.ok) continue
           const raw = (await r.text()).trim()
           if (!raw) continue
@@ -2713,7 +2727,7 @@ function buildCustomLayoutPrompt(req: string): string {
               {updateStatus === 'failed' && !updateInfo ? ' · ' + t('update.checkFail') : ''}
             </span>
             <span className="dsh-wt_versionActions">
-              <button type="button" className="dsh-wt_updateBtn" onClick={() => void checkUpdates(true)}>
+              <button type="button" className="dsh-wt_updateBtn" disabled={updateStatus === 'checking'} onClick={() => void checkUpdates(true)}>
                 {updateStatus === 'checking' ? t('update.checking') : t('update.checkNow')}
               </button>
               <span className="dsh-wt_updateToggle" onClick={toggleUpdateCheck}>

@@ -474,8 +474,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     var out={};
     try{
       var st=window.__dshWorktable.splitStore;
-      var probe=await fetch('/api/worktable/write',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).catch(function(){return null;});
-      out.writeRouteReady=!!(probe&&probe.status===400);
+      var probe=await fetch('/api/worktable/write',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({path:'C:/Users/SJL/AppData/Local/Temp/wt-edit-test.md',content:'# ORIG'})}).catch(function(){return null;});
+      out.writeRouteReady=!!(probe&&probe.status===200);
       if(out.writeRouteReady){
         st.open({id:'t-mdedit',title:'md',top:null,main:[{id:'m1',title:'m',min:200,content:null}],chatWidth:{default:320,min:240,max:600}});
         await new Promise(function(r){setTimeout(r,400)});
@@ -708,28 +708,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // 还原临时夹具
   try { fs.writeFileSync(TEMP_MD, '# ORIG\n', 'utf8') } catch {}
 
-  const errors = events.filter((e) => {
-    const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
-    const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';
-    if (txt.indexOf('/api/worktable/write') >= 0) return false;
-    return true;
-  }).filter((e) => {
-    // 服务端新路由（site/write/workspaces）：运行中的服务器未重启前其 404 属预期（重启后移除本过滤）
-    const ent = e.method === 'Log.entryAdded' ? e.params.entry : null;
-    const txt = ent ? (ent.text || '') + '|' + (ent.url || '') : '';
-    if (txt.indexOf('/api/worktable/site') >= 0) return false;
-    if (txt.indexOf('/api/worktable/workspaces') >= 0) return false;
-    return true;
-  }).filter((e) =>
+  // 严格门禁：不再掩盖任何插件路由错误（site/write/workspaces 曾因旧服务器未重启被过滤，已移除）
+  const errors = events.filter((e) =>
     e.method === 'Runtime.exceptionThrown' ||
     (e.method === 'Log.entryAdded' && e.params.entry.level === 'error') ||
     (e.method === 'Runtime.consoleAPICalled' && e.params.type === 'error'),
   ).slice(0, 10).map((e) => e.method === 'Runtime.exceptionThrown'
     ? 'EXCEPTION: ' + ((e.params.exceptionDetails.exception || {}).description || e.params.exceptionDetails.text)
-    : 'LOG: ' + (e.params.entry ? e.params.entry.text : '').slice(0, 200));
+    : 'LOG: ' + (e.params.entry ? e.params.entry.text : '').slice(0, 200) + (e.params.entry && e.params.entry.url ? ' @ ' + e.params.entry.url : ''));
   console.log('ERRORS_COUNT:', errors.length);
   errors.forEach((x) => console.log(x));
   ws.close();
   proc.kill();
-  process.exit(0);
+  process.exit(errors.length === 0 ? 0 : 1); // 严格门禁：发现错误即非零退出
 })().catch((e) => { console.log('SCRIPT_FAIL:', e); proc.kill(); process.exit(1); });

@@ -104,6 +104,7 @@ node --check lib/index.js
 
 ## 已知限制
 
+- **平台**：Windows 是当前完整验证平台。macOS 为实验性支持：核心文件路径代码已做跨平台适配，但尚未在 macOS 真机完成端到端验证。
 - 状态在浏览器本地（localStorage）——项目、绑定与视图不跨设备同步
 - 终端窗格在 Windows 上是朴素的 PowerShell 宿主（与原生终端应用无 PTY 对等）
 - 自动挂载要求 agent 确实在项目文件夹写出 `widget-result.json`

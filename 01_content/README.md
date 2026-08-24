@@ -8,6 +8,7 @@
 - **分栏工作区引擎（自研）**：声明式布局预设（左栏/顶行/主行 + 右侧对话窗），窗格可拖拽分割、标签页模型；内置 资源管理器 / 终端 / 浏览器 / 动画 / 自定义窗口。
 - **控制室**：默认自带项目（固定首位、不可删除），项目卡片网格实时监控所有项目的状态（工作中/待你决定/已完成），零轮询零 Token。
 - **自动挂载握手**：项目内 agent 完成窗口任务后写 widget-result.json，产物自动挂进对应窗口。
+- **平台**：Windows 是当前完整验证平台；macOS 为实验性支持（核心文件路径代码已做跨平台适配，尚未真机端到端验证）。
 
 ## 技术底座
 
@@ -20,7 +21,7 @@
 
 方式 A（推荐，无需 Git）——直接安装 GitHub Release 的安装包：
 
-    dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.2.0/dsh-worktable-0.2.0.tgz"
+    dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
 
 方式 B（想改源码用）——克隆仓库后用本地路径注册（`link:` 只接受本地路径，不要带空格）：
 

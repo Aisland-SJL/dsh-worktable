@@ -14,6 +14,10 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 mkdirSync(join(here, 'lib'), { recursive: true })
 const pkg = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8'))
+const pluginManifest = JSON.parse(readFileSync(join(here, 'dsh.plugin.json'), 'utf8'))
+if (pluginManifest.version !== pkg.version) {
+  throw new Error('dsh-worktable build: package.json version (' + pkg.version + ') != dsh.plugin.json version (' + pluginManifest.version + ') — 发版前先统一两处版本号')
+}
 
 const clientBanner = {
   js: "window.__ModuleLoader__.load({ id: 'dsh-worktable', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
@@ -24,9 +28,10 @@ await build({
   entryPoints: [join(here, 'src/index.ts')],
   outfile: 'lib/index.js',
   bundle: true,
-  sourcemap: true,
+  sourcemap: 'external',
   logLevel: 'info',
   platform: 'node',
+  define: { __WT_VERSION__: JSON.stringify(pkg.version) },
   format: 'esm',
   target: ['node22'],
   external: ['@deepseek-ai/*', 'node:*', 'ws', 'node-pty'],
@@ -37,7 +42,7 @@ await build({
   entryPoints: [join(here, 'src/client/index.tsx')],
   outfile: 'lib/client.js',
   bundle: true,
-  sourcemap: true,
+  sourcemap: 'external',
   logLevel: 'info',
   platform: 'browser',
   format: 'cjs',

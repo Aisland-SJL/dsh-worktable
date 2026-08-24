@@ -8580,6 +8580,34 @@ var en = {
 };
 var NS = "worktable";
 
+// src/client/pathutil.ts
+function isAbs(p) {
+  if (/^[A-Za-z]:[\\/]/.test(p)) return true;
+  if (p.startsWith("\\\\")) return true;
+  if (p.startsWith("/")) return true;
+  return false;
+}
+function joinPath(base2, rel) {
+  const relTrim = rel.replace(/^[\\/]+/, "").replace(/[\\/]+$/, "");
+  const sep = base2.includes("\\") ? "\\" : "/";
+  if (base2 === "/" || base2 === "\\") return base2 + relTrim;
+  if (/^[A-Za-z]:[\\/]$/.test(base2)) return base2 + relTrim;
+  const baseTrim = base2.replace(/[\\/]+$/, "");
+  if (!baseTrim) return relTrim || sep;
+  return baseTrim + sep + relTrim;
+}
+function parentPathOf(p) {
+  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+  if (idx < 0) return p;
+  if (idx === 0) return p[0];
+  if (idx === 2 && /^[A-Za-z]:[\\/]/.test(p)) return p.slice(0, 3);
+  return p.slice(0, idx);
+}
+function basenameOf(p) {
+  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+  return idx < 0 ? p : p.slice(idx + 1);
+}
+
 // src/client/split.tsx
 var import_react = require("react");
 var import_xterm2 = __toESM(require_xterm(), 1);
@@ -16386,7 +16414,7 @@ var BUILTIN_LABEL_KEYS = {
 };
 function tabTitleOf(content) {
   if (content.kind === "builtin") return T(BUILTIN_LABEL_KEYS[content.type]);
-  if (content.kind === "file") return basenameOf(content.path);
+  if (content.kind === "file") return basenameOf2(content.path);
   if (content.kind === "iframe" && content.title) return content.title;
   try {
     const u = new URL(content.url);
@@ -16395,7 +16423,7 @@ function tabTitleOf(content) {
     return content.url;
   }
 }
-function basenameOf(p) {
+function basenameOf2(p) {
   const parts = String(p).replace(/[\\/]+$/, "").split(/[\\/]/);
   return parts[parts.length - 1] || String(p);
 }
@@ -16422,13 +16450,6 @@ async function postJson(url, body) {
   });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
-}
-function parentPathOf(p) {
-  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
-  if (idx <= 0) return p;
-  let parent = p.slice(0, idx);
-  if (/^[A-Za-z]:$/.test(parent)) parent += "\\";
-  return parent;
 }
 var dragPane = null;
 var dragTab = null;
@@ -17555,10 +17576,10 @@ function FileViewer(props) {
   const ext = (props.path.split(".").pop() || "").toLowerCase();
   const fileUrl = "/api/worktable/file?path=" + encodeURIComponent(props.path);
   if (ext === "pdf") {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("iframe", { className: "dsh-wt_paneFrame", src: fileUrl, title: basenameOf(props.path) });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("iframe", { className: "dsh-wt_paneFrame", src: fileUrl, title: basenameOf2(props.path) });
   }
   if (IMAGE_EXTS.test("." + ext)) {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_imgView", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: fileUrl, alt: basenameOf(props.path) }) });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_imgView", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { src: fileUrl, alt: basenameOf2(props.path) }) });
   }
   return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(TextViewer, { path: props.path, fileUrl, isMd: MD_EXTS.test("." + ext) });
 }
@@ -18266,7 +18287,7 @@ try {
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION = false ? "0.2.0" : "0.2.1";
+var LOCAL_VERSION = false ? "dev" : "0.2.2";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
@@ -18889,7 +18910,7 @@ async function promptIntoSession(sessionId, text2) {
 }
 var KNOWLEDGE_PACK = [
   "\u3010\u63D2\u4EF6\u77E5\u8BC6\u5305\xB7\u8BF7\u76F4\u63A5\u91C7\u7528\uFF0C\u4E0D\u8981\u91CD\u65B0\u4FA6\u5BDF\u63D2\u4EF6\u6E90\u7801\u3011",
-  "- dsh-worktable \u662F\u672C\u673A DeepSeek Harness \u7684\u81EA\u5EFA\u5BB9\u5668\u63D2\u4EF6\uFF08\u4ED3\u5E93 E:\\AI_Workspace\\DeepseekHarness\\Projects\\dsh-worktable\uFF0C\u63D2\u4EF6\u5305\u6839\u76EE\u5F55 01_content/\uFF09\u3002",
+  "- dsh-worktable \u662F DeepSeek Harness \u7684\u81EA\u5EFA\u5BB9\u5668\u63D2\u4EF6\uFF08\u5DE5\u4F5C\u53F0\uFF1A\u4FA7\u8FB9\u680F\u91CC\u7684\u9879\u76EE\u5E94\u7528\u62BD\u5C49\uFF1B\u4E0D\u4E86\u89E3\u7684\u7EC6\u8282\u53EF\u76F4\u63A5\u5411\u7528\u6237\u63D0\u95EE\uFF09\u3002",
   "- \u7A97\u53E3\uFF08\u5185\u5BB9\u7A97\uFF09\u6A21\u578B\uFF1A\u6BCF\u4E2A\u7A97 = \u4E00\u4E2A\u6807\u7B7E\u9875\uFF1B\u672A\u6307\u6D3E\u65F6\u663E\u793A\u9009\u62E9\u5668\uFF08\u6D4F\u89C8\u5668/\u52A8\u753B/\u8D44\u6E90\u7BA1\u7406\u5668/\u7EC8\u7AEF/\u2728\u81EA\u5B9A\u4E49\uFF09\uFF1B",
   "  \u7A97\u5185\u5BB9\u8FD8\u53EF\u653E iframe \u7F51\u9875\u4E0E\u6587\u4EF6\u9884\u89C8\uFF08.md/.txt/.tsx/.css/.html \u7B49\uFF09\u3002",
   "- \u7A97\u53E3\u53EF\u88C5\u8F7D\u7684\u5F62\u5F0F\uFF1AHTML \u5355\u6587\u4EF6\uFF08\u4EA4\u4E92 UI\uFF0C\u653E\u9879\u76EE\u6587\u4EF6\u5939\u540E\u5728\u8D44\u6E90\u7BA1\u7406\u5668\u70B9\u51FB\u6E32\u67D3\uFF09\u3001\u7F51\u9875 URL\u3001",
@@ -18936,7 +18957,7 @@ async function createCustomSession(projectId, projectName, requirement, group, w
     const parent = g.parent.replace(/[\\/]+$/, "");
     const name = g.name.replace(/^[\\/]+/, "").replace(/[\\/]+$/, "");
     if (!parent || !name) throw new Error("invalid group path");
-    const full = parent + "\\" + name;
+    const full = joinPath(parent, name);
     try {
       await ws.createDirectory?.(parent, name);
     } catch {
@@ -19057,10 +19078,10 @@ function buildMountContent(folder, d) {
   const p = String(d?.path ?? "").trim();
   if (!p) return null;
   if (d?.kind === "url") return { kind: "iframe", url: p, title: p };
-  const full = p.indexOf(":") >= 0 ? p : folder + "\\" + p.replace(/^[\\/]+/, "");
+  const full = isAbs(p) ? p : joinPath(folder, p);
   if (d?.kind === "file") return { kind: "file", path: full };
-  const dir = full.replace(/[\\/][^\\/]*$/, "");
-  const name = full.split(/[\\/]/).pop() ?? full;
+  const dir = parentPathOf(full);
+  const name = basenameOf(full);
   return { kind: "iframe", url: "/api/worktable/site/" + encodeURIComponent(dir) + "/" + encodeURIComponent(name), title: name };
 }
 var notifyStateSeenRef = { current: {} };
@@ -19189,35 +19210,51 @@ function WorktableSection(props) {
   const [updateCheckOn, setUpdateCheckOn] = (0, import_react2.useState)(() => localStorage.getItem("dsh.worktable.updateCheck.v1") !== "0");
   const [updateCopied, setUpdateCopied] = (0, import_react2.useState)(false);
   const [updateStatus, setUpdateStatus] = (0, import_react2.useState)("idle");
+  const updateCheckingRef = (0, import_react2.useRef)(false);
+  const updateAliveRef = (0, import_react2.useRef)(true);
+  (0, import_react2.useEffect)(() => () => {
+    updateAliveRef.current = false;
+  }, []);
   const checkUpdates = (0, import_react2.useCallback)(async (force = false) => {
+    if (updateCheckingRef.current) return;
     const last = Number(localStorage.getItem("dsh.worktable.lastUpdateCheck.v1") ?? "0");
     if (!force && Date.now() - last < 24 * 3600 * 1e3) return;
+    updateCheckingRef.current = true;
     setUpdateStatus("checking");
-    let d = null;
-    for (let attempt = 0; attempt < 3 && !d; attempt++) {
-      try {
-        const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });
-        if (r.ok) d = await r.json();
-        else if (r.status === 403 || r.status === 404) break;
-      } catch {
+    try {
+      let d = null;
+      for (let attempt = 0; attempt < 3 && !d && updateAliveRef.current; attempt++) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8e3);
+        try {
+          const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store", signal: ctrl.signal });
+          if (r.ok) d = await r.json();
+          else if (r.status === 403 || r.status === 404) break;
+        } catch {
+        } finally {
+          clearTimeout(timer);
+        }
       }
-    }
-    if (!d) {
-      setUpdateStatus("failed");
-      return;
-    }
-    localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
-    const tag = (d.tag_name ?? "").replace(/^v/, "");
-    if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+      if (!updateAliveRef.current) return;
+      if (!d) {
+        setUpdateStatus("failed");
+        return;
+      }
+      localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
+      const tag = (d.tag_name ?? "").replace(/^v/, "");
+      if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+        setUpdateStatus("uptodate");
+        return;
+      }
+      if ((localStorage.getItem("dsh.worktable.skipVersion.v1") ?? "") === tag) {
+        setUpdateStatus("uptodate");
+        return;
+      }
+      setUpdateInfo({ latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" });
       setUpdateStatus("uptodate");
-      return;
+    } finally {
+      updateCheckingRef.current = false;
     }
-    if ((localStorage.getItem("dsh.worktable.skipVersion.v1") ?? "") === tag) {
-      setUpdateStatus("uptodate");
-      return;
-    }
-    setUpdateInfo({ latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" });
-    setUpdateStatus("uptodate");
   }, []);
   (0, import_react2.useEffect)(() => {
     if (updateCheckOn) void checkUpdates();
@@ -19674,7 +19711,7 @@ function WorktableSection(props) {
     return [
       "\u3010\u4E3A dsh-worktable\uFF08\u5DE5\u4F5C\u53F0\uFF09\u63D2\u4EF6\u589E\u52A0\u4E00\u4E2A\u65B0\u7684\u5E03\u5C40\u9884\u8BBE\u3011",
       "",
-      "\u80CC\u666F\uFF1Adsh-worktable \u662F DeepSeek Harness \u7684\u81EA\u5EFA\u5BB9\u5668\u63D2\u4EF6\uFF08\u672C\u673A\u4ED3\u5E93 dsh-worktable\uFF0C\u63D2\u4EF6\u5305\u6839\u76EE\u5F55 01_content/\uFF09\u3002",
+      "\u80CC\u666F\uFF1Adsh-worktable \u662F DeepSeek Harness \u7684\u81EA\u5EFA\u5BB9\u5668\u63D2\u4EF6\uFF08\u672C\u673A\u4ED3\u5E93 dsh-worktable\uFF1B\u4E0D\u4E86\u89E3\u7684\u7EC6\u8282\u53EF\u76F4\u63A5\u5411\u7528\u6237\u63D0\u95EE\uFF09\u3002",
       "\u4FA7\u8FB9\u680F\u300C\u5DE5\u4F5C\u53F0\u300D\u533A\u5757\u7BA1\u7406\u9879\u76EE\uFF0C\u6BCF\u4E2A\u9879\u76EE\u6253\u5F00\u540E\u662F\u4E00\u4E2A\u5E73\u94FA\u5DE5\u4F5C\u533A\uFF08\u82E5\u5E72\u5185\u5BB9\u7A97 + \u53F3\u4FA7\u5BF9\u8BDD\u7A97\uFF09\u3002",
       "\u5E03\u5C40\u9884\u8BBE\u5B9A\u4E49\u5728 01_content/src/client/index.tsx \u7684 PRESET_DEFS \u6570\u7EC4\uFF0C\u9009\u62E9\u5668\u7F29\u7565\u56FE\u5728 presetThumb() \u51FD\u6570\u3002",
       "",
@@ -19804,13 +19841,13 @@ function WorktableSection(props) {
         const ws = b.workspaces;
         const parent = consoleParent.replace(/[\\/]+$/, "");
         const name = consoleName.replace(/^[\\/]+/, "").replace(/[\\/]+$/, "");
-        const full = parent + "\\" + name;
+        const full = joinPath(parent, name);
         try {
           await ws?.createDirectory?.(parent, name);
         } catch {
         }
         try {
-          const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ parent, name }) });
+          const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
           const d = await r.json();
           if (!r.ok || !d?.ok) throw new Error(d?.error ?? "mkdir failed");
         } catch {
@@ -19926,7 +19963,7 @@ function WorktableSection(props) {
     try {
       let raw = rawManifest;
       if (raw == null) {
-        const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(folder + "\\widget-result.json"), { cache: "no-store" });
+        const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
         if (!r.ok) return;
         raw = (await r.text()).trim();
       }
@@ -19997,7 +20034,7 @@ function WorktableSection(props) {
         const folder = folders[pid];
         if (!folder) continue;
         try {
-          const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(folder + "\\widget-result.json"), { cache: "no-store" });
+          const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
           if (!r.ok) continue;
           const raw = (await r.text()).trim();
           if (!raw) continue;
@@ -20918,7 +20955,7 @@ function WorktableSection(props) {
           updateStatus === "failed" && !updateInfo ? " \xB7 " + t("update.checkFail") : ""
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "dsh-wt_versionActions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn", onClick: () => void checkUpdates(true), children: updateStatus === "checking" ? t("update.checking") : t("update.checkNow") }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn", disabled: updateStatus === "checking", onClick: () => void checkUpdates(true), children: updateStatus === "checking" ? t("update.checking") : t("update.checkNow") }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "dsh-wt_updateToggle", onClick: toggleUpdateCheck, children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: t("update.autoCheck") }),
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_updateSwitch", "data-off": updateCheckOn ? void 0 : "true" })
@@ -21343,4 +21380,3 @@ markdown-it/dist/markdown-it.mjs:
   (*! markdown-it 15.0.0 https://github.com/markdown-it/markdown-it @license MIT *)
 */
 return module.exports; } });
-//# sourceMappingURL=client.js.map
