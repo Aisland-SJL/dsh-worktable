@@ -18,12 +18,23 @@
 
 ## 安装
 
+方式 A（推荐，无需 Git）——直接安装 GitHub Release 的安装包：
+
+    dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.2.0/dsh-worktable-0.2.0.tgz"
+
+方式 B（想改源码用）——克隆仓库后用本地路径注册（`link:` 只接受本地路径，不要带空格）：
+
+    git clone https://github.com/Aisland-SJL/dsh-worktable.git
+    dsh plugin --profile web add "link:<克隆出来的 dsh-worktable 仓库目录的绝对路径>/01_content"
+
+两种方式 `add` 都会把 `dsh-worktable` 注册进 profile 的 bundle 列表（写入 `~/.dsh`），装完重启 dsh web、刷新界面生效。
+
+## 从源码构建
+
     cd 01_content
     npm install
     npm run build   # lib/index.js + lib/client.js
     node --check lib/index.js
-
-注册到 DSH：`dsh plugin --profile web add "link:<repo>/01_content"`
 
 ## 构建注意事项
 
@@ -32,9 +43,9 @@
 
 ## 相关文档
 
-- 项目规则：仓库根 AGENTS.md
-- 需求与协议：02_process/PRD.md
-- 工作日志：02_process/worklogs/
+- 项目规则：https://github.com/Aisland-SJL/dsh-worktable/blob/main/AGENTS.md
+- 需求与协议：https://github.com/Aisland-SJL/dsh-worktable/blob/main/02_process/PRD.md
+- 工作日志：https://github.com/Aisland-SJL/dsh-worktable/tree/main/02_process/worklogs
 
 ## License
 

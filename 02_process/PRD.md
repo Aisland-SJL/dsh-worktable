@@ -172,6 +172,8 @@ ctx.slots.register({
     - bindings：项目 → 绑定会话（含 wt-console 管理对话）；
     - folders：项目 → 项目文件夹（含 wt-console）；
   - 卡片上报的 meta 注册表仅存内存，不持久化；
+  - 更新检查：`dsh.worktable.lastUpdateCheck.v1`（上次成功检查时间戳，节流一天一次）、
+    `dsh.worktable.skipVersion.v1`（忽略的版本号）、`dsh.worktable.updateCheck.v1`（自动检查开关，'0'=关）；
 - 样式：暗色优先，跟随 `--dsw-alias-*` 设计变量（与 dsh-usage / dsh-travelatlas 一致）。
 
 ## 7. 与 dsh-travelatlas 的关系
@@ -188,6 +190,7 @@ ctx.slots.register({
 - 无个人数据采集；所有状态仅存 localStorage；
 - 搜索仅在本机过滤项目名；
 - 不读写任何工作区文件、不请求任何网络资源（除插件自身静态资源）。
+- 更新检查为可关闭的只读 GET（GitHub Releases API，自动每天最多一次 + 手动「立即检查」），不上传任何数据。
 
 ## 9. 验收清单（v1）
 

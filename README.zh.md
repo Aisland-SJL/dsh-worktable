@@ -53,7 +53,23 @@
 
 ## 快速开始
 
-1. **安装**：`dsh plugin --profile web add "link:<repo>/01_content"`，并把 `dsh-worktable` 注册进 profile 的 bundle 列表
+1. **安装**（二选一）：
+
+   **A · 一行命令（推荐）** —— 直接安装 GitHub Release 的安装包，无需 Git：
+
+   ```bash
+   dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
+   ```
+
+   **B · 本地克隆（想改源码用）** —— `link:` 只接受本地绝对路径（路径不要带空格）：
+
+   ```bash
+   git clone https://github.com/Aisland-SJL/dsh-worktable.git
+   dsh plugin --profile web add "link:<克隆出来的 dsh-worktable 仓库目录的绝对路径>/01_content"
+   # 例：克隆到 D:\tools 后 → dsh plugin --profile web add "link:D:/tools/dsh-worktable/01_content"
+   ```
+
+   两种方式 `add` 都会把 `dsh-worktable` 注册进 profile 的 bundle 列表（写入 `~/.dsh`，可能需要授权确认）；若提示找不到 `dsh` 命令，用 `npx @deepseek-ai/dsh` 代替。
 2. **重启** DSH web 进程并刷新界面
 3. **打开控制室**：点击固定首位的 🖥️ 控制室卡片 → 绑定一条对话（加入现有或新建）→ 得到实时卡片网格
 4. **创建项目**：侧边栏 ＋ → 选布局预设、填项目文件夹
@@ -97,7 +113,7 @@ node --check lib/index.js
 
 ## 隐私
 
-无遥测；除宿主 API 与插件自身路由外无任何网络请求。用户状态全部留在 localStorage。
+无遥测；除宿主 API 与插件自身路由外无任何网络请求。用户状态全部留在 localStorage。可选更新检查：对 GitHub Releases API 做只读 GET（自动每天最多一次，另有手动「立即检查」），不上传任何数据，可在设置中关闭。
 
 ---
 

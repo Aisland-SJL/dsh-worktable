@@ -53,7 +53,23 @@
 
 ## Quick start
 
-1. **Install**: `dsh plugin --profile web add "link:<repo>/01_content"` and register `dsh-worktable` in the profile bundle list
+1. **Install** (pick one):
+
+   **A · one-liner (recommended)** — straight from the GitHub Release tarball, no Git needed:
+
+   ```bash
+   dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
+   ```
+
+   **B · local clone (for hacking on the source)** — `link:` accepts a local absolute path only (no spaces in the path):
+
+   ```bash
+   git clone https://github.com/Aisland-SJL/dsh-worktable.git
+   dsh plugin --profile web add "link:<absolute path of the cloned dsh-worktable directory>/01_content"
+   # e.g. cloned into D:\tools → dsh plugin --profile web add "link:D:/tools/dsh-worktable/01_content"
+   ```
+
+   Either way the `add` command registers `dsh-worktable` in the profile bundle list (writes to `~/.dsh`, may ask for authorization). If the `dsh` command is missing, use `npx @deepseek-ai/dsh` instead.
 2. **Restart** the DSH web process, refresh the GUI
 3. **Open the control room**: click the pinned 🖥️ control-room card → bind one conversation (join existing or create new) → you get the live card grid
 4. **Create projects**: sidebar ＋ → pick a layout preset, set a project folder
@@ -97,7 +113,7 @@ node --check lib/index.js
 
 ## Privacy
 
-No telemetry, no network calls beyond the host APIs and the plugin routes. All user state stays in localStorage.
+No telemetry, no network calls beyond the host APIs and the plugin routes. All user state stays in localStorage. Optional update check: a read-only GET to the GitHub Releases API (automatic at most once a day, plus a manual "Check now" button); nothing is uploaded, and it can be disabled in Settings.
 
 ---
 

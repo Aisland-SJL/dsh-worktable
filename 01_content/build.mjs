@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 mkdirSync(join(here, 'lib'), { recursive: true })
+const pkg = JSON.parse(readFileSync(join(here, 'package.json'), 'utf8'))
 
 const clientBanner = {
   js: "window.__ModuleLoader__.load({ id: 'dsh-worktable', factory: (require) => { var module = { exports: {} }; var exports = module.exports;",
@@ -46,6 +47,8 @@ await build({
   loader: { '.css': 'text' }, // xterm.css 以文本内联进样式串（宿主不加载独立 css 文件）
   banner: clientBanner,
   footer: clientFooter,
+  // 客户端自报版本（随 package.json version 走，发版即自动一致）
+  define: { __WT_VERSION__: JSON.stringify(pkg.version) },
 })
 
 console.log('[dsh-worktable build] done: lib/index.js, lib/client.js')

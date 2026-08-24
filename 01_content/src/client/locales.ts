@@ -161,6 +161,20 @@ export const zh = {
   'icons.title': '选择图标',
   'icons.change': '更换图标',
   'empty': '暂无项目',
+  'update.badgeTitle': '有新版本可用',
+  'update.available': '新版本可用',
+  'update.current': '当前版本',
+  'update.copyAi': '复制 AI 提示词',
+  'update.skip': '忽略此版本',
+  'update.autoCheck': '自动检查更新',
+  'update.checkNow': '立即检查',
+  'update.checkFail': '上次检查未成功',
+  'update.checking': '检查中…',
+  'update.upToDate': '已是最新版本',
+  'update.copied': '已复制',
+  'update.copyFail': '复制失败，请手动选择文本',
+  'update.skipDone': '已忽略此版本（下一版发布时再提醒）',
+  'update.upgradeHint': '执行命令后需重启 dsh web 并刷新页面',
 } satisfies Record<string, string>
 
 /** The worktable namespace key union. */
@@ -323,6 +337,20 @@ export const en = {
   'icons.title': 'Pick an icon',
   'icons.change': 'Change icon',
   'empty': 'No projects yet',
+  'update.badgeTitle': 'New version available',
+  'update.available': 'New version available',
+  'update.current': 'Current version',
+  'update.copyAi': 'Copy AI prompt',
+  'update.skip': 'Skip this version',
+  'update.autoCheck': 'Auto-check updates',
+  'update.checkNow': 'Check now',
+  'update.checkFail': 'Last check failed',
+  'update.checking': 'Checking…',
+  'update.upToDate': 'Up to date',
+  'update.copied': 'Copied',
+  'update.copyFail': 'Copy failed — select the text manually',
+  'update.skipDone': 'Skipped (will remind on the next release)',
+  'update.upgradeHint': 'Run the command, then restart dsh web and refresh',
 } satisfies Record<WorktableKey, string>
 
 /** Locale namespace id registered under ctx.locale. */

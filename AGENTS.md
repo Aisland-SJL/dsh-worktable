@@ -129,6 +129,17 @@ node --check lib/index.js
     previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s 触发；
     失败静默回退内存路径 lastTextOf。拉取是带宽成本不是 Token 成本。
   - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。
+- **更新检查（v0.2.1）**：客户端直连 GitHub Releases API 比版本（只读 GET；自动每天最多
+  一次，手动「立即检查」绕过节流；失败重试 3 次后状态行显示「上次检查未成功」）。
+  状态四态 idle/checking/uptodate/failed；徽标 = 「工作台」标题右侧琥珀呼吸小圆（SVG 同步
+  图标、不显示版本号），仅发现更新时出现；更新卡在设置面板顶部（复制 AI 提示词 + 忽略此
+  版本 + 命令框供终端用户手抄），版本号与自动检查开关在面板底部；设置弹窗右上角 ✕ 关闭、
+  底部防溢出钳制（POP_BOTTOM_MARGIN=12，贴底后向上生长；按钮与开关必须平级防冒泡）。
+  localStorage 键 lastUpdateCheck.v1 / skipVersion.v1 / updateCheck.v1。
+  **发布纪律**：改动≠发布，只有 tag+Release 才触发提醒；新版本 = 新 tag + 新 Release，每个
+  Release 必须同时附固定名资产 `dsh-worktable.tgz`（供 releases/latest/download 永久链接）
+  与版本化资产。版本注入：build.mjs 把 package.json version 打进 __WT_VERSION__，发版前
+  改 version 再构建；升级动作（执行 add + 重启）永远留给用户或其 Agent，插件不自更新。
 
 ## 宿主升级事故（0.1.1-rc.2 link 插件回归）
 
@@ -146,8 +157,17 @@ node --check lib/index.js
 - 恢复后验收：functional-diag 全 20 STEP ERROR_COUNT: 0；/api/worktable/health ok、
   /workspaces 200。
 
+## 宿主 bug 跟踪（UTF-16 路径截断）
+
+- 官方 `dsh-host-directory-picker-native` 的 readUtf16 只查 UTF-16LE 码元低字节，含 U+XX00
+  字符（开/一/言/Ā/🀀 等）的文件夹路径在选目录时被截断 → 创建工作区异常。非我们插件问题。
+- 修复与回归测试以 patch 存档：`02_process/upstream/utf16-picker-fix.patch`；官方 Discussions
+  #580 已接单（tianyicui「我们修复一下」），我们的补证评论已发（Aisland-SJL）。
+- 待办：官方修 master 后核验对应 npm 版本是否含修复，随后可清理 patch 存档。
+
 ## 安装 / 重启
 
 - 注册：`dsh plugin --profile web add "link:<repo>/01_content"`（写 ~/.dsh，需用户授权）。
+- 发布版安装（给用户）：`dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"`（依赖每个 Release 的固定名资产）。
 - bundle 层只在启动时组合：改动后必须重启 dsh web 并刷新 GUI。
 

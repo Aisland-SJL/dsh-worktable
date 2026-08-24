@@ -19,6 +19,45 @@ import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, ty
 type OrderBy = 'manual' | 'recent'
 type DockMode = 'footer' | 'float'
 
+// ── 更新检查（客户端直连 GitHub Releases API，只读 GET；失败静默）──
+declare const __WT_VERSION__: string
+const LOCAL_VERSION = typeof __WT_VERSION__ === 'undefined' ? '0.2.0' : __WT_VERSION__
+const UPDATE_REPO = 'Aisland-SJL/dsh-worktable'
+const UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"'
+const UPGRADE_AI = '帮我升级 dsh-worktable：执行 ' + UPGRADE_CMD + '，完成后提醒我重启 dsh web 并刷新页面'
+// 更新提示图标（手绘 SVG，避免 emoji 跨平台渲染差异）
+const ICON_SYNC = (
+  <svg viewBox="0 0 16 16" aria-hidden>
+    <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M1.5 8a6.5 6.5 0 0 1 11.1-4.6L14.5 5" />
+    <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M14.5 1.5V5h-3.5" />
+    <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M14.5 8a6.5 6.5 0 0 1-11.1 4.6L1.5 11" />
+    <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M1.5 14.5V11h3.5" />
+  </svg>
+)
+const ICON_SPARK = (
+  <svg viewBox="0 0 16 16" aria-hidden>
+    <path d="M8 1.6l1.5 3.9 3.9 1.5-3.9 1.5L8 12.4 6.5 8.5 2.6 7l3.9-1.5z" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    <path d="M12.6 11.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z" fill="currentColor" />
+  </svg>
+)
+type UpdateInfo = { latest: string; notes: string; url: string }
+function cmpVer(a: string, b: string): number {
+  const pa = a.split('.').map(Number)
+  const pb = b.split('.').map(Number)
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] ?? 0
+    const y = pb[i] ?? 0
+    if (x !== y) return x - y
+  }
+  return 0
+}
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true }
+  } catch { /* fallthrough */ }
+  return false
+}
+
 type ViewState = {
   query: string
   searchOpen: boolean
@@ -1008,6 +1047,48 @@ function WorktableSection(props: any) {
   const [registeredIds, setRegisteredIds] = useState<string[]>(() => [...registryStore.ids])
   const [addOpen, setAddOpen] = useState(false)
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false)
+  // 更新检查：徽标 / 更新卡 / 版本行共用；节流一天一次，忽略按版本号存 localStorage
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [updateCheckOn, setUpdateCheckOn] = useState<boolean>(() => localStorage.getItem('dsh.worktable.updateCheck.v1') !== '0')
+  const [updateCopied, setUpdateCopied] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'uptodate' | 'failed'>('idle')
+  const checkUpdates = useCallback(async (force = false) => {
+    const last = Number(localStorage.getItem('dsh.worktable.lastUpdateCheck.v1') ?? '0')
+    if (!force && Date.now() - last < 24 * 3600 * 1000) return // 自动检查节流；手动「立即检查」绕过节流
+    setUpdateStatus('checking')
+    let d: { tag_name?: string; body?: string; html_url?: string } | null = null
+    for (let attempt = 0; attempt < 3 && !d; attempt++) {
+      try {
+        const r = await fetch('https://api.github.com/repos/' + UPDATE_REPO + '/releases/latest', { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' })
+        if (r.ok) d = await r.json() as { tag_name?: string; body?: string; html_url?: string }
+        else if (r.status === 403 || r.status === 404) break // 限流/不存在：不再重试
+      } catch { /* 网络抖动：下一轮重试 */ }
+    }
+    if (!d) { setUpdateStatus('failed'); return }
+    localStorage.setItem('dsh.worktable.lastUpdateCheck.v1', String(Date.now()))
+    const tag = (d.tag_name ?? '').replace(/^v/, '')
+    if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) { setUpdateStatus('uptodate'); return }
+    if ((localStorage.getItem('dsh.worktable.skipVersion.v1') ?? '') === tag) { setUpdateStatus('uptodate'); return }
+    setUpdateInfo({ latest: tag, notes: (d.body ?? '').slice(0, 800), url: d.html_url ?? '' })
+    setUpdateStatus('uptodate')
+  }, [])
+  useEffect(() => { if (updateCheckOn) void checkUpdates() }, [updateCheckOn, checkUpdates])
+  const copyUpgradeAi = async () => {
+    const ok = await copyText(UPGRADE_AI)
+    if (ok) { setUpdateCopied(true); setTimeout(() => setUpdateCopied(false), 2200) }
+  }
+  const skipUpdate = () => {
+    if (updateInfo) {
+      localStorage.setItem('dsh.worktable.skipVersion.v1', updateInfo.latest)
+      setUpdateInfo(null)
+    }
+  }
+  const toggleUpdateCheck = () => {
+    setUpdateCheckOn((v) => {
+      localStorage.setItem('dsh.worktable.updateCheck.v1', v ? '0' : '1')
+      return !v
+    })
+  }
   const [wsPreset, setWsPreset] = useState<string>('2h')
   const [wsName, setWsName] = useState('')
   const [wsError, setWsError] = useState(false)
@@ -2303,6 +2384,23 @@ function buildCustomLayoutPrompt(req: string): string {
     : 16
   const popTop = clamp(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540))
 
+  // 设置弹窗底部防溢出：弹窗底与视口底保持 POP_BOTTOM_MARGIN；触底后以底为基准向上生长
+  const POP_BOTTOM_MARGIN = 12
+  const settingsRef = useRef<HTMLDivElement | null>(null)
+  const [settingsTop, setSettingsTop] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const recalc = () => {
+      if (!viewOptionsOpen || !settingsRef.current) return
+      const h = settingsRef.current.offsetHeight
+      const rawTop = Math.max(MIN_TOP, sectionTop)
+      const maxTop = Math.max(MIN_TOP, window.innerHeight - h - POP_BOTTOM_MARGIN)
+      setSettingsTop(Math.min(rawTop, maxTop))
+    }
+    recalc()
+    window.addEventListener('resize', recalc)
+    return () => window.removeEventListener('resize', recalc)
+  }, [viewOptionsOpen, updateInfo, sectionTop])
+
   /** 收起态点击项目图标：视图覆盖/布局 → openSplit；入驻无视图 → 切绑定对话 */
   const openRailProject = (id: string) => {
     const pr = projectsRef.current.projects
@@ -2380,6 +2478,15 @@ function buildCustomLayoutPrompt(req: string): string {
           onPointerCancel={onHandlePointerUp}
           onDoubleClick={resetDock}
         >{t('title')}</span>
+        {updateInfo && (
+          <button
+            type="button"
+            className="dsh-wt_updateBadge"
+            title={t('update.badgeTitle') + ' · v' + updateInfo.latest}
+            aria-label={t('update.badgeTitle')}
+            onClick={() => setViewOptionsOpen(true)}
+          >{ICON_SYNC}</button>
+        )}
         <div className="dsh-wt_actions">
           <button
             type="button"
@@ -2500,7 +2607,29 @@ function buildCustomLayoutPrompt(req: string): string {
 
       {viewOptionsOpen && <div className="dsh-wt_popBackdrop" onClick={() => setViewOptionsOpen(false)} />}
       {viewOptionsOpen && (
-        <div className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: popTop, width: 280, zIndex: 80 }}>
+        <div ref={settingsRef} className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: settingsTop ?? popTop, width: 280, zIndex: 80 }}>
+          <button
+            type="button"
+            className="dsh-wt_settingsClose"
+            aria-label={t('manage.done')}
+            title={t('manage.done')}
+            onClick={() => setViewOptionsOpen(false)}
+          >✕</button>
+          {updateInfo && (
+            <div className="dsh-wt_updateCard">
+              <div className="dsh-wt_updateHead"><span className="dsh-wt_updateDot" />{t('update.available')} · v{updateInfo.latest}</div>
+              <div className="dsh-wt_updateVers">{t('update.current')} v{LOCAL_VERSION} → v{updateInfo.latest}</div>
+              {updateInfo.notes && <div className="dsh-wt_updateNotes">{updateInfo.notes}</div>}
+              <div className="dsh-wt_updateCmd">{UPGRADE_CMD}</div>
+              <div className="dsh-wt_updateBtns">
+                <button type="button" className="dsh-wt_updateBtn dsh-wt_updateBtnCopy" onClick={() => void copyUpgradeAi()}>
+                  {updateCopied ? '✓ ' + t('update.copied') : <>{ICON_SPARK} {t('update.copyAi')}</>}
+                </button>
+                <button type="button" className="dsh-wt_updateBtn" onClick={skipUpdate}>{t('update.skip')}</button>
+              </div>
+              <div className="dsh-wt_updateHint">{t('update.upgradeHint')}</div>
+            </div>
+          )}
           <div className="dsh-wt_manageHead">
             <span className="dsh-wt_manageTitle">{t('sort.label')}</span>
           </div>
@@ -2513,7 +2642,6 @@ function buildCustomLayoutPrompt(req: string): string {
           <div className="dsh-wt_menuSep" />
           <div className="dsh-wt_manageHead">
             <span className="dsh-wt_manageTitle">{t('manage.title')}</span>
-            <button type="button" className="dsh-wt_manageDone" onClick={() => setViewOptionsOpen(false)}>{t('manage.done')}</button>
           </div>
           {effectiveOrder.map((id) => {
             const meta = metas[id]
@@ -2578,6 +2706,22 @@ function buildCustomLayoutPrompt(req: string): string {
               <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => askDelete('shortcut', s.id, s.name)}>✕</button>
             </div>
           ))}
+          <div className="dsh-wt_versionRow">
+            <span>
+              v{LOCAL_VERSION}
+              {updateStatus === 'uptodate' && !updateInfo ? ' · ' + t('update.upToDate') : ''}
+              {updateStatus === 'failed' && !updateInfo ? ' · ' + t('update.checkFail') : ''}
+            </span>
+            <span className="dsh-wt_versionActions">
+              <button type="button" className="dsh-wt_updateBtn" onClick={() => void checkUpdates(true)}>
+                {updateStatus === 'checking' ? t('update.checking') : t('update.checkNow')}
+              </button>
+              <span className="dsh-wt_updateToggle" onClick={toggleUpdateCheck}>
+                <span>{t('update.autoCheck')}</span>
+                <span className="dsh-wt_updateSwitch" data-off={updateCheckOn ? undefined : 'true'} />
+              </span>
+            </span>
+          </div>
         </div>
       )}
 

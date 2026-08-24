@@ -7807,6 +7807,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_manage{position:relative;z-index:12;display:flex;flex-direction:column;gap:4px;padding:6px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:8px;background:var(--dsw-alias-bg-base,#0b0e14)}",
   ".dsh-wt_manageHead{display:flex;align-items:center;justify-content:space-between;padding:1px 2px 4px}",
   ".dsh-wt_manageTitle{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_settingsClose{position:absolute;top:6px;right:6px;width:20px;height:20px;padding:0;display:flex;align-items:center;justify-content:center;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#7d8aa5);font-size:13px;line-height:1;cursor:pointer}",
+  ".dsh-wt_settingsClose:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06));color:var(--dsw-alias-label-primary,#dbe4f3)}",
   ".dsh-wt_manageDone{display:flex;align-items:center;padding:2px 8px;border:none;border-radius:5px;background:transparent;color:var(--dsw-alias-state-accent-primary,#4f8ef7);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_manageDone:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}",
   // 排序方式：一左一右两个选择按钮（手动 / 最近）
@@ -8206,7 +8208,31 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleErr{margin:0;font-size:11px;line-height:16px;color:var(--dsw-alias-state-danger,#f85149)}",
   ".dsh-wt_consoleCreateBtn{margin-top:2px;padding:7px 10px;border:1px solid var(--dsw-alias-state-accent-primary,#4f8ef7);border-radius:8px;background:transparent;color:var(--dsw-alias-state-accent-primary,#4f8ef7);font:inherit;font-size:12px;line-height:18px;cursor:pointer}",
   ".dsh-wt_consoleCreateBtn:hover:not(:disabled){background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}",
-  ".dsh-wt_consoleCreateBtn:disabled{opacity:.55;cursor:default}"
+  ".dsh-wt_consoleCreateBtn:disabled{opacity:.55;cursor:default}",
+  // ── 更新提示：侧栏标题旁徽标（仅图标 + 琥珀呼吸光）与设置面板更新卡 / 版本行 ──
+  ".dsh-wt_updateBadge{flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:3px;padding:0;border:none;border-radius:50%;background:rgba(245,185,66,.16);color:#f7d488;font-size:11px;line-height:1;cursor:pointer;position:relative}",
+  '.dsh-wt_updateBadge::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(245,185,66,.55);animation:dsh-wt_updatePulse 1.8s ease-out infinite}',
+  "@keyframes dsh-wt_updatePulse{0%{opacity:.9;box-shadow:0 0 0 0 rgba(245,185,66,.5)}70%{opacity:.35;box-shadow:0 0 0 6px rgba(245,185,66,0)}100%{opacity:.9;box-shadow:0 0 0 0 rgba(245,185,66,0)}}",
+  ".dsh-wt_updateCard{margin:0 0 10px;padding:10px;border:1px solid rgba(245,185,66,.45);border-radius:10px;background:rgba(245,185,66,.08);display:flex;flex-direction:column;gap:6px}",
+  ".dsh-wt_updateHead{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#f7d488}",
+  ".dsh-wt_updateDot{width:7px;height:7px;border-radius:50%;background:#f5b942;animation:dsh-wt_updatePulse 1.8s ease-out infinite}",
+  ".dsh-wt_updateVers{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
+  ".dsh-wt_updateNotes{max-height:96px;overflow:auto;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary,#7d8aa5);white-space:pre-wrap;word-break:break-all}",
+  ".dsh-wt_updateCmd{margin:2px 0;padding:7px 8px;background:var(--dsw-alias-bg-base,#0b0e14);border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;font-family:Consolas,monospace;font-size:10.5px;line-height:1.5;color:#9cc6ff;word-break:break-all}",
+  ".dsh-wt_updateBtns{display:flex;gap:6px;flex-wrap:wrap}",
+  ".dsh-wt_updateBtn{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:7px;border:1px solid var(--dsw-alias-border-l1,#262b36);background:transparent;color:var(--dsw-alias-label-secondary,#aab6cd);font-size:11px;cursor:pointer}",
+  ".dsh-wt_updateBtn svg{width:12px;height:12px;flex:none}",
+  ".dsh-wt_updateBadge svg{width:12px;height:12px;flex:none}",
+  ".dsh-wt_updateBtn:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}",
+  ".dsh-wt_updateBtnCopy{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:rgba(79,142,247,.18);color:#cfe0ff}",
+  ".dsh-wt_updateHint{font-size:10.5px;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
+  ".dsh-wt_versionRow{margin-top:8px;padding-top:8px;border-top:1px solid var(--dsw-alias-border-l1,#262b36);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
+  ".dsh-wt_updateToggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}",
+  ".dsh-wt_versionActions{display:flex;align-items:center;gap:8px}",
+  ".dsh-wt_updateSwitch{position:relative;width:26px;height:14px;border-radius:999px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);cursor:pointer}",
+  '.dsh-wt_updateSwitch::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:right .15s}',
+  ".dsh-wt_updateSwitch[data-off=true]{background:var(--dsw-alias-border-l1,#333a48)}",
+  ".dsh-wt_updateSwitch[data-off=true]::after{right:14px}"
 ].join("\n");
 
 // src/client/locales.ts
@@ -8365,7 +8391,21 @@ var zh = {
   "split.dragSwap": "\u62D6\u52A8\u6807\u9898\u680F\u4E0E\u5176\u4ED6\u7A97\u4EA4\u6362\u4F4D\u7F6E",
   "icons.title": "\u9009\u62E9\u56FE\u6807",
   "icons.change": "\u66F4\u6362\u56FE\u6807",
-  "empty": "\u6682\u65E0\u9879\u76EE"
+  "empty": "\u6682\u65E0\u9879\u76EE",
+  "update.badgeTitle": "\u6709\u65B0\u7248\u672C\u53EF\u7528",
+  "update.available": "\u65B0\u7248\u672C\u53EF\u7528",
+  "update.current": "\u5F53\u524D\u7248\u672C",
+  "update.copyAi": "\u590D\u5236 AI \u63D0\u793A\u8BCD",
+  "update.skip": "\u5FFD\u7565\u6B64\u7248\u672C",
+  "update.autoCheck": "\u81EA\u52A8\u68C0\u67E5\u66F4\u65B0",
+  "update.checkNow": "\u7ACB\u5373\u68C0\u67E5",
+  "update.checkFail": "\u4E0A\u6B21\u68C0\u67E5\u672A\u6210\u529F",
+  "update.checking": "\u68C0\u67E5\u4E2D\u2026",
+  "update.upToDate": "\u5DF2\u662F\u6700\u65B0\u7248\u672C",
+  "update.copied": "\u5DF2\u590D\u5236",
+  "update.copyFail": "\u590D\u5236\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u9009\u62E9\u6587\u672C",
+  "update.skipDone": "\u5DF2\u5FFD\u7565\u6B64\u7248\u672C\uFF08\u4E0B\u4E00\u7248\u53D1\u5E03\u65F6\u518D\u63D0\u9192\uFF09",
+  "update.upgradeHint": "\u6267\u884C\u547D\u4EE4\u540E\u9700\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762"
 };
 var en = {
   "title": "Worktable",
@@ -8522,7 +8562,21 @@ var en = {
   "split.dragSwap": "Drag the title bar to swap panes",
   "icons.title": "Pick an icon",
   "icons.change": "Change icon",
-  "empty": "No projects yet"
+  "empty": "No projects yet",
+  "update.badgeTitle": "New version available",
+  "update.available": "New version available",
+  "update.current": "Current version",
+  "update.copyAi": "Copy AI prompt",
+  "update.skip": "Skip this version",
+  "update.autoCheck": "Auto-check updates",
+  "update.checkNow": "Check now",
+  "update.checkFail": "Last check failed",
+  "update.checking": "Checking\u2026",
+  "update.upToDate": "Up to date",
+  "update.copied": "Copied",
+  "update.copyFail": "Copy failed \u2014 select the text manually",
+  "update.skipDone": "Skipped (will remind on the next release)",
+  "update.upgradeHint": "Run the command, then restart dsh web and refresh"
 };
 var NS = "worktable";
 
@@ -18212,6 +18266,40 @@ try {
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
+var LOCAL_VERSION = false ? "0.2.0" : "0.2.1";
+var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
+var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
+var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
+var ICON_SYNC = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M1.5 8a6.5 6.5 0 0 1 11.1-4.6L14.5 5" }),
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M14.5 1.5V5h-3.5" }),
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M14.5 8a6.5 6.5 0 0 1-11.1 4.6L1.5 11" }),
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M1.5 14.5V11h3.5" })
+] });
+var ICON_SPARK = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 1.6l1.5 3.9 3.9 1.5-3.9 1.5L8 12.4 6.5 8.5 2.6 7l3.9-1.5z", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinejoin: "round" }),
+  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12.6 11.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z", fill: "currentColor" })
+] });
+function cmpVer(a, b) {
+  const pa = a.split(".").map(Number);
+  const pb = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] ?? 0;
+    const y = pb[i] ?? 0;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+async function copyText(text2) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text2);
+      return true;
+    }
+  } catch {
+  }
+  return false;
+}
 var PERSIST_KEY2 = "dsh.worktable.view.v1";
 var PROJECTS_KEY = "dsh.worktable.projects.v1";
 var MIN_TOP = 56;
@@ -19097,6 +19185,62 @@ function WorktableSection(props) {
   const [registeredIds, setRegisteredIds] = (0, import_react2.useState)(() => [...registryStore.ids]);
   const [addOpen, setAddOpen] = (0, import_react2.useState)(false);
   const [viewOptionsOpen, setViewOptionsOpen] = (0, import_react2.useState)(false);
+  const [updateInfo, setUpdateInfo] = (0, import_react2.useState)(null);
+  const [updateCheckOn, setUpdateCheckOn] = (0, import_react2.useState)(() => localStorage.getItem("dsh.worktable.updateCheck.v1") !== "0");
+  const [updateCopied, setUpdateCopied] = (0, import_react2.useState)(false);
+  const [updateStatus, setUpdateStatus] = (0, import_react2.useState)("idle");
+  const checkUpdates = (0, import_react2.useCallback)(async (force = false) => {
+    const last = Number(localStorage.getItem("dsh.worktable.lastUpdateCheck.v1") ?? "0");
+    if (!force && Date.now() - last < 24 * 3600 * 1e3) return;
+    setUpdateStatus("checking");
+    let d = null;
+    for (let attempt = 0; attempt < 3 && !d; attempt++) {
+      try {
+        const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store" });
+        if (r.ok) d = await r.json();
+        else if (r.status === 403 || r.status === 404) break;
+      } catch {
+      }
+    }
+    if (!d) {
+      setUpdateStatus("failed");
+      return;
+    }
+    localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
+    const tag = (d.tag_name ?? "").replace(/^v/, "");
+    if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+      setUpdateStatus("uptodate");
+      return;
+    }
+    if ((localStorage.getItem("dsh.worktable.skipVersion.v1") ?? "") === tag) {
+      setUpdateStatus("uptodate");
+      return;
+    }
+    setUpdateInfo({ latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" });
+    setUpdateStatus("uptodate");
+  }, []);
+  (0, import_react2.useEffect)(() => {
+    if (updateCheckOn) void checkUpdates();
+  }, [updateCheckOn, checkUpdates]);
+  const copyUpgradeAi = async () => {
+    const ok = await copyText(UPGRADE_AI);
+    if (ok) {
+      setUpdateCopied(true);
+      setTimeout(() => setUpdateCopied(false), 2200);
+    }
+  };
+  const skipUpdate = () => {
+    if (updateInfo) {
+      localStorage.setItem("dsh.worktable.skipVersion.v1", updateInfo.latest);
+      setUpdateInfo(null);
+    }
+  };
+  const toggleUpdateCheck = () => {
+    setUpdateCheckOn((v) => {
+      localStorage.setItem("dsh.worktable.updateCheck.v1", v ? "0" : "1");
+      return !v;
+    });
+  };
   const [wsPreset, setWsPreset] = (0, import_react2.useState)("2h");
   const [wsName, setWsName] = (0, import_react2.useState)("");
   const [wsError, setWsError] = (0, import_react2.useState)(false);
@@ -20349,6 +20493,21 @@ function WorktableSection(props) {
   const sectionTop = rootRef.current?.getBoundingClientRect().top ?? 100;
   const popLeft = sidebarRight != null ? Math.min(sidebarRight + 8, Math.max(16, window.innerWidth - 344)) : 16;
   const popTop = clamp2(sectionTop, MIN_TOP, Math.max(MIN_TOP, window.innerHeight - 540));
+  const POP_BOTTOM_MARGIN = 12;
+  const settingsRef = (0, import_react2.useRef)(null);
+  const [settingsTop, setSettingsTop] = (0, import_react2.useState)(null);
+  (0, import_react2.useLayoutEffect)(() => {
+    const recalc = () => {
+      if (!viewOptionsOpen || !settingsRef.current) return;
+      const h = settingsRef.current.offsetHeight;
+      const rawTop = Math.max(MIN_TOP, sectionTop);
+      const maxTop = Math.max(MIN_TOP, window.innerHeight - h - POP_BOTTOM_MARGIN);
+      setSettingsTop(Math.min(rawTop, maxTop));
+    };
+    recalc();
+    window.addEventListener("resize", recalc);
+    return () => window.removeEventListener("resize", recalc);
+  }, [viewOptionsOpen, updateInfo, sectionTop]);
   const openRailProject = (id) => {
     const pr = projectsRef.current.projects;
     const layout = pr.layouts.find((l) => l.id === id);
@@ -20424,6 +20583,17 @@ function WorktableSection(props) {
           onPointerCancel: onHandlePointerUp,
           onDoubleClick: resetDock,
           children: t("title")
+        }
+      ),
+      updateInfo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "dsh-wt_updateBadge",
+          title: t("update.badgeTitle") + " \xB7 v" + updateInfo.latest,
+          "aria-label": t("update.badgeTitle"),
+          onClick: () => setViewOptionsOpen(true),
+          children: ICON_SYNC
         }
       ),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_actions", children: [
@@ -20585,7 +20755,44 @@ function WorktableSection(props) {
       ] })
     ] }),
     viewOptionsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_popBackdrop", onClick: () => setViewOptionsOpen(false) }),
-    viewOptionsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_manage dsh-wt_pop dsh-wt_settings", style: { position: "fixed", left: popLeft, top: popTop, width: 280, zIndex: 80 }, children: [
+    viewOptionsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { ref: settingsRef, className: "dsh-wt_manage dsh-wt_pop dsh-wt_settings", style: { position: "fixed", left: popLeft, top: settingsTop ?? popTop, width: 280, zIndex: 80 }, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "dsh-wt_settingsClose",
+          "aria-label": t("manage.done"),
+          title: t("manage.done"),
+          onClick: () => setViewOptionsOpen(false),
+          children: "\u2715"
+        }
+      ),
+      updateInfo && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateCard", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateHead", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_updateDot" }),
+          t("update.available"),
+          " \xB7 v",
+          updateInfo.latest
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateVers", children: [
+          t("update.current"),
+          " v",
+          LOCAL_VERSION,
+          " \u2192 v",
+          updateInfo.latest
+        ] }),
+        updateInfo.notes && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateNotes", children: updateInfo.notes }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateCmd", children: UPGRADE_CMD }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateBtns", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn dsh-wt_updateBtnCopy", onClick: () => void copyUpgradeAi(), children: updateCopied ? "\u2713 " + t("update.copied") : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+            ICON_SPARK,
+            " ",
+            t("update.copyAi")
+          ] }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn", onClick: skipUpdate, children: t("update.skip") })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateHint", children: t("update.upgradeHint") })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_manageHead", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_manageTitle", children: t("sort.label") }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_sortRow", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
@@ -20610,10 +20817,7 @@ function WorktableSection(props) {
         )
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_menuSep" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_manageHead", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_manageTitle", children: t("manage.title") }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_manageDone", onClick: () => setViewOptionsOpen(false), children: t("manage.done") })
-      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_manageHead", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_manageTitle", children: t("manage.title") }) }),
       effectiveOrder.map((id) => {
         const meta = metas[id];
         const layout = projects.layouts.find((l) => l.id === id);
@@ -20705,7 +20909,22 @@ function WorktableSection(props) {
         ),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_manageScName", children: s.name }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_manageBtn", title: t("manage.deleteShortcut"), onClick: () => askDelete("shortcut", s.id, s.name), children: "\u2715" })
-      ] }, s.id))
+      ] }, s.id)),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_versionRow", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+          "v",
+          LOCAL_VERSION,
+          updateStatus === "uptodate" && !updateInfo ? " \xB7 " + t("update.upToDate") : "",
+          updateStatus === "failed" && !updateInfo ? " \xB7 " + t("update.checkFail") : ""
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "dsh-wt_versionActions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn", onClick: () => void checkUpdates(true), children: updateStatus === "checking" ? t("update.checking") : t("update.checkNow") }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "dsh-wt_updateToggle", onClick: toggleUpdateCheck, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: t("update.autoCheck") }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_updateSwitch", "data-off": updateCheckOn ? void 0 : "true" })
+          ] })
+        ] })
+      ] })
     ] }),
     viewPickFor && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_popBackdrop", style: { zIndex: 81 }, onClick: () => setViewPickFor(null) }),
     viewPickFor && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_menu dsh-wt_pop", style: { position: "fixed", left: popLeft, top: popTop, width: 320, zIndex: 82 }, children: [
