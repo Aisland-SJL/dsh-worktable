@@ -102,6 +102,34 @@ node --check lib/index.js
 
 ---
 
+## 常见问题
+
+**Q：DeepSeek Harness 更新后，工作台打不开 / 服务启动失败？**
+
+先放心：你的数据不会丢 —— 项目、绑定、布局都存在浏览器本地（localStorage），项目文件都在你自己的项目文件夹里，升级或修复都不会动它们。按下面两种情况处理：
+
+**情况 A：Harness 正常，只是工作台需要更新**
+
+- 打开工作台「设置」→ 点「立即检查」；侧栏「工作台」旁出现琥珀色更新徽标时，点它选择「复制 AI 提示词」，把那段话发给你的 AI 助手执行即可；
+- 或直接重跑安装命令（永远装最新版），装完重启 dsh web 并刷新：
+
+  ```bash
+  dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
+  ```
+
+**情况 B：Harness 本身挂了**（服务起不来 / 报 Failed to load plugins）
+
+- 首选：升级 Harness 到最新版（已知问题的官方修复通常都在新版里）：终端执行 `npx @deepseek-ai/dsh web`；
+- 如果升级后仍然失败：把下面这段复制发给**任意 AI 助手**（Claude、Codex、GLM 等都可以，不需要 DeepSeek Harness 本身）：
+
+> 帮我修复 DeepSeek Harness 的自研插件加载问题（报错通常是 Failed to load plugins 或服务启动失败）：
+> 1. 终端执行 npx @deepseek-ai/dsh web 升级到最新版并启动；成功即结束。
+> 2. 若仍失败：打开 ~/.dsh/profiles/web/package.json，找出 dependencies 里所有 link: 开头的插件路径，计算它们的共同上级目录（例如都装在 D:\projects 下，上级就是 D:\projects）。
+> 3. 在该上级目录创建名为 node_modules 的目录联接，指向 ~/.dsh/profiles/node_modules：mklink /J "<上级目录>\node_modules" "%USERPROFILE%\.dsh\profiles\node_modules"；若该上级目录已存在 node_modules，就改用它的上一级目录再试。
+> 4. 重启 dsh web，打开 http://127.0.0.1:3080 确认工作台恢复。
+
+该问题已反馈 DeepSeek Harness 官方，正在修复；官方修复发布后，升级到新版即可彻底解决。
+
 ## 已知限制
 
 - **平台**：Windows 是当前完整验证平台。macOS 为实验性支持：核心文件路径代码已做跨平台适配，但尚未在 macOS 真机完成端到端验证。

@@ -102,6 +102,34 @@ node --check lib/index.js
 
 ---
 
+## Troubleshooting
+
+**Q: After a DeepSeek Harness update, the worktable fails to open / the service fails to start?**
+
+Don't panic: your data is safe — projects, bindings and layouts live in the browser (localStorage), and project files stay in your own project folders; upgrading or repairing never touches them. Pick the case that matches:
+
+**Case A: Harness works, only the worktable needs updating**
+
+- Open the worktable "Settings" → click "Check now"; when the amber update badge appears next to the worktable title, click it and choose "Copy AI prompt" to hand the upgrade to your AI assistant;
+- Or simply re-run the install command (always installs the latest), then restart dsh web and refresh:
+
+  ```bash
+  dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
+  ```
+
+**Case B: Harness itself is down** (service fails to start / "Failed to load plugins")
+
+- First choice: upgrade Harness to the latest (official fixes usually ship there): run `npx @deepseek-ai/dsh web`;
+- If it still fails: copy the following to any AI assistant (Claude, Codex, GLM, … — DeepSeek Harness itself is not required):
+
+> Help me fix DeepSeek Harness custom-plugin loading (the error is usually "Failed to load plugins" or the service failing to start):
+> 1. Run npx @deepseek-ai/dsh web to upgrade to the latest and start; if it works, done.
+> 2. If it still fails: open ~/.dsh/profiles/web/package.json, find every dependency starting with link:, and compute their common parent directory (e.g. if all plugins live under D:\projects, the parent is D:\projects).
+> 3. Create a node_modules directory junction in that parent pointing to ~/.dsh/profiles/node_modules: mklink /J "<parent>\node_modules" "%USERPROFILE%\.dsh\profiles\node_modules"; if that parent already has a node_modules, retry one level up.
+> 4. Restart dsh web and open http://127.0.0.1:3080 to confirm the worktable is back.
+
+This issue has been reported to the DeepSeek Harness team and is being fixed; upgrading after the fix ships resolves it permanently.
+
 ## Known limits
 
 - **Platform**: Windows is the fully tested platform. macOS support is experimental: the core file-path code has been adapted for cross-platform use, but no end-to-end test has been completed on macOS hardware.
