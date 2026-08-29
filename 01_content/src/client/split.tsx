@@ -44,6 +44,8 @@ export type SplitPane = {
   tabs?: PaneTab[]
   /** 激活的标签下标 */
   active?: number
+  /** 头部折叠：true = 隐藏窗格标题与标签栏（内容占满；随 spec 持久化） */
+  collapsed?: boolean
 }
 
 export type LayoutSpec = {
@@ -110,6 +112,7 @@ type SplitState = {
   lockPane(row: PaneRow, i: number, content: SplitContent): void
   closeTab(row: PaneRow, i: number, tabId: string): void
   setActiveTab(row: PaneRow, i: number, tabId: string): void
+  toggleCollapsed(row: PaneRow, i: number): void
   moveTab(fromRow: PaneRow, fromI: number, tabId: string, toRow: PaneRow, toI: number): void
   swapPanes(aRow: PaneRow, aI: number, bRow: PaneRow, bI: number): void
   setChatSide(side: 'left' | 'right'): void
@@ -119,7 +122,8 @@ type SplitState = {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi)
-const DIVIDER = 4
+const GAP = 1           // 窗格之间真实布局间隙：1px（分隔细线即间隙，底色贴线）
+const DIVIDER = 4       // 分隔条热区宽度：透明覆盖层，细线画在热区中间与两侧内容贴齐
 const BAR_H = 26
 const PERSIST_KEY = 'dsh.worktable.split.v2'
 
@@ -414,7 +418,7 @@ export const splitStore: SplitState = {
       }
       if (!hasPaneWs) {
         const contentW = Math.max(0, colW0 - this.chatW)
-        const avail = Math.max(main.length * 120, contentW - Math.max(0, main.length - 1) * DIVIDER)
+        const avail = Math.max(main.length * 120, contentW - Math.max(0, main.length - 1) * GAP)
         const share = Math.round(avail / main.length)
         this.paneWs = main.map((p) => Math.max(p.min, share))
       }
@@ -422,7 +426,7 @@ export const splitStore: SplitState = {
         // chatFull 时顶行只占内容侧（扣除聊天列宽）
         const chatW0 = spec.chatFullHeight === true ? this.chatW : 0
         const rowW = Math.max(0, colW0 - chatW0 - (left ? this.leftW : 0))
-        const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * DIVIDER)
+        const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * GAP)
         const share = Math.round(avail / top.length)
         this.topWs = top.map((p) => Math.max(p.min, share))
       }
@@ -545,7 +549,7 @@ export const splitStore: SplitState = {
     if (!g || !spec) return
     const colW = g.right - g.left
     const main = spec.main ?? []
-    const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * DIVIDER
+    const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP
     const hi = Math.max(spec.chatWidth.min, colW - minContent)
     this.chatW = clamp(Math.round(w), spec.chatWidth.min, hi)
     this.applyMargin()
@@ -590,7 +594,7 @@ export const splitStore: SplitState = {
     const contentW = Math.max(0, colW - chatW)
     const othersMin = main.reduce((a, p, k) => a + (k === i ? 0 : p.min), 0)
     const lo = main[i].min
-    const hi = Math.max(lo, contentW - othersMin - Math.max(0, main.length - 1) * DIVIDER)
+    const hi = Math.max(lo, contentW - othersMin - Math.max(0, main.length - 1) * GAP)
     const next = this.paneWs.slice()
     next[i] = clamp(Math.round(w), lo, hi)
     this.paneWs = next
@@ -607,7 +611,7 @@ export const splitStore: SplitState = {
     const colW = g.right - g.left
     const othersMin = top.reduce((a, p, k) => a + (k === i ? 0 : p.min), 0)
     const lo = top[i].min
-    const hi = Math.max(lo, colW - othersMin - Math.max(0, top.length - 1) * DIVIDER)
+    const hi = Math.max(lo, colW - othersMin - Math.max(0, top.length - 1) * GAP)
     const next = this.topWs.slice()
     next[i] = clamp(Math.round(w), lo, hi)
     this.topWs = next
@@ -778,6 +782,29 @@ export const splitStore: SplitState = {
     this.notify()
   },
 
+  toggleCollapsed(row, i) {
+    const spec = this.spec
+    if (!spec) return
+    const mutate = (pane: SplitPane): SplitPane => ({ ...pane, collapsed: !pane.collapsed })
+    if (row === 'left') {
+      if (!spec.left || i !== 0) return
+      this.spec = { ...spec, left: mutate(spec.left) }
+    } else if (row === 'top') {
+      const top = [...(spec.top ?? [])]
+      if (!top[i]) return
+      top[i] = mutate(top[i])
+      this.spec = { ...spec, top }
+    } else {
+      const main = [...spec.main]
+      if (!main[i]) return
+      main[i] = mutate(main[i])
+      this.spec = { ...spec, main }
+    }
+    this.onSpecMutated?.(this.spec)
+    this.persist()
+    this.notify()
+  },
+
   swapPanes(aRow, aI, bRow, bI) {
     const spec = this.spec
     if (!spec) return
@@ -871,13 +898,13 @@ if (typeof document !== 'undefined' && document.body) {
 /** 分配各窗宽度（最后一个拿余量） */
 function allocate(panes: SplitPane[], ws: number[], total: number) {
   const out: { pane: SplitPane; left: number; width: number }[] = []
-  const gapTotal = Math.max(0, panes.length - 1) * DIVIDER
+  const gapTotal = Math.max(0, panes.length - 1) * GAP
   const avail = Math.max(0, total - gapTotal)
   let x = 0
   panes.forEach((p, i) => {
     const w = i === panes.length - 1 ? Math.max(0, avail - x) : ws[i]
     out.push({ pane: p, left: x, width: w })
-    x += w + DIVIDER
+    x += w + GAP
   })
   return out
 }
@@ -898,10 +925,10 @@ function makeDividerHandler(kind: 'left' | 'chat' | 'top' | 'pane' | 'topPane', 
       } else if (kind === 'top') {
         splitStore.setTopH(ev.clientY - g.top - BAR_H)
       } else if (kind === 'pane' && index != null) {
-        const prefix = splitStore.paneWs.slice(0, index).reduce((a, b) => a + b, 0) + index * DIVIDER
+        const prefix = splitStore.paneWs.slice(0, index).reduce((a, b) => a + b, 0) + index * GAP
         splitStore.setPaneW(index, ev.clientX - (g.left + prefix))
       } else if (kind === 'topPane' && index != null) {
-        const prefix = splitStore.topWs.slice(0, index).reduce((a, b) => a + b, 0) + index * DIVIDER
+        const prefix = splitStore.topWs.slice(0, index).reduce((a, b) => a + b, 0) + index * GAP
         splitStore.setTopW(index, ev.clientX - (g.left + prefix))
       }
     }
@@ -1769,7 +1796,7 @@ function PaneBody(props: { pane: SplitPane; row: PaneRow; index: number }) {
   const singleConsole = tabs.length === 1 && tabs[0].content?.kind === 'builtin' && tabs[0].content.type === 'console'
   return (
     <>
-      {!singleConsole && (
+      {!singleConsole && !pane.collapsed && (
       <div className="dsh-wt_tabBar">
         {tabs.map((t, i) => {
           // 控制室标签不可关闭：关掉后窗格变选择器，用户回不到控制室（不可逆操作）
@@ -1889,7 +1916,9 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
   const mainH = paneBottom - bodyTop
   const topY = barTop + BAR_H
 
-  const renderPane = (it: { pane: SplitPane; left: number; width: number }, row: PaneRow, index: number, x: number, y: number, h: number) => (
+  const renderPane = (it: { pane: SplitPane; left: number; width: number }, row: PaneRow, index: number, x: number, y: number, h: number) => {
+    const singleConsole = (it.pane.tabs ?? []).length === 1 && it.pane.tabs![0].content?.kind === 'builtin' && it.pane.tabs![0].content.type === 'console'
+    return (
     <div
       key={it.pane.id}
       className="dsh-wt_pane"
@@ -1913,6 +1942,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
         }
       }}
     >
+      {!it.pane.collapsed && (
       <div
         className="dsh-wt_paneBar"
         title={T('split.dragSwap')}
@@ -1929,9 +1959,26 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
       >
         <span className="dsh-wt_paneTitle">{it.pane.title}</span>
       </div>
+      )}
       <PaneBody pane={it.pane} row={row} index={index} />
+      {!singleConsole && (
+        <button
+          type="button"
+          className={'dsh-wt_collapseBtn' + (it.pane.collapsed ? ' dsh-wt_collapseBtnCollapsed' : '')}
+          title={it.pane.collapsed ? T('pane.expand') : T('pane.collapse')}
+          aria-label={it.pane.collapsed ? T('pane.expand') : T('pane.collapse')}
+          onClick={() => splitStore.toggleCollapsed(row, index)}
+        >
+          {it.pane.collapsed ? (
+            <svg viewBox="0 0 16 16" aria-hidden><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          ) : (
+            <svg viewBox="0 0 16 16" aria-hidden><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          )}
+        </button>
+      )}
     </div>
-  )
+    )
+  }
 
   return (
     <>
@@ -1971,7 +2018,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: topRowX + it.left + it.width, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
+          style={{ position: 'fixed', left: topRowX + it.left + it.width - DIVIDER / 2, top: topY, width: DIVIDER, height: topH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('topPane', i)}
         />
       ))}
@@ -1982,7 +2029,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
           className="dsh-wt_splitDivider"
           role="separator"
           title="拖动调整宽度"
-          style={{ position: 'fixed', left: contentX + it.left + it.width, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
+          style={{ position: 'fixed', left: contentX + it.left + it.width - DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 }}
           onPointerDown={makeDividerHandler('pane', i)}
         />
       ))}

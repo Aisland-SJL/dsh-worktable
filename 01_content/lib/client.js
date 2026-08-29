@@ -7843,7 +7843,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_splitTitle{flex:1;min-width:0;font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
   ".dsh-wt_splitClose{flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;padding:0;border:none;border-radius:4px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font-size:12px;cursor:pointer}",
   ".dsh-wt_splitClose:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}",
-  ".dsh-wt_pane{display:flex;flex-direction:column;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;background:var(--dsw-alias-bg-base,#0b0e14);overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}",
+  // 窗格容器：无圆角、无描边，直角贴齐分隔细线；底色保持不透明（标题栏/标签栏是 2% 浅色底，
+  // 窗格若透明会露出宿主垫在下面的文字）
+  ".dsh-wt_pane{display:flex;flex-direction:column;box-sizing:border-box;border:none;background:var(--dsw-alias-bg-base,#0b0e14);overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}",
   // 文件预览：文本/MD 滚动容器 + MD 排版 + 图片居中
   ".dsh-wt_fileView{flex:1;min-height:0;overflow:auto;padding:12px 14px;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:12.5px;line-height:1.7}",
   ".dsh-wt_txt{margin:0;font-family:var(--dsw-font-mono,Consolas,Menlo,monospace);font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word}",
@@ -7891,16 +7893,24 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_md img{max-width:100%}",
   ".dsh-wt_imgView{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:auto;padding:10px;background:var(--dsw-alias-bg-base,#0b0e14)}",
   ".dsh-wt_imgView img{max-width:100%;max-height:100%;object-fit:contain}",
-  ".dsh-wt_pane[data-drop-hover=true]{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);box-shadow:0 0 0 2px rgba(79,142,247,.4),var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4));transform:scale(1.012)}",
+  ".dsh-wt_pane[data-drop-hover=true]{box-shadow:0 0 0 2px rgba(79,142,247,.4),var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4));transform:scale(1.012)}",
   ".dsh-wt_paneBar{flex:none;display:flex;align-items:center;height:22px;padding:0 8px;border-bottom:1px solid var(--dsw-alias-border-l1,#262b36);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02))}",
+  ".dsh-wt_paneBar{padding-right:26px}",
   ".dsh-wt_paneTitle{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+  // 窗格折叠按钮：常态只是一个折角小标签（无底色无描边），hover 才显示按钮范围（底+描边）
+  ".dsh-wt_collapseBtn{position:absolute;top:2px;right:4px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
+  ".dsh-wt_collapseBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));border-color:var(--dsw-alias-border-l1,#262b36)}",
+  ".dsh-wt_collapseBtn svg{width:12px;height:12px;display:block}",
+  ".dsh-wt_collapseBtnCollapsed{color:var(--dsw-alias-label-secondary,#9aa4b2)}",
   ".dsh-wt_paneFrame{flex:1;width:100%;border:0;background:#010409;min-height:0}",
   // iframe 内容标签：容器 + 右上角常驻刷新按钮
   ".dsh-wt_tabRefresh{flex:none;width:14px;height:14px;padding:0;border:none;border-radius:3px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:10px;line-height:1;cursor:pointer}",
   ".dsh-wt_tabRefresh:hover{color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}",
-  ".dsh-wt_splitDivider{background:var(--dsw-alias-border-l2,#3a4150);cursor:col-resize;touch-action:none;box-sizing:border-box}",
-  ".dsh-wt_splitDividerH{cursor:row-resize}",
-  ".dsh-wt_splitDivider:hover,.dsh-wt_splitDividerH:hover{background:var(--dsw-alias-state-accent-primary,#4f8ef7)}",
+  // 分隔条：热区保持 4px 宽（好拖），视觉上只在中间画 1px 细实线；hover 时细线变主题蓝高亮 + 微光
+  ".dsh-wt_splitDivider{background:linear-gradient(to right,transparent 2px,var(--dsw-alias-border-l2,#3a4150) 2px,var(--dsw-alias-border-l2,#3a4150) 3px,transparent 3px);cursor:col-resize;touch-action:none;box-sizing:border-box}",
+  ".dsh-wt_splitDividerH{cursor:row-resize;background:linear-gradient(to bottom,transparent 2px,var(--dsw-alias-border-l2,#3a4150) 2px,var(--dsw-alias-border-l2,#3a4150) 3px,transparent 3px)}",
+  ".dsh-wt_splitDivider:hover{background:linear-gradient(to right,transparent 2px,var(--dsw-alias-state-accent-primary,#4f8ef7) 2px,var(--dsw-alias-state-accent-primary,#4f8ef7) 3px,transparent 3px);box-shadow:0 0 6px rgba(79,142,247,.55)}",
+  ".dsh-wt_splitDividerH:hover{background:linear-gradient(to bottom,transparent 2px,var(--dsw-alias-state-accent-primary,#4f8ef7) 2px,var(--dsw-alias-state-accent-primary,#4f8ef7) 3px,transparent 3px);box-shadow:0 0 6px rgba(79,142,247,.55)}",
   // 新建工作区（拓扑预设）
   ".dsh-wt_presets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:2px 8px 6px}",
   ".dsh-wt_preset{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 2px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:10px;line-height:13px;cursor:pointer}",
@@ -8384,6 +8394,8 @@ var zh = {
   "pane.jobsEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6682\u65E0\u540E\u53F0\u4EFB\u52A1",
   "pane.termFail": "\u7EC8\u7AEF\u4E0D\u53EF\u7528\uFF08\u5BBF\u4E3B\u7F3A\u5C11 node-pty/ws \u6216\u8FDE\u63A5\u5931\u8D25\uFF09",
   "pane.closeTab": "\u5173\u95ED\u6807\u7B7E\u9875",
+  "pane.collapse": "\u6298\u53E0\u7A97\u683C",
+  "pane.expand": "\u5C55\u5F00\u7A97\u683C",
   "pane.jobsTitle": "\u540E\u53F0\u4EFB\u52A1",
   "pane.subagents": "\u5B50\u4EE3\u7406",
   "pane.subagentsEmpty": "\u5F53\u524D\u4F1A\u8BDD\u6682\u65E0\u5B50\u4EE3\u7406",
@@ -8555,6 +8567,8 @@ var en = {
   "pane.jobsEmpty": "No background jobs in the current session",
   "pane.termFail": "Terminal unavailable (host missing node-pty/ws, or connection failed)",
   "pane.closeTab": "Close tab",
+  "pane.collapse": "Collapse pane",
+  "pane.expand": "Expand pane",
   "pane.jobsTitle": "Background jobs",
   "pane.subagents": "Subagents",
   "pane.subagentsEmpty": "No subagents in the current session",
@@ -16389,6 +16403,7 @@ core_default.registerLanguage("javascript", javascript2);
 core_default.registerLanguage("css", css2);
 core_default.registerLanguage("json", json);
 var clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+var GAP = 1;
 var DIVIDER = 4;
 var BAR_H = 26;
 var PERSIST_KEY = "dsh.worktable.split.v2";
@@ -16595,14 +16610,14 @@ var splitStore = {
       }
       if (!hasPaneWs) {
         const contentW = Math.max(0, colW0 - this.chatW);
-        const avail = Math.max(main.length * 120, contentW - Math.max(0, main.length - 1) * DIVIDER);
+        const avail = Math.max(main.length * 120, contentW - Math.max(0, main.length - 1) * GAP);
         const share = Math.round(avail / main.length);
         this.paneWs = main.map((p) => Math.max(p.min, share));
       }
       if (!hasTopWs) {
         const chatW0 = spec.chatFullHeight === true ? this.chatW : 0;
         const rowW = Math.max(0, colW0 - chatW0 - (left ? this.leftW : 0));
-        const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * DIVIDER);
+        const avail = Math.max(top.length * 120, rowW - Math.max(0, top.length - 1) * GAP);
         const share = Math.round(avail / top.length);
         this.topWs = top.map((p) => Math.max(p.min, share));
       }
@@ -16712,7 +16727,7 @@ var splitStore = {
     if (!g || !spec) return;
     const colW = g.right - g.left;
     const main = spec.main ?? [];
-    const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * DIVIDER;
+    const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP;
     const hi = Math.max(spec.chatWidth.min, colW - minContent);
     this.chatW = clamp(Math.round(w), spec.chatWidth.min, hi);
     this.applyMargin();
@@ -16754,7 +16769,7 @@ var splitStore = {
     const contentW = Math.max(0, colW - chatW);
     const othersMin = main.reduce((a, p, k) => a + (k === i ? 0 : p.min), 0);
     const lo = main[i].min;
-    const hi = Math.max(lo, contentW - othersMin - Math.max(0, main.length - 1) * DIVIDER);
+    const hi = Math.max(lo, contentW - othersMin - Math.max(0, main.length - 1) * GAP);
     const next = this.paneWs.slice();
     next[i] = clamp(Math.round(w), lo, hi);
     this.paneWs = next;
@@ -16770,7 +16785,7 @@ var splitStore = {
     const colW = g.right - g.left;
     const othersMin = top.reduce((a, p, k) => a + (k === i ? 0 : p.min), 0);
     const lo = top[i].min;
-    const hi = Math.max(lo, colW - othersMin - Math.max(0, top.length - 1) * DIVIDER);
+    const hi = Math.max(lo, colW - othersMin - Math.max(0, top.length - 1) * GAP);
     const next = this.topWs.slice();
     next[i] = clamp(Math.round(w), lo, hi);
     this.topWs = next;
@@ -16938,6 +16953,28 @@ var splitStore = {
     this.persist();
     this.notify();
   },
+  toggleCollapsed(row, i) {
+    const spec = this.spec;
+    if (!spec) return;
+    const mutate = (pane) => ({ ...pane, collapsed: !pane.collapsed });
+    if (row === "left") {
+      if (!spec.left || i !== 0) return;
+      this.spec = { ...spec, left: mutate(spec.left) };
+    } else if (row === "top") {
+      const top = [...spec.top ?? []];
+      if (!top[i]) return;
+      top[i] = mutate(top[i]);
+      this.spec = { ...spec, top };
+    } else {
+      const main = [...spec.main];
+      if (!main[i]) return;
+      main[i] = mutate(main[i]);
+      this.spec = { ...spec, main };
+    }
+    this.onSpecMutated?.(this.spec);
+    this.persist();
+    this.notify();
+  },
   swapPanes(aRow, aI, bRow, bI) {
     const spec = this.spec;
     if (!spec) return;
@@ -17031,13 +17068,13 @@ if (typeof document !== "undefined" && document.body) {
 }
 function allocate(panes, ws, total) {
   const out = [];
-  const gapTotal = Math.max(0, panes.length - 1) * DIVIDER;
+  const gapTotal = Math.max(0, panes.length - 1) * GAP;
   const avail = Math.max(0, total - gapTotal);
   let x = 0;
   panes.forEach((p, i) => {
     const w = i === panes.length - 1 ? Math.max(0, avail - x) : ws[i];
     out.push({ pane: p, left: x, width: w });
-    x += w + DIVIDER;
+    x += w + GAP;
   });
   return out;
 }
@@ -17059,10 +17096,10 @@ function makeDividerHandler(kind, index) {
       } else if (kind === "top") {
         splitStore.setTopH(ev.clientY - g.top - BAR_H);
       } else if (kind === "pane" && index != null) {
-        const prefix = splitStore.paneWs.slice(0, index).reduce((a, b) => a + b, 0) + index * DIVIDER;
+        const prefix = splitStore.paneWs.slice(0, index).reduce((a, b) => a + b, 0) + index * GAP;
         splitStore.setPaneW(index, ev.clientX - (g.left + prefix));
       } else if (kind === "topPane" && index != null) {
-        const prefix = splitStore.topWs.slice(0, index).reduce((a, b) => a + b, 0) + index * DIVIDER;
+        const prefix = splitStore.topWs.slice(0, index).reduce((a, b) => a + b, 0) + index * GAP;
         splitStore.setTopW(index, ev.clientX - (g.left + prefix));
       }
     };
@@ -17956,7 +17993,7 @@ function PaneBody(props) {
   };
   const singleConsole = tabs.length === 1 && tabs[0].content?.kind === "builtin" && tabs[0].content.type === "console";
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-    !singleConsole && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_tabBar", children: tabs.map((t, i) => {
+    !singleConsole && !pane.collapsed && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_tabBar", children: tabs.map((t, i) => {
       const locked = t.content?.kind === "builtin" && t.content.type === "console";
       return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "span",
@@ -18080,61 +18117,75 @@ function WorkspaceLayer(props) {
   const paneBottom = g.bottom;
   const mainH = paneBottom - bodyTop;
   const topY = barTop + BAR_H;
-  const renderPane = (it, row, index, x, y, h) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
-    "div",
-    {
-      className: "dsh-wt_pane",
-      "data-drop-hover": dropTarget && dropTarget.row === row && dropTarget.index === index ? "true" : void 0,
-      style: { position: "fixed", left: x + it.left, top: y, width: it.width, height: h, zIndex: 68 },
-      onDragOver: (e) => {
-        if (!dragTab) return;
-        e.preventDefault();
-        setDropTarget({ row, index });
-      },
-      onDragLeave: (e) => {
-        if (e.currentTarget && !e.currentTarget.contains(e.relatedTarget)) setDropTarget(null);
-      },
-      onDrop: (e) => {
-        e.preventDefault();
-        const s = dragTab;
-        dragTab = null;
-        setDropTarget(null);
-        if (s && (s.row !== row || s.index !== index)) {
-          splitStore.moveTab(s.row, s.index, s.tabId, row, index);
-        }
-      },
-      children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-          "div",
-          {
-            className: "dsh-wt_paneBar",
-            title: T("split.dragSwap"),
-            draggable: true,
-            onDragStart: (e) => {
-              dragPane = { row, index };
-              try {
-                e.dataTransfer.effectAllowed = "move";
-              } catch {
-              }
-            },
-            onDragOver: (e) => e.preventDefault(),
-            onDrop: (e) => {
-              e.preventDefault();
-              const s = dragPane;
-              if (s && (s.row !== row || s.index !== index)) splitStore.swapPanes(s.row, s.index, row, index);
-              dragPane = null;
-            },
-            onDragEnd: () => {
-              dragPane = null;
-            },
-            children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneTitle", children: it.pane.title })
+  const renderPane = (it, row, index, x, y, h) => {
+    const singleConsole = (it.pane.tabs ?? []).length === 1 && it.pane.tabs[0].content?.kind === "builtin" && it.pane.tabs[0].content.type === "console";
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+      "div",
+      {
+        className: "dsh-wt_pane",
+        "data-drop-hover": dropTarget && dropTarget.row === row && dropTarget.index === index ? "true" : void 0,
+        style: { position: "fixed", left: x + it.left, top: y, width: it.width, height: h, zIndex: 68 },
+        onDragOver: (e) => {
+          if (!dragTab) return;
+          e.preventDefault();
+          setDropTarget({ row, index });
+        },
+        onDragLeave: (e) => {
+          if (e.currentTarget && !e.currentTarget.contains(e.relatedTarget)) setDropTarget(null);
+        },
+        onDrop: (e) => {
+          e.preventDefault();
+          const s = dragTab;
+          dragTab = null;
+          setDropTarget(null);
+          if (s && (s.row !== row || s.index !== index)) {
+            splitStore.moveTab(s.row, s.index, s.tabId, row, index);
           }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PaneBody, { pane: it.pane, row, index })
-      ]
-    },
-    it.pane.id
-  );
+        },
+        children: [
+          !it.pane.collapsed && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "div",
+            {
+              className: "dsh-wt_paneBar",
+              title: T("split.dragSwap"),
+              draggable: true,
+              onDragStart: (e) => {
+                dragPane = { row, index };
+                try {
+                  e.dataTransfer.effectAllowed = "move";
+                } catch {
+                }
+              },
+              onDragOver: (e) => e.preventDefault(),
+              onDrop: (e) => {
+                e.preventDefault();
+                const s = dragPane;
+                if (s && (s.row !== row || s.index !== index)) splitStore.swapPanes(s.row, s.index, row, index);
+                dragPane = null;
+              },
+              onDragEnd: () => {
+                dragPane = null;
+              },
+              children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneTitle", children: it.pane.title })
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PaneBody, { pane: it.pane, row, index }),
+          !singleConsole && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "button",
+            {
+              type: "button",
+              className: "dsh-wt_collapseBtn" + (it.pane.collapsed ? " dsh-wt_collapseBtnCollapsed" : ""),
+              title: it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
+              "aria-label": it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
+              onClick: () => splitStore.toggleCollapsed(row, index),
+              children: it.pane.collapsed ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 6l4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 10l4-4 4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) })
+            }
+          )
+        ]
+      },
+      it.pane.id
+    );
+  };
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_splitBar", style: { position: "fixed", left: g.left, top: barTop, width: hasLeft || chatFull ? contentW : hasTop ? colW : contentW, zIndex: 70 }, children: [
       spec.id !== "wt-console" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_splitTitle", children: spec.title }),
@@ -18169,7 +18220,7 @@ function WorkspaceLayer(props) {
         className: "dsh-wt_splitDivider",
         role: "separator",
         title: "\u62D6\u52A8\u8C03\u6574\u5BBD\u5EA6",
-        style: { position: "fixed", left: topRowX + it.left + it.width, top: topY, width: DIVIDER, height: topH, zIndex: 72 },
+        style: { position: "fixed", left: topRowX + it.left + it.width - DIVIDER / 2, top: topY, width: DIVIDER, height: topH, zIndex: 72 },
         onPointerDown: makeDividerHandler("topPane", i)
       },
       "tv" + it.pane.id
@@ -18180,7 +18231,7 @@ function WorkspaceLayer(props) {
         className: "dsh-wt_splitDivider",
         role: "separator",
         title: "\u62D6\u52A8\u8C03\u6574\u5BBD\u5EA6",
-        style: { position: "fixed", left: contentX + it.left + it.width, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 },
+        style: { position: "fixed", left: contentX + it.left + it.width - DIVIDER / 2, top: bodyTop, width: DIVIDER, height: mainH, zIndex: 72 },
         onPointerDown: makeDividerHandler("pane", i)
       },
       "v" + it.pane.id
@@ -18287,7 +18338,7 @@ try {
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION = false ? "dev" : "0.2.2";
+var LOCAL_VERSION = false ? "dev" : "0.2.3";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
