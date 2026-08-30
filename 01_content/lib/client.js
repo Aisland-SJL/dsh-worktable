@@ -8160,8 +8160,11 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleThemeBtn{flex:none;padding:3px 9px;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);font:inherit;font-size:12px;line-height:18px;cursor:pointer;opacity:.85}",
   ".dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
-  ".dsh-wt_consoleGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);max-width:856px;margin-left:auto;margin-right:auto}",
-  ".dsh-wt_consoleCard{position:relative;display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}",
+  ".dsh-wt_consoleGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);width:100%;max-width:calc(var(--wt-cols,3)*242px + (var(--wt-cols,3) - 1)*64px);margin-left:auto;margin-right:auto}",
+  ".dsh-wt_consoleCols{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card);color:var(--wt-text3);font-size:11px}",
+  ".dsh-wt_consoleCols input{width:80px;accent-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}",
+  ".dsh-wt_consoleColsVal{min-width:14px;text-align:center;font-variant-numeric:tabular-nums}",
+  ".dsh-wt_consoleCard{position:relative;box-sizing:border-box;flex:none;width:calc((100% - (var(--wt-cols,3) - 1)*64px)/var(--wt-cols,3));display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}",
   // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
   '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleCard{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}",
@@ -8357,6 +8360,8 @@ var zh = {
   "console.name": "\u63A7\u5236\u5BA4",
   "console.title": "\u63A7\u5236\u5BA4",
   "console.themeLabel": "\u9762\u677F\u4E3B\u9898",
+  "console.cols": "\u6BCF\u884C",
+  "console.colsLabel": "\u6BCF\u884C\u663E\u793A\u9879\u76EE\u6570",
   "console.themeDark": "\u6DF1\u8272",
   "console.themeLight": "\u767D\u8272",
   "console.themeSystem": "\u8DDF\u968F\u7CFB\u7EDF",
@@ -8530,6 +8535,8 @@ var en = {
   "console.name": "Console",
   "console.title": "Console",
   "console.themeLabel": "Panel theme",
+  "console.cols": "Per row",
+  "console.colsLabel": "Projects per row",
   "console.themeDark": "Dark",
   "console.themeLight": "Light",
   "console.themeSystem": "System",
@@ -17181,6 +17188,41 @@ function AnimPane(props) {
 function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
+  const [cols, setColsState] = (0, import_react.useState)(() => splitEnv?.console?.getCols?.() ?? 3);
+  const gridRef = (0, import_react.useRef)(null);
+  const firstRectsRef = (0, import_react.useRef)(null);
+  const onCols = (n) => {
+    const grid = gridRef.current;
+    if (grid) {
+      const rects = /* @__PURE__ */ new Map();
+      grid.querySelectorAll(".dsh-wt_consoleCard").forEach((el) => {
+        const key = el.dataset.flip ?? "";
+        const r = el.getBoundingClientRect();
+        rects.set(key, { x: r.left, y: r.top });
+      });
+      firstRectsRef.current = rects;
+    }
+    setColsState(n);
+    splitEnv?.console?.setCols?.(n);
+  };
+  (0, import_react.useLayoutEffect)(() => {
+    const first = firstRectsRef.current;
+    if (!first) return;
+    const grid = gridRef.current;
+    if (!grid) return;
+    grid.querySelectorAll(".dsh-wt_consoleCard").forEach((el) => {
+      const key = el.dataset.flip ?? "";
+      const f = first.get(key);
+      if (!f) return;
+      const r = el.getBoundingClientRect();
+      const dx = f.x - r.left;
+      const dy = f.y - r.top;
+      if (dx || dy) {
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 450, easing: "cubic-bezier(.22,.61,.36,1)" });
+      }
+    });
+    firstRectsRef.current = null;
+  }, [cols]);
   const [themeMode, setThemeMode] = (0, import_react.useState)(() => splitEnv?.console?.getTheme?.() ?? "system");
   const [sysDark, setSysDark] = (0, import_react.useState)(() => {
     try {
@@ -17265,22 +17307,30 @@ function ConsolePane() {
     { mode: "system", icon: "\u{1F5A5}\uFE0F", key: "console.themeSystem" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleHead", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleTheme", role: "group", "aria-label": T("console.themeLabel"), children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-      "button",
-      {
-        type: "button",
-        className: "dsh-wt_consoleThemeBtn" + (themeMode === o.mode ? " dsh-wt_consoleThemeBtnOn" : ""),
-        title: T(o.key),
-        "aria-label": T(o.key),
-        onClick: () => setTheme(o.mode),
-        children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: o.icon })
-      },
-      o.mode
-    )) }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleGrid", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleHead", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleTheme", role: "group", "aria-label": T("console.themeLabel"), children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "dsh-wt_consoleThemeBtn" + (themeMode === o.mode ? " dsh-wt_consoleThemeBtnOn" : ""),
+          title: T(o.key),
+          "aria-label": T(o.key),
+          onClick: () => setTheme(o.mode),
+          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: o.icon })
+        },
+        o.mode
+      )) }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "dsh-wt_consoleCols", title: T("console.colsLabel"), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: T("console.cols") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "range", min: 1, max: 5, step: 1, value: cols, onChange: (e) => onCols(Number(e.target.value)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleColsVal", children: cols })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "div",
         {
+          "data-flip": c.id,
           role: c.self ? void 0 : "button",
           tabIndex: c.self ? -1 : 0,
           className: "dsh-wt_consoleCard" + (c.self ? " dsh-wt_consoleCardSelf" : "") + (c.status === "busy" ? " dsh-wt_consoleCard-busy" : "") + (c.glow && c.status === "done" ? " dsh-wt_consoleCard-glowDone" : "") + (c.glow && c.status === "need" ? " dsh-wt_consoleCard-glowNeed" : ""),
@@ -18548,7 +18598,8 @@ function loadView() {
       orderBy,
       dock: p.dock === "float" ? "float" : "footer",
       floatTop: typeof p.floatTop === "number" ? p.floatTop : null,
-      consoleTheme: p.consoleTheme === "dark" || p.consoleTheme === "light" || p.consoleTheme === "system" ? p.consoleTheme : "system"
+      consoleTheme: p.consoleTheme === "dark" || p.consoleTheme === "light" || p.consoleTheme === "system" ? p.consoleTheme : "system",
+      consoleCols: typeof p.consoleCols === "number" && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3
     };
   } catch {
     return { ...DEFAULT_VIEW };
@@ -19535,6 +19586,8 @@ function WorktableSection(props) {
         getCards: () => getConsoleCards(),
         getTheme: () => viewRef.current.consoleTheme ?? "system",
         setTheme: (th) => persistView({ consoleTheme: th }),
+        getCols: () => viewRef.current.consoleCols ?? 3,
+        setCols: (n) => persistView({ consoleCols: n }),
         onAck: (id) => {
           ackRef.current?.(id);
           setNotifyTick((t2) => t2 + 1);

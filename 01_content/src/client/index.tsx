@@ -67,6 +67,8 @@ type ViewState = {
   floatTop: number | null
   /** 控制室面板主题：dark/light/system（system = 跟随宿主 color-scheme，即 DSH 深色/白色/跟随系统设置） */
   consoleTheme?: 'dark' | 'light' | 'system'
+  /** 控制室每行显示项目数（1-5，默认 3）*/
+  consoleCols?: number
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -292,6 +294,7 @@ function loadView(): ViewState {
       dock: p.dock === 'float' ? 'float' : 'footer',
       floatTop: typeof p.floatTop === 'number' ? p.floatTop : null,
       consoleTheme: p.consoleTheme === 'dark' || p.consoleTheme === 'light' || p.consoleTheme === 'system' ? p.consoleTheme : 'system',
+      consoleCols: typeof p.consoleCols === 'number' && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -1322,6 +1325,8 @@ function WorktableSection(props: any) {
         getCards: () => getConsoleCards(),
         getTheme: () => viewRef.current.consoleTheme ?? 'system',
         setTheme: (th: 'dark' | 'light' | 'system') => persistView({ consoleTheme: th }),
+        getCols: () => viewRef.current.consoleCols ?? 3,
+        setCols: (n: number) => persistView({ consoleCols: n }),
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }

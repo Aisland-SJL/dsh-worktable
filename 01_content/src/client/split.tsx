@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { parentPathOf } from './pathutil'
 import { Terminal } from 'xterm'
 
@@ -241,6 +241,8 @@ type SplitEnv = {
     onAdd: () => void
     getTheme: () => 'dark' | 'light' | 'system'
     setTheme: (th: 'dark' | 'light' | 'system') => void
+    getCols: () => number
+    setCols: (n: number) => void
   }
 }
 let splitEnv: SplitEnv | null = null
@@ -1014,6 +1016,41 @@ function AnimPane(props: { row: PaneRow; index: number; tabId: string; content: 
 function ConsolePane() {
   const [, setTick] = useState(0)
   const [now, setNow] = useState(() => Date.now())
+  const [cols, setColsState] = useState<number>(() => splitEnv?.console?.getCols?.() ?? 3)
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
+  const onCols = (n: number) => {
+    const grid = gridRef.current
+    if (grid) {
+      const rects = new Map<string, { x: number; y: number }>()
+      grid.querySelectorAll('.dsh-wt_consoleCard').forEach((el) => {
+        const key = (el as HTMLElement).dataset.flip ?? ''
+        const r = el.getBoundingClientRect()
+        rects.set(key, { x: r.left, y: r.top })
+      })
+      firstRectsRef.current = rects
+    }
+    setColsState(n)
+    splitEnv?.console?.setCols?.(n)
+  }
+  useLayoutEffect(() => {
+    const first = firstRectsRef.current
+    if (!first) return
+    const grid = gridRef.current
+    if (!grid) return
+    grid.querySelectorAll('.dsh-wt_consoleCard').forEach((el) => {
+      const key = (el as HTMLElement).dataset.flip ?? ''
+      const f = first.get(key)
+      if (!f) return
+      const r = el.getBoundingClientRect()
+      const dx = f.x - r.left
+      const dy = f.y - r.top
+      if (dx || dy) {
+        el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 450, easing: 'cubic-bezier(.22,.61,.36,1)' })
+      }
+    })
+    firstRectsRef.current = null
+  }, [cols])
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>(() => splitEnv?.console?.getTheme?.() ?? 'system')
   const [sysDark, setSysDark] = useState(() => {
     try { return window.matchMedia('(prefers-color-scheme: dark)').matches } catch { return true }
@@ -1085,11 +1122,17 @@ function ConsolePane() {
             ><span aria-hidden>{o.icon}</span></button>
           ))}
         </div>
+        <label className="dsh-wt_consoleCols" title={T('console.colsLabel')}>
+          <span>{T('console.cols')}</span>
+          <input type="range" min={1} max={5} step={1} value={cols} onChange={(e) => onCols(Number(e.target.value))} />
+          <span className="dsh-wt_consoleColsVal">{cols}</span>
+        </label>
       </div>
-      <div className="dsh-wt_consoleGrid">
+      <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>
         {cards.map((c) => (
           <div
             key={c.id}
+            data-flip={c.id}
             role={c.self ? undefined : 'button'}
             tabIndex={c.self ? -1 : 0}
             className={'dsh-wt_consoleCard' + (c.self ? ' dsh-wt_consoleCardSelf' : '')
