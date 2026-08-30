@@ -1122,11 +1122,14 @@ function ConsolePane() {
             ><span aria-hidden>{o.icon}</span></button>
           ))}
         </div>
-        <label className="dsh-wt_consoleCols" title={T('console.colsLabel')}>
+        <div className="dsh-wt_consoleCols" role="group" aria-label={T('console.colsLabel')}>
           <span>{T('console.cols')}</span>
-          <input type="range" min={1} max={5} step={1} value={cols} onChange={(e) => onCols(Number(e.target.value))} />
-          <span className="dsh-wt_consoleColsVal">{cols}</span>
-        </label>
+          <span className="dsh-wt_consoleColsDots">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <button key={v} type="button" className={'dsh-wt_consoleColsDot' + (v <= cols ? ' dsh-wt_consoleColsDotOn' : '')} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)} />
+            ))}
+          </span>
+        </div>
       </div>
       <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>
         {cards.map((c) => (
