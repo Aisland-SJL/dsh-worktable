@@ -1124,11 +1124,18 @@ function ConsolePane() {
         </div>
         <div className="dsh-wt_consoleCols" role="group" aria-label={T('console.colsLabel')}>
           <span>{T('console.cols')}</span>
-          <span className="dsh-wt_consoleColsDots">
+          <div className="dsh-wt_consoleBar" onClick={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            const t = (e.clientX - r.left) / r.width
+            const v = Math.round(t * 4) + 1
+            onCols(Math.max(1, Math.min(5, v)))
+          }}>
+            <span className="dsh-wt_consoleBarFill" style={{ width: ((cols - 1) / 4 * 100) + '%' }} />
             {[1, 2, 3, 4, 5].map((v) => (
-              <button key={v} type="button" className={'dsh-wt_consoleColsDot' + (v <= cols ? ' dsh-wt_consoleColsDotOn' : '')} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)} />
+              <button key={v} type="button" className="dsh-wt_consoleBarDot" style={{ left: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={(e) => { e.stopPropagation(); onCols(v) }} />
             ))}
-          </span>
+            <span className="dsh-wt_consoleBarKnob" style={{ left: ((cols - 1) / 4 * 100) + '%' }} />
+          </div>
         </div>
       </div>
       <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>
