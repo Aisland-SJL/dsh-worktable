@@ -8171,18 +8171,18 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleCtlOn{border-color:#fff;background:rgba(255,255,255,.14);box-shadow:0 0 10px rgba(255,255,255,.15)}",
   ".dsh-wt_dropMask{position:fixed;inset:0;z-index:9;background:transparent;border:none}",
   ".dsh-wt_drop{position:absolute;top:calc(100% + 6px);right:0;min-width:124px;padding:5px;border-radius:10px;background:#171c25;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:11;display:flex;flex-direction:column;gap:2px}",
-  ".dsh-wt_dropTheme{border:1px solid rgba(34,197,94,.65);box-shadow:0 0 14px rgba(34,197,94,.15),0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropShape{border:1px solid rgba(245,158,11,.65);box-shadow:0 0 14px rgba(245,158,11,.15),0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropBg{border:1px solid rgba(239,68,68,.65);box-shadow:0 0 14px rgba(239,68,68,.15),0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropCols{border:1px solid rgba(245,185,66,.65);box-shadow:0 0 14px rgba(245,185,66,.15),0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropTheme{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropShape{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropBg{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropCols{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
   ".dsh-wt_dropItem{width:100%;padding:6px 9px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;display:flex;align-items:center;gap:7px;text-align:left}",
   ".dsh-wt_dropItem:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
   ".dsh-wt_vbar{position:relative;width:26px;height:112px;margin:6px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
-  ".dsh-wt_vbarFill{position:absolute;left:0;right:0;top:0;border-radius:999px;background:linear-gradient(180deg,#fcd34d,#f5b942);pointer-events:none}",
-  ".dsh-wt_vbarDot{position:absolute;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;padding:0;border-radius:50%;background:#0f1218;border:2px solid rgba(245,185,66,.85);color:#f5b942;font:inherit;font-size:9px;font-weight:700;cursor:pointer;z-index:2;display:inline-flex;align-items:center;justify-content:center}",
-  ".dsh-wt_vbarDot:hover{border-color:#fff}",
-  ".dsh-wt_vbarKnob{position:absolute;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none}",
+  ".dsh-wt_vbarFill{position:absolute;left:0;right:0;top:0;border-radius:999px;background:linear-gradient(180deg,#4f8ef7,#3b82f6);pointer-events:none}",
+  ".dsh-wt_vbarDot{position:absolute;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;padding:0;border:none;border-radius:50%;background:#4f8ef7;cursor:pointer;z-index:2}",
+  ".dsh-wt_vbarDot:hover{background:#9cc6ff}",
+  ".dsh-wt_vbarKnob{position:absolute;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none}",
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   ".dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}",
@@ -17506,7 +17506,7 @@ function ConsolePane() {
         ] }) }),
         openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop dsh-wt_dropCols", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_vbar", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarFill", style: { height: (cols - 1) / 4 * 100 + "%" } }),
-          [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarDot", style: { top: (v - 1) / 4 * 100 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v), children: v }, v)),
+          [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarDot", style: { top: (v - 1) / 4 * 100 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v) }, v)),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarKnob", style: { top: (cols - 1) / 4 * 100 + "%" } })
         ] }) })
       ] })

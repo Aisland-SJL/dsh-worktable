@@ -1192,7 +1192,7 @@ function ConsolePane() {
               <div className="dsh-wt_vbar">
                 <span className="dsh-wt_vbarFill" style={{ height: ((cols - 1) / 4 * 100) + '%' }} />
                 {[1, 2, 3, 4, 5].map((v) => (
-                  <button key={v} type="button" className="dsh-wt_vbarDot" style={{ top: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}>{v}</button>
+                  <button key={v} type="button" className="dsh-wt_vbarDot" style={{ top: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}></button>
                 ))}
                 <span className="dsh-wt_vbarKnob" style={{ top: ((cols - 1) / 4 * 100) + '%' }} />
               </div>
