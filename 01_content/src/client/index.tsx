@@ -1250,6 +1250,7 @@ function WorktableSection(props: any) {
     const stored = pr.projects.order.filter((id) => known.has(id))
     const ordered = [...stored, ...ids.filter((id) => !stored.includes(id))].filter((id) => id !== CONSOLE_ID)
     for (const id of ordered) {
+      if (pr.projects.hidden.includes(id)) continue
       const meta = pr.metas[id]
       const layout = pr.projects.layouts.find((l) => l.id === id)
       if (!meta && !layout) continue
