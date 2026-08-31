@@ -69,6 +69,8 @@ type ViewState = {
   consoleTheme?: 'dark' | 'light' | 'system'
   /** 控制室每行显示项目数（1-5，默认 3）*/
   consoleCols?: number
+  /** 控制室卡片形状：square/circle（默认 square）*/
+  consoleShape?: 'square' | 'circle'
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -295,6 +297,7 @@ function loadView(): ViewState {
       floatTop: typeof p.floatTop === 'number' ? p.floatTop : null,
       consoleTheme: p.consoleTheme === 'dark' || p.consoleTheme === 'light' || p.consoleTheme === 'system' ? p.consoleTheme : 'system',
       consoleCols: typeof p.consoleCols === 'number' && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
+      consoleShape: p.consoleShape === 'circle' ? 'circle' : 'square',
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -921,6 +924,8 @@ function buildMountContent(folder: string, d: any): any {
 
 /** 每会话最近一次观察到的「需要判断」布尔值：状态转移时清除旧 ack（新一轮待决重新点亮） */
 const notifyStateSeenRef: { current: Record<string, boolean> } = { current: {} }
+/** 每会话最近观察到的「已完成」布尔值：新一次完成时清除旧 done ack（控制室绿光重新点亮） */
+const doneSeenRef: { current: Record<string, boolean> } = { current: {} }
 /** 清除某会话的 ack 记录（状态转移时调用，保证新问题不会被旧确认压住） */
 function clearNotifyAck(sid: string) {
   try {
@@ -1196,6 +1201,11 @@ function WorktableSection(props: any) {
         if (Array.isArray(face?.pending) && face.pending.length > 0) return 'need'
       } catch {}
       if (e.completed === true) return 'done'
+      // 会话面兜底：宿主快照可能滞后或缺少完成字段
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
+        if (face && face.completed === true) return 'done'
+      } catch {}
       if (e.running === true) return 'busy'
       return 'idle'
     }
@@ -1328,6 +1338,8 @@ function WorktableSection(props: any) {
         setTheme: (th: 'dark' | 'light' | 'system') => persistView({ consoleTheme: th }),
         getCols: () => viewRef.current.consoleCols ?? 3,
         setCols: (n: number) => persistView({ consoleCols: n }),
+        getShape: () => viewRef.current.consoleShape ?? 'square',
+        setShape: (s: 'square' | 'circle') => persistView({ consoleShape: s }),
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
@@ -1837,11 +1849,15 @@ function buildCustomLayoutPrompt(req: string): string {
       const e = byId[sid]
       if (!e) continue
       if (e.completed === true) {
+        // 新一次完成 → 清除旧 done ack，控制室绿光重新点亮（即使旧完成已被确认过）
+        if (doneSeenRef.current[sid] !== true) clearNotifyAck(sid)
+        doneSeenRef.current[sid] = true
         if (!mountConsumedRef.current.has(sid)) {
           mountConsumedRef.current.add(sid)
           tryAutoMount(pid, sid)
         }
       } else {
+        doneSeenRef.current[sid] = false
         mountConsumedRef.current.delete(sid)
       }
     }

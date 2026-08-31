@@ -1017,6 +1017,7 @@ function ConsolePane() {
   const [, setTick] = useState(0)
   const [now, setNow] = useState(() => Date.now())
   const [cols, setColsState] = useState<number>(() => splitEnv?.console?.getCols?.() ?? 3)
+  const [shape, setShapeState] = useState<'square' | 'circle'>(() => splitEnv?.console?.getShape?.() ?? 'square')
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1032,6 +1033,10 @@ function ConsolePane() {
     }
     setColsState(n)
     splitEnv?.console?.setCols?.(n)
+  }
+  const onShape = (s: 'square' | 'circle') => {
+    setShapeState(s)
+    splitEnv?.console?.setShape?.(s)
   }
   useLayoutEffect(() => {
     const first = firstRectsRef.current
@@ -1108,8 +1113,16 @@ function ConsolePane() {
     { mode: 'system', icon: '🖥️', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme}>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape}>
       <div className="dsh-wt_consoleHead">
+        <div className="dsh-wt_consoleShape" role="group" aria-label={T('console.shapeLabel')}>
+          <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'square' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeSquare')} aria-label={T('console.shapeSquare')} onClick={() => onShape('square')}>
+            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="4" y="4" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+          </button>
+          <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'circle' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeCircle')} aria-label={T('console.shapeCircle')} onClick={() => onShape('circle')}>
+            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
+          </button>
+        </div>
         <div className="dsh-wt_consoleTheme" role="group" aria-label={T('console.themeLabel')}>
           {themeOpts.map((o) => (
             <button
