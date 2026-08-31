@@ -345,7 +345,7 @@ function findSidebar(start: HTMLElement | null): HTMLElement | null {
 const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], listeners: new Set() }
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
-let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
+let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any; uiWorkspace: any } | null = null
 
 /** 宿主 API 客户端（apply 时从 connection 服务取；agentPresets/sessions 用于修复新会话继承失效模型的 bug） */
 let hostApi: { agentPresets?: any; sessions?: any } | null = null
@@ -1305,7 +1305,7 @@ function WorktableSection(props: any) {
           } catch { return [] }
         },
         createWorkspace: (path: string) => sessionBridge?.workspaces?.create?.({ path }),
-        createWorkspaceDir: (parent: string, name: string) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
+        createWorkspaceDir: (parent: string, name: string) => sessionBridge?.uiWorkspace?.createDirectory?.(parent, name),
         // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
         autoBind: (sessionId: string): 'auto' | 'kept' | 'none' => {
           const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null
@@ -1701,7 +1701,7 @@ function buildCustomLayoutPrompt(req: string): string {
   /** 弹出系统文件夹选择窗（宿主 pickDirectory）；选中后回调 */
   const pickFolder = async (apply: (p: string) => void) => {
     try {
-      const ws = sessionBridge?.workspaces as any
+      const ws = sessionBridge?.uiWorkspace as any
       if (ws && typeof ws.pickDirectory === 'function') {
         const p = await ws.pickDirectory()
         if (p && typeof p === 'string') apply(p)
@@ -3042,7 +3042,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
-  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
+  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null, uiWorkspace: ctx.get('uiWorkspace') ?? null }
   try { hostApi = ctx.get?.('connection')?.api ?? null } catch { hostApi = null }
   try { (window as any).__dshHostApi = hostApi } catch {}
   try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText; (window as any).__dshSyncSessionScope = () => syncSessionScope(sessionBridge?.list) } catch {}

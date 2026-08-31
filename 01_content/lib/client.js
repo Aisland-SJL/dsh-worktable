@@ -19513,7 +19513,7 @@ function WorktableSection(props) {
           }
         },
         createWorkspace: (path) => sessionBridge?.workspaces?.create?.({ path }),
-        createWorkspaceDir: (parent, name) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
+        createWorkspaceDir: (parent, name) => sessionBridge?.uiWorkspace?.createDirectory?.(parent, name),
         // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
         autoBind: (sessionId) => {
           const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null;
@@ -19936,7 +19936,7 @@ function WorktableSection(props) {
   }, []);
   const pickFolder = async (apply2) => {
     try {
-      const ws = sessionBridge?.workspaces;
+      const ws = sessionBridge?.uiWorkspace;
       if (ws && typeof ws.pickDirectory === "function") {
         const p = await ws.pickDirectory();
         if (p && typeof p === "string") apply2(p);
@@ -21332,7 +21332,7 @@ function WorktableSection(props) {
 }
 var inject = ["slots", "locale", "sessions", "conversation", "workspaces"];
 function apply(ctx) {
-  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null };
+  sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null, uiWorkspace: ctx.get("uiWorkspace") ?? null };
   try {
     hostApi = ctx.get?.("connection")?.api ?? null;
   } catch {
