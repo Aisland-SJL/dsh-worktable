@@ -8178,6 +8178,10 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleShapeBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
   ".dsh-wt_consoleShapeBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleShapeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
+  ".dsh-wt_consoleBgBtns{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}",
+  ".dsh-wt_consoleBgBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
+  ".dsh-wt_consoleBgBtn:hover{opacity:1;background:var(--wt-chip)}",
+  ".dsh-wt_consoleBgBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleGrid{max-width:calc(var(--wt-cols,3)*268px + (var(--wt-cols,3) - 1)*64px)}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard{border-radius:50%;justify-content:center;align-items:center;padding:24px 24px 38px;gap:9px}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCardHead{width:100%;flex-direction:column;justify-content:center;gap:5px;text-align:center}",
@@ -8395,6 +8399,10 @@ var zh = {
   "console.cols": "\u6BCF\u884C",
   "console.colsLabel": "\u6BCF\u884C\u663E\u793A\u9879\u76EE\u6570",
   "console.shapeLabel": "\u5361\u7247\u5F62\u72B6",
+  "console.bgLabel": "\u80CC\u666F",
+  "console.bgPlain": "\u7EAF\u8272\u80CC\u666F",
+  "console.bgGlow": "\u6D41\u5149\u80CC\u666F",
+  "console.bgPhoto": "\u4E0A\u4F20\u7167\u7247",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
@@ -8573,6 +8581,10 @@ var en = {
   "console.cols": "Per row",
   "console.colsLabel": "Projects per row",
   "console.shapeLabel": "Card shape",
+  "console.bgLabel": "Background",
+  "console.bgPlain": "Plain",
+  "console.bgGlow": "Glow",
+  "console.bgPhoto": "Photo",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
@@ -17228,6 +17240,8 @@ function ConsolePane() {
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
   const [cols, setColsState] = (0, import_react.useState)(() => splitEnv?.console?.getCols?.() ?? 3);
   const [shape, setShapeState] = (0, import_react.useState)(() => splitEnv?.console?.getShape?.() ?? "square");
+  const [bg, setBgState] = (0, import_react.useState)(() => splitEnv?.console?.getBg?.() ?? "glow");
+  const [bgPhoto, setBgPhoto] = (0, import_react.useState)(() => splitEnv?.console?.getPhoto?.() ?? "");
   const gridRef = (0, import_react.useRef)(null);
   const firstRectsRef = (0, import_react.useRef)(null);
   const onCols = (n) => {
@@ -17247,6 +17261,45 @@ function ConsolePane() {
   const onShape = (s) => {
     setShapeState(s);
     splitEnv?.console?.setShape?.(s);
+  };
+  const onBg = (m) => {
+    if (m === "photo") {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1600;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          URL.revokeObjectURL(url);
+          setBgPhoto(dataUrl);
+          setBgState("photo");
+          splitEnv?.console?.setBg?.("photo");
+          splitEnv?.console?.setPhoto?.(dataUrl);
+        };
+        img.src = url;
+      };
+      input.click();
+      return;
+    }
+    setBgState(m);
+    splitEnv?.console?.setBg?.(m);
   };
   (0, import_react.useLayoutEffect)(() => {
     const first = firstRectsRef.current;
@@ -17350,13 +17403,25 @@ function ConsolePane() {
     { mode: "system", icon: "\u{1F5A5}\uFE0F", key: "console.themeSystem" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
-    ] }),
+    ] }) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleHead", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleBgBtns", role: "group", "aria-label": T("console.bgLabel"), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "plain" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgPlain"), "aria-label": T("console.bgPlain"), onClick: () => onBg("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "currentColor" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "glow" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgGlow"), "aria-label": T("console.bgGlow"), onClick: () => onBg("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "photo" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgPhoto"), "aria-label": T("console.bgPhoto"), onClick: () => onBg("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+        ] }) })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleShape", role: "group", "aria-label": T("console.shapeLabel"), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "square" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeSquare"), "aria-label": T("console.shapeSquare"), onClick: () => onShape("square"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "circle" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeCircle"), "aria-label": T("console.shapeCircle"), onClick: () => onShape("circle"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) })
@@ -18664,7 +18729,8 @@ function loadView() {
       floatTop: typeof p.floatTop === "number" ? p.floatTop : null,
       consoleTheme: p.consoleTheme === "dark" || p.consoleTheme === "light" || p.consoleTheme === "system" ? p.consoleTheme : "system",
       consoleCols: typeof p.consoleCols === "number" && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
-      consoleShape: p.consoleShape === "circle" ? "circle" : "square"
+      consoleShape: p.consoleShape === "circle" ? "circle" : "square",
+      consoleBg: p.consoleBg === "plain" || p.consoleBg === "photo" ? p.consoleBg : "glow"
     };
   } catch {
     return { ...DEFAULT_VIEW };
@@ -19662,6 +19728,21 @@ function WorktableSection(props) {
         setCols: (n) => persistView({ consoleCols: n }),
         getShape: () => viewRef.current.consoleShape ?? "square",
         setShape: (s) => persistView({ consoleShape: s }),
+        getBg: () => viewRef.current.consoleBg ?? "glow",
+        setBg: (m) => persistView({ consoleBg: m }),
+        getPhoto: () => {
+          try {
+            return localStorage.getItem("dsh.worktable.consoleBgPhoto.v1") ?? "";
+          } catch {
+            return "";
+          }
+        },
+        setPhoto: (dataUrl) => {
+          try {
+            localStorage.setItem("dsh.worktable.consoleBgPhoto.v1", dataUrl);
+          } catch {
+          }
+        },
         onAck: (id) => {
           ackRef.current?.(id);
           setNotifyTick((t2) => t2 + 1);

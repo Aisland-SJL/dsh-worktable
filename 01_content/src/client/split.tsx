@@ -1018,6 +1018,8 @@ function ConsolePane() {
   const [now, setNow] = useState(() => Date.now())
   const [cols, setColsState] = useState<number>(() => splitEnv?.console?.getCols?.() ?? 3)
   const [shape, setShapeState] = useState<'square' | 'circle'>(() => splitEnv?.console?.getShape?.() ?? 'square')
+  const [bg, setBgState] = useState<'plain' | 'glow' | 'photo'>(() => splitEnv?.console?.getBg?.() ?? 'glow')
+  const [bgPhoto, setBgPhoto] = useState<string>(() => splitEnv?.console?.getPhoto?.() ?? '')
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1037,6 +1039,42 @@ function ConsolePane() {
   const onShape = (s: 'square' | 'circle') => {
     setShapeState(s)
     splitEnv?.console?.setShape?.(s)
+  }
+  const onBg = (m: 'plain' | 'glow' | 'photo') => {
+    if (m === 'photo') {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) return
+        const url = URL.createObjectURL(file)
+        const img = new Image()
+        img.onload = () => {
+          const maxDim = 1600
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+          const w = Math.max(1, Math.round(img.width * scale))
+          const h = Math.max(1, Math.round(img.height * scale))
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          const ctx = canvas.getContext('2d')
+          if (!ctx) { URL.revokeObjectURL(url); return }
+          ctx.drawImage(img, 0, 0, w, h)
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+          URL.revokeObjectURL(url)
+          setBgPhoto(dataUrl)
+          setBgState('photo')
+          splitEnv?.console?.setBg?.('photo')
+          splitEnv?.console?.setPhoto?.(dataUrl)
+        }
+        img.src = url
+      }
+      input.click()
+      return
+    }
+    setBgState(m)
+    splitEnv?.console?.setBg?.(m)
   }
   useLayoutEffect(() => {
     const first = firstRectsRef.current
@@ -1114,8 +1152,13 @@ function ConsolePane() {
   ]
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape}>
-      <span className="dsh-wt_consoleBg" aria-hidden><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></span>
+      <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
       <div className="dsh-wt_consoleHead">
+        <div className="dsh-wt_consoleBgBtns" role="group" aria-label={T('console.bgLabel')}>
+          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'plain' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgPlain')} aria-label={T('console.bgPlain')} onClick={() => onBg('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg></button>
+          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'glow' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgGlow')} aria-label={T('console.bgGlow')} onClick={() => onBg('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg></button>
+          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'photo' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgPhoto')} aria-label={T('console.bgPhoto')} onClick={() => onBg('photo')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg></button>
+        </div>
         <div className="dsh-wt_consoleShape" role="group" aria-label={T('console.shapeLabel')}>
           <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'square' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeSquare')} aria-label={T('console.shapeSquare')} onClick={() => onShape('square')}>
             <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="4" y="4" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>

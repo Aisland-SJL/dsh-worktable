@@ -71,6 +71,8 @@ type ViewState = {
   consoleCols?: number
   /** 控制室卡片形状：square/circle（默认 square）*/
   consoleShape?: 'square' | 'circle'
+  /** 控制室背景：plain/glow/photo（默认 glow）*/
+  consoleBg?: 'plain' | 'glow' | 'photo'
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -298,6 +300,7 @@ function loadView(): ViewState {
       consoleTheme: p.consoleTheme === 'dark' || p.consoleTheme === 'light' || p.consoleTheme === 'system' ? p.consoleTheme : 'system',
       consoleCols: typeof p.consoleCols === 'number' && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
       consoleShape: p.consoleShape === 'circle' ? 'circle' : 'square',
+      consoleBg: p.consoleBg === 'plain' || p.consoleBg === 'photo' ? p.consoleBg : 'glow',
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -1340,6 +1343,10 @@ function WorktableSection(props: any) {
         setCols: (n: number) => persistView({ consoleCols: n }),
         getShape: () => viewRef.current.consoleShape ?? 'square',
         setShape: (s: 'square' | 'circle') => persistView({ consoleShape: s }),
+        getBg: () => viewRef.current.consoleBg ?? 'glow',
+        setBg: (m: 'plain' | 'glow' | 'photo') => persistView({ consoleBg: m }),
+        getPhoto: () => { try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' } },
+        setPhoto: (dataUrl: string) => { try { localStorage.setItem('dsh.worktable.consoleBgPhoto.v1', dataUrl) } catch {} },
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
