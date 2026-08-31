@@ -1114,6 +1114,7 @@ function ConsolePane() {
   ]
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape}>
+      <span className="dsh-wt_consoleBg" aria-hidden><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></span>
       <div className="dsh-wt_consoleHead">
         <div className="dsh-wt_consoleShape" role="group" aria-label={T('console.shapeLabel')}>
           <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'square' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeSquare')} aria-label={T('console.shapeSquare')} onClick={() => onShape('square')}>

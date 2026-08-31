@@ -8148,7 +8148,21 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_subSection{flex:none;padding:6px 8px 2px;font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683)}",
   // 控制室面板：项目卡片网格（每行 3 张、超出换行；DSH 简洁 + 苹果式卡片）。
   // 主题变量自带作用域：dark 缺省；data-wt-theme=light 换浅色；system 由面板读宿主 color-scheme 落成 dark/light。
-  ".dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:auto;padding:22px;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px;background-color:var(--wt-bg)}",
+  ".dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:auto;padding:22px;background-color:var(--wt-bg)}",
+  // 流光玻璃背景：30px 网格不变；网格下层是缓慢漂移的模糊彩光光晕
+  ".dsh-wt_consoleBg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}",
+  '.dsh-wt_consoleBg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px}',
+  ".dsh-wt_blob{position:absolute;width:56vmax;height:56vmax;border-radius:50%;filter:blur(64px);opacity:.45;mix-blend-mode:screen}",
+  ".dsh-wt_blob1{background:radial-gradient(circle,#ff5f9e,transparent 66%);top:-18%;left:-14%;animation:wtBlob1 13s ease-in-out infinite alternate}",
+  ".dsh-wt_blob2{background:radial-gradient(circle,#7a5cff,transparent 66%);top:4%;right:-20%;animation:wtBlob2 17s ease-in-out infinite alternate}",
+  ".dsh-wt_blob3{background:radial-gradient(circle,#00c2ff,transparent 66%);bottom:-22%;left:14%;animation:wtBlob3 11s ease-in-out infinite alternate}",
+  ".dsh-wt_blob4{background:radial-gradient(circle,#ff9a3d,transparent 66%);bottom:-8%;right:4%;animation:wtBlob4 15s ease-in-out infinite alternate}",
+  "@keyframes wtBlob1{from{transform:translate(0,0) scale(1)}to{transform:translate(14vw,10vh) scale(1.12)}}",
+  "@keyframes wtBlob2{from{transform:translate(0,0) scale(1)}to{transform:translate(-13vw,11vh) scale(1.1)}}",
+  "@keyframes wtBlob3{from{transform:translate(0,0) scale(1)}to{transform:translate(12vw,-8vh) scale(1.15)}}",
+  "@keyframes wtBlob4{from{transform:translate(0,0) scale(1)}to{transform:translate(-10vw,-10vh) scale(1.12)}}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_blob{opacity:.28}",
+  ".dsh-wt_consoleHead,.dsh-wt_consoleGrid{position:relative;z-index:1}",
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   ".dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}",
@@ -8160,6 +8174,21 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleThemeBtn{flex:none;padding:3px 9px;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);font:inherit;font-size:12px;line-height:18px;cursor:pointer;opacity:.85}",
   ".dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
+  ".dsh-wt_consoleShape{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}",
+  ".dsh-wt_consoleShapeBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
+  ".dsh-wt_consoleShapeBtn:hover{opacity:1;background:var(--wt-chip)}",
+  ".dsh-wt_consoleShapeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleGrid{max-width:calc(var(--wt-cols,3)*268px + (var(--wt-cols,3) - 1)*64px)}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard{border-radius:50%;justify-content:center;align-items:center;padding:24px 24px 38px;gap:9px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCardHead{width:100%;flex-direction:column;justify-content:center;gap:5px;text-align:center}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleIcon{font-size:27px;line-height:1}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleName{flex:none;max-width:88%;font-size:19px;font-weight:700;line-height:26px;text-align:center}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleDivider{width:56%;margin:2px auto}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleStatusRow{justify-content:center;gap:8px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleStatus{font-size:17px;line-height:24px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleRuntime{font-size:15px;line-height:21px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consolePreview{text-align:center;max-width:82%;margin:0 auto;-webkit-line-clamp:2;font-size:9px;line-height:13px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard-busy::before{border-radius:50%}",
   ".dsh-wt_consoleGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);width:100%;max-width:calc(var(--wt-cols,3)*242px + (var(--wt-cols,3) - 1)*64px);margin-left:auto;margin-right:auto}",
   ".dsh-wt_consoleCols{display:inline-flex;align-items:center;gap:8px;padding:2px 8px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card);color:var(--wt-text3);font-size:11px}",
   ".dsh-wt_consoleBar{position:relative;width:128px;height:20px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer;flex:none}",
@@ -8365,6 +8394,9 @@ var zh = {
   "console.themeLabel": "\u9762\u677F\u4E3B\u9898",
   "console.cols": "\u6BCF\u884C",
   "console.colsLabel": "\u6BCF\u884C\u663E\u793A\u9879\u76EE\u6570",
+  "console.shapeLabel": "\u5361\u7247\u5F62\u72B6",
+  "console.shapeSquare": "\u65B9\u5F62",
+  "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
   "console.themeLight": "\u767D\u8272",
   "console.themeSystem": "\u8DDF\u968F\u7CFB\u7EDF",
@@ -8540,6 +8572,9 @@ var en = {
   "console.themeLabel": "Panel theme",
   "console.cols": "Per row",
   "console.colsLabel": "Projects per row",
+  "console.shapeLabel": "Card shape",
+  "console.shapeSquare": "Square",
+  "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
   "console.themeLight": "Light",
   "console.themeSystem": "System",
@@ -17192,6 +17227,7 @@ function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
   const [cols, setColsState] = (0, import_react.useState)(() => splitEnv?.console?.getCols?.() ?? 3);
+  const [shape, setShapeState] = (0, import_react.useState)(() => splitEnv?.console?.getShape?.() ?? "square");
   const gridRef = (0, import_react.useRef)(null);
   const firstRectsRef = (0, import_react.useRef)(null);
   const onCols = (n) => {
@@ -17207,6 +17243,10 @@ function ConsolePane() {
     }
     setColsState(n);
     splitEnv?.console?.setCols?.(n);
+  };
+  const onShape = (s) => {
+    setShapeState(s);
+    splitEnv?.console?.setShape?.(s);
   };
   (0, import_react.useLayoutEffect)(() => {
     const first = firstRectsRef.current;
@@ -17309,8 +17349,18 @@ function ConsolePane() {
     { mode: "light", icon: "\u2600\uFE0F", key: "console.themeLight" },
     { mode: "system", icon: "\u{1F5A5}\uFE0F", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
+    ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleHead", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleShape", role: "group", "aria-label": T("console.shapeLabel"), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "square" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeSquare"), "aria-label": T("console.shapeSquare"), onClick: () => onShape("square"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "circle" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeCircle"), "aria-label": T("console.shapeCircle"), onClick: () => onShape("circle"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleTheme", role: "group", "aria-label": T("console.themeLabel"), children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         "button",
         {
@@ -18613,7 +18663,8 @@ function loadView() {
       dock: p.dock === "float" ? "float" : "footer",
       floatTop: typeof p.floatTop === "number" ? p.floatTop : null,
       consoleTheme: p.consoleTheme === "dark" || p.consoleTheme === "light" || p.consoleTheme === "system" ? p.consoleTheme : "system",
-      consoleCols: typeof p.consoleCols === "number" && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3
+      consoleCols: typeof p.consoleCols === "number" && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
+      consoleShape: p.consoleShape === "circle" ? "circle" : "square"
     };
   } catch {
     return { ...DEFAULT_VIEW };
@@ -19201,6 +19252,7 @@ function buildMountContent(folder, d) {
   return { kind: "iframe", url: "/api/worktable/site/" + encodeURIComponent(dir) + "/" + encodeURIComponent(name), title: name };
 }
 var notifyStateSeenRef = { current: {} };
+var doneSeenRef = { current: {} };
 function clearNotifyAck(sid) {
   try {
     const all = loadNotifyAck();
@@ -19469,6 +19521,11 @@ function WorktableSection(props) {
       } catch {
       }
       if (e.completed === true) return "done";
+      try {
+        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
+        if (face && face.completed === true) return "done";
+      } catch {
+      }
       if (e.running === true) return "busy";
       return "idle";
     };
@@ -19524,6 +19581,7 @@ function WorktableSection(props) {
     const stored = pr.projects.order.filter((id) => known.has(id));
     const ordered = [...stored, ...ids.filter((id) => !stored.includes(id))].filter((id) => id !== CONSOLE_ID);
     for (const id of ordered) {
+      if (pr.projects.hidden.includes(id)) continue;
       const meta = pr.metas[id];
       const layout = pr.projects.layouts.find((l) => l.id === id);
       if (!meta && !layout) continue;
@@ -19602,6 +19660,8 @@ function WorktableSection(props) {
         setTheme: (th) => persistView({ consoleTheme: th }),
         getCols: () => viewRef.current.consoleCols ?? 3,
         setCols: (n) => persistView({ consoleCols: n }),
+        getShape: () => viewRef.current.consoleShape ?? "square",
+        setShape: (s) => persistView({ consoleShape: s }),
         onAck: (id) => {
           ackRef.current?.(id);
           setNotifyTick((t2) => t2 + 1);
@@ -20134,11 +20194,14 @@ function WorktableSection(props) {
       const e = byId[sid];
       if (!e) continue;
       if (e.completed === true) {
+        if (doneSeenRef.current[sid] !== true) clearNotifyAck(sid);
+        doneSeenRef.current[sid] = true;
         if (!mountConsumedRef.current.has(sid)) {
           mountConsumedRef.current.add(sid);
           tryAutoMount(pid, sid);
         }
       } else {
+        doneSeenRef.current[sid] = false;
         mountConsumedRef.current.delete(sid);
       }
     }

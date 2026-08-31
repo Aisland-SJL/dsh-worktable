@@ -396,7 +396,21 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_subSection{flex:none;padding:6px 8px 2px;font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683)}',
   // 控制室面板：项目卡片网格（每行 3 张、超出换行；DSH 简洁 + 苹果式卡片）。
   // 主题变量自带作用域：dark 缺省；data-wt-theme=light 换浅色；system 由面板读宿主 color-scheme 落成 dark/light。
-  '.dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:auto;padding:22px;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px;background-color:var(--wt-bg)}',
+  '.dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:auto;padding:22px;background-color:var(--wt-bg)}',
+  // 流光玻璃背景：30px 网格不变；网格下层是缓慢漂移的模糊彩光光晕
+  '.dsh-wt_consoleBg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}',
+  '.dsh-wt_consoleBg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px}',
+  '.dsh-wt_blob{position:absolute;width:56vmax;height:56vmax;border-radius:50%;filter:blur(64px);opacity:.45;mix-blend-mode:screen}',
+  '.dsh-wt_blob1{background:radial-gradient(circle,#ff5f9e,transparent 66%);top:-18%;left:-14%;animation:wtBlob1 13s ease-in-out infinite alternate}',
+  '.dsh-wt_blob2{background:radial-gradient(circle,#7a5cff,transparent 66%);top:4%;right:-20%;animation:wtBlob2 17s ease-in-out infinite alternate}',
+  '.dsh-wt_blob3{background:radial-gradient(circle,#00c2ff,transparent 66%);bottom:-22%;left:14%;animation:wtBlob3 11s ease-in-out infinite alternate}',
+  '.dsh-wt_blob4{background:radial-gradient(circle,#ff9a3d,transparent 66%);bottom:-8%;right:4%;animation:wtBlob4 15s ease-in-out infinite alternate}',
+  '@keyframes wtBlob1{from{transform:translate(0,0) scale(1)}to{transform:translate(14vw,10vh) scale(1.12)}}',
+  '@keyframes wtBlob2{from{transform:translate(0,0) scale(1)}to{transform:translate(-13vw,11vh) scale(1.1)}}',
+  '@keyframes wtBlob3{from{transform:translate(0,0) scale(1)}to{transform:translate(12vw,-8vh) scale(1.15)}}',
+  '@keyframes wtBlob4{from{transform:translate(0,0) scale(1)}to{transform:translate(-10vw,-10vh) scale(1.12)}}',
+  '.dsh-wt_console[data-wt-theme=light] .dsh-wt_blob{opacity:.28}',
+  '.dsh-wt_consoleHead,.dsh-wt_consoleGrid{position:relative;z-index:1}',
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   '.dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}',
   '.dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}',
