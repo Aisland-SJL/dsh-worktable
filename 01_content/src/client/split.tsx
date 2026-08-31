@@ -1020,6 +1020,7 @@ function ConsolePane() {
   const [shape, setShapeState] = useState<'square' | 'circle'>(() => splitEnv?.console?.getShape?.() ?? 'square')
   const [bg, setBgState] = useState<'plain' | 'glow' | 'photo'>(() => splitEnv?.console?.getBg?.() ?? 'glow')
   const [bgPhoto, setBgPhoto] = useState<string>(() => splitEnv?.console?.getPhoto?.() ?? '')
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1153,46 +1154,50 @@ function ConsolePane() {
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
+      {openMenu !== null && <div className="dsh-wt_dropMask" onClick={() => setOpenMenu(null)} />}
       <div className="dsh-wt_consoleHead">
-        <div className="dsh-wt_consoleBgBtns" role="group" aria-label={T('console.bgLabel')}>
-          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'plain' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgPlain')} aria-label={T('console.bgPlain')} onClick={() => onBg('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg></button>
-          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'glow' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgGlow')} aria-label={T('console.bgGlow')} onClick={() => onBg('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg></button>
-          <button type="button" className={'dsh-wt_consoleBgBtn' + (bg === 'photo' ? ' dsh-wt_consoleBgBtnOn' : '')} title={T('console.bgPhoto')} aria-label={T('console.bgPhoto')} onClick={() => onBg('photo')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg></button>
+        <div className="dsh-wt_consoleCtlWrap">
+          <button type="button" className={'dsh-wt_consoleCtl' + (openMenu === 'theme' ? ' dsh-wt_consoleCtlOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="currentColor" /></svg></button>
+          {openMenu === 'theme' && (
+            <div className="dsh-wt_drop dsh-wt_dropTheme">
+              {themeOpts.map((o) => (
+                <button key={o.mode} type="button" className={'dsh-wt_dropItem' + (themeMode === o.mode ? ' dsh-wt_dropItemOn' : '')} onClick={() => { setTheme(o.mode); setOpenMenu(null) }}>{T(o.key)}</button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="dsh-wt_consoleShape" role="group" aria-label={T('console.shapeLabel')}>
-          <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'square' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeSquare')} aria-label={T('console.shapeSquare')} onClick={() => onShape('square')}>
-            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><rect x="4" y="4" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-          </button>
-          <button type="button" className={'dsh-wt_consoleShapeBtn' + (shape === 'circle' ? ' dsh-wt_consoleShapeBtnOn' : '')} title={T('console.shapeCircle')} aria-label={T('console.shapeCircle')} onClick={() => onShape('circle')}>
-            <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>
-          </button>
+        <div className="dsh-wt_consoleCtlWrap">
+          <button type="button" className={'dsh-wt_consoleCtl' + (openMenu === 'shape' ? ' dsh-wt_consoleCtlOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg></button>
+          {openMenu === 'shape' && (
+            <div className="dsh-wt_drop dsh-wt_dropShape">
+              <button type="button" className={'dsh-wt_dropItem' + (shape === 'square' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onShape('square'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="4" y="4" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>{T('console.shapeSquare')}</button>
+              <button type="button" className={'dsh-wt_dropItem' + (shape === 'circle' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onShape('circle'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>{T('console.shapeCircle')}</button>
+            </div>
+          )}
         </div>
-        <div className="dsh-wt_consoleTheme" role="group" aria-label={T('console.themeLabel')}>
-          {themeOpts.map((o) => (
-            <button
-              key={o.mode}
-              type="button"
-              className={'dsh-wt_consoleThemeBtn' + (themeMode === o.mode ? ' dsh-wt_consoleThemeBtnOn' : '')}
-              title={T(o.key)}
-              aria-label={T(o.key)}
-              onClick={() => setTheme(o.mode)}
-            ><span aria-hidden>{o.icon}</span></button>
-          ))}
+        <div className="dsh-wt_consoleCtlWrap">
+          <button type="button" className={'dsh-wt_consoleCtl' + (openMenu === 'bg' ? ' dsh-wt_consoleCtlOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => setOpenMenu(openMenu === 'bg' ? null : 'bg')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="5.8" cy="6.5" r="1.3" fill="currentColor" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg></button>
+          {openMenu === 'bg' && (
+            <div className="dsh-wt_drop dsh-wt_dropBg">
+              <button type="button" className={'dsh-wt_dropItem' + (bg === 'plain' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('plain'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg>{T('console.bgPlain')}</button>
+              <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('glow'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
+              <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+            </div>
+          )}
         </div>
-        <div className="dsh-wt_consoleCols" role="group" aria-label={T('console.colsLabel')}>
-          <span>{T('console.cols')}</span>
-          <div className="dsh-wt_consoleBar" onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect()
-            const t = (e.clientX - r.left) / r.width
-            const v = Math.round(t * 4) + 1
-            onCols(Math.max(1, Math.min(5, v)))
-          }}>
-            <span className="dsh-wt_consoleBarFill" style={{ width: ((cols - 1) / 4 * 100) + '%' }} />
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button key={v} type="button" className="dsh-wt_consoleBarDot" style={{ left: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={(e) => { e.stopPropagation(); onCols(v) }} />
-            ))}
-            <span className="dsh-wt_consoleBarKnob" style={{ left: ((cols - 1) / 4 * 100) + '%' }} />
-          </div>
+        <div className="dsh-wt_consoleCtlWrap">
+          <button type="button" className={'dsh-wt_consoleCtl' + (openMenu === 'cols' ? ' dsh-wt_consoleCtlOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /><rect x="6.4" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /><rect x="10.8" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /></svg></button>
+          {openMenu === 'cols' && (
+            <div className="dsh-wt_drop dsh-wt_dropCols">
+              <div className="dsh-wt_vbar">
+                <span className="dsh-wt_vbarFill" style={{ height: ((cols - 1) / 4 * 100) + '%' }} />
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <button key={v} type="button" className="dsh-wt_vbarDot" style={{ top: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}>{v}</button>
+                ))}
+                <span className="dsh-wt_vbarKnob" style={{ top: ((cols - 1) / 4 * 100) + '%' }} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>

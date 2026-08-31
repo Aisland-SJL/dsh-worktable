@@ -8163,6 +8163,26 @@ var css = xterm_default + "\n" + [
   "@keyframes wtBlob4{from{transform:translate(0,0) scale(1)}to{transform:translate(-10vw,-10vh) scale(1.12)}}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_blob{opacity:.28}",
   ".dsh-wt_consoleHead,.dsh-wt_consoleGrid{position:relative;z-index:1}",
+  // 顶部 4 个圆形控制按钮 + 彩色下拉菜单
+  ".dsh-wt_consoleHead{position:relative;z-index:10}",
+  ".dsh-wt_consoleCtlWrap{position:relative;display:inline-flex}",
+  ".dsh-wt_consoleCtl{width:32px;height:32px;padding:0;border:1.5px solid rgba(255,255,255,.72);border-radius:9px;background:rgba(255,255,255,.04);color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:border-color .15s ease,background .15s ease}",
+  ".dsh-wt_consoleCtl:hover{border-color:rgba(255,255,255,.95);background:rgba(255,255,255,.09)}",
+  ".dsh-wt_consoleCtlOn{border-color:#fff;background:rgba(255,255,255,.14);box-shadow:0 0 10px rgba(255,255,255,.15)}",
+  ".dsh-wt_dropMask{position:fixed;inset:0;z-index:9;background:transparent;border:none}",
+  ".dsh-wt_drop{position:absolute;top:calc(100% + 6px);right:0;min-width:124px;padding:5px;border-radius:10px;background:#171c25;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:11;display:flex;flex-direction:column;gap:2px}",
+  ".dsh-wt_dropTheme{border:1px solid rgba(34,197,94,.65);box-shadow:0 0 14px rgba(34,197,94,.15),0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropShape{border:1px solid rgba(245,158,11,.65);box-shadow:0 0 14px rgba(245,158,11,.15),0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropBg{border:1px solid rgba(239,68,68,.65);box-shadow:0 0 14px rgba(239,68,68,.15),0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropCols{border:1px solid rgba(245,185,66,.65);box-shadow:0 0 14px rgba(245,185,66,.15),0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_dropItem{width:100%;padding:6px 9px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;display:flex;align-items:center;gap:7px;text-align:left}",
+  ".dsh-wt_dropItem:hover{background:var(--wt-chip);color:var(--wt-text)}",
+  ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
+  ".dsh-wt_vbar{position:relative;width:26px;height:112px;margin:6px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
+  ".dsh-wt_vbarFill{position:absolute;left:0;right:0;top:0;border-radius:999px;background:linear-gradient(180deg,#fcd34d,#f5b942);pointer-events:none}",
+  ".dsh-wt_vbarDot{position:absolute;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;padding:0;border-radius:50%;background:#0f1218;border:2px solid rgba(245,185,66,.85);color:#f5b942;font:inherit;font-size:9px;font-weight:700;cursor:pointer;z-index:2;display:inline-flex;align-items:center;justify-content:center}",
+  ".dsh-wt_vbarDot:hover{border-color:#fff}",
+  ".dsh-wt_vbarKnob{position:absolute;left:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none}",
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   ".dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}",
@@ -17242,6 +17262,7 @@ function ConsolePane() {
   const [shape, setShapeState] = (0, import_react.useState)(() => splitEnv?.console?.getShape?.() ?? "square");
   const [bg, setBgState] = (0, import_react.useState)(() => splitEnv?.console?.getBg?.() ?? "glow");
   const [bgPhoto, setBgPhoto] = (0, import_react.useState)(() => splitEnv?.console?.getPhoto?.() ?? "");
+  const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const gridRef = (0, import_react.useRef)(null);
   const firstRectsRef = (0, import_react.useRef)(null);
   const onCols = (n) => {
@@ -17409,50 +17430,85 @@ function ConsolePane() {
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
     ] }) }),
+    openMenu !== null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropMask", onClick: () => setOpenMenu(null) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleHead", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleBgBtns", role: "group", "aria-label": T("console.bgLabel"), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "plain" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgPlain"), "aria-label": T("console.bgPlain"), onClick: () => onBg("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "currentColor" }) }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "glow" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgGlow"), "aria-label": T("console.bgGlow"), onClick: () => onBg("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "theme" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z", fill: "currentColor" }) }) }),
+        openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop dsh-wt_dropTheme", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          setTheme(o.mode);
+          setOpenMenu(null);
+        }, children: T(o.key) }, o.mode)) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "shape" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.shapeLabel"), "aria-label": T("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "2.2", width: "7", height: "7", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.6", cy: "10.6", r: "3.8", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBgBtn" + (bg === "photo" ? " dsh-wt_consoleBgBtnOn" : ""), title: T("console.bgPhoto"), "aria-label": T("console.bgPhoto"), onClick: () => onBg("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
-        ] }) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleShape", role: "group", "aria-label": T("console.shapeLabel"), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "square" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeSquare"), "aria-label": T("console.shapeSquare"), onClick: () => onShape("square"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleShapeBtn" + (shape === "circle" ? " dsh-wt_consoleShapeBtnOn" : ""), title: T("console.shapeCircle"), "aria-label": T("console.shapeCircle"), onClick: () => onShape("circle"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleTheme", role: "group", "aria-label": T("console.themeLabel"), children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-        "button",
-        {
-          type: "button",
-          className: "dsh-wt_consoleThemeBtn" + (themeMode === o.mode ? " dsh-wt_consoleThemeBtnOn" : ""),
-          title: T(o.key),
-          "aria-label": T(o.key),
-          onClick: () => setTheme(o.mode),
-          children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: o.icon })
-        },
-        o.mode
-      )) }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCols", role: "group", "aria-label": T("console.colsLabel"), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: T("console.cols") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleBar", onClick: (e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          const t = (e.clientX - r.left) / r.width;
-          const v = Math.round(t * 4) + 1;
-          onCols(Math.max(1, Math.min(5, v)));
-        }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBarFill", style: { width: (cols - 1) / 4 * 100 + "%" } }),
-          [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleBarDot", style: { left: (v - 1) / 4 * 100 + "%" }, "aria-label": String(v), title: String(v), onClick: (e) => {
-            e.stopPropagation();
-            onCols(v);
-          } }, v)),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBarKnob", style: { left: (cols - 1) / 4 * 100 + "%" } })
+        openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop dsh-wt_dropShape", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onShape("square");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
+            T("console.shapeSquare")
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onShape("circle");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
+            T("console.shapeCircle")
+          ] })
         ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "bg" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.bgLabel"), "aria-label": T("console.bgLabel"), onClick: () => setOpenMenu(openMenu === "bg" ? null : "bg"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.2", width: "11.6", height: "9.6", rx: "1.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.5", r: "1.3", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
+        ] }) }),
+        openMenu === "bg" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop dsh-wt_dropBg", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onBg("plain");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "currentColor" }) }),
+            T("console.bgPlain")
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onBg("glow");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
+            ] }),
+            T("console.bgGlow")
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onBg("photo");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+            ] }),
+            T("console.bgPhoto")
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "cols" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.colsLabel"), "aria-label": T("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.4", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "10.8", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" })
+        ] }) }),
+        openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop dsh-wt_dropCols", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_vbar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarFill", style: { height: (cols - 1) / 4 * 100 + "%" } }),
+          [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarDot", style: { top: (v - 1) / 4 * 100 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v), children: v }, v)),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarKnob", style: { top: (cols - 1) / 4 * 100 + "%" } })
+        ] }) })
       ] })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
