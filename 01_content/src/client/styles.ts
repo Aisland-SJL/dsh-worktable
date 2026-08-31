@@ -428,7 +428,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}',
   '.dsh-wt_vbar{position:relative;width:26px;height:130px;margin:6px auto;border-radius:999px;background:rgba(255,255,255,.08)}',
   '.dsh-wt_vbarFill{position:absolute;left:3px;right:3px;top:0;border-radius:999px;background:linear-gradient(180deg,#4f8ef7,#3b82f6);pointer-events:none}',
-  '.dsh-wt_vbarLine{position:absolute;left:50%;transform:translate(-50%,-50%);width:13px;height:2px;padding:0;border:none;border-radius:1px;background:rgba(255,255,255,.95);cursor:pointer;z-index:2}',
+  '.dsh-wt_vbarLine{position:absolute;left:50%;transform:translate(-50%,-50%);width:10px;height:1px;padding:0;border:none;border-radius:1px;background:rgba(255,255,255,.95);cursor:pointer;z-index:2}',
   '.dsh-wt_vbarLine:hover{background:#fff}',
   '.dsh-wt_vbarKnob{position:absolute;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none}',
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
