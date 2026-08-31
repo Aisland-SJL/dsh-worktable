@@ -1190,11 +1190,11 @@ function ConsolePane() {
           {openMenu === 'cols' && (
             <div className="dsh-wt_drop dsh-wt_dropCols">
               <div className="dsh-wt_vbar">
-                <span className="dsh-wt_vbarFill" style={{ height: ((cols - 1) / 4 * 100) + '%' }} />
+                <span className="dsh-wt_vbarFill" style={{ height: (8 + (cols - 1) * 21) + '%' }} />
                 {[1, 2, 3, 4, 5].map((v) => (
-                  <button key={v} type="button" className="dsh-wt_vbarDot" style={{ top: ((v - 1) / 4 * 100) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}></button>
+                  <button key={v} type="button" className="dsh-wt_vbarLine" style={{ top: (8 + (v - 1) * 21) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}></button>
                 ))}
-                <span className="dsh-wt_vbarKnob" style={{ top: ((cols - 1) / 4 * 100) + '%' }} />
+                <span className="dsh-wt_vbarKnob" style={{ top: (8 + (cols - 1) * 21) + '%' }} />
               </div>
             </div>
           )}
