@@ -6,7 +6,10 @@ const STORE = 'photoRecords'
 const LEGACY_STORE = 'consoleBgPhoto'
 const LEGACY_KEY = 'original'
 
-export type PhotoRecord = { id: string; createdAt: number; blob: Blob }
+export type MediaKind = 'photo' | 'video'
+export type PhotoRecord = { id: string; createdAt: number; kind: MediaKind; blob: Blob }
+
+export const kindOf = (blob: Blob): MediaKind => (blob.type && blob.type.indexOf('video/') === 0 ? 'video' : 'photo')
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -29,7 +32,7 @@ function getAll(db: IDBDatabase): Promise<PhotoRecord[]> {
       for (const v of req.result as unknown[]) {
         const r = v as PhotoRecord | null
         if (r && typeof r === 'object' && typeof (r as any).id === 'string' && (r as any).blob instanceof Blob) {
-          arr.push(r)
+          arr.push({ id: r.id, createdAt: r.createdAt, kind: kindOf(r.blob), blob: r.blob })
         }
       }
       arr.sort((a, b) => b.createdAt - a.createdAt)
@@ -56,7 +59,7 @@ export const photoStore = {
           req.onerror = () => reject(req.error)
         })
         if (blob) {
-          const rec: PhotoRecord = { id: 'legacy', createdAt: Date.now(), blob }
+          const rec: PhotoRecord = { id: 'legacy', createdAt: Date.now(), kind: kindOf(blob), blob }
           await new Promise<void>((resolve, reject) => {
             const tx = db.transaction(STORE, 'readwrite')
             tx.objectStore(STORE).put(rec, rec.id)
@@ -71,11 +74,11 @@ export const photoStore = {
     db.close()
     return []
   },
-  /** 新增一张原始照片，返回其 id（自动成为最新） */
+  /** 新增一条媒体（照片/视频），返回其 id（自动成为最新） */
   async add(blob: Blob): Promise<string> {
     const db = await openDb()
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
-    const rec: PhotoRecord = { id, createdAt: Date.now(), blob }
+    const rec: PhotoRecord = { id, createdAt: Date.now(), kind: kindOf(blob), blob }
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite')
       tx.objectStore(STORE).put(rec, rec.id)

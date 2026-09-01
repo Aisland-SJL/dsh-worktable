@@ -8193,7 +8193,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
   ".dsh-wt_switchOn .dsh-wt_switchKnob{left:15px}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_switch{background:rgba(27,31,36,.15)}",
-  ".dsh-wt_console[data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
+  ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.16) 1px,transparent 1px);background-size:30px 30px}",
+  ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
   ".dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}",
   ".dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}",
   ".dsh-wt_hslBack:hover{background:var(--wt-chip);color:var(--wt-text)}",
@@ -8201,7 +8202,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_hslRow{display:flex;align-items:center;gap:4px;padding:2px 3px;width:100%;box-sizing:border-box}",
   ".dsh-wt_hslLabel{flex:none;width:10px;font-size:9px;font-weight:600;color:var(--wt-text3);text-align:center}",
   ".dsh-wt_hslSlider{flex:1;min-width:0;height:14px;accent-color:#4f8ef7;cursor:pointer}",
-  ".dsh-wt_hslInput{flex:none;width:36px;height:20px;padding:0 4px;border:1px solid var(--wt-border);border-radius:6px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:10px;text-align:right;outline:none;box-sizing:border-box;font-variant-numeric:tabular-nums}",
+  ".dsh-wt_hslInput{flex:none;width:42px;height:20px;padding:0 4px;border:1px solid var(--wt-border);border-radius:6px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:10px;text-align:right;outline:none;box-sizing:border-box;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}",
+  ".dsh-wt_hslInput::-webkit-outer-spin-button,.dsh-wt_hslInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}",
   ".dsh-wt_hslInput:focus{border-color:#4f8ef7;color:var(--wt-text)}",
   ".dsh-wt_hslReset{margin:4px 4px 2px;padding:5px 9px;border:none;border-radius:7px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;text-align:center}",
   ".dsh-wt_hslReset:hover{background:rgba(79,142,247,.22);color:var(--wt-text)}",
@@ -8212,6 +8214,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_photoName{flex:1;min-width:0;font-size:11px;line-height:16px;color:var(--wt-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
   ".dsh-wt_photoEmpty{padding:4px 4px 2px;font-size:11px;line-height:16px;color:var(--wt-text3)}",
   ".dsh-wt_hslDivider{height:1px;margin:5px 4px;background:var(--wt-border);opacity:.5}",
+  ".dsh-wt_consoleVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}",
+  ".dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 4px;box-sizing:border-box}",
+  ".dsh-wt_photoThumb video,.dsh-wt_photoThumb{display:block}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
   ".dsh-wt_hbar{position:relative;width:130px;height:26px;margin:4px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
   ".dsh-wt_hbarFill{position:absolute;top:3px;bottom:3px;left:0;border-radius:999px;background:linear-gradient(90deg,#4f8ef7,#3b82f6);pointer-events:none;transition:width .25s cubic-bezier(.22,.61,.36,1)}",
@@ -8453,7 +8458,7 @@ var zh = {
   "console.bgLabel": "\u80CC\u666F",
   "console.bgPlain": "\u7EAF\u8272\u80CC\u666F",
   "console.bgGlow": "\u6D41\u5149\u80CC\u666F",
-  "console.bgPhoto": "\u4E0A\u4F20\u7167\u7247",
+  "console.bgPhoto": "\u4E0A\u4F20\u5A92\u4F53",
   "console.bgEdit": "\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditPlain": "\u7EAF\u8272\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditGlow": "\u6D41\u5149\u80CC\u666F\u8BBE\u7F6E",
@@ -8647,7 +8652,7 @@ var en = {
   "console.bgLabel": "Background",
   "console.bgPlain": "Plain",
   "console.bgGlow": "Glow",
-  "console.bgPhoto": "Photo",
+  "console.bgPhoto": "Upload media",
   "console.bgEdit": "Background settings",
   "console.bgEditPlain": "Plain background",
   "console.bgEditGlow": "Glow background",
@@ -17379,6 +17384,7 @@ function ConsolePane() {
   const [bgPhoto, setBgPhoto] = (0, import_react.useState)("");
   const [photoId, setPhotoIdLocal] = (0, import_react.useState)("");
   const [photoList, setPhotoList] = (0, import_react.useState)([]);
+  const [bgVideo, setBgVideo] = (0, import_react.useState)("");
   const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
@@ -17409,7 +17415,7 @@ function ConsolePane() {
   const pickPhotoFile = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = "image/*";
+    input.accept = "image/*,video/*";
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return;
@@ -17420,17 +17426,25 @@ function ConsolePane() {
   const onFilePhoto = async (file) => {
     let id = "";
     let url = "";
+    let kind = file.type && file.type.indexOf("video/") === 0 ? "video" : "photo";
     const rec = await (splitEnv?.console?.addPhoto?.(file) ?? Promise.resolve(null)).catch(() => null);
     if (rec) {
       id = rec.id;
       url = rec.url;
+      kind = rec.kind;
     } else {
       url = URL.createObjectURL(file);
     }
     photoUrlRef.current = url;
     setPhotoIdLocal(id);
-    if (id) setPhotoList((prev) => [{ id, url }, ...prev]);
-    setBgPhoto(url);
+    if (id) setPhotoList((prev) => [{ id, kind, url }, ...prev]);
+    if (kind === "video") {
+      setBgPhoto("");
+      setBgVideo(url);
+    } else {
+      setBgVideo("");
+      setBgPhoto(url);
+    }
     setBgState("photo");
     splitEnv?.console?.setBg?.("photo");
   };
@@ -17451,13 +17465,15 @@ function ConsolePane() {
         setPhotoIdLocal(next.id);
         splitEnv?.console?.setPhotoId?.(next.id);
         photoUrlRef.current = next.url;
-        setBgPhoto(next.url);
+        setBgVideo(next.kind === "video" ? next.url : "");
+        setBgPhoto(next.kind === "video" ? "" : next.url);
         setBgState("photo");
         splitEnv?.console?.setBg?.("photo");
       } else {
         setPhotoIdLocal("");
         photoUrlRef.current = "";
         setBgPhoto("");
+        setBgVideo("");
         setBgState("glow");
         splitEnv?.console?.setBg?.("glow");
       }
@@ -17472,7 +17488,13 @@ function ConsolePane() {
     setPhotoIdLocal(p.id);
     splitEnv?.console?.setPhotoId?.(p.id);
     photoUrlRef.current = p.url;
-    setBgPhoto(p.url);
+    if (p.kind === "video") {
+      setBgPhoto("");
+      setBgVideo(p.url);
+    } else {
+      setBgVideo("");
+      setBgPhoto(p.url);
+    }
     setBgState("photo");
     splitEnv?.console?.setBg?.("photo");
   };
@@ -17587,7 +17609,8 @@ function ConsolePane() {
       if (active) {
         setPhotoIdLocal(active.id);
         photoUrlRef.current = active.url;
-        setBgPhoto(active.url);
+        setBgVideo(active.kind === "video" ? active.url : "");
+        setBgPhoto(active.kind === "video" ? "" : active.url);
       }
     }).catch(() => {
     });
@@ -17641,13 +17664,16 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
-    ] }) }),
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
+      bg === "photo" && bgVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_consoleVid", src: bgVideo, autoPlay: true, muted: true, loop: true, playsInline: true, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }),
+      bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
+      ] })
+    ] }),
     openMenu !== null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropMask", onClick: () => setOpenMenu(null) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
@@ -17780,20 +17806,22 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T("console.bgEditPlain") : bgEdit === "glow" ? T("console.bgEditGlow") : T("console.bgEditPhoto") })
         ] }),
         bgEdit === "photo" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem", onClick: pickPhotoFile, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
-            ] }),
-            T("console.bgPhoto")
-          ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem", onClick: pickPhotoFile, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+              ] }),
+              T("console.bgPhoto")
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_gridHalf", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+            ] })
           ] }),
           photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
+            p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_photoThumb", src: p.url, muted: true, playsInline: true, preload: "metadata" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T("console.bgPhotoDelete"), "aria-label": T("console.bgPhotoDelete"), onClick: (e) => {
               e.stopPropagation();
@@ -18851,6 +18879,7 @@ var DB_NAME = "dsh-worktable";
 var STORE = "photoRecords";
 var LEGACY_STORE = "consoleBgPhoto";
 var LEGACY_KEY = "original";
+var kindOf = (blob) => blob.type && blob.type.indexOf("video/") === 0 ? "video" : "photo";
 function openDb() {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 2);
@@ -18871,7 +18900,7 @@ function getAll(db) {
       for (const v of req.result) {
         const r = v;
         if (r && typeof r === "object" && typeof r.id === "string" && r.blob instanceof Blob) {
-          arr.push(r);
+          arr.push({ id: r.id, createdAt: r.createdAt, kind: kindOf(r.blob), blob: r.blob });
         }
       }
       arr.sort((a, b) => b.createdAt - a.createdAt);
@@ -18899,7 +18928,7 @@ var photoStore = {
           req.onerror = () => reject(req.error);
         });
         if (blob) {
-          const rec = { id: "legacy", createdAt: Date.now(), blob };
+          const rec = { id: "legacy", createdAt: Date.now(), kind: kindOf(blob), blob };
           await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE, "readwrite");
             tx.objectStore(STORE).put(rec, rec.id);
@@ -18915,11 +18944,11 @@ var photoStore = {
     db.close();
     return [];
   },
-  /** 新增一张原始照片，返回其 id（自动成为最新） */
+  /** 新增一条媒体（照片/视频），返回其 id（自动成为最新） */
   async add(blob) {
     const db = await openDb();
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-    const rec = { id, createdAt: Date.now(), blob };
+    const rec = { id, createdAt: Date.now(), kind: kindOf(blob), blob };
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       tx.objectStore(STORE).put(rec, rec.id);
@@ -20202,7 +20231,7 @@ function WorktableSection(props) {
           const stored = viewRef.current.consoleBgPhotoId ?? null;
           const activeId = stored && records.some((r) => r.id === stored) ? stored : null;
           return {
-            list: records.map((r) => ({ id: r.id, url: URL.createObjectURL(r.blob) })),
+            list: records.map((r) => ({ id: r.id, kind: r.kind, url: URL.createObjectURL(r.blob) })),
             activeId
           };
         },
@@ -20213,7 +20242,7 @@ function WorktableSection(props) {
             localStorage.removeItem("dsh.worktable.consoleBgPhoto.v1");
           } catch {
           }
-          return { id, url: URL.createObjectURL(blob) };
+          return { id, kind: kindOf(blob), url: URL.createObjectURL(blob) };
         },
         setPhotoId: (id) => persistView({ consoleBgPhotoId: id }),
         removePhoto: async (id) => {

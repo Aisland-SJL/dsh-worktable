@@ -3,7 +3,7 @@ import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
-import { photoStore } from './photoStore'
+import { photoStore, kindOf } from './photoStore'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -1386,7 +1386,7 @@ function WorktableSection(props: any) {
           const stored = viewRef.current.consoleBgPhotoId ?? null
           const activeId = stored && records.some((r) => r.id === stored) ? stored : null
           return {
-            list: records.map((r) => ({ id: r.id, url: URL.createObjectURL(r.blob) })),
+            list: records.map((r) => ({ id: r.id, kind: r.kind, url: URL.createObjectURL(r.blob) })),
             activeId,
           }
         },
@@ -1394,7 +1394,7 @@ function WorktableSection(props: any) {
           const id = await photoStore.add(blob)
           persistView({ consoleBgPhotoId: id })
           try { localStorage.removeItem('dsh.worktable.consoleBgPhoto.v1') } catch {}
-          return { id, url: URL.createObjectURL(blob) }
+          return { id, kind: kindOf(blob), url: URL.createObjectURL(blob) }
         },
         setPhotoId: (id: string) => persistView({ consoleBgPhotoId: id }),
         removePhoto: async (id: string) => { await photoStore.remove(id) },
