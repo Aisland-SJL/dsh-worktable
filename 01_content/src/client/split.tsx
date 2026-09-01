@@ -1543,9 +1543,8 @@ function ConsolePane() {
   const [plainGrid, setPlainGridState] = useState<number>(() => splitEnv?.console?.getPlainGrid?.() ?? 5)
   const [glowGrid, setGlowGridState] = useState<number>(() => splitEnv?.console?.getGlowGrid?.() ?? 8)
   const [annOpen, setAnnOpen] = useState(false)
-  const [updStatus, setUpdStatus] = useState<UpdateStatus>('uptodate')
-  const [updInfo, setUpdInfo] = useState<UpdateInfo | null>(() => readCache().info ?? { latest: '0.3.1-demo', notes: '演示：这是假设发现的新版本横幅', url: 'https://github.com/Aisland-SJL/dsh-worktable/releases' })
-  void updStatus
+  const [updStatus, setUpdStatus] = useState<UpdateStatus>(() => readCache().status)
+  const [updInfo, setUpdInfo] = useState<UpdateInfo | null>(() => readCache().info)
   const [autoCheckOn, setAutoCheckOn] = useState<boolean>(() => getAutoCheck())
   const updBusyRef = useRef(false)
   const photoUrlRef = useRef<string>('')
@@ -1849,8 +1848,8 @@ function ConsolePane() {
   useEffect(() => {
     splitEnv?.console?.refreshPreviews?.()
   }, [])
-  // 自动检查更新（节流一天；手动按钮始终 force）——TEMP-DEMO：临时禁用
-  // useEffect(() => { if (getAutoCheck()) void runUpdateCheck(false) }, [])
+  // 自动检查更新（节流一天；手动按钮始终 force）
+  useEffect(() => { if (getAutoCheck()) void runUpdateCheck(false) }, [])
   // 背景照片库：IndexedDB 异步加载记录 → 对象 URL；无记录则空
   useEffect(() => {
     let alive = true
