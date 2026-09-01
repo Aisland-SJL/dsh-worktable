@@ -16884,14 +16884,41 @@ function ctxOf(t) {
   const text2 = (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
   let out = "<" + tag + (cls ? " ." + cls : "") + ">";
   if (text2) out += "\u300C" + text2 + "\u300D";
+  try {
+    const cs = getComputedStyle(el);
+    out += "\uFF08\u5B57\u53F7 " + cs.fontSize + "\uFF09";
+  } catch {
+  }
   return out;
 }
-function elementsInBox(x0, y0, x1, y1) {
+function boxPayload(x0, y0, x1, y1) {
   const L = Math.min(x0, x1);
   const T2 = Math.min(y0, y1);
   const R = Math.max(x0, x1);
   const B = Math.max(y0, y1);
-  const out = [];
+  const cx = (L + R) / 2;
+  const cy = (T2 + B) / 2;
+  let primary = null;
+  try {
+    const stack = document.elementsFromPoint(cx, cy);
+    for (const el of stack) {
+      const tag = el.tagName.toLowerCase();
+      if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
+      if (el === document.body || el === document.documentElement) continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      if (rect.right < L || rect.left > R || rect.bottom < T2 || rect.top > B) continue;
+      const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
+      if (!text2) continue;
+      const cs = getComputedStyle(el);
+      primary = { text: text2.slice(0, 60), fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color };
+      break;
+    }
+  } catch {
+  }
+  const seen = /* @__PURE__ */ new Set();
+  if (primary) seen.add(primary.text);
+  const candidates = [];
   for (const el of document.querySelectorAll("*")) {
     const tag = el.tagName.toLowerCase();
     if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
@@ -16899,19 +16926,13 @@ function elementsInBox(x0, y0, x1, y1) {
     if (rect.width <= 0 || rect.height <= 0) continue;
     if (rect.right < L || rect.left > R || rect.bottom < T2 || rect.top > B) continue;
     const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
-    if (text2.length < 1 || text2.length > 80) continue;
-    out.push({ text: text2, area: rect.width * rect.height });
+    if (text2.length < 1 || text2.length > 30) continue;
+    if (seen.has(text2)) continue;
+    seen.add(text2);
+    candidates.push(text2);
+    if (candidates.length >= 4) break;
   }
-  out.sort((a, b) => a.area - b.area);
-  const seen = /* @__PURE__ */ new Set();
-  const res = [];
-  for (const o of out) {
-    if (seen.has(o.text)) continue;
-    seen.add(o.text);
-    res.push(o.text);
-    if (res.length >= 5) break;
-  }
-  return res;
+  return { primary, candidates };
 }
 function fillHostInput(text2) {
   try {
@@ -17000,8 +17021,9 @@ function AnnotationOverlay() {
           const ry2 = ((B - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
           stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx1 + "%," + ry1 + "%)\u2192(" + rx2 + "%," + ry2 + "%)";
         }
-        const texts = elementsInBox(L, T2, R, B);
-        if (texts.length > 0) stat += "\uFF0C\u6846\u5185\u6587\u5B57\uFF1A" + texts.map((t, i) => "[" + (i + 1) + "]" + t + (i === 0 ? "\u2190\u6700\u53EF\u80FD\u76EE\u6807" : "")).join(" ");
+        const hit = boxPayload(L, T2, R, B);
+        if (hit.primary) stat += "\uFF0C\u4E3B\u76EE\u6807\uFF1A" + hit.primary.text + "\uFF08\u5B57\u53F7 " + hit.primary.fontSize + "\uFF0C\u884C\u9AD8 " + hit.primary.lineHeight + "\uFF09";
+        if (hit.candidates.length > 0) stat += "\uFF0C\u5019\u9009\uFF1A" + hit.candidates.map((t, i) => "[" + (i + 1) + "]" + t).join(" ");
       } else {
         stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
         if (paneEl) {

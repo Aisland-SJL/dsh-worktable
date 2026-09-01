@@ -374,37 +374,54 @@ function ctxOf(t: EventTarget | null): string {
   const text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60)
   let out = '<' + tag + (cls ? ' .' + cls : '') + '>'
   if (text) out += '「' + text + '」'
+  try { const cs = getComputedStyle(el); out += '（字号 ' + cs.fontSize + '）' } catch {}
   return out
 }
 
-/** 框选区域内的可见文字（最小元素优先、去重，最多 5 条） */
-function elementsInBox(x0: number, y0: number, x1: number, y1: number): string[] {
+/** 框选 payload v3：主目标 = 框中心点处最具体的可见元素（elementsFromPoint 顶层优先），
+ *  直接带出它的文字与 computed style（字号/行高/颜色——「字号多少」类问题直接给答案）；
+ *  候选 = 与框相交的独立短文本（去重，最多 4）。 */
+function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: { text: string; fontSize: string; lineHeight: string; color: string } | null; candidates: string[] } {
   const L = Math.min(x0, x1)
   const T = Math.min(y0, y1)
   const R = Math.max(x0, x1)
   const B = Math.max(y0, y1)
-  const out: { text: string; area: number }[] = []
+  const cx = (L + R) / 2
+  const cy = (T + B) / 2
+  let primary: { text: string; fontSize: string; lineHeight: string; color: string } | null = null
+  try {
+    const stack = document.elementsFromPoint(cx, cy)
+    for (const el of stack) {
+      const tag = el.tagName.toLowerCase()
+      if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
+      if (el === document.body || el === document.documentElement) continue
+      const rect = el.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) continue
+      if (rect.right < L || rect.left > R || rect.bottom < T || rect.top > B) continue
+      const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
+      if (!text) continue
+      const cs = getComputedStyle(el)
+      primary = { text: text.slice(0, 60), fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color }
+      break
+    }
+  } catch {}
+  const seen = new Set<string>()
+  if (primary) seen.add(primary.text)
+  const candidates: string[] = []
   for (const el of document.querySelectorAll<HTMLElement>('*')) {
     const tag = el.tagName.toLowerCase()
     if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) continue
-    // 相交即入：元素矩形与框有任意重叠就收录（小框框住一半文字也能抓到）
     if (rect.right < L || rect.left > R || rect.bottom < T || rect.top > B) continue
     const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
-    if (text.length < 1 || text.length > 80) continue
-    out.push({ text, area: rect.width * rect.height })
+    if (text.length < 1 || text.length > 30) continue
+    if (seen.has(text)) continue
+    seen.add(text)
+    candidates.push(text)
+    if (candidates.length >= 4) break
   }
-  out.sort((a, b) => a.area - b.area)
-  const seen = new Set<string>()
-  const res: string[] = []
-  for (const o of out) {
-    if (seen.has(o.text)) continue
-    seen.add(o.text)
-    res.push(o.text)
-    if (res.length >= 5) break
-  }
-  return res
+  return { primary, candidates }
 }
 
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
@@ -493,8 +510,9 @@ function AnnotationOverlay() {
           const ry2 = (((B - pr.top) / Math.max(1, pr.height)) * 100).toFixed(1)
           stat += '，窗口内 (' + rx1 + '%,' + ry1 + '%)→(' + rx2 + '%,' + ry2 + '%)'
         }
-        const texts = elementsInBox(L, T, R, B)
-        if (texts.length > 0) stat += '，框内文字：' + texts.map((t, i) => '[' + (i + 1) + ']' + t + (i === 0 ? '←最可能目标' : '')).join(' ')
+        const hit = boxPayload(L, T, R, B)
+        if (hit.primary) stat += '，主目标：' + hit.primary.text + '（字号 ' + hit.primary.fontSize + '，行高 ' + hit.primary.lineHeight + '）'
+        if (hit.candidates.length > 0) stat += '，候选：' + hit.candidates.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
       } else {
         stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
         if (paneEl) {
