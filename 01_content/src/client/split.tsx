@@ -409,7 +409,7 @@ function fillHostInput(text: string): boolean {
 function confirmAnnot() {
   const s = annotState
   const text = '📌 标注-' + s.resp + '\n' + (s.stat || '') + '\n要求：' + (s.draft.trim() || '（未填写）')
-    + '\n——【工作台标注】这是给 AI 的定位标注：① 能查看截图或打开对应窗口（' + s.resp + '）就先核实位置再回答；② 不能查看画面时，只问一条最关键的问题确认位置，不要泛泛猜测。'
+    + '\n【工作台标注·已定位，直接作答，无需再问；仅当确实无法从标注定位时才问一次】'
   const ok = fillHostInput(text)
   if (!ok) {
     try {
@@ -471,7 +471,7 @@ function AnnotationOverlay() {
           stat += '，窗口内 (' + rx1 + '%,' + ry1 + '%)→(' + rx2 + '%,' + ry2 + '%)'
         }
         const texts = elementsInBox(L, T, R, B)
-        if (texts.length > 0) stat += '，框内文字：' + texts.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
+        if (texts.length > 0) stat += '，框内文字：' + texts.map((t, i) => '[' + (i + 1) + ']' + t + (i === 0 ? '←最可能目标' : '')).join(' ')
       } else {
         stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
         if (paneEl) {
