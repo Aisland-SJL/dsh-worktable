@@ -18087,6 +18087,7 @@ function ConsolePane() {
   };
   const dragRowRef = (0, import_react.useRef)(null);
   const dragFlipRef = (0, import_react.useRef)(null);
+  const lastTargetRef = (0, import_react.useRef)(-1);
   const [dragRowId, setDragRowId] = (0, import_react.useState)(null);
   (0, import_react.useLayoutEffect)(() => {
     const first = dragFlipRef.current;
@@ -18099,7 +18100,7 @@ function ConsolePane() {
       const r = el.getBoundingClientRect();
       const dx = f.x - r.left;
       const dy = f.y - r.top;
-      if (dx || dy) el.animate([{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "none" }], { duration: 160, easing: "cubic-bezier(.22,.61,.36,1)" });
+      if (dx || dy) el.animate([{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "none" }], { duration: 260, easing: "cubic-bezier(.25,.6,.3,1)" });
     });
   }, [photoList]);
   const onHandleDown = (id, e) => {
@@ -18107,29 +18108,34 @@ function ConsolePane() {
     e.preventDefault();
     e.stopPropagation();
     dragRowRef.current = id;
+    lastTargetRef.current = photoList.findIndex((x) => x.id === id);
     setDragRowId(id);
     const onMove = (ev) => {
       if (dragRowRef.current !== id) return;
       const rows = Array.from(document.querySelectorAll(".dsh-wt_photoRow"));
+      if (rows.length === 0) return;
+      const first = rows[0].getBoundingClientRect();
+      const h = first.height;
+      const rel = (ev.clientY - first.top) / h;
+      let t = Math.max(0, Math.min(rows.length - 1, Math.floor(rel + 0.5)));
+      const frac = rel - Math.floor(rel);
+      if (Math.abs(frac - 0.5) < 0.12) t = lastTargetRef.current;
+      if (t === lastTargetRef.current) return;
+      const from = photoList.findIndex((x) => x.id === id);
+      if (from < 0) return;
       const rects = /* @__PURE__ */ new Map();
       rows.forEach((el) => {
         const k = el.dataset.rid ?? "";
         const r = el.getBoundingClientRect();
         rects.set(k, { x: r.left, y: r.top });
       });
-      let target = 0;
-      for (let i = 0; i < rows.length; i++) {
-        const r = rows[i].getBoundingClientRect();
-        if (ev.clientY > r.top + r.height / 2) target = i + 1;
-      }
-      const from = photoList.findIndex((x) => x.id === id);
-      if (from < 0) return;
       const next = [...photoList];
       const moved = next.splice(from, 1)[0];
-      const to = Math.max(0, Math.min(target > from ? target - 1 : target, next.length));
+      const to = Math.max(0, Math.min(t, next.length));
       next.splice(to, 0, moved);
       dragFlipRef.current = rects;
       setPhotoList(next);
+      lastTargetRef.current = t;
     };
     const onUp = () => {
       dragRowRef.current = null;
