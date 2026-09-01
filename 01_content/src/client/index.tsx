@@ -86,8 +86,14 @@ type ViewState = {
   consoleBgPhotoGrid?: boolean
   /** 照片背景网格线透明度 %（0-30，默认 8）*/
   consoleBgGridOpacity?: number
-  /** 项目卡片贴片模糊 px（0-20，默认 0）*/
+  /** 项目卡片贴片模糊 px（0-20，默认 0）——照片/自定义背景的记忆 */
   consoleCardBlur?: number
+  /** 按背景记忆：纯色/流光的贴片模糊 px（0-20，默认 0）*/
+  consoleBgPlainBlur?: number
+  consoleBgGlowBlur?: number
+  /** 按背景记忆：纯色/流光的网格线不透明度 %（0-30，默认 5 / 8）*/
+  consoleBgPlainGrid?: number
+  consoleBgGlowGrid?: number
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -333,6 +339,10 @@ function loadView(): ViewState {
       consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
       consoleBgGridOpacity: typeof p.consoleBgGridOpacity === 'number' && p.consoleBgGridOpacity >= 0 && p.consoleBgGridOpacity <= 30 ? Math.round(p.consoleBgGridOpacity) : undefined,
       consoleCardBlur: typeof p.consoleCardBlur === 'number' && p.consoleCardBlur >= 0 && p.consoleCardBlur <= 20 ? Math.round(p.consoleCardBlur) : undefined,
+      consoleBgPlainBlur: typeof p.consoleBgPlainBlur === 'number' && p.consoleBgPlainBlur >= 0 && p.consoleBgPlainBlur <= 20 ? Math.round(p.consoleBgPlainBlur) : undefined,
+      consoleBgGlowBlur: typeof p.consoleBgGlowBlur === 'number' && p.consoleBgGlowBlur >= 0 && p.consoleBgGlowBlur <= 20 ? Math.round(p.consoleBgGlowBlur) : undefined,
+      consoleBgPlainGrid: typeof p.consoleBgPlainGrid === 'number' && p.consoleBgPlainGrid >= 0 && p.consoleBgPlainGrid <= 30 ? Math.round(p.consoleBgPlainGrid) : undefined,
+      consoleBgGlowGrid: typeof p.consoleBgGlowGrid === 'number' && p.consoleBgGlowGrid >= 0 && p.consoleBgGlowGrid <= 30 ? Math.round(p.consoleBgGlowGrid) : undefined,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls
         if (!src || typeof src !== 'object') return undefined
@@ -1412,6 +1422,14 @@ function WorktableSection(props: any) {
         setGridOpacity: (v: number) => persistView({ consoleBgGridOpacity: v }),
         getCardBlur: () => viewRef.current.consoleCardBlur ?? 0,
         setCardBlur: (v: number) => persistView({ consoleCardBlur: v }),
+        getPlainBlur: () => viewRef.current.consoleBgPlainBlur ?? 0,
+        setPlainBlur: (v: number) => persistView({ consoleBgPlainBlur: v }),
+        getGlowBlur: () => viewRef.current.consoleBgGlowBlur ?? 0,
+        setGlowBlur: (v: number) => persistView({ consoleBgGlowBlur: v }),
+        getPlainGrid: () => viewRef.current.consoleBgPlainGrid ?? 5,
+        setPlainGrid: (v: number) => persistView({ consoleBgPlainGrid: v }),
+        getGlowGrid: () => viewRef.current.consoleBgGlowGrid ?? 8,
+        setGlowGrid: (v: number) => persistView({ consoleBgGlowGrid: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },

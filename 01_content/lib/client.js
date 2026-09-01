@@ -8180,6 +8180,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleGrid{position:relative;z-index:1}",
   // 底部中央玻璃 dock：4 个 ghost 按钮（图标常显，hover 才浮现圆角矩形）+ 统一下拉面板（宽度 = dock 宽 150px）
   ".dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}",
+  ".dsh-wt_announceCtr{display:flex;min-height:100%;align-items:center;justify-content:center;box-sizing:border-box}",
+  ".dsh-wt_announceCtr .dsh-wt_announce{margin:auto}",
   ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(var(--wt-cardBlur,0px)) saturate(1.15)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_announce{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}",
   ".dsh-wt_announceHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--wt-border)}",
@@ -8207,7 +8209,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtn:hover{background:rgba(27,31,36,.10)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtnOn{background:rgba(27,31,36,.14)}",
   ".dsh-wt_dropMask{position:fixed;inset:0;z-index:9;background:transparent;border:none}",
-  ".dsh-wt_drop{position:absolute;bottom:calc(100% - 4px);left:50%;transform:translateX(-50%);width:150px;box-sizing:border-box;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(14px) saturate(1.3);z-index:11;display:flex;flex-direction:column;gap:2px}",
+  ".dsh-wt_drop{position:absolute;bottom:calc(100% - 4px);left:50%;transform:translateX(-50%);width:186px;box-sizing:border-box;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(14px) saturate(1.3);z-index:11;display:flex;flex-direction:column;gap:2px}",
   ".dsh-wt_dropItem{width:100%;padding:6px 9px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;display:flex;align-items:center;gap:7px;text-align:left}",
   ".dsh-wt_dropItem:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_drop{background:rgba(255,255,255,.62);border-color:rgba(27,31,36,.12)}",
@@ -8215,7 +8217,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropRow .dsh-wt_dropItem{flex:1;min-width:0}",
   ".dsh-wt_dropGear{flex:none;width:24px;height:24px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
   ".dsh-wt_dropGear:hover{background:var(--wt-chip);color:var(--wt-text)}",
-  ".dsh-wt_dropWide{width:212px}",
+  ".dsh-wt_dropWide{width:264px}",
   ".dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
   ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
   ".dsh-wt_gridLabel{flex:none;white-space:nowrap;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 2px 2px 4px}",
@@ -8225,6 +8227,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
   ".dsh-wt_switchOn .dsh-wt_switchKnob{left:15px}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_switch{background:rgba(27,31,36,.15)}",
+  ".dsh-wt_console[data-wt-bg=plain][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
+  ".dsh-wt_console[data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
   ".dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}",
@@ -17895,6 +17899,10 @@ function ConsolePane() {
   const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
   const [gridOpacity, setGridOpacityState] = (0, import_react.useState)(() => splitEnv?.console?.getGridOpacity?.() ?? 8);
   const [cardBlur, setCardBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getCardBlur?.() ?? 0);
+  const [plainBlur, setPlainBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainBlur?.() ?? 0);
+  const [glowBlur, setGlowBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowBlur?.() ?? 0);
+  const [plainGrid, setPlainGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainGrid?.() ?? 5);
+  const [glowGrid, setGlowGridState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowGrid?.() ?? 8);
   const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
   const [updStatus, setUpdStatus] = (0, import_react.useState)(() => readCache().status);
   const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info);
@@ -18011,6 +18019,29 @@ function ConsolePane() {
     const v = Math.min(Math.max(Math.round(n), 0), 20);
     setCardBlurState(v);
     splitEnv?.console?.setCardBlur?.(v);
+  };
+  const onModeBlur = (kind, n) => {
+    const v = Math.min(Math.max(Math.round(n), 0), 20);
+    if (kind === "plain") {
+      setPlainBlurState(v);
+      splitEnv?.console?.setPlainBlur?.(v);
+    } else if (kind === "glow") {
+      setGlowBlurState(v);
+      splitEnv?.console?.setGlowBlur?.(v);
+    } else {
+      setCardBlurState(v);
+      splitEnv?.console?.setCardBlur?.(v);
+    }
+  };
+  const onModeGrid = (kind, n) => {
+    const v = Math.min(Math.max(Math.round(n), 0), 30);
+    if (kind === "plain") {
+      setPlainGridState(v);
+      splitEnv?.console?.setPlainGrid?.(v);
+    } else {
+      setGlowGridState(v);
+      splitEnv?.console?.setGlowGrid?.(v);
+    }
   };
   const runUpdateCheck = async (force) => {
     if (updBusyRef.current) return;
@@ -18239,7 +18270,7 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: cardBlur + "px" }, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)", ["--wt-gridPlain"]: "rgba(255,255,255," + plainGrid / 100 + ")" } : {}, ...bg === "glow" ? { ["--wt-gridGlow"]: "rgba(255,255,255," + glowGrid / 100 + ")" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: (bg === "plain" ? plainBlur : bg === "glow" ? glowBlur : cardBlur) + "px" }, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
       bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ConsoleVideo, { src: bgVideo, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -18250,7 +18281,7 @@ function ConsolePane() {
       ] })
     ] }),
     openMenu !== null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropMask", onClick: () => setOpenMenu(null) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: annOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announce", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: annOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceCtr", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announce", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announceHead", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_announceVer", children: [
           T("annot.curVer"),
@@ -18278,7 +18309,7 @@ function ConsolePane() {
       updStatus === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.checkFail") }),
       updStatus === "uptodate" && !updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.latest") }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceBody", children: CHANGELOG_V030 })
-    ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
+    ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "div",
         {
@@ -18436,15 +18467,15 @@ function ConsolePane() {
           const sMax = bgEdit === "plain" ? 100 : 200;
           const lMax = bgEdit === "plain" ? 100 : 200;
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-            bgEdit === "photo" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipB"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipB"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "B" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 20, step: 1, value: cardBlur, onChange: (e) => onCardBlur(Number(e.target.value)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: cardBlur, min: 0, max: 20, onCommit: onCardBlur })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 20, step: 1, value: bgEdit === "plain" ? plainBlur : bgEdit === "glow" ? glowBlur : cardBlur, onChange: (e) => onModeBlur(bgEdit, Number(e.target.value)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: bgEdit === "plain" ? plainBlur : bgEdit === "glow" ? glowBlur : cardBlur, min: 0, max: 20, onCommit: (n) => onModeBlur(bgEdit, n) })
             ] }),
-            bgEdit === "photo" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipT"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipT"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "T" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: gridOpacity, onChange: (e) => onGridOpacity(Number(e.target.value)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: gridOpacity, min: 0, max: 30, onCommit: onGridOpacity })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: bgEdit === "plain" ? plainGrid : bgEdit === "glow" ? glowGrid : gridOpacity, onChange: (e) => bgEdit === "photo" ? onGridOpacity(Number(e.target.value)) : onModeGrid(bgEdit, Number(e.target.value)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: bgEdit === "plain" ? plainGrid : bgEdit === "glow" ? glowGrid : gridOpacity, min: 0, max: 30, onCommit: (n) => bgEdit === "photo" ? onGridOpacity(n) : onModeGrid(bgEdit, n) })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipH"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "H" }),
@@ -19847,6 +19878,10 @@ function loadView() {
       consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
       consoleBgGridOpacity: typeof p.consoleBgGridOpacity === "number" && p.consoleBgGridOpacity >= 0 && p.consoleBgGridOpacity <= 30 ? Math.round(p.consoleBgGridOpacity) : void 0,
       consoleCardBlur: typeof p.consoleCardBlur === "number" && p.consoleCardBlur >= 0 && p.consoleCardBlur <= 20 ? Math.round(p.consoleCardBlur) : void 0,
+      consoleBgPlainBlur: typeof p.consoleBgPlainBlur === "number" && p.consoleBgPlainBlur >= 0 && p.consoleBgPlainBlur <= 20 ? Math.round(p.consoleBgPlainBlur) : void 0,
+      consoleBgGlowBlur: typeof p.consoleBgGlowBlur === "number" && p.consoleBgGlowBlur >= 0 && p.consoleBgGlowBlur <= 20 ? Math.round(p.consoleBgGlowBlur) : void 0,
+      consoleBgPlainGrid: typeof p.consoleBgPlainGrid === "number" && p.consoleBgPlainGrid >= 0 && p.consoleBgPlainGrid <= 30 ? Math.round(p.consoleBgPlainGrid) : void 0,
+      consoleBgGlowGrid: typeof p.consoleBgGlowGrid === "number" && p.consoleBgGlowGrid >= 0 && p.consoleBgGlowGrid <= 30 ? Math.round(p.consoleBgGlowGrid) : void 0,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls;
         if (!src || typeof src !== "object") return void 0;
@@ -20886,6 +20921,14 @@ function WorktableSection(props) {
         setGridOpacity: (v) => persistView({ consoleBgGridOpacity: v }),
         getCardBlur: () => viewRef.current.consoleCardBlur ?? 0,
         setCardBlur: (v) => persistView({ consoleCardBlur: v }),
+        getPlainBlur: () => viewRef.current.consoleBgPlainBlur ?? 0,
+        setPlainBlur: (v) => persistView({ consoleBgPlainBlur: v }),
+        getGlowBlur: () => viewRef.current.consoleBgGlowBlur ?? 0,
+        setGlowBlur: (v) => persistView({ consoleBgGlowBlur: v }),
+        getPlainGrid: () => viewRef.current.consoleBgPlainGrid ?? 5,
+        setPlainGrid: (v) => persistView({ consoleBgPlainGrid: v }),
+        getGlowGrid: () => viewRef.current.consoleBgGlowGrid ?? 8,
+        setGlowGrid: (v) => persistView({ consoleBgGlowGrid: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
