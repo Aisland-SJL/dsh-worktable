@@ -464,7 +464,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_photoName{flex:1;min-width:0;font-size:11px;line-height:16px;color:var(--wt-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.dsh-wt_photoEmpty{padding:4px 4px 2px;font-size:11px;line-height:16px;color:var(--wt-text3)}',
   '.dsh-wt_hslDivider{height:1px;margin:5px 4px;background:var(--wt-border);opacity:.5}',
-  '.dsh-wt_consoleVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}',
+  '.dsh-wt_consoleMedia{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}',
   '.dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;box-sizing:border-box}',
   '.dsh-wt_thumbWrap{position:relative;flex:none;width:30px;height:30px}',
   '.dsh-wt_thumbWrap .dsh-wt_photoThumb{position:absolute;inset:0}',

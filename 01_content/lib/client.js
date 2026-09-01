@@ -8215,7 +8215,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_photoName{flex:1;min-width:0;font-size:11px;line-height:16px;color:var(--wt-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
   ".dsh-wt_photoEmpty{padding:4px 4px 2px;font-size:11px;line-height:16px;color:var(--wt-text3)}",
   ".dsh-wt_hslDivider{height:1px;margin:5px 4px;background:var(--wt-border);opacity:.5}",
-  ".dsh-wt_consoleVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}",
+  ".dsh-wt_consoleMedia{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}",
   ".dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;box-sizing:border-box}",
   ".dsh-wt_thumbWrap{position:relative;flex:none;width:30px;height:30px}",
   ".dsh-wt_thumbWrap .dsh-wt_photoThumb{position:absolute;inset:0}",
@@ -17675,8 +17675,8 @@ function ConsolePane() {
     { mode: "system", key: "console.themeSystem" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" || bg === "photo" ? { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {} } : void 0, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
-      bg === "photo" && bgVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_consoleVid", src: bgVideo, autoPlay: true, muted: true, loop: true, playsInline: true, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
+      bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_consoleMedia", src: bgVideo, autoPlay: true, muted: true, loop: true, playsInline: true, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
