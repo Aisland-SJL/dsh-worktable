@@ -4,7 +4,8 @@ import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 import { photoStore, kindOf } from './photoStore'
-import { DEFAULT_BG_SVG } from './defaultBg'
+import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
+import { WAVE_BG_B64 } from './waveBg'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -1406,6 +1407,7 @@ function WorktableSection(props: any) {
           if (records.length === 0 && localStorage.getItem('dsh.worktable.defaultBgSeeded.v1') !== '1') {
             try {
               await photoStore.add(new Blob([DEFAULT_BG_SVG], { type: 'image/svg+xml' }))
+              await photoStore.add(b64ToBlob(WAVE_BG_B64, 'image/jpeg'))
               localStorage.setItem('dsh.worktable.defaultBgSeeded.v1', '1')
               records = await photoStore.list().catch(() => [])
             } catch {}
