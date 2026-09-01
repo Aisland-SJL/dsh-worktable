@@ -257,6 +257,8 @@ type SplitEnv = {
     setPhotoGrid: (v: boolean) => void
     getGridOpacity: () => number
     setGridOpacity: (v: number) => void
+    getCardBlur: () => number
+    setCardBlur: (v: number) => void
     getPlainHsl: () => { h: number; s: number; l: number }
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
@@ -1099,6 +1101,7 @@ function ConsolePane() {
   const [bgVideo, setBgVideo] = useState<string>('')
   const [photoGrid, setPhotoGridState] = useState<boolean>(() => splitEnv?.console?.getPhotoGrid?.() ?? true)
   const [gridOpacity, setGridOpacityState] = useState<number>(() => splitEnv?.console?.getGridOpacity?.() ?? 8)
+  const [cardBlur, setCardBlurState] = useState<number>(() => splitEnv?.console?.getCardBlur?.() ?? 0)
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
@@ -1192,6 +1195,11 @@ function ConsolePane() {
     const v = Math.min(Math.max(Math.round(n), 0), 30)
     setGridOpacityState(v)
     splitEnv?.console?.setGridOpacity?.(v)
+  }
+  const onCardBlur = (n: number) => {
+    const v = Math.min(Math.max(Math.round(n), 0), 20)
+    setCardBlurState(v)
+    splitEnv?.console?.setCardBlur?.(v)
   }
   /** 在媒体库中选中某条 */
   const selectPhoto = (p: { id: string; kind: 'photo' | 'video'; url: string }) => {
@@ -1355,7 +1363,7 @@ function ConsolePane() {
     { mode: 'system', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={bg === 'plain' || bg === 'photo' ? { ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}) } : undefined}>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={{ ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}), ['--wt-cardBlur' as any]: cardBlur + 'px' }}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>
         {bg === 'photo' && (bgVideo
           ? <video className="dsh-wt_consoleMedia" src={bgVideo} autoPlay muted loop playsInline style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} />
@@ -1488,11 +1496,14 @@ function ConsolePane() {
                 const lMax = bgEdit === 'plain' ? 100 : 200
                 return (<>
                   {bgEdit === 'photo' && (
-                    <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">T</span><input className="dsh-wt_hslSlider" type="range" min={0} max={30} step={1} value={gridOpacity} onChange={(e) => onGridOpacity(Number(e.target.value))} /><HslValInput value={gridOpacity} min={0} max={30} onCommit={onGridOpacity} /></div>
+                    <div className="dsh-wt_hslRow" data-tip={T('console.bgTipB')}><span className="dsh-wt_hslLabel">B</span><input className="dsh-wt_hslSlider" type="range" min={0} max={20} step={1} value={cardBlur} onChange={(e) => onCardBlur(Number(e.target.value))} /><HslValInput value={cardBlur} min={0} max={20} onCommit={onCardBlur} /></div>
                   )}
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={-180} max={180} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} min={-180} max={180} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
+                  {bgEdit === 'photo' && (
+                    <div className="dsh-wt_hslRow" data-tip={T('console.bgTipT')}><span className="dsh-wt_hslLabel">T</span><input className="dsh-wt_hslSlider" type="range" min={0} max={30} step={1} value={gridOpacity} onChange={(e) => onGridOpacity(Number(e.target.value))} /><HslValInput value={gridOpacity} min={0} max={30} onCommit={onGridOpacity} /></div>
+                  )}
+                  <div className="dsh-wt_hslRow" data-tip={T('console.bgTipH')}><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={-180} max={180} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} min={-180} max={180} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
+                  <div className="dsh-wt_hslRow" data-tip={T('console.bgTipS')}><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
+                  <div className="dsh-wt_hslRow" data-tip={T('console.bgTipL')}><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
                   <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>
                 </>)
               })()}

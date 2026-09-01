@@ -86,6 +86,8 @@ type ViewState = {
   consoleBgPhotoGrid?: boolean
   /** 照片背景网格线透明度 %（0-30，默认 8）*/
   consoleBgGridOpacity?: number
+  /** 项目卡片贴片模糊 px（0-20，默认 0）*/
+  consoleCardBlur?: number
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -330,6 +332,7 @@ function loadView(): ViewState {
       consoleBgPhotoId: typeof p.consoleBgPhotoId === 'string' && p.consoleBgPhotoId ? p.consoleBgPhotoId : undefined,
       consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
       consoleBgGridOpacity: typeof p.consoleBgGridOpacity === 'number' && p.consoleBgGridOpacity >= 0 && p.consoleBgGridOpacity <= 30 ? Math.round(p.consoleBgGridOpacity) : undefined,
+      consoleCardBlur: typeof p.consoleCardBlur === 'number' && p.consoleCardBlur >= 0 && p.consoleCardBlur <= 20 ? Math.round(p.consoleCardBlur) : undefined,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls
         if (!src || typeof src !== 'object') return undefined
@@ -1405,6 +1408,8 @@ function WorktableSection(props: any) {
         setPhotoGrid: (v: boolean) => persistView({ consoleBgPhotoGrid: v }),
         getGridOpacity: () => viewRef.current.consoleBgGridOpacity ?? 8,
         setGridOpacity: (v: number) => persistView({ consoleBgGridOpacity: v }),
+        getCardBlur: () => viewRef.current.consoleCardBlur ?? 0,
+        setCardBlur: (v: number) => persistView({ consoleCardBlur: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
