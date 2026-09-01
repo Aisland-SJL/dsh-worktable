@@ -8219,6 +8219,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropGear:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_dropWide{width:264px}",
   ".dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
+  ".dsh-wt_dragHandle{flex:none;width:18px;height:22px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:grab;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease;touch-action:none}",
+  ".dsh-wt_dragHandle:hover{background:var(--wt-chip);color:var(--wt-text2)}",
+  ".dsh-wt_dragHandleOn{background:var(--wt-chip);color:var(--wt-text);cursor:grabbing}",
   ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
   ".dsh-wt_gridLabel{flex:none;white-space:nowrap;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 2px 2px 4px}",
   ".dsh-wt_gridHalf .dsh-wt_switch{margin-right:2px}",
@@ -8515,6 +8518,7 @@ var zh = {
   "console.bgPhotoUse": "\u4F7F\u7528\u6B64\u7167\u7247",
   "console.bgPhotoCurrent": "\u5F53\u524D\u4F7F\u7528",
   "console.bgPhotoNone": "\u8FD8\u6CA1\u6709\u4E0A\u4F20\u8FC7\u7167\u7247",
+  "console.bgMediaDrag": "\u62D6\u52A8\u8C03\u6574\u987A\u5E8F",
   "console.bgPhotoDelete": "\u5220\u9664\u8FD9\u6761\u5A92\u4F53",
   "console.bgGridLabel": "\u7F51\u683C\u80CC\u666F",
   "console.bgTipB": "\u8D34\u7247\u6A21\u7CCA\u7A0B\u5EA6",
@@ -8729,6 +8733,7 @@ var en = {
   "console.bgPhotoUse": "Use this photo",
   "console.bgPhotoCurrent": "In use",
   "console.bgPhotoNone": "No photos yet",
+  "console.bgMediaDrag": "Drag to reorder",
   "console.bgPhotoDelete": "Delete this media",
   "console.bgGridLabel": "Background grid",
   "console.bgTipB": "Card blur",
@@ -18080,6 +18085,42 @@ function ConsolePane() {
     setAutoCheck(next);
     if (next) void runUpdateCheck(false);
   };
+  const dragRowRef = (0, import_react.useRef)(null);
+  const [dragRowId, setDragRowId] = (0, import_react.useState)(null);
+  const onHandleDown = (id, e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragRowRef.current = id;
+    setDragRowId(id);
+    const onMove = (ev) => {
+      if (dragRowRef.current !== id) return;
+      const rows = Array.from(document.querySelectorAll(".dsh-wt_photoRow"));
+      let target = 0;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i].getBoundingClientRect();
+        if (ev.clientY > r.top + r.height / 2) target = i + 1;
+      }
+      const from = photoList.findIndex((x) => x.id === id);
+      if (from < 0) return;
+      const next = [...photoList];
+      const moved = next.splice(from, 1)[0];
+      const to = Math.max(0, Math.min(target > from ? target - 1 : target, next.length));
+      next.splice(to, 0, moved);
+      setPhotoList(next);
+    };
+    const onUp = () => {
+      dragRowRef.current = null;
+      setDragRowId(null);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      const ids = photoList.map((x) => x.id);
+      void splitEnv?.console?.reorderPhotos?.(ids).catch(() => {
+      });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
   const selectPhoto = (p) => {
     setPhotoIdLocal(p.id);
     splitEnv?.console?.setPhotoId?.(p.id);
@@ -18484,6 +18525,14 @@ function ConsolePane() {
               ] }) })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dragHandle" + (dragRowId === p.id ? " dsh-wt_dragHandleOn" : ""), title: T("console.bgMediaDrag"), "aria-label": T("console.bgMediaDrag"), onPointerDown: (e) => onHandleDown(p.id, e), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "10", height: "12", viewBox: "0 0 10 12", "aria-hidden": true, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "2", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "7.5", cy: "2", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "6", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "7.5", cy: "6", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "10", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "7.5", cy: "10", r: "1.1", fill: "currentColor" })
+            ] }) }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T("console.bgPhotoDelete"), "aria-label": T("console.bgPhotoDelete"), onClick: (e) => {
               e.stopPropagation();
               removePhotoById(p);
@@ -19594,7 +19643,9 @@ function getAll(db) {
           arr.push({ id: r.id, createdAt: r.createdAt, kind: kindOf(r.blob), blob: r.blob });
         }
       }
-      arr.sort((a, b) => b.createdAt - a.createdAt);
+      const allOrdered = arr.every((r) => typeof r.order === "number");
+      if (allOrdered) arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      else arr.sort((a, b) => b.createdAt - a.createdAt);
       db.close();
       resolve(arr);
     };
@@ -19646,6 +19697,40 @@ var photoStore = {
       tx.oncomplete = () => {
         db.close();
         resolve(id);
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  },
+  /** 排序：ids 按给定顺序写入 order（0..n），其余保持原顺序追加在后 */
+  async reorder(ids) {
+    const db = await openDb();
+    const cur = await getAll(db);
+    const idx = /* @__PURE__ */ new Map();
+    ids.forEach((id, i) => idx.set(id, i));
+    const ordered = [];
+    const restSorted = [...cur].sort((a, b) => b.createdAt - a.createdAt);
+    for (const r of cur) {
+      const n = idx.get(r.id);
+      if (typeof n === "number") ordered.push({ ...r, order: n });
+    }
+    let tail = ordered.length;
+    for (const r of restSorted) {
+      if (!idx.has(r.id)) ordered.push({ ...r, order: tail++ });
+    }
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      const store = tx.objectStore(STORE);
+      for (const r of ordered) store.put(r, r.id);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
       };
       tx.onerror = () => {
         db.close();
@@ -20957,6 +21042,9 @@ function WorktableSection(props) {
         setPhotoId: (id) => persistView({ consoleBgPhotoId: id }),
         removePhoto: async (id) => {
           await photoStore.remove(id);
+        },
+        reorderPhotos: async (ids) => {
+          await photoStore.reorder(ids);
         },
         getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
         setPhotoGrid: (v) => persistView({ consoleBgPhotoGrid: v }),

@@ -7,7 +7,7 @@ const LEGACY_STORE = 'consoleBgPhoto'
 const LEGACY_KEY = 'original'
 
 export type MediaKind = 'photo' | 'video'
-export type PhotoRecord = { id: string; createdAt: number; kind: MediaKind; blob: Blob }
+export type PhotoRecord = { id: string; createdAt: number; kind: MediaKind; blob: Blob; order?: number }
 
 export const kindOf = (blob: Blob): MediaKind => (blob.type && blob.type.indexOf('video/') === 0 ? 'video' : 'photo')
 
@@ -35,7 +35,9 @@ function getAll(db: IDBDatabase): Promise<PhotoRecord[]> {
           arr.push({ id: r.id, createdAt: r.createdAt, kind: kindOf(r.blob), blob: r.blob })
         }
       }
-      arr.sort((a, b) => b.createdAt - a.createdAt)
+      const allOrdered = arr.every((r) => typeof r.order === 'number')
+      if (allOrdered) arr.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      else arr.sort((a, b) => b.createdAt - a.createdAt)
       db.close()
       resolve(arr)
     }
@@ -83,6 +85,31 @@ export const photoStore = {
       const tx = db.transaction(STORE, 'readwrite')
       tx.objectStore(STORE).put(rec, rec.id)
       tx.oncomplete = () => { db.close(); resolve(id) }
+      tx.onerror = () => { db.close(); reject(tx.error) }
+      tx.onabort = () => { db.close(); reject(tx.error) }
+    })
+  },
+  /** 排序：ids 按给定顺序写入 order（0..n），其余保持原顺序追加在后 */
+  async reorder(ids: string[]): Promise<void> {
+    const db = await openDb()
+    const cur = await getAll(db)
+    const idx = new Map<string, number>()
+    ids.forEach((id, i) => idx.set(id, i))
+    const ordered: PhotoRecord[] = []
+    const restSorted = [...cur].sort((a, b) => b.createdAt - a.createdAt)
+    for (const r of cur) {
+      const n = idx.get(r.id)
+      if (typeof n === 'number') ordered.push({ ...r, order: n })
+    }
+    let tail = ordered.length
+    for (const r of restSorted) {
+      if (!idx.has(r.id)) ordered.push({ ...r, order: tail++ })
+    }
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      const store = tx.objectStore(STORE)
+      for (const r of ordered) store.put(r, r.id)
+      tx.oncomplete = () => { db.close(); resolve() }
       tx.onerror = () => { db.close(); reject(tx.error) }
       tx.onabort = () => { db.close(); reject(tx.error) }
     })

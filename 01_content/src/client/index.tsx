@@ -1425,6 +1425,7 @@ function WorktableSection(props: any) {
         },
         setPhotoId: (id: string) => persistView({ consoleBgPhotoId: id }),
         removePhoto: async (id: string) => { await photoStore.remove(id) },
+        reorderPhotos: async (ids: string[]) => { await photoStore.reorder(ids) },
         getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
         setPhotoGrid: (v: boolean) => persistView({ consoleBgPhotoGrid: v }),
         getGridOpacity: () => viewRef.current.consoleBgGridOpacity ?? 8,

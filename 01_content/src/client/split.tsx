@@ -255,6 +255,7 @@ type SplitEnv = {
     getPhotoHsl: (id: string) => { h: number; s: number; l: number }
     setPhotoHsl: (id: string, v: { h: number; s: number; l: number }) => void
     removePhoto: (id: string) => Promise<void>
+    reorderPhotos: (ids: string[]) => Promise<void>
     getPhotoGrid: () => boolean
     setPhotoGrid: (v: boolean) => void
     getGridOpacity: () => number
@@ -1571,6 +1572,42 @@ function ConsolePane() {
     storeAutoCheck(next)
     if (next) void runUpdateCheck(false)
   }
+  /** 抓手拖拽排序：按住抓手上下移动 → 行实时重排，松手持久化 */
+  const dragRowRef = useRef<string | null>(null)
+  const [dragRowId, setDragRowId] = useState<string | null>(null)
+  const onHandleDown = (id: string, e: { button: number; preventDefault: () => void; stopPropagation: () => void }) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    e.stopPropagation()
+    dragRowRef.current = id
+    setDragRowId(id)
+    const onMove = (ev: PointerEvent) => {
+      if (dragRowRef.current !== id) return
+      const rows = Array.from(document.querySelectorAll<HTMLElement>('.dsh-wt_photoRow'))
+      let target = 0
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i].getBoundingClientRect()
+        if (ev.clientY > r.top + r.height / 2) target = i + 1
+      }
+      const from = photoList.findIndex((x) => x.id === id)
+      if (from < 0) return
+      const next = [...photoList]
+      const moved = next.splice(from, 1)[0]
+      const to = Math.max(0, Math.min(target > from ? target - 1 : target, next.length))
+      next.splice(to, 0, moved)
+      setPhotoList(next)
+    }
+    const onUp = () => {
+      dragRowRef.current = null
+      setDragRowId(null)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      const ids = photoList.map((x) => x.id)
+      void splitEnv?.console?.reorderPhotos?.(ids).catch(() => {})
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+  }
   /** 在媒体库中选中某条 */
   const selectPhoto = (p: { id: string; kind: 'photo' | 'video'; url: string }) => {
     setPhotoIdLocal(p.id)
@@ -1889,6 +1926,7 @@ function ConsolePane() {
                             : <svg width="8" height="8" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M3.4 11l2.6-2.6 2.1 2.1 1.7-1.7 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>}</span>
                         </span>
                         <span className="dsh-wt_photoName">{photoId === p.id ? T('console.bgPhotoCurrent') : T('console.bgPhotoUse')}</span>
+                        <button type="button" className={'dsh-wt_dragHandle' + (dragRowId === p.id ? ' dsh-wt_dragHandleOn' : '')} title={T('console.bgMediaDrag')} aria-label={T('console.bgMediaDrag')} onPointerDown={(e) => onHandleDown(p.id, e)}><svg width="10" height="12" viewBox="0 0 10 12" aria-hidden><circle cx="2.5" cy="2" r="1.1" fill="currentColor" /><circle cx="7.5" cy="2" r="1.1" fill="currentColor" /><circle cx="2.5" cy="6" r="1.1" fill="currentColor" /><circle cx="7.5" cy="6" r="1.1" fill="currentColor" /><circle cx="2.5" cy="10" r="1.1" fill="currentColor" /><circle cx="7.5" cy="10" r="1.1" fill="currentColor" /></svg></button>
                         <button type="button" className="dsh-wt_dropTrash" title={T('console.bgPhotoDelete')} aria-label={T('console.bgPhotoDelete')} onClick={(e) => { e.stopPropagation(); removePhotoById(p) }}><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
                       </div>
                     ))
