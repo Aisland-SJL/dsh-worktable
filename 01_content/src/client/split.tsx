@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { parentPathOf } from './pathutil'
 import { Terminal } from 'xterm'
 
@@ -373,6 +373,7 @@ function fillHostInput(text: string): boolean {
 function confirmAnnot() {
   const s = annotState
   const text = '📌 标注-' + s.resp + '\n' + (s.stat || '') + '\n要求：' + (s.draft.trim() || '（未填写）')
+    + '\n——【工作台标注】这是给 AI 的定位标注：① 能查看截图或打开对应窗口（' + s.resp + '）就先核实位置再回答；② 不能查看画面时，只问一条最关键的问题确认位置，不要泛泛猜测。'
   const ok = fillHostInput(text)
   if (!ok) {
     try {
@@ -1243,6 +1244,78 @@ function HslValInput(props: { value: number; max: number; min?: number; onCommit
 const PLAIN_HSL_DARK = { h: -140, s: 31, l: 6 }
 const PLAIN_HSL_LIGHT = { h: -146, s: 26, l: 95 }
 
+/** 循环视频背景：首尾帧交叉渐变——双轨重叠过渡（尾帧淡出→头帧淡入），消除循环「卡一下」。
+ *  两轨共用同一源；备用轨仅在交接窗口播放，其余时间暂停（解码负担仅 ~1.2s/循环）。 */
+function ConsoleVideo(props: { src: string; style?: CSSProperties }) {
+  const aRef = useRef<HTMLVideoElement | null>(null)
+  const bRef = useRef<HTMLVideoElement | null>(null)
+  const roleRef = useRef<'a' | 'b'>('a')
+  const firedRef = useRef(false)
+  useEffect(() => {
+    const role = () => (roleRef.current === 'a' ? aRef.current : bRef.current)
+    const spare = () => (roleRef.current === 'a' ? bRef.current : aRef.current)
+    firedRef.current = false
+    let raf = 0
+    let stopped = false
+    const onEnded = () => {
+      const m = role()
+      const s = spare()
+      if (!m || !s) return
+      // 主轨播完：备用轨已成为新主轨（淡入完成）；旧主轨复位为备用轨
+      roleRef.current = roleRef.current === 'a' ? 'b' : 'a'
+      firedRef.current = false
+      try {
+        m.currentTime = 0
+        m.pause()
+        m.style.opacity = '0'
+        m.getAnimations().forEach((an) => an.cancel())
+      } catch {}
+      try {
+        const nm = role()
+        if (nm) nm.style.opacity = '1'
+      } catch {}
+    }
+    const tick = () => {
+      if (stopped) return
+      const m = role()
+      const s = spare()
+      if (m && s && !m.paused && m.readyState >= 2 && !firedRef.current) {
+        const d = m.duration
+        if (Number.isFinite(d) && d > 0) {
+          const fade = Math.min(1.2, d * 0.15)
+          if (m.currentTime >= Math.max(0, d - fade)) {
+            firedRef.current = true
+            try {
+              try { m.getAnimations().forEach((an) => an.cancel()) } catch {}
+              try { s.getAnimations().forEach((an) => an.cancel()) } catch {}
+              s.currentTime = 0
+              s.play().catch(() => {})
+              s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
+              m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
+            } catch {}
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    aRef.current?.addEventListener('ended', onEnded)
+    bRef.current?.addEventListener('ended', onEnded)
+    return () => {
+      stopped = true
+      cancelAnimationFrame(raf)
+      aRef.current?.removeEventListener('ended', onEnded)
+      bRef.current?.removeEventListener('ended', onEnded)
+    }
+  }, [])
+  return (
+    <>
+      <video ref={aRef} className="dsh-wt_consoleMedia" src={props.src} muted autoPlay playsInline style={props.style} />
+      <video ref={bRef} className="dsh-wt_consoleMedia" src={props.src} muted playsInline style={{ ...props.style, opacity: 0 }} />
+    </>
+  )
+}
+
 /** 控制室面板：项目卡片网格（每行 3 张、超出换行）；数据由工作台组装推送（纯读镜像）。
  *  主题：dark/light 直接生效；system = 跟随宿主 html 的 color-scheme（DSH 深色/白色/跟随系统都会反映到它） */
 function ConsolePane() {
@@ -1522,7 +1595,7 @@ function ConsolePane() {
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={{ ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}), ['--wt-cardBlur' as any]: cardBlur + 'px' }}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>
         {bg === 'photo' && (bgVideo
-          ? <video className="dsh-wt_consoleMedia" src={bgVideo} autoPlay muted loop playsInline style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} />
+          ? <ConsoleVideo src={bgVideo} style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} />
           : bgPhoto ? <img className="dsh-wt_consoleMedia" src={bgPhoto} alt="" style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} /> : null)}
         {bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
       {openMenu !== null && <div className="dsh-wt_dropMask" onClick={() => setOpenMenu(null)} />}

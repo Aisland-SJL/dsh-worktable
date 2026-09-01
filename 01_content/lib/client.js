@@ -16714,7 +16714,7 @@ function fillHostInput(text2) {
 }
 function confirmAnnot() {
   const s = annotState;
-  const text2 = "\u{1F4CC} \u6807\u6CE8-" + s.resp + "\n" + (s.stat || "") + "\n\u8981\u6C42\uFF1A" + (s.draft.trim() || "\uFF08\u672A\u586B\u5199\uFF09");
+  const text2 = "\u{1F4CC} \u6807\u6CE8-" + s.resp + "\n" + (s.stat || "") + "\n\u8981\u6C42\uFF1A" + (s.draft.trim() || "\uFF08\u672A\u586B\u5199\uFF09") + "\n\u2014\u2014\u3010\u5DE5\u4F5C\u53F0\u6807\u6CE8\u3011\u8FD9\u662F\u7ED9 AI \u7684\u5B9A\u4F4D\u6807\u6CE8\uFF1A\u2460 \u80FD\u67E5\u770B\u622A\u56FE\u6216\u6253\u5F00\u5BF9\u5E94\u7A97\u53E3\uFF08" + s.resp + "\uFF09\u5C31\u5148\u6838\u5B9E\u4F4D\u7F6E\u518D\u56DE\u7B54\uFF1B\u2461 \u4E0D\u80FD\u67E5\u770B\u753B\u9762\u65F6\uFF0C\u53EA\u95EE\u4E00\u6761\u6700\u5173\u952E\u7684\u95EE\u9898\u786E\u8BA4\u4F4D\u7F6E\uFF0C\u4E0D\u8981\u6CDB\u6CDB\u731C\u6D4B\u3002";
   const ok = fillHostInput(text2);
   if (!ok) {
     try {
@@ -17566,6 +17566,82 @@ function HslValInput(props) {
 }
 var PLAIN_HSL_DARK = { h: -140, s: 31, l: 6 };
 var PLAIN_HSL_LIGHT = { h: -146, s: 26, l: 95 };
+function ConsoleVideo(props) {
+  const aRef = (0, import_react.useRef)(null);
+  const bRef = (0, import_react.useRef)(null);
+  const roleRef = (0, import_react.useRef)("a");
+  const firedRef = (0, import_react.useRef)(false);
+  (0, import_react.useEffect)(() => {
+    const role = () => roleRef.current === "a" ? aRef.current : bRef.current;
+    const spare = () => roleRef.current === "a" ? bRef.current : aRef.current;
+    firedRef.current = false;
+    let raf = 0;
+    let stopped = false;
+    const onEnded = () => {
+      const m = role();
+      const s = spare();
+      if (!m || !s) return;
+      roleRef.current = roleRef.current === "a" ? "b" : "a";
+      firedRef.current = false;
+      try {
+        m.currentTime = 0;
+        m.pause();
+        m.style.opacity = "0";
+        m.getAnimations().forEach((an) => an.cancel());
+      } catch {
+      }
+      try {
+        const nm = role();
+        if (nm) nm.style.opacity = "1";
+      } catch {
+      }
+    };
+    const tick = () => {
+      if (stopped) return;
+      const m = role();
+      const s = spare();
+      if (m && s && !m.paused && m.readyState >= 2 && !firedRef.current) {
+        const d = m.duration;
+        if (Number.isFinite(d) && d > 0) {
+          const fade = Math.min(1.2, d * 0.15);
+          if (m.currentTime >= Math.max(0, d - fade)) {
+            firedRef.current = true;
+            try {
+              try {
+                m.getAnimations().forEach((an) => an.cancel());
+              } catch {
+              }
+              try {
+                s.getAnimations().forEach((an) => an.cancel());
+              } catch {
+              }
+              s.currentTime = 0;
+              s.play().catch(() => {
+              });
+              s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
+              m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
+            } catch {
+            }
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    aRef.current?.addEventListener("ended", onEnded);
+    bRef.current?.addEventListener("ended", onEnded);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(raf);
+      aRef.current?.removeEventListener("ended", onEnded);
+      bRef.current?.removeEventListener("ended", onEnded);
+    };
+  }, []);
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { ref: aRef, className: "dsh-wt_consoleMedia", src: props.src, muted: true, autoPlay: true, playsInline: true, style: props.style }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { ref: bRef, className: "dsh-wt_consoleMedia", src: props.src, muted: true, playsInline: true, style: { ...props.style, opacity: 0 } })
+  ] });
+}
 function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
@@ -17892,7 +17968,7 @@ function ConsolePane() {
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: cardBlur + "px" }, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
-      bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_consoleMedia", src: bgVideo, autoPlay: true, muted: true, loop: true, playsInline: true, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
+      bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ConsoleVideo, { src: bgVideo, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
@@ -19893,7 +19969,9 @@ var KNOWLEDGE_PACK = [
   "- \u670D\u52A1\u7AEF\u80FD\u529B\uFF1A/api/worktable/fs\uFF08\u5217\u76EE\u5F55\uFF09\u3001/api/worktable/write\uFF08\u5199\u6587\u4EF6\uFF09\u3001/api/worktable/mkdir\uFF08\u5EFA\u76EE\u5F55\uFF09\u3001",
   "  /api/worktable/git\uFF08git \u72B6\u6001\uFF09\u3001/api/worktable/site\uFF08\u9759\u6001\u6258\u7BA1\uFF09\u3002",
   "- \u6539\u5B8C\u63D2\u4EF6\u5728 01_content \u76EE\u5F55\u6267\u884C npm run build\uFF1B\u91CD\u542F dsh web \u6216\u6D4F\u89C8\u5668 F5 \u751F\u6548\u3002",
-  "- \u6240\u6709\u4EA7\u51FA\u6587\u4EF6\u4E00\u5F8B\u653E\u8FDB\u672C\u4EFB\u52A1\u6807\u6CE8\u7684\u9879\u76EE\u6587\u4EF6\u5939\uFF0C\u4FDD\u6301\u7528\u6237\u76EE\u5F55\u5E72\u51C0\u3002"
+  "- \u6240\u6709\u4EA7\u51FA\u6587\u4EF6\u4E00\u5F8B\u653E\u8FDB\u672C\u4EFB\u52A1\u6807\u6CE8\u7684\u9879\u76EE\u6587\u4EF6\u5939\uFF0C\u4FDD\u6301\u7528\u6237\u76EE\u5F55\u5E72\u51C0\u3002",
+  "- \u6807\u6CE8\u534F\u8BAE\uFF1A\u6536\u5230\u300C\u{1F4CC} \u6807\u6CE8-\u7A97\u53E3N \u2026\uFF08\u5750\u6807/\u5143\u7D20\uFF09\u2026\u8981\u6C42\uFF1A\u2026\u300D= \u5DE5\u4F5C\u53F0\u6807\u6CE8\uFF08\u7A97\u53E3\u7F16\u53F7\u7EA6\u5B9A\uFF1A\u5DE6\u680F\u2192\u9876\u884C\u2192\u4E3B\u884C\uFF0C\u4ECE 1 \u8D77\uFF09\u3002",
+  "  \u5904\u7406\uFF1A\u80FD\u67E5\u770B\u622A\u56FE\u6216\u6253\u5F00\u5BF9\u5E94\u7A97\u53E3\u5219\u5148\u6838\u5B9E\u4F4D\u7F6E\u518D\u56DE\u7B54\uFF1B\u4E0D\u80FD\u67E5\u770B\u753B\u9762\u65F6\uFF0C\u53EA\u95EE\u4E00\u6761\u6700\u5173\u952E\u7684\u95EE\u9898\u786E\u8BA4\u4F4D\u7F6E\uFF0C\u4E0D\u8981\u6CDB\u6CDB\u731C\u6D4B\u3002"
 ].join("\n");
 function buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, mode) {
   const win = windowLabel || "\u4E00\u4E2A\u5185\u5BB9\u7A97";

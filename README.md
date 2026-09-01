@@ -130,6 +130,14 @@ Don't panic: your data is safe — projects, bindings and layouts live in the br
 
 This issue has been reported to the DeepSeek Harness team and is being fixed; upgrading after the fix ships resolves it permanently.
 
+## Point-to-annotate 📌
+
+Every window title bar has a small **annotate button** (chat-bubble with a plus) next to the collapse toggle. Click it, your cursor becomes a blue speech bubble — click anywhere in a window to drop an input box, type what you want changed ("make this text bigger"), and hit **✓**. The message is packaged (window number + coordinates + the clicked element + your request), filled into the chat input **without sending** — press Enter when ready, and the agent works through the annotation protocol (verify with a screenshot or the window, or ask one targeted question instead of guessing).
+
+- Point and speak — no verbal location description needed.
+- The payload is self-explaining: any agent, in any conversation, can pick it up.
+- Same behavior for every user — no local setup, no special tools.
+
 ## Known limits
 
 - **Platform**: Windows is the fully tested platform. macOS support is experimental: the core file-path code has been adapted for cross-platform use, but no end-to-end test has been completed on macOS hardware.
