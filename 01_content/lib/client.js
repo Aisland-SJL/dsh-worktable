@@ -8184,6 +8184,16 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropRow .dsh-wt_dropItem{flex:1;min-width:0}",
   ".dsh-wt_dropGear{flex:none;width:24px;height:24px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
   ".dsh-wt_dropGear:hover{background:var(--wt-chip);color:var(--wt-text)}",
+  ".dsh-wt_dropWide{width:212px}",
+  ".dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
+  ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
+  ".dsh-wt_gridLabel{flex:1;min-width:0;font-size:11px;line-height:16px;color:var(--wt-text2);padding:4px}",
+  ".dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}",
+  ".dsh-wt_switchOn{background:#4f8ef7}",
+  ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
+  ".dsh-wt_switchOn .dsh-wt_switchKnob{left:15px}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_switch{background:rgba(27,31,36,.15)}",
+  ".dsh-wt_console[data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
   ".dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}",
   ".dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}",
   ".dsh-wt_hslBack:hover{background:var(--wt-chip);color:var(--wt-text)}",
@@ -8454,6 +8464,8 @@ var zh = {
   "console.bgPhotoUse": "\u4F7F\u7528\u6B64\u7167\u7247",
   "console.bgPhotoCurrent": "\u5F53\u524D\u4F7F\u7528",
   "console.bgPhotoNone": "\u8FD8\u6CA1\u6709\u4E0A\u4F20\u8FC7\u7167\u7247",
+  "console.bgPhotoDelete": "\u5220\u9664\u8FD9\u5F20\u7167\u7247",
+  "console.bgGridLabel": "\u80CC\u666F\u7F51\u683C\u7EBF",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
@@ -8646,6 +8658,8 @@ var en = {
   "console.bgPhotoUse": "Use this photo",
   "console.bgPhotoCurrent": "In use",
   "console.bgPhotoNone": "No photos yet",
+  "console.bgPhotoDelete": "Delete this photo",
+  "console.bgGridLabel": "Background grid",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
@@ -17365,6 +17379,7 @@ function ConsolePane() {
   const [bgPhoto, setBgPhoto] = (0, import_react.useState)("");
   const [photoId, setPhotoIdLocal] = (0, import_react.useState)("");
   const [photoList, setPhotoList] = (0, import_react.useState)([]);
+  const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
@@ -17418,6 +17433,40 @@ function ConsolePane() {
     setBgPhoto(url);
     setBgState("photo");
     splitEnv?.console?.setBg?.("photo");
+  };
+  const removePhotoById = async (p) => {
+    try {
+      await splitEnv?.console?.removePhoto?.(p.id);
+    } catch {
+    }
+    try {
+      URL.revokeObjectURL(p.url);
+    } catch {
+    }
+    const nextList = photoList.filter((x) => x.id !== p.id);
+    setPhotoList(nextList);
+    if (photoId === p.id) {
+      const next = nextList[0] ?? null;
+      if (next) {
+        setPhotoIdLocal(next.id);
+        splitEnv?.console?.setPhotoId?.(next.id);
+        photoUrlRef.current = next.url;
+        setBgPhoto(next.url);
+        setBgState("photo");
+        splitEnv?.console?.setBg?.("photo");
+      } else {
+        setPhotoIdLocal("");
+        photoUrlRef.current = "";
+        setBgPhoto("");
+        setBgState("glow");
+        splitEnv?.console?.setBg?.("glow");
+      }
+    }
+  };
+  const togglePhotoGrid = () => {
+    const next = !photoGrid;
+    setPhotoGridState(next);
+    splitEnv?.console?.setPhotoGrid?.(next);
   };
   const selectPhoto = (p) => {
     setPhotoIdLocal(p.id);
@@ -17592,7 +17641,7 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
@@ -17725,7 +17774,7 @@ function ConsolePane() {
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] })
-      ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
+      ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop" + (bgEdit === "photo" ? " dsh-wt_dropWide" : ""), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslHead", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslBack", title: T("console.bgEditBack"), "aria-label": T("console.bgEditBack"), onClick: () => setBgEdit(null), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M10.2 3.2 5.4 8l4.8 4.8", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T("console.bgEditPlain") : bgEdit === "glow" ? T("console.bgEditGlow") : T("console.bgEditPhoto") })
@@ -17739,9 +17788,17 @@ function ConsolePane() {
             ] }),
             T("console.bgPhoto")
           ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+          ] }),
           photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") }),
+            photoId === p.id && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T("console.bgPhotoDelete"), "aria-label": T("console.bgPhotoDelete"), onClick: (e) => {
+              e.stopPropagation();
+              removePhotoById(p);
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "11", height: "11", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" }) }) })
           ] }, p.id)) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_photoEmpty", children: T("console.bgPhotoNone") }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_hslDivider" })
         ] }),
@@ -18879,6 +18936,26 @@ var photoStore = {
         reject(tx.error);
       };
     });
+  },
+  /** 删除一张记录 */
+  async remove(id) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
   }
 };
 
@@ -19110,6 +19187,7 @@ function loadView() {
       consoleBgPlainHsl: normHsl(p.consoleBgPlainHsl),
       consoleBgGlowHsl: normHsl(p.consoleBgGlowHsl),
       consoleBgPhotoId: typeof p.consoleBgPhotoId === "string" && p.consoleBgPhotoId ? p.consoleBgPhotoId : void 0,
+      consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls;
         if (!src || typeof src !== "object") return void 0;
@@ -20138,6 +20216,11 @@ function WorktableSection(props) {
           return { id, url: URL.createObjectURL(blob) };
         },
         setPhotoId: (id) => persistView({ consoleBgPhotoId: id }),
+        removePhoto: async (id) => {
+          await photoStore.remove(id);
+        },
+        getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
+        setPhotoGrid: (v) => persistView({ consoleBgPhotoGrid: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },

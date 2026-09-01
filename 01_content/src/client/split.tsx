@@ -252,6 +252,9 @@ type SplitEnv = {
     setPhotoId: (id: string) => void
     getPhotoHsl: (id: string) => { h: number; s: number; l: number }
     setPhotoHsl: (id: string, v: { h: number; s: number; l: number }) => void
+    removePhoto: (id: string) => Promise<void>
+    getPhotoGrid: () => boolean
+    setPhotoGrid: (v: boolean) => void
     getPlainHsl: () => { h: number; s: number; l: number }
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
@@ -1087,6 +1090,7 @@ function ConsolePane() {
   const [bgPhoto, setBgPhoto] = useState<string>('')
   const [photoId, setPhotoIdLocal] = useState<string>('')
   const [photoList, setPhotoList] = useState<{ id: string; url: string }[]>([])
+  const [photoGrid, setPhotoGridState] = useState<boolean>(() => splitEnv?.console?.getPhotoGrid?.() ?? true)
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
@@ -1139,6 +1143,35 @@ function ConsolePane() {
     setBgPhoto(url)
     setBgState('photo')
     splitEnv?.console?.setBg?.('photo')
+  }
+  /** 删除一张照片：当前使用的那张被删 → 切到最新一张；删光 → 回到流光背景 */
+  const removePhotoById = async (p: { id: string; url: string }) => {
+    try { await splitEnv?.console?.removePhoto?.(p.id) } catch {}
+    try { URL.revokeObjectURL(p.url) } catch {}
+    const nextList = photoList.filter((x) => x.id !== p.id)
+    setPhotoList(nextList)
+    if (photoId === p.id) {
+      const next = nextList[0] ?? null
+      if (next) {
+        setPhotoIdLocal(next.id)
+        splitEnv?.console?.setPhotoId?.(next.id)
+        photoUrlRef.current = next.url
+        setBgPhoto(next.url)
+        setBgState('photo')
+        splitEnv?.console?.setBg?.('photo')
+      } else {
+        setPhotoIdLocal('')
+        photoUrlRef.current = ''
+        setBgPhoto('')
+        setBgState('glow')
+        splitEnv?.console?.setBg?.('glow')
+      }
+    }
+  }
+  const togglePhotoGrid = () => {
+    const next = !photoGrid
+    setPhotoGridState(next)
+    splitEnv?.console?.setPhotoGrid?.(next)
   }
   /** 在照片库中选中某张 */
   const selectPhoto = (p: { id: string; url: string }) => {
@@ -1282,7 +1315,7 @@ function ConsolePane() {
     { mode: 'system', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center', ...(photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : {}) } : bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
       {openMenu !== null && <div className="dsh-wt_dropMask" onClick={() => setOpenMenu(null)} />}
       <div className="dsh-wt_consoleScroll">
@@ -1370,7 +1403,7 @@ function ConsolePane() {
               </div>
             </div>
           ) : (
-            <div className="dsh-wt_drop">
+            <div className={'dsh-wt_drop' + (bgEdit === 'photo' ? ' dsh-wt_dropWide' : '')}>
               <div className="dsh-wt_hslHead">
                 <button type="button" className="dsh-wt_hslBack" title={T('console.bgEditBack')} aria-label={T('console.bgEditBack')} onClick={() => setBgEdit(null)}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M10.2 3.2 5.4 8l4.8 4.8" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                 <span className="dsh-wt_hslTitle">{bgEdit === 'plain' ? T('console.bgEditPlain') : bgEdit === 'glow' ? T('console.bgEditGlow') : T('console.bgEditPhoto')}</span>
@@ -1378,11 +1411,18 @@ function ConsolePane() {
               {bgEdit === 'photo' && (
                 <>
                   <button type="button" className="dsh-wt_dropItem" onClick={pickPhotoFile}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+                  <div className="dsh-wt_dropRow">
+                    <span className="dsh-wt_gridLabel">{T('console.bgGridLabel')}</span>
+                    <button type="button" className={'dsh-wt_switch' + (photoGrid ? ' dsh-wt_switchOn' : '')} aria-pressed={photoGrid} aria-label={T('console.bgGridLabel')} onClick={togglePhotoGrid}><span className="dsh-wt_switchKnob" /></button>
+                  </div>
                   {photoList.length > 0 ? (
                     photoList.slice(0, 4).map((p) => (
                       <div key={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
                         <img className="dsh-wt_photoThumb" src={p.url} alt="" />
                         <span className="dsh-wt_photoName">{photoId === p.id ? T('console.bgPhotoCurrent') : T('console.bgPhotoUse')}</span>
+                        {photoId === p.id && (
+                          <button type="button" className="dsh-wt_dropTrash" title={T('console.bgPhotoDelete')} aria-label={T('console.bgPhotoDelete')} onClick={(e) => { e.stopPropagation(); removePhotoById(p) }}><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
+                        )}
                       </div>
                     ))
                   ) : (

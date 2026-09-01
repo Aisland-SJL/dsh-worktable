@@ -84,4 +84,15 @@ export const photoStore = {
       tx.onabort = () => { db.close(); reject(tx.error) }
     })
   },
+  /** 删除一张记录 */
+  async remove(id: string): Promise<void> {
+    const db = await openDb()
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, 'readwrite')
+      tx.objectStore(STORE).delete(id)
+      tx.oncomplete = () => { db.close(); resolve() }
+      tx.onerror = () => { db.close(); reject(tx.error) }
+      tx.onabort = () => { db.close(); reject(tx.error) }
+    })
+  },
 }

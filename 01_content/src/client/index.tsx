@@ -82,6 +82,8 @@ type ViewState = {
   consoleBgPhotoId?: string
   /** 各背景照片的 HSL 滤镜记录（id → {h,s,l}；默认无调整 = 0/100/100）*/
   consoleBgPhotoHsls?: Record<string, { h: number; s: number; l: number }>
+  /** 照片背景上的网格线开关（默认开）*/
+  consoleBgPhotoGrid?: boolean
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -324,6 +326,7 @@ function loadView(): ViewState {
       consoleBgPlainHsl: normHsl(p.consoleBgPlainHsl),
       consoleBgGlowHsl: normHsl(p.consoleBgGlowHsl),
       consoleBgPhotoId: typeof p.consoleBgPhotoId === 'string' && p.consoleBgPhotoId ? p.consoleBgPhotoId : undefined,
+      consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls
         if (!src || typeof src !== 'object') return undefined
@@ -1394,6 +1397,9 @@ function WorktableSection(props: any) {
           return { id, url: URL.createObjectURL(blob) }
         },
         setPhotoId: (id: string) => persistView({ consoleBgPhotoId: id }),
+        removePhoto: async (id: string) => { await photoStore.remove(id) },
+        getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
+        setPhotoGrid: (v: boolean) => persistView({ consoleBgPhotoGrid: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
