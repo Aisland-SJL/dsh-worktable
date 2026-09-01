@@ -1943,7 +1943,7 @@ function ConsolePane() {
               <div className="dsh-wt_announceUpdate">
                 <span className="dsh-wt_announceNewVer">{T('annot.newVer')} v{updInfo.latest}</span>
                 <button type="button" className={'dsh-wt_announceUpg' + (updCopied ? ' dsh-wt_announceUpgOk' : '')} onClick={onCopyUpgrade}>{updCopied ? T('annot.copied') : T('annot.copyUpgrade')}</button>
-                <button type="button" className="dsh-wt_announceSkip" onClick={() => { try { window.open(updInfo.url, '_blank') } catch {} }}>{T('annot.gotoRelease')}</button>
+                <button type="button" className="dsh-wt_announceSkip dsh-wt_announceSkipGo" onClick={() => { try { window.open(updInfo.url, '_blank') } catch {} }}>{T('annot.gotoRelease')}</button>
                 <button type="button" className="dsh-wt_announceSkip" onClick={onSkipVersion}>{T('annot.skipVer')}</button>
                 <div className="dsh-wt_announceHow">{T('annot.howUpdate')}</div>
               </div>

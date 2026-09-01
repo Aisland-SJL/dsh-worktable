@@ -445,6 +445,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_announceUpgOk{background:rgba(29,154,85,.2);color:#4ade80}',
   '.dsh-wt_announceUpgOk:hover{background:rgba(29,154,85,.3);color:#86efac}',
   '.dsh-wt_announceHow{flex:none;width:100%;font-size:11px;line-height:16px;color:var(--wt-text);padding-top:2px}',
+  '.dsh-wt_announceSkipGo:hover{background:rgba(79,142,247,.16);color:#7eb3ff}',
   '.dsh-wt_announceSkip{flex:none;padding:3px 10px;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);font:inherit;font-size:11px;line-height:16px;cursor:pointer}',
   '.dsh-wt_announceSkip:hover{background:rgba(244,63,94,.14);color:#f87171}',
   '.dsh-wt_announceStatus{font-size:11px;line-height:16px;color:var(--wt-text3)}',
