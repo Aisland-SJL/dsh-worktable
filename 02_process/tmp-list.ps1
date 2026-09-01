@@ -1,2 +1,0 @@
-$ErrorActionPreference = 'Stop'
-opencli --profile 74u3g3us browser wt eval "(() => { const o = indexedDB.open('dsh-worktable', 2); o.onsuccess = () => { const r = o.result.transaction('photoRecords', 'readonly').objectStore('photoRecords').getAll(); r.onsuccess = () => { const out = r.target.result.map(x => ({ id: x.id, createdAt: x.createdAt, type: x.blob && x.blob.type, size: x.blob && x.blob.size })); console.log('DATA:' + JSON.stringify(out)); }; }; return 'go'; })()"

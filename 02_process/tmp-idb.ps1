@@ -1,4 +1,0 @@
-$ErrorActionPreference = 'Stop'
-opencli --profile 74u3g3us browser wt eval "(() => { window.__idb = 'pending'; const o = indexedDB.open('dsh-worktable', 2); o.onsuccess = () => { try { const db = o.result; const names = Array.from(db.objectStoreNames).join(','); const r = db.transaction('photoRecords', 'readonly').objectStore('photoRecords').get('default1'); r.onsuccess = () => { window.__idb = 'names=' + names + ';get-default1=' + (r.target.result ? 'found ' + r.target.result.blob.type + ' ' + r.target.result.blob.size : 'null'); }; r.onerror = () => { window.__idb = 'get-err'; }; } catch (e) { window.__idb = 'tx-err:' + e.message; } }; o.onerror = () => { window.__idb = 'open-err'; }; return 's'; })()"
-Start-Sleep -Milliseconds 1500
-opencli --profile 74u3g3us browser wt eval "window.__idb"
