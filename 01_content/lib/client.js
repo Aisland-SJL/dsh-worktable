@@ -8187,11 +8187,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropWide{width:212px}",
   ".dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
   ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
-  ".dsh-wt_gridLabel{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);padding:4px}",
-  ".dsh-wt_gridToggle{flex:none;padding:4px 10px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;transition:background .15s ease,color .15s ease;opacity:.8}",
-  ".dsh-wt_gridToggle:hover{background:var(--wt-chip);opacity:1}",
-  ".dsh-wt_gridToggleOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600;opacity:1}",
-  ".dsh-wt_gridOpacityVal{flex:none;width:30px;font-size:10px;color:var(--wt-text2);text-align:right;font-variant-numeric:tabular-nums}",
+  ".dsh-wt_gridLabel{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 4px}",
   ".dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}",
   ".dsh-wt_switchOn{background:#4f8ef7}",
   ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
@@ -8219,7 +8215,10 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_photoEmpty{padding:4px 4px 2px;font-size:11px;line-height:16px;color:var(--wt-text3)}",
   ".dsh-wt_hslDivider{height:1px;margin:5px 4px;background:var(--wt-border);opacity:.5}",
   ".dsh-wt_consoleVid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}",
-  ".dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 4px;box-sizing:border-box}",
+  ".dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;box-sizing:border-box}",
+  ".dsh-wt_thumbWrap{position:relative;flex:none;width:30px;height:30px}",
+  ".dsh-wt_thumbWrap .dsh-wt_photoThumb{position:absolute;inset:0}",
+  ".dsh-wt_thumbBadge{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:rgba(10,13,19,.88);border:1px solid rgba(255,255,255,.4);color:#e6e8eb;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2}",
   ".dsh-wt_photoThumb video,.dsh-wt_photoThumb{display:block}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
   ".dsh-wt_hbar{position:relative;width:130px;height:26px;margin:4px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
@@ -8474,9 +8473,7 @@ var zh = {
   "console.bgPhotoCurrent": "\u5F53\u524D\u4F7F\u7528",
   "console.bgPhotoNone": "\u8FD8\u6CA1\u6709\u4E0A\u4F20\u8FC7\u7167\u7247",
   "console.bgPhotoDelete": "\u5220\u9664\u8FD9\u6761\u5A92\u4F53",
-  "console.bgGridLabel": "\u7F51\u683C\u7EBF",
-  "console.bgGridToggle": "\u80CC\u666F\u7F51\u683C",
-  "console.bgGridOpacity": "\u900F\u660E\u5EA6",
+  "console.bgGridLabel": "\u7F51\u683C\u80CC\u666F",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
@@ -8670,9 +8667,7 @@ var en = {
   "console.bgPhotoCurrent": "In use",
   "console.bgPhotoNone": "No photos yet",
   "console.bgPhotoDelete": "Delete this media",
-  "console.bgGridLabel": "Grid",
-  "console.bgGridToggle": "Background grid",
-  "console.bgGridOpacity": "Opacity",
+  "console.bgGridLabel": "Background grid",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
@@ -17831,19 +17826,17 @@ function ConsolePane() {
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_gridHalf", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_gridToggle" + (photoGrid ? " dsh-wt_gridToggleOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: T("console.bgGridToggle") })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridOpacity") }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: gridOpacity, onChange: (e) => onGridOpacity(Number(e.target.value)) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_gridOpacityVal", children: [
-              gridOpacity,
-              "%"
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
             ] })
           ] }),
           photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
-            p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_photoThumb", src: p.url, muted: true, playsInline: true, preload: "metadata" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_thumbWrap", children: [
+              p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_photoThumb", src: p.url, muted: true, playsInline: true, preload: "metadata" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_thumbBadge", "aria-hidden": true, children: p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "8", height: "8", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4.5 3.8l8 4.2-8 4.2z", fill: "currentColor" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "8", height: "8", viewBox: "0 0 16 16", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }),
+                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11l2.6-2.6 2.1 2.1 1.7-1.7 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.5" })
+              ] }) })
+            ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T("console.bgPhotoDelete"), "aria-label": T("console.bgPhotoDelete"), onClick: (e) => {
               e.stopPropagation();
@@ -17857,6 +17850,11 @@ function ConsolePane() {
           const sMax = bgEdit === "plain" ? 100 : 200;
           const lMax = bgEdit === "plain" ? 100 : 200;
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+            bgEdit === "photo" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "T" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: gridOpacity, onChange: (e) => onGridOpacity(Number(e.target.value)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: gridOpacity, min: 0, max: 30, onCommit: onGridOpacity })
+            ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "H" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: -180, max: 180, step: 1, value: v.h, onChange: (e) => editHsl(bgEdit, { h: Number(e.target.value) }) }),

@@ -1429,20 +1429,20 @@ function ConsolePane() {
                     <button type="button" className="dsh-wt_dropItem" onClick={pickPhotoFile}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
                     <div className="dsh-wt_gridHalf">
                       <span className="dsh-wt_gridLabel">{T('console.bgGridLabel')}</span>
-                      <button type="button" className={'dsh-wt_gridToggle' + (photoGrid ? ' dsh-wt_gridToggleOn' : '')} aria-pressed={photoGrid} aria-label={T('console.bgGridLabel')} onClick={togglePhotoGrid}>{T('console.bgGridToggle')}</button>
+                      <button type="button" className={'dsh-wt_switch' + (photoGrid ? ' dsh-wt_switchOn' : '')} aria-pressed={photoGrid} aria-label={T('console.bgGridLabel')} onClick={togglePhotoGrid}><span className="dsh-wt_switchKnob" /></button>
                     </div>
-                  </div>
-                  <div className="dsh-wt_dropRow">
-                    <span className="dsh-wt_gridLabel">{T('console.bgGridOpacity')}</span>
-                    <input className="dsh-wt_hslSlider" type="range" min={0} max={30} step={1} value={gridOpacity} onChange={(e) => onGridOpacity(Number(e.target.value))} />
-                    <span className="dsh-wt_gridOpacityVal">{gridOpacity}%</span>
                   </div>
                   {photoList.length > 0 ? (
                     photoList.slice(0, 4).map((p) => (
                       <div key={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
-                        {p.kind === 'video'
-                          ? <video className="dsh-wt_photoThumb" src={p.url} muted playsInline preload="metadata" />
-                          : <img className="dsh-wt_photoThumb" src={p.url} alt="" />}
+                        <span className="dsh-wt_thumbWrap">
+                          {p.kind === 'video'
+                            ? <video className="dsh-wt_photoThumb" src={p.url} muted playsInline preload="metadata" />
+                            : <img className="dsh-wt_photoThumb" src={p.url} alt="" />}
+                          <span className="dsh-wt_thumbBadge" aria-hidden>{p.kind === 'video'
+                            ? <svg width="8" height="8" viewBox="0 0 16 16"><path d="M4.5 3.8l8 4.2-8 4.2z" fill="currentColor" /></svg>
+                            : <svg width="8" height="8" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" /><path d="M3.4 11l2.6-2.6 2.1 2.1 1.7-1.7 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.5" /></svg>}</span>
+                        </span>
                         <span className="dsh-wt_photoName">{photoId === p.id ? T('console.bgPhotoCurrent') : T('console.bgPhotoUse')}</span>
                         <button type="button" className="dsh-wt_dropTrash" title={T('console.bgPhotoDelete')} aria-label={T('console.bgPhotoDelete')} onClick={(e) => { e.stopPropagation(); removePhotoById(p) }}><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
                       </div>
@@ -1458,6 +1458,9 @@ function ConsolePane() {
                 const sMax = bgEdit === 'plain' ? 100 : 200
                 const lMax = bgEdit === 'plain' ? 100 : 200
                 return (<>
+                  {bgEdit === 'photo' && (
+                    <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">T</span><input className="dsh-wt_hslSlider" type="range" min={0} max={30} step={1} value={gridOpacity} onChange={(e) => onGridOpacity(Number(e.target.value))} /><HslValInput value={gridOpacity} min={0} max={30} onCommit={onGridOpacity} /></div>
+                  )}
                   <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={-180} max={180} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} min={-180} max={180} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
                   <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
                   <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
