@@ -136,11 +136,25 @@ node --check lib/index.js
   - 布局尺度：网格 gap 64px（4 倍间距）不变、max-width 856px 左右居中；卡片 1:1（面积
     2×边长 1.4，实测 236px：名字 20/状态 22/预览 8.5 四行截断）；标题下横向分隔线；无子代理
     徽章、无 💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
-  - 背景：--wt-bg 深色 #0a0d13 + 30px 浅色井字格线（--wt-grid .045/.07，两条
-    linear-gradient），工作台/蓝图质感；玻璃贴片半透明底（暗 .24/浅 .34，无磨砂模糊）。
+  - 背景三选一（data-wt-bg）：纯色/流光/自定义，各自独立记忆——色相/饱和度/明度（-180..180/0..200，纯色随主题默认：深 #0a0d13、浅 #eef1f5）、
+    贴片模糊 B（0-20；预设 纯色0/流光8/自定义8）、网格线不透明度 T（0-30；纯色/流光各自）、
+    照片网格开关（consoleBgPhotoGrid）+ 网格透明度（consoleBgGridOpacity）；卡片 glass 底含 backdrop-filter blur(var(--wt-cardBlur))。
+  - 自定义背景 = 媒体库（照片+视频）：IndexedDB photoRecords（id/createdAt/kind/blob/order）；
+    首用预置两张默认图（defaultBg.ts SVG 极光 + waveBg.ts JPEG 181KB，标记 defaultBgSeeded.v1）；
+    缩略图类型角标/全行删除/抓手拖拽（槽位制+FLIP，photoStore.reorder）；视频背景双轨首尾帧交叉渐融（ConsoleVideo ≥1.2s 最长2s、备轨就绪才淡入）。
+  - 底部操作台：5 个 ghost 按钮玻璃 dock（主题/形状/背景/每行数量/更新公告）；菜单点选保持打开、点空白关闭；
+    下拉宽度 = dock 总宽 186px（媒体宽版 264px）。
   - 顶部标题克制：控制室页只保留侧栏入口卡一个「控制室」——分栏标题栏对 wt-console
-    不渲染 title（保留 ⇄/✕）、PaneBody singleConsole 不渲染标签栏、ConsolePane 头只留
-    主题开关（右对齐）。
+    不渲染 title（保留 ⇄/✕）、PaneBody singleConsole 不渲染标签栏；控制项集中在底部操作台 5 键。
+  - 更新公告（第 5 键，反选切换大磁片替代网格视图）：顶部=当前版本/检查更新/自动检查开关；
+    新版本横幅=复制升级指令（点击变绿并提示「请在任意对话中发送」）/查看发布页（蓝 hover）/忽略此版本（红 hover）+
+    CHANGELOG_V030 正文（changelog.ts 纯文本，不做 md 渲染）；
+    检查核心 = updateCheck.ts（updateCache.v1 缓存，与设置面板旧更新卡共用 lastUpdateCheck/skipVersion/updateCheck 键，
+    旧卡暂保留未去重）；铃铛按钮发现新版本时右上角琥珀呼吸灯（dockBadge）。
+  - 指哪打哪标注：窗格折叠键旁 annotBtn——蓝泡光标→点选/拖框（小拖=点）→输入→✓ 注入宿主 textarea（不发送，失败回退剪贴板）。
+    payload v3.2：窗口身份（编号+窗格标题+内容类型/URL）+ 主目标（caretPositionFromPoint 取字 + computed style 字号）+ 整行 + 候选；
+    同源 iframe 下钻取字（boxPayload），跨域输出「读取受限」+ src；提示词含「禁止编造，缺失时如实说明，建议截图或视觉模型」；
+    知识包含标注协议行（窗口编号+处理方式）；回退锚点 tag：pre-annotate-v3 / pre-annotate-v3.1 / pre-annotate-v3.2。
   - 分隔线：DIVIDER=4（分栏可拖分隔条更细）。
   - 冷会话消息预览（方案 A）：binding() 对冷会话不载入文本；预热走 face.history({maxMessages:6})
     （运行期内建方法、非公开接口，只读无副作用）尾部扫 user/message 与 assistant/message 的
@@ -155,7 +169,7 @@ node --check lib/index.js
   图标、不显示版本号），仅发现更新时出现；更新卡在设置面板顶部（复制 AI 提示词 + 忽略此
   版本 + 命令框供终端用户手抄），版本号与自动检查开关在面板底部；设置弹窗右上角 ✕ 关闭、
   底部防溢出钳制（POP_BOTTOM_MARGIN=12，贴底后向上生长；按钮与开关必须平级防冒泡）。
-  localStorage 键 lastUpdateCheck.v1 / skipVersion.v1 / updateCheck.v1。
+  localStorage 键 lastUpdateCheck.v1 / skipVersion.v1 / updateCheck.v1（控制室第 5 键公告页共用，另缓存 updateCache.v1）。
   **发布纪律**：改动≠发布，只有 tag+Release 才触发提醒；新版本 = 新 tag + 新 Release，每个
   Release 必须同时附固定名资产 `dsh-worktable.tgz`（供 releases/latest/download 永久链接）
   与版本化资产。版本注入：build.mjs 把 package.json version 打进 __WT_VERSION__，发版前

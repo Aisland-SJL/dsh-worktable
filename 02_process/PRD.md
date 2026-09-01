@@ -165,7 +165,11 @@ ctx.slots.register({
   - 子座位注册跟踪：apply 中 `ctx.slots.subscribe` + `entries()` 维护模块级 id 序列；
 - 持久化：
   - `dsh.worktable.view.v1`：query/searchOpen/orderBy/dock/floatTop/consoleTheme
-    （控制室主题 dark|light|system，缺省 system）；
+    （控制室主题 dark|light|system，缺省 system）+ 控制室面板与背景：
+    consoleCols/consoleShape/consoleBg（plain|glow|photo）；
+    各背景独立记忆：consoleBgPlainHsl、consoleBgGlowHsl、consoleBgPlainGrid、consoleBgGlowGrid、
+    consoleBgPlainBlur、consoleBgGlowBlur、consoleCardBlur（照片贴片模糊，预设 纯色0/流光8/自定义8）、
+    consoleBgPhotoId、consoleBgPhotoHsls（媒体 id→HSL）、consoleBgPhotoGrid、consoleBgGridOpacity；
   - `dsh.worktable.projects.v1`：order/lastUsed/hidden/nameOverrides/iconOverrides/
     removed/shortcuts/layouts/views/bindings/folders；
     - views：入驻项目与「控制室」（wt-console）的视图覆盖（LayoutSpec）；
@@ -173,7 +177,10 @@ ctx.slots.register({
     - folders：项目 → 项目文件夹（含 wt-console）；
   - 卡片上报的 meta 注册表仅存内存，不持久化；
   - 更新检查：`dsh.worktable.lastUpdateCheck.v1`（上次成功检查时间戳，节流一天一次）、
-    `dsh.worktable.skipVersion.v1`（忽略的版本号）、`dsh.worktable.updateCheck.v1`（自动检查开关，'0'=关）；
+    `dsh.worktable.skipVersion.v1`（忽略的版本号）、`dsh.worktable.updateCheck.v1`（自动检查开关，'0'=关）、
+    `dsh.worktable.updateCache.v1`（公告页缓存 {status,info}）；控制室第 5 键「更新公告」与设置面板共用这些键；
+  - 媒体库（自定义背景）：IndexedDB `dsh-worktable/photoRecords`（id/createdAt/kind/blob/order，v2）；
+    首次使用预置两张默认图（defaultBg.ts SVG 极光 + waveBg.ts JPEG），标记 `dsh.worktable.defaultBgSeeded.v1`；
 - 样式：暗色优先，跟随 `--dsw-alias-*` 设计变量（与 dsh-usage / dsh-travelatlas 一致）。
 
 ## 7. 与 dsh-travelatlas 的关系

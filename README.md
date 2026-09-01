@@ -137,6 +137,7 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 - Point and speak — no verbal location description needed.
 - The payload is self-explaining: any agent, in any conversation, can pick it up.
 - Same behavior for every user — no local setup, no special tools.
+- Same family of polish: the console gains a 5th dock button **Changelog** (version notes / check for updates / copy-upgrade command) and ships **two default background presets** (aurora gradient + coastal view) in the custom background library.
 
 ## Known limits
 
