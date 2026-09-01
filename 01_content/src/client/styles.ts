@@ -435,7 +435,8 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_dropWide{width:212px}',
   '.dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}',
   '.dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}',
-  '.dsh-wt_gridLabel{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 4px}',
+  '.dsh-wt_gridLabel{flex:none;white-space:nowrap;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 2px 2px 4px}',
+  '.dsh-wt_gridHalf .dsh-wt_switch{margin-right:2px}',
 
   '.dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}',
   '.dsh-wt_switchOn{background:#4f8ef7}',
