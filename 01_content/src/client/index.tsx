@@ -1394,7 +1394,7 @@ function WorktableSection(props: any) {
           return { id, url: URL.createObjectURL(blob) }
         },
         setPhotoId: (id: string) => persistView({ consoleBgPhotoId: id }),
-        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 0, s: 31, l: 6 },
+        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
         setGlowHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgGlowHsl: { ...v } }),

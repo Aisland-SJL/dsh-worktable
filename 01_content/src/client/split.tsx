@@ -1090,7 +1090,7 @@ function ConsolePane() {
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
-  const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
+  const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: -140, s: 31, l: 6 })
   const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
   const [photoHsl, setPhotoHslState] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 100, l: 100 })
   const gridRef = useRef<HTMLDivElement | null>(null)
@@ -1129,11 +1129,10 @@ function ConsolePane() {
   const onFilePhoto = async (file: Blob) => {
     let id = ''
     let url = ''
-    const rec = await splitEnv?.console?.addPhoto?.(file).catch(() => null)
+    const rec = await (splitEnv?.console?.addPhoto?.(file) ?? Promise.resolve(null)).catch(() => null)
     if (rec) { id = rec.id; url = rec.url } else {
       url = URL.createObjectURL(file)
     }
-    if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
     photoUrlRef.current = url
     setPhotoIdLocal(id)
     if (id) setPhotoList((prev) => [{ id, url }, ...prev])
@@ -1145,7 +1144,6 @@ function ConsolePane() {
   const selectPhoto = (p: { id: string; url: string }) => {
     setPhotoIdLocal(p.id)
     splitEnv?.console?.setPhotoId?.(p.id)
-    if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
     photoUrlRef.current = p.url
     setBgPhoto(p.url)
     setBgState('photo')
@@ -1177,8 +1175,8 @@ function ConsolePane() {
   }
   const resetHsl = (kind: 'plain' | 'glow' | 'photo') => {
     if (kind === 'plain') {
-      setPlainHslState({ h: 0, s: 31, l: 6 })
-      splitEnv?.console?.setPlainHsl?.({ h: 0, s: 31, l: 6 })
+      setPlainHslState({ h: -140, s: 31, l: 6 })
+      splitEnv?.console?.setPlainHsl?.({ h: -140, s: 31, l: 6 })
     } else if (kind === 'glow') {
       setGlowHslState({ h: 0, s: 100, l: 100 })
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
@@ -1239,7 +1237,6 @@ function ConsolePane() {
       const active = lib.list.find((p) => p.id === lib.activeId) ?? lib.list[0] ?? null
       if (active) {
         setPhotoIdLocal(active.id)
-        if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
         photoUrlRef.current = active.url
         setBgPhoto(active.url)
       }

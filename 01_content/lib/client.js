@@ -17368,7 +17368,7 @@ function ConsolePane() {
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
-  const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 });
+  const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: -140, s: 31, l: 6 });
   const [glowHsl, setGlowHslState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 });
   const [photoHsl, setPhotoHslState] = (0, import_react.useState)({ h: 0, s: 100, l: 100 });
   const gridRef = (0, import_react.useRef)(null);
@@ -17405,18 +17405,12 @@ function ConsolePane() {
   const onFilePhoto = async (file) => {
     let id = "";
     let url = "";
-    const rec = await splitEnv?.console?.addPhoto?.(file).catch(() => null);
+    const rec = await (splitEnv?.console?.addPhoto?.(file) ?? Promise.resolve(null)).catch(() => null);
     if (rec) {
       id = rec.id;
       url = rec.url;
     } else {
       url = URL.createObjectURL(file);
-    }
-    if (photoUrlRef.current) {
-      try {
-        URL.revokeObjectURL(photoUrlRef.current);
-      } catch {
-      }
     }
     photoUrlRef.current = url;
     setPhotoIdLocal(id);
@@ -17428,12 +17422,6 @@ function ConsolePane() {
   const selectPhoto = (p) => {
     setPhotoIdLocal(p.id);
     splitEnv?.console?.setPhotoId?.(p.id);
-    if (photoUrlRef.current) {
-      try {
-        URL.revokeObjectURL(photoUrlRef.current);
-      } catch {
-      }
-    }
     photoUrlRef.current = p.url;
     setBgPhoto(p.url);
     setBgState("photo");
@@ -17464,8 +17452,8 @@ function ConsolePane() {
   };
   const resetHsl = (kind) => {
     if (kind === "plain") {
-      setPlainHslState({ h: 0, s: 31, l: 6 });
-      splitEnv?.console?.setPlainHsl?.({ h: 0, s: 31, l: 6 });
+      setPlainHslState({ h: -140, s: 31, l: 6 });
+      splitEnv?.console?.setPlainHsl?.({ h: -140, s: 31, l: 6 });
     } else if (kind === "glow") {
       setGlowHslState({ h: 0, s: 100, l: 100 });
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 });
@@ -17549,12 +17537,6 @@ function ConsolePane() {
       const active = lib2.list.find((p) => p.id === lib2.activeId) ?? lib2.list[0] ?? null;
       if (active) {
         setPhotoIdLocal(active.id);
-        if (photoUrlRef.current) {
-          try {
-            URL.revokeObjectURL(photoUrlRef.current);
-          } catch {
-          }
-        }
         photoUrlRef.current = active.url;
         setBgPhoto(active.url);
       }
@@ -18818,59 +18800,65 @@ function openDb() {
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
-      if (db.objectStoreNames.contains(LEGACY_STORE)) {
-        try {
-          const tx = req.transaction;
-          const getReq = tx.objectStore(LEGACY_STORE).get(LEGACY_KEY);
-          getReq.onsuccess = () => {
-            try {
-              const blob = getReq.result;
-              if (blob instanceof Blob) {
-                const rec = { id: "legacy", createdAt: Date.now(), blob };
-                tx.objectStore(STORE).put(rec, rec.id);
-              }
-              tx.objectStore(LEGACY_STORE).delete(LEGACY_KEY);
-            } catch {
-            }
-          };
-        } catch {
-        }
-        try {
-          db.deleteObjectStore(LEGACY_STORE);
-        } catch {
-        }
-      }
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
+function getAll(db) {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const req = tx.objectStore(STORE).getAll();
+    req.onsuccess = () => {
+      const arr = [];
+      for (const v of req.result) {
+        const r = v;
+        if (r && typeof r === "object" && typeof r.id === "string" && r.blob instanceof Blob) {
+          arr.push(r);
+        }
+      }
+      arr.sort((a, b) => b.createdAt - a.createdAt);
+      db.close();
+      resolve(arr);
+    };
+    req.onerror = () => {
+      db.close();
+      reject(req.error);
+    };
+  });
+}
 var photoStore = {
-  /** 全部照片记录（最新在前） */
+  /** 全部照片记录（最新在前）；无记录时惰性迁移 v1 单图 */
   async list() {
     const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, "readonly");
-      const req = tx.objectStore(STORE).getAll();
-      req.onsuccess = () => {
-        const arr = [];
-        for (const v of req.result) {
-          const r = v;
-          if (r && typeof r === "object" && typeof r.id === "string" && r.blob instanceof Blob) {
-            arr.push(r);
-          }
+    const main = await getAll(db);
+    if (main.length > 0) return main;
+    try {
+      if (db.objectStoreNames.contains(LEGACY_STORE)) {
+        const blob = await new Promise((resolve, reject) => {
+          const tx = db.transaction(LEGACY_STORE, "readonly");
+          const req = tx.objectStore(LEGACY_STORE).get(LEGACY_KEY);
+          req.onsuccess = () => resolve(req.result instanceof Blob ? req.result : null);
+          req.onerror = () => reject(req.error);
+        });
+        if (blob) {
+          const rec = { id: "legacy", createdAt: Date.now(), blob };
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE, "readwrite");
+            tx.objectStore(STORE).put(rec, rec.id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+          });
+          db.close();
+          return [rec];
         }
-        arr.sort((a, b) => b.createdAt - a.createdAt);
-        db.close();
-        resolve(arr);
-      };
-      req.onerror = () => {
-        db.close();
-        reject(req.error);
-      };
-    });
+      }
+    } catch {
+    }
+    db.close();
+    return [];
   },
-  /** 新增一张原始照片，返回其 id（自动置为最新） */
+  /** 新增一张原始照片，返回其 id（自动成为最新） */
   async add(blob) {
     const db = await openDb();
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -20150,7 +20138,7 @@ function WorktableSection(props) {
           return { id, url: URL.createObjectURL(blob) };
         },
         setPhotoId: (id) => persistView({ consoleBgPhotoId: id }),
-        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 0, s: 31, l: 6 },
+        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
         setGlowHsl: (v) => persistView({ consoleBgGlowHsl: { ...v } }),
