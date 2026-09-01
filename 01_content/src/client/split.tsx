@@ -255,6 +255,8 @@ type SplitEnv = {
     removePhoto: (id: string) => Promise<void>
     getPhotoGrid: () => boolean
     setPhotoGrid: (v: boolean) => void
+    getGridOpacity: () => number
+    setGridOpacity: (v: number) => void
     getPlainHsl: () => { h: number; s: number; l: number }
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
@@ -1092,6 +1094,7 @@ function ConsolePane() {
   const [photoList, setPhotoList] = useState<{ id: string; kind: 'photo' | 'video'; url: string }[]>([])
   const [bgVideo, setBgVideo] = useState<string>('')
   const [photoGrid, setPhotoGridState] = useState<boolean>(() => splitEnv?.console?.getPhotoGrid?.() ?? true)
+  const [gridOpacity, setGridOpacityState] = useState<number>(() => splitEnv?.console?.getGridOpacity?.() ?? 8)
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
@@ -1176,6 +1179,11 @@ function ConsolePane() {
     const next = !photoGrid
     setPhotoGridState(next)
     splitEnv?.console?.setPhotoGrid?.(next)
+  }
+  const onGridOpacity = (n: number) => {
+    const v = Math.min(Math.max(Math.round(n), 0), 30)
+    setGridOpacityState(v)
+    splitEnv?.console?.setGridOpacity?.(v)
   }
   /** 在媒体库中选中某条 */
   const selectPhoto = (p: { id: string; kind: 'photo' | 'video'; url: string }) => {
@@ -1320,7 +1328,7 @@ function ConsolePane() {
     { mode: 'system', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={bg === 'plain' || bg === 'photo' ? { ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}) } : undefined}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center', ...(photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : {}) } : bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>
         {bg === 'photo' && bgVideo && <video className="dsh-wt_consoleVid" src={bgVideo} autoPlay muted loop playsInline style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} />}
         {bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
@@ -1421,8 +1429,13 @@ function ConsolePane() {
                     <button type="button" className="dsh-wt_dropItem" onClick={pickPhotoFile}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
                     <div className="dsh-wt_gridHalf">
                       <span className="dsh-wt_gridLabel">{T('console.bgGridLabel')}</span>
-                      <button type="button" className={'dsh-wt_switch' + (photoGrid ? ' dsh-wt_switchOn' : '')} aria-pressed={photoGrid} aria-label={T('console.bgGridLabel')} onClick={togglePhotoGrid}><span className="dsh-wt_switchKnob" /></button>
+                      <button type="button" className={'dsh-wt_gridToggle' + (photoGrid ? ' dsh-wt_gridToggleOn' : '')} aria-pressed={photoGrid} aria-label={T('console.bgGridLabel')} onClick={togglePhotoGrid}>{T('console.bgGridToggle')}</button>
                     </div>
+                  </div>
+                  <div className="dsh-wt_dropRow">
+                    <span className="dsh-wt_gridLabel">{T('console.bgGridOpacity')}</span>
+                    <input className="dsh-wt_hslSlider" type="range" min={0} max={30} step={1} value={gridOpacity} onChange={(e) => onGridOpacity(Number(e.target.value))} />
+                    <span className="dsh-wt_gridOpacityVal">{gridOpacity}%</span>
                   </div>
                   {photoList.length > 0 ? (
                     photoList.slice(0, 4).map((p) => (

@@ -84,6 +84,8 @@ type ViewState = {
   consoleBgPhotoHsls?: Record<string, { h: number; s: number; l: number }>
   /** 照片背景上的网格线开关（默认开）*/
   consoleBgPhotoGrid?: boolean
+  /** 照片背景网格线透明度 %（0-30，默认 8）*/
+  consoleBgGridOpacity?: number
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -327,6 +329,7 @@ function loadView(): ViewState {
       consoleBgGlowHsl: normHsl(p.consoleBgGlowHsl),
       consoleBgPhotoId: typeof p.consoleBgPhotoId === 'string' && p.consoleBgPhotoId ? p.consoleBgPhotoId : undefined,
       consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
+      consoleBgGridOpacity: typeof p.consoleBgGridOpacity === 'number' && p.consoleBgGridOpacity >= 0 && p.consoleBgGridOpacity <= 30 ? Math.round(p.consoleBgGridOpacity) : undefined,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls
         if (!src || typeof src !== 'object') return undefined
@@ -1400,6 +1403,8 @@ function WorktableSection(props: any) {
         removePhoto: async (id: string) => { await photoStore.remove(id) },
         getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
         setPhotoGrid: (v: boolean) => persistView({ consoleBgPhotoGrid: v }),
+        getGridOpacity: () => viewRef.current.consoleBgGridOpacity ?? 8,
+        setGridOpacity: (v: number) => persistView({ consoleBgGridOpacity: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },

@@ -8187,13 +8187,17 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropWide{width:212px}",
   ".dsh-wt_dropTrash{flex:none;width:22px;height:22px;margin-right:2px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,color .15s ease}",
   ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
-  ".dsh-wt_gridLabel{flex:1;min-width:0;font-size:11px;line-height:16px;color:var(--wt-text2);padding:4px}",
+  ".dsh-wt_gridLabel{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);padding:4px}",
+  ".dsh-wt_gridToggle{flex:none;padding:4px 10px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;transition:background .15s ease,color .15s ease;opacity:.8}",
+  ".dsh-wt_gridToggle:hover{background:var(--wt-chip);opacity:1}",
+  ".dsh-wt_gridToggleOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600;opacity:1}",
+  ".dsh-wt_gridOpacityVal{flex:none;width:30px;font-size:10px;color:var(--wt-text2);text-align:right;font-variant-numeric:tabular-nums}",
   ".dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}",
   ".dsh-wt_switchOn{background:#4f8ef7}",
   ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
   ".dsh-wt_switchOn .dsh-wt_switchKnob{left:15px}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_switch{background:rgba(27,31,36,.15)}",
-  ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(rgba(255,255,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.16) 1px,transparent 1px);background-size:30px 30px}",
+  ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
   ".dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}",
   ".dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}",
@@ -8202,7 +8206,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_hslRow{display:flex;align-items:center;gap:4px;padding:2px 3px;width:100%;box-sizing:border-box}",
   ".dsh-wt_hslLabel{flex:none;width:10px;font-size:9px;font-weight:600;color:var(--wt-text3);text-align:center}",
   ".dsh-wt_hslSlider{flex:1;min-width:0;height:14px;accent-color:#4f8ef7;cursor:pointer}",
-  ".dsh-wt_hslInput{flex:none;width:42px;height:20px;padding:0 4px;border:1px solid var(--wt-border);border-radius:6px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:10px;text-align:right;outline:none;box-sizing:border-box;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}",
+  ".dsh-wt_hslInput{flex:none;width:42px;height:20px;padding:0 4px;border:1px solid var(--wt-border);border-radius:6px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:10px;text-align:center;outline:none;box-sizing:border-box;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:textfield}",
   ".dsh-wt_hslInput::-webkit-outer-spin-button,.dsh-wt_hslInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}",
   ".dsh-wt_hslInput:focus{border-color:#4f8ef7;color:var(--wt-text)}",
   ".dsh-wt_hslReset{margin:4px 4px 2px;padding:5px 9px;border:none;border-radius:7px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;text-align:center}",
@@ -8469,8 +8473,10 @@ var zh = {
   "console.bgPhotoUse": "\u4F7F\u7528\u6B64\u7167\u7247",
   "console.bgPhotoCurrent": "\u5F53\u524D\u4F7F\u7528",
   "console.bgPhotoNone": "\u8FD8\u6CA1\u6709\u4E0A\u4F20\u8FC7\u7167\u7247",
-  "console.bgPhotoDelete": "\u5220\u9664\u8FD9\u5F20\u7167\u7247",
-  "console.bgGridLabel": "\u80CC\u666F\u7F51\u683C\u7EBF",
+  "console.bgPhotoDelete": "\u5220\u9664\u8FD9\u6761\u5A92\u4F53",
+  "console.bgGridLabel": "\u7F51\u683C\u7EBF",
+  "console.bgGridToggle": "\u80CC\u666F\u7F51\u683C",
+  "console.bgGridOpacity": "\u900F\u660E\u5EA6",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
@@ -8663,8 +8669,10 @@ var en = {
   "console.bgPhotoUse": "Use this photo",
   "console.bgPhotoCurrent": "In use",
   "console.bgPhotoNone": "No photos yet",
-  "console.bgPhotoDelete": "Delete this photo",
-  "console.bgGridLabel": "Background grid",
+  "console.bgPhotoDelete": "Delete this media",
+  "console.bgGridLabel": "Grid",
+  "console.bgGridToggle": "Background grid",
+  "console.bgGridOpacity": "Opacity",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
@@ -17386,6 +17394,7 @@ function ConsolePane() {
   const [photoList, setPhotoList] = (0, import_react.useState)([]);
   const [bgVideo, setBgVideo] = (0, import_react.useState)("");
   const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
+  const [gridOpacity, setGridOpacityState] = (0, import_react.useState)(() => splitEnv?.console?.getGridOpacity?.() ?? 8);
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
@@ -17483,6 +17492,11 @@ function ConsolePane() {
     const next = !photoGrid;
     setPhotoGridState(next);
     splitEnv?.console?.setPhotoGrid?.(next);
+  };
+  const onGridOpacity = (n) => {
+    const v = Math.min(Math.max(Math.round(n), 0), 30);
+    setGridOpacityState(v);
+    splitEnv?.console?.setGridOpacity?.(v);
   };
   const selectPhoto = (p) => {
     setPhotoIdLocal(p.id);
@@ -17664,7 +17678,7 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: bg === "plain" || bg === "photo" ? { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {} } : void 0, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
       bg === "photo" && bgVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_consoleVid", src: bgVideo, autoPlay: true, muted: true, loop: true, playsInline: true, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -17817,7 +17831,15 @@ function ConsolePane() {
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_gridHalf", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_gridToggle" + (photoGrid ? " dsh-wt_gridToggleOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: T("console.bgGridToggle") })
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridOpacity") }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: gridOpacity, onChange: (e) => onGridOpacity(Number(e.target.value)) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_gridOpacityVal", children: [
+              gridOpacity,
+              "%"
             ] })
           ] }),
           photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
@@ -19217,6 +19239,7 @@ function loadView() {
       consoleBgGlowHsl: normHsl(p.consoleBgGlowHsl),
       consoleBgPhotoId: typeof p.consoleBgPhotoId === "string" && p.consoleBgPhotoId ? p.consoleBgPhotoId : void 0,
       consoleBgPhotoGrid: p.consoleBgPhotoGrid !== false,
+      consoleBgGridOpacity: typeof p.consoleBgGridOpacity === "number" && p.consoleBgGridOpacity >= 0 && p.consoleBgGridOpacity <= 30 ? Math.round(p.consoleBgGridOpacity) : void 0,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls;
         if (!src || typeof src !== "object") return void 0;
@@ -20250,6 +20273,8 @@ function WorktableSection(props) {
         },
         getPhotoGrid: () => viewRef.current.consoleBgPhotoGrid !== false,
         setPhotoGrid: (v) => persistView({ consoleBgPhotoGrid: v }),
+        getGridOpacity: () => viewRef.current.consoleBgGridOpacity ?? 8,
+        setGridOpacity: (v) => persistView({ consoleBgGridOpacity: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
