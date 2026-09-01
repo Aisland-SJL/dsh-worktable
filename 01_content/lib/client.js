@@ -8174,7 +8174,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtn:hover{background:rgba(27,31,36,.10)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtnOn{background:rgba(27,31,36,.14)}",
   ".dsh-wt_dropMask{position:fixed;inset:0;z-index:9;background:transparent;border:none}",
-  ".dsh-wt_drop{position:absolute;bottom:calc(100% - 8px);left:50%;transform:translateX(-50%);width:150px;box-sizing:border-box;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(14px) saturate(1.3);z-index:11;display:flex;flex-direction:column;gap:2px}",
+  ".dsh-wt_drop{position:absolute;bottom:calc(100% - 4px);left:50%;transform:translateX(-50%);width:150px;box-sizing:border-box;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.4);backdrop-filter:blur(14px) saturate(1.3);z-index:11;display:flex;flex-direction:column;gap:2px}",
   ".dsh-wt_dropItem{width:100%;padding:6px 9px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;display:flex;align-items:center;gap:7px;text-align:left}",
   ".dsh-wt_dropItem:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_drop{background:rgba(255,255,255,.62);border-color:rgba(27,31,36,.12)}",
@@ -8186,18 +8186,21 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}",
   ".dsh-wt_hslBack:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_hslTitle{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-  ".dsh-wt_hslRow{display:flex;align-items:center;gap:6px;padding:2px 4px;width:100%;box-sizing:border-box}",
-  ".dsh-wt_hslLabel{flex:none;width:11px;font-size:10px;font-weight:600;color:var(--wt-text3);text-align:center}",
+  ".dsh-wt_hslRow{display:flex;align-items:center;gap:4px;padding:2px 3px;width:100%;box-sizing:border-box}",
+  ".dsh-wt_hslLabel{flex:none;width:10px;font-size:9px;font-weight:600;color:var(--wt-text3);text-align:center}",
   ".dsh-wt_hslSlider{flex:1;min-width:0;height:14px;accent-color:#4f8ef7;cursor:pointer}",
-  ".dsh-wt_hslVal{flex:none;width:34px;font-size:10px;color:var(--wt-text2);text-align:right;font-variant-numeric:tabular-nums}",
+  ".dsh-wt_hslVal{flex:none;width:26px;font-size:10px;color:var(--wt-text2);text-align:right;font-variant-numeric:tabular-nums;cursor:pointer;border-radius:4px;box-sizing:border-box}",
+  ".dsh-wt_hslVal:hover{background:var(--wt-chip);color:var(--wt-text)}",
+  ".dsh-wt_hslInput{flex:none;width:30px;height:18px;padding:0 2px;border:none;border-bottom:1px solid var(--wt-border);background:transparent;color:var(--wt-text);font:inherit;font-size:10px;text-align:right;outline:none}",
   ".dsh-wt_hslReset{margin:4px 4px 2px;padding:5px 9px;border:none;border-radius:7px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;text-align:center}",
   ".dsh-wt_hslReset:hover{background:rgba(79,142,247,.22);color:var(--wt-text)}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
-  ".dsh-wt_vbar{position:relative;width:26px;height:130px;margin:6px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
-  ".dsh-wt_vbarFill{position:absolute;left:3px;right:3px;top:0;border-radius:999px;background:linear-gradient(180deg,#4f8ef7,#3b82f6);pointer-events:none}",
-  ".dsh-wt_vbarLine{position:absolute;left:50%;transform:translate(-50%,-50%);width:10px;height:1px;padding:0;border:none;border-radius:1px;background:rgba(255,255,255,.95);cursor:pointer;z-index:2}",
-  ".dsh-wt_vbarLine:hover{background:#fff}",
-  ".dsh-wt_vbarKnob{position:absolute;left:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none}",
+  ".dsh-wt_hbar{position:relative;width:130px;height:26px;margin:4px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
+  ".dsh-wt_hbarFill{position:absolute;top:3px;bottom:3px;left:0;border-radius:999px;background:linear-gradient(90deg,#4f8ef7,#3b82f6);pointer-events:none;transition:width .25s cubic-bezier(.22,.61,.36,1)}",
+  ".dsh-wt_hbarLine{position:absolute;top:0;bottom:0;transform:translateX(-50%);width:20%;padding:0;border:none;background:transparent;cursor:pointer;z-index:2}",
+  '.dsh-wt_hbarLine::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:9px;border-radius:2px;background:rgba(255,255,255,.9);transition:height .12s ease,background .12s ease}',
+  ".dsh-wt_hbarLine:hover::before{height:14px;background:#fff}",
+  ".dsh-wt_hbarKnob{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none;transition:left .25s cubic-bezier(.22,.61,.36,1)}",
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   ".dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}",
@@ -8438,6 +8441,7 @@ var zh = {
   "console.bgEditGlow": "\u6D41\u5149\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditBack": "\u8FD4\u56DE",
   "console.bgEditReset": "\u6062\u590D\u521D\u59CB",
+  "console.bgEditType": "\u70B9\u51FB\u6216\u60AC\u505C\u8F93\u5165\u6570\u503C",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
   "console.themeDark": "\u6DF1\u8272",
@@ -8625,6 +8629,7 @@ var en = {
   "console.bgEditGlow": "Glow background",
   "console.bgEditBack": "Back",
   "console.bgEditReset": "Reset",
+  "console.bgEditType": "Click or hover to type a value",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
   "console.themeDark": "Dark",
@@ -17275,6 +17280,18 @@ function AnimPane(props) {
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("iframe", { className: "dsh-wt_paneFrame", src, title: "anim" }, props.reloadKey)
   ] });
 }
+function ThemeIcon({ mode, size }) {
+  const s = size ?? 18;
+  if (mode === "dark") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: s, height: s, viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }) });
+  if (mode === "light") return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: s, height: s, viewBox: "0 0 16 16", "aria-hidden": true, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3.1", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" })
+  ] });
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: s, height: s, viewBox: "0 0 16 16", "aria-hidden": true, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2", y: "3.2", width: "12", height: "8.8", rx: "1.6", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M5.4 14.4h5.2M8 12v2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" })
+  ] });
+}
 function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
@@ -17286,6 +17303,8 @@ function ConsolePane() {
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
   const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 });
   const [glowHsl, setGlowHslState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 });
+  const [valEdit, setValEdit] = (0, import_react.useState)(null);
+  const [valDraft, setValDraft] = (0, import_react.useState)("");
   const gridRef = (0, import_react.useRef)(null);
   const firstRectsRef = (0, import_react.useRef)(null);
   const onCols = (n) => {
@@ -17317,7 +17336,7 @@ function ConsolePane() {
         const url = URL.createObjectURL(file);
         const img = new Image();
         img.onload = () => {
-          const maxDim = 1600;
+          const maxDim = 2400;
           const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
           const w = Math.max(1, Math.round(img.width * scale));
           const h = Math.max(1, Math.round(img.height * scale));
@@ -17329,8 +17348,11 @@ function ConsolePane() {
             URL.revokeObjectURL(url);
             return;
           }
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
           ctx.drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          const webp = canvas.toDataURL("image/webp", 0.9);
+          const dataUrl = webp.indexOf("data:image/webp") === 0 ? webp : canvas.toDataURL("image/jpeg", 0.9);
           URL.revokeObjectURL(url);
           setBgPhoto(dataUrl);
           setBgState("photo");
@@ -17364,6 +17386,15 @@ function ConsolePane() {
       setGlowHslState({ h: 0, s: 100, l: 100 });
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 });
     }
+  };
+  const commitVal = (kind, k) => {
+    const v = kind === "plain" ? plainHsl : glowHsl;
+    const max = k === "h" ? 360 : kind === "plain" ? 100 : 200;
+    let n = parseInt(valDraft, 10);
+    if (!Number.isFinite(n)) n = v[k];
+    n = Math.min(Math.max(n, 0), max);
+    editHsl(kind, { [k]: n });
+    setValEdit(null);
   };
   (0, import_react.useLayoutEffect)(() => {
     const first = firstRectsRef.current;
@@ -17462,9 +17493,9 @@ function ConsolePane() {
   };
   const statusLabel = { idle: T("console.idle"), busy: T("console.busy"), need: T("console.need"), done: T("console.done") };
   const themeOpts = [
-    { mode: "dark", icon: "\u{1F319}", key: "console.themeDark" },
-    { mode: "light", icon: "\u2600\uFE0F", key: "console.themeLight" },
-    { mode: "system", icon: "\u{1F5A5}\uFE0F", key: "console.themeSystem" }
+    { mode: "dark", key: "console.themeDark" },
+    { mode: "light", key: "console.themeLight" },
+    { mode: "system", key: "console.themeSystem" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center" } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -17522,7 +17553,7 @@ function ConsolePane() {
     ] }) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDockWrap", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDock", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "theme" ? " dsh-wt_dockBtnOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "18", height: "18", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "theme" ? " dsh-wt_dockBtnOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: themeMode }) }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "shape" ? " dsh-wt_dockBtnOn" : ""), title: T("console.shapeLabel"), "aria-label": T("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "18", height: "18", viewBox: "0 0 16 16", "aria-hidden": true, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "2.2", width: "7", height: "7", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.6", cy: "10.6", r: "3.8", fill: "none", stroke: "currentColor", strokeWidth: "1.1" })
@@ -17536,15 +17567,18 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6", fill: "none", stroke: "currentColor", strokeWidth: "1.1" })
         ] }) }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "cols" ? " dsh-wt_dockBtnOn" : ""), title: T("console.colsLabel"), "aria-label": T("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "18", height: "18", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.4", y: "3.2", width: "3", height: "9.6", rx: "1", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.5", y: "3.2", width: "3", height: "9.6", rx: "1", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "10.6", y: "3.2", width: "3", height: "9.6", rx: "1", fill: "none", stroke: "currentColor", strokeWidth: "1.1" })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.65", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "11.1", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "1" })
         ] }) })
       ] }),
-      openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+      openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
         setTheme(o.mode);
         setOpenMenu(null);
-      }, children: T(o.key) }, o.mode)) }),
+      }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: o.mode, size: 13 }),
+        T(o.key)
+      ] }, o.mode)) }),
       openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
           onShape("square");
@@ -17571,8 +17605,10 @@ function ConsolePane() {
             T("console.bgPlain")
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "2.2", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.4h11M2.5 8h11M2.5 11.6h11", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.2", cy: "4.4", r: "1.7", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.6", cy: "8", r: "1.7", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "11.4", cy: "11.6", r: "1.7", fill: "currentColor" })
           ] }) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
@@ -17587,8 +17623,10 @@ function ConsolePane() {
             T("console.bgGlow")
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "2.2", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.4h11M2.5 8h11M2.5 11.6h11", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.2", cy: "4.4", r: "1.7", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.6", cy: "8", r: "1.7", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "11.4", cy: "11.6", r: "1.7", fill: "currentColor" })
           ] }) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropRow", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
@@ -17615,7 +17653,16 @@ function ConsolePane() {
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "H" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 360, step: 1, value: v.h, onChange: (e) => editHsl(bgEdit, { h: Number(e.target.value) }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", children: [
+              valEdit === "h" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "h"), onKeyDown: (e) => {
+                if (e.key === "Enter") commitVal(bgEdit, "h");
+                if (e.key === "Escape") setValEdit(null);
+              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
+                setValEdit("h");
+                setValDraft(String(v.h));
+              }, onClick: () => {
+                setValEdit("h");
+                setValDraft(String(v.h));
+              }, children: [
                 v.h,
                 "\xB0"
               ] })
@@ -17623,7 +17670,16 @@ function ConsolePane() {
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: sMax, step: 1, value: v.s, onChange: (e) => editHsl(bgEdit, { s: Number(e.target.value) }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", children: [
+              valEdit === "s" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "s"), onKeyDown: (e) => {
+                if (e.key === "Enter") commitVal(bgEdit, "s");
+                if (e.key === "Escape") setValEdit(null);
+              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
+                setValEdit("s");
+                setValDraft(String(v.s));
+              }, onClick: () => {
+                setValEdit("s");
+                setValDraft(String(v.s));
+              }, children: [
                 v.s,
                 "%"
               ] })
@@ -17631,7 +17687,16 @@ function ConsolePane() {
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "L" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: lMax, step: 1, value: v.l, onChange: (e) => editHsl(bgEdit, { l: Number(e.target.value) }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", children: [
+              valEdit === "l" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "l"), onKeyDown: (e) => {
+                if (e.key === "Enter") commitVal(bgEdit, "l");
+                if (e.key === "Escape") setValEdit(null);
+              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
+                setValEdit("l");
+                setValDraft(String(v.l));
+              }, onClick: () => {
+                setValEdit("l");
+                setValDraft(String(v.l));
+              }, children: [
                 v.l,
                 "%"
               ] })
@@ -17640,10 +17705,10 @@ function ConsolePane() {
           ] });
         })()
       ] })),
-      openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_vbar", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarFill", style: { height: 8 + (cols - 1) * 21 + "%" } }),
-        [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarLine", style: { top: 8 + (v - 1) * 21 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v) }, v)),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarKnob", style: { top: 8 + (cols - 1) * 21 + "%" } })
+      openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hbar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hbarFill", style: { width: 8 + (cols - 1) * 21 + "%" } }),
+        [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hbarLine", style: { left: 8 + (v - 1) * 21 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v) }, v)),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hbarKnob", style: { left: 8 + (cols - 1) * 21 + "%" } })
       ] }) })
     ] })
   ] });

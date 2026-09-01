@@ -1021,6 +1021,14 @@ function AnimPane(props: { row: PaneRow; index: number; tabId: string; content: 
   )
 }
 
+/** 主题图标（描边风格）：dark=月 / light=日 / system=电脑；主按钮与下拉共用 */
+function ThemeIcon({ mode, size }: { mode: 'dark' | 'light' | 'system'; size?: number }) {
+  const s = size ?? 18
+  if (mode === 'dark') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg>
+  if (mode === 'light') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
+  return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><rect x="2" y="3.2" width="12" height="8.8" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M5.4 14.4h5.2M8 12v2.4" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
+}
+
 /** 控制室面板：项目卡片网格（每行 3 张、超出换行）；数据由工作台组装推送（纯读镜像）。
  *  主题：dark/light 直接生效；system = 跟随宿主 html 的 color-scheme（DSH 深色/白色/跟随系统都会反映到它） */
 function ConsolePane() {
@@ -1034,6 +1042,8 @@ function ConsolePane() {
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | null>(null)
   const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
   const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
+  const [valEdit, setValEdit] = useState<'h' | 's' | 'l' | null>(null)
+  const [valDraft, setValDraft] = useState('')
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1065,7 +1075,7 @@ function ConsolePane() {
         const url = URL.createObjectURL(file)
         const img = new Image()
         img.onload = () => {
-          const maxDim = 1600
+          const maxDim = 2400
           const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
           const w = Math.max(1, Math.round(img.width * scale))
           const h = Math.max(1, Math.round(img.height * scale))
@@ -1074,8 +1084,12 @@ function ConsolePane() {
           canvas.height = h
           const ctx = canvas.getContext('2d')
           if (!ctx) { URL.revokeObjectURL(url); return }
+          // 高清重采样：大图缩到 2400px 上限，WebP 0.9（不支持时回退 JPEG 0.9）
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = 'high'
           ctx.drawImage(img, 0, 0, w, h)
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+          const webp = canvas.toDataURL('image/webp', 0.9)
+          const dataUrl = webp.indexOf('data:image/webp') === 0 ? webp : canvas.toDataURL('image/jpeg', 0.9)
           URL.revokeObjectURL(url)
           setBgPhoto(dataUrl)
           setBgState('photo')
@@ -1109,6 +1123,15 @@ function ConsolePane() {
       setGlowHslState({ h: 0, s: 100, l: 100 })
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
     }
+  }
+  const commitVal = (kind: 'plain' | 'glow', k: 'h' | 's' | 'l') => {
+    const v = kind === 'plain' ? plainHsl : glowHsl
+    const max = k === 'h' ? 360 : (kind === 'plain' ? 100 : 200)
+    let n = parseInt(valDraft, 10)
+    if (!Number.isFinite(n)) n = v[k]
+    n = Math.min(Math.max(n, 0), max)
+    editHsl(kind, { [k]: n } as any)
+    setValEdit(null)
   }
   useLayoutEffect(() => {
     const first = firstRectsRef.current
@@ -1179,10 +1202,10 @@ function ConsolePane() {
     return h > 0 ? h + ':' + String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0') : m + ':' + String(ss).padStart(2, '0')
   }
   const statusLabel: Record<string, string> = { idle: T('console.idle'), busy: T('console.busy'), need: T('console.need'), done: T('console.done') }
-  const themeOpts: { mode: 'dark' | 'light' | 'system'; icon: string; key: string }[] = [
-    { mode: 'dark', icon: '🌙', key: 'console.themeDark' },
-    { mode: 'light', icon: '☀️', key: 'console.themeLight' },
-    { mode: 'system', icon: '🖥️', key: 'console.themeSystem' },
+  const themeOpts: { mode: 'dark' | 'light' | 'system'; key: string }[] = [
+    { mode: 'dark', key: 'console.themeDark' },
+    { mode: 'light', key: 'console.themeLight' },
+    { mode: 'system', key: 'console.themeSystem' },
   ]
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
@@ -1238,15 +1261,15 @@ function ConsolePane() {
       </div>
       <div className="dsh-wt_consoleDockWrap">
         <div className="dsh-wt_consoleDock">
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'theme' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'theme' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><ThemeIcon mode={themeMode} /></button>
           <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'shape' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
           <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'bg' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => { setOpenMenu(openMenu === 'bg' ? null : 'bg'); setBgEdit(null) }}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="5.9" cy="6.7" r="1.05" fill="none" stroke="currentColor" strokeWidth="1" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.4" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /><rect x="6.5" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /><rect x="10.6" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /><rect x="6.65" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /><rect x="11.1" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /></svg></button>
         </div>
         {openMenu === 'theme' && (
           <div className="dsh-wt_drop">
             {themeOpts.map((o) => (
-              <button key={o.mode} type="button" className={'dsh-wt_dropItem' + (themeMode === o.mode ? ' dsh-wt_dropItemOn' : '')} onClick={() => { setTheme(o.mode); setOpenMenu(null) }}>{T(o.key)}</button>
+              <button key={o.mode} type="button" className={'dsh-wt_dropItem' + (themeMode === o.mode ? ' dsh-wt_dropItemOn' : '')} onClick={() => { setTheme(o.mode); setOpenMenu(null) }}><ThemeIcon mode={o.mode} size={13} />{T(o.key)}</button>
             ))}
           </div>
         )}
@@ -1261,11 +1284,11 @@ function ConsolePane() {
             <div className="dsh-wt_drop">
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'plain' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('plain'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPlain')}</button>
-                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11" fill="none" stroke="currentColor" strokeWidth="1" /><circle cx="10.2" cy="4.4" r="1.7" fill="currentColor" /><circle cx="5.6" cy="8" r="1.7" fill="currentColor" /><circle cx="11.4" cy="11.6" r="1.7" fill="currentColor" /></svg></button>
               </div>
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('glow'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
-                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11" fill="none" stroke="currentColor" strokeWidth="1" /><circle cx="10.2" cy="4.4" r="1.7" fill="currentColor" /><circle cx="5.6" cy="8" r="1.7" fill="currentColor" /><circle cx="11.4" cy="11.6" r="1.7" fill="currentColor" /></svg></button>
               </div>
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
@@ -1282,9 +1305,9 @@ function ConsolePane() {
                 const sMax = bgEdit === 'plain' ? 100 : 200
                 const lMax = bgEdit === 'plain' ? 100 : 200
                 return (<>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.h}°</span></div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.s}%</span></div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.l}%</span></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} />{valEdit === 'h' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 'h')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 'h'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('h'); setValDraft(String(v.h)) }} onClick={() => { setValEdit('h'); setValDraft(String(v.h)) }}>{v.h}°</span>}</div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} />{valEdit === 's' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 's')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 's'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('s'); setValDraft(String(v.s)) }} onClick={() => { setValEdit('s'); setValDraft(String(v.s)) }}>{v.s}%</span>}</div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} />{valEdit === 'l' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 'l')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 'l'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('l'); setValDraft(String(v.l)) }} onClick={() => { setValEdit('l'); setValDraft(String(v.l)) }}>{v.l}%</span>}</div>
                   <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>
                 </>)
               })()}
@@ -1293,12 +1316,12 @@ function ConsolePane() {
         )}
         {openMenu === 'cols' && (
           <div className="dsh-wt_drop">
-            <div className="dsh-wt_vbar">
-              <span className="dsh-wt_vbarFill" style={{ height: (8 + (cols - 1) * 21) + '%' }} />
+            <div className="dsh-wt_hbar">
+              <span className="dsh-wt_hbarFill" style={{ width: (8 + (cols - 1) * 21) + '%' }} />
               {[1, 2, 3, 4, 5].map((v) => (
-                <button key={v} type="button" className="dsh-wt_vbarLine" style={{ top: (8 + (v - 1) * 21) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}></button>
+                <button key={v} type="button" className="dsh-wt_hbarLine" style={{ left: (8 + (v - 1) * 21) + '%' }} aria-label={String(v)} title={String(v)} onClick={() => onCols(v)}></button>
               ))}
-              <span className="dsh-wt_vbarKnob" style={{ top: (8 + (cols - 1) * 21) + '%' }} />
+              <span className="dsh-wt_hbarKnob" style={{ left: (8 + (cols - 1) * 21) + '%' }} />
             </div>
           </div>
         )}
