@@ -17757,45 +17757,30 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "11.1", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" })
         ] }) })
       ] }),
-      openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-        setTheme(o.mode);
-        setOpenMenu(null);
-      }, children: [
+      openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => setTheme(o.mode), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: o.mode, size: 13 }),
         T(o.key)
       ] }, o.mode)) }),
       openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-          onShape("square");
-          setOpenMenu(null);
-        }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => onShape("square"), children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
           T("console.shapeSquare")
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-          onShape("circle");
-          setOpenMenu(null);
-        }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => onShape("circle"), children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
           T("console.shapeCircle")
         ] })
       ] }),
       openMenu === "bg" && (bgEdit === null ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("plain");
-            setOpenMenu(null);
-          }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("plain"), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }) }),
             T("console.bgPlain")
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("glow");
-            setOpenMenu(null);
-          }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("glow"), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
@@ -17805,10 +17790,7 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("photo");
-            setOpenMenu(null);
-          }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("photo"), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
