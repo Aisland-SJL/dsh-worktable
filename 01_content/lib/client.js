@@ -7898,10 +7898,10 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_paneBar{padding-right:26px}",
   ".dsh-wt_paneTitle{flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
   // 窗格折叠按钮：常态只是一个折角小标签（无底色无描边），hover 才显示按钮范围（底+描边）
-  ".dsh-wt_collapseBtn{position:absolute;top:2px;right:4px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
+  ".dsh-wt_collapseBtn{position:absolute;top:2px;right:14px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
   ".dsh-wt_collapseBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));border-color:var(--dsw-alias-border-l1,#262b36)}",
   ".dsh-wt_collapseBtn svg{width:12px;height:12px;display:block}",
-  ".dsh-wt_annotBtn{position:absolute;top:2px;right:26px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
+  ".dsh-wt_annotBtn{position:absolute;top:2px;right:36px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
   ".dsh-wt_annotBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));border-color:var(--dsw-alias-border-l1,#262b36)}",
   ".dsh-wt_annotBtn svg{width:12px;height:12px;display:block}",
   ".dsh-wt-annotating,.dsh-wt-annotating *{cursor:none!important}",
@@ -7909,6 +7909,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_annotBubble{position:fixed;z-index:5000;left:0;top:0;transform:translate(-50%,-100%) translateY(-4px);pointer-events:none;width:30px;height:22px;border-radius:9px;background:#4f8ef7;box-shadow:0 2px 10px rgba(79,142,247,.5);display:flex;align-items:center;justify-content:center}",
   '.dsh-wt_annotBubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid #4f8ef7;border-top-width:5px;border-bottom-width:0;border-left-color:transparent;border-right-color:transparent}',
   ".dsh-wt_annotSel{position:fixed;z-index:4999;border:1.5px solid #4f8ef7;background:rgba(79,142,247,.16);box-shadow:0 0 0 1px rgba(79,142,247,.25);pointer-events:none}",
+  ".dsh-wt_annotHint{position:fixed;right:18px;bottom:56px;z-index:5002;max-width:320px;padding:9px 12px;border-radius:10px;background:rgba(16,20,28,.96);border:1px solid rgba(122,92,255,.45);box-shadow:0 8px 24px rgba(0,0,0,.5);color:#e6e8eb;font-size:12px;line-height:18px;pointer-events:none;animation:annotHintIn .25s ease-out}",
+  "@keyframes annotHintIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
   ".dsh-wt_annotEditor{position:fixed;z-index:5001;width:280px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:10px;background:rgba(16,20,28,.96);border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 30px rgba(0,0,0,.5)}",
   ".dsh-wt_annotInput{width:100%;box-sizing:border-box;height:56px;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(255,255,255,.05);color:#e6e8eb;font:inherit;font-size:12px;line-height:17px;resize:none;outline:none;cursor:text}",
   ".dsh-wt_annotInput:focus{border-color:#4f8ef7}",
@@ -8572,7 +8574,8 @@ var zh = {
   "pane.termFail": "\u7EC8\u7AEF\u4E0D\u53EF\u7528\uFF08\u5BBF\u4E3B\u7F3A\u5C11 node-pty/ws \u6216\u8FDE\u63A5\u5931\u8D25\uFF09",
   "pane.closeTab": "\u5173\u95ED\u6807\u7B7E\u9875",
   "pane.collapse": "\u6298\u53E0\u7A97\u683C",
-  "annot.label": "\u6807\u6CE8\uFF1A\u70B9\u51FB\u7A97\u53E3\u4E2D\u7684\u4F4D\u7F6E\u63D0\u8981\u6C42",
+  "annot.label": "\u6807\u6CE8\uFF1A\u70B9\u51FB\u6216\u62D6\u52A8\u7A97\u53E3\u4E2D\u7684\u4F4D\u7F6E\u63D0\u8981\u6C42",
+  "annot.hint": "\u70B9\u51FB\u6216\u62D6\u52A8\u6846\u9009\u7A97\u53E3\u4E2D\u7684\u4EFB\u610F\u4F4D\u7F6E\uFF0C\u518D\u8F93\u5165\u4F60\u7684\u8981\u6C42\uFF1B\u8FDE\u7EED\u6807\u6CE8\u4F1A\u4F9D\u6B21\u8FFD\u52A0\u5230\u8F93\u5165\u6846",
   "annot.placeholder": "\u5BF9\u8FD9\u91CC\u63D0\u8981\u6C42\u2026\uFF08Enter \u786E\u8BA4\uFF0CShift+Enter \u6362\u884C\uFF0CEsc \u53D6\u6D88\uFF09",
   "annot.ok": "\u786E\u8BA4\uFF1A\u6CE8\u5165\u5BF9\u8BDD\u6846\u8F93\u5165\u6846\uFF08\u4E0D\u53D1\u9001\uFF09",
   "annot.cancel": "\u53D6\u6D88",
@@ -8790,7 +8793,8 @@ var en = {
   "pane.termFail": "Terminal unavailable (host missing node-pty/ws, or connection failed)",
   "pane.closeTab": "Close tab",
   "pane.collapse": "Collapse pane",
-  "annot.label": "Annotate: click a spot in the window",
+  "annot.label": "Annotate: click or drag a spot in the window",
+  "annot.hint": "Click or drag to select a spot in any window, then type your request; consecutive annotations append to the input.",
   "annot.placeholder": "Describe what to change here\u2026 (Enter to confirm, Shift+Enter newline, Esc cancel)",
   "annot.ok": "Confirm: put into chat input (not sent)",
   "annot.cancel": "Cancel",
@@ -17047,8 +17051,9 @@ function fillHostInput(text2) {
     const ta = document.querySelector("textarea[data-phase]") ?? Array.from(document.querySelectorAll("textarea")).pop();
     if (!ta) return false;
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-    if (setter) setter.call(ta, text2);
-    else ta.value = text2;
+    const next = ta.value && ta.value.trim() ? ta.value + "\n\n" + text2 : text2;
+    if (setter) setter.call(ta, next);
+    else ta.value = next;
     ta.dispatchEvent(new Event("input", { bubbles: true }));
     try {
       ta.focus();
@@ -17145,6 +17150,7 @@ function AnnotationOverlay() {
         const ctx = ctxOf(e.target);
         if (ctx) stat += "\uFF0C\u5143\u7D20 " + ctx;
       }
+      document.body.classList.remove("dsh-wt-annotating");
       const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288));
       const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148));
       setAnnot({ started: true, drawing: false, ex, ey, stat });
@@ -17163,7 +17169,28 @@ function AnnotationOverlay() {
       window.removeEventListener("keydown", onKey, true);
     };
   }, [s.on, s.started]);
+  const [hintOnce] = (0, import_react.useState)(() => {
+    try {
+      return localStorage.getItem("dsh.worktable.annotHint.v1") !== "1";
+    } catch {
+      return false;
+    }
+  });
+  const [hintVisible, setHintVisible] = (0, import_react.useState)(false);
+  (0, import_react.useEffect)(() => {
+    if (!s.on || !hintOnce) return;
+    setHintVisible(true);
+    try {
+      localStorage.setItem("dsh.worktable.annotHint.v1", "1");
+    } catch {
+    }
+    const t = window.setTimeout(() => setHintVisible(false), 4200);
+    return () => window.clearTimeout(t);
+  }, [s.on, hintOnce]);
   if (!s.on) return null;
+  {
+    hintVisible && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotHint", children: T("annot.hint") });
+  }
   if (s.drawing) {
     const L = Math.min(s.bx0, s.bx1);
     const T2 = Math.min(s.by0, s.by1);
@@ -19621,10 +19648,7 @@ function WorkspaceLayer(props) {
                 title: T("annot.label"),
                 "aria-label": T("annot.label"),
                 onClick: () => startAnnot(windowLabelOf(row, index)),
-                children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinejoin: "round" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 5.3v3.4M6.3 7h3.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round" })
-                ] })
+                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinejoin: "round" }) })
               }
             ),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)(

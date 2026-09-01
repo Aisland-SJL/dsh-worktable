@@ -505,8 +505,10 @@ function fillHostInput(text: string): boolean {
       ?? Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea')).pop()
     if (!ta) return false
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
-    if (setter) setter.call(ta, text)
-    else ta.value = text
+    // 连续标注：已有内容不顶掉，换行追加（用户可以同一对话连续标注多处）
+    const next = ta.value && ta.value.trim() ? ta.value + '\n\n' + text : text
+    if (setter) setter.call(ta, next)
+    else ta.value = next
     ta.dispatchEvent(new Event('input', { bubbles: true }))
     try {
       ta.focus()
@@ -600,6 +602,7 @@ function AnnotationOverlay() {
         const ctx = ctxOf(e.target)
         if (ctx) stat += '，元素 ' + ctx
       }
+      document.body.classList.remove('dsh-wt-annotating')
       const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288))
       const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148))
       setAnnot({ started: true, drawing: false, ex, ey, stat })
@@ -617,7 +620,20 @@ function AnnotationOverlay() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.on, s.started])
+  // 首次进入标注：右侧气泡提示「拖动也可框选」，仅显示一次
+  const [hintOnce] = useState<boolean>(() => { try { return localStorage.getItem('dsh.worktable.annotHint.v1') !== '1' } catch { return false } })
+  const [hintVisible, setHintVisible] = useState(false)
+  useEffect(() => {
+    if (!s.on || !hintOnce) return
+    setHintVisible(true)
+    try { localStorage.setItem('dsh.worktable.annotHint.v1', '1') } catch {}
+    const t = window.setTimeout(() => setHintVisible(false), 4200)
+    return () => window.clearTimeout(t)
+  }, [s.on, hintOnce])
   if (!s.on) return null
+  {hintVisible && (
+    <div className="dsh-wt_annotUi dsh-wt_annotHint">{T('annot.hint')}</div>
+  )}
   if (s.drawing) {
     const L = Math.min(s.bx0, s.bx1)
     const T = Math.min(s.by0, s.by1)
@@ -2942,7 +2958,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
           aria-label={T('annot.label')}
           onClick={() => startAnnot(windowLabelOf(row, index))}
         >
-          <svg viewBox="0 0 16 16" aria-hidden><path d="M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /><path d="M8 5.3v3.4M6.3 7h3.4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+          <svg viewBox="0 0 16 16" aria-hidden><path d="M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /></svg>
         </button>
         <button
           type="button"
