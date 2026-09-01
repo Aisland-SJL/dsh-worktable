@@ -8194,7 +8194,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_announceNewVer{font-size:12px;line-height:17px;color:#7eb3ff;font-weight:600}",
   ".dsh-wt_announceUpg{flex:none;padding:3px 10px;border:none;border-radius:6px;background:rgba(79,142,247,.16);color:#7eb3ff;font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_announceUpg:hover{background:rgba(79,142,247,.3);color:#bcd6ff}",
-  ".dsh-wt_announceHow{flex:none;width:100%;font-size:11px;line-height:16px;color:var(--wt-text3);padding-top:2px}",
+  ".dsh-wt_announceUpgOk{background:rgba(29,154,85,.2);color:#4ade80}",
+  ".dsh-wt_announceUpgOk:hover{background:rgba(29,154,85,.3);color:#86efac}",
+  ".dsh-wt_announceHow{flex:none;width:100%;font-size:11px;line-height:16px;color:var(--wt-text);padding-top:2px}",
   ".dsh-wt_announceSkip{flex:none;padding:3px 10px;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_announceSkip:hover{background:rgba(244,63,94,.14);color:#f87171}",
   ".dsh-wt_announceStatus{font-size:11px;line-height:16px;color:var(--wt-text3)}",
@@ -8584,7 +8586,7 @@ var zh = {
   "annot.latest": "\u5DF2\u662F\u6700\u65B0\u7248\u672C",
   "annot.checkFail": "\u68C0\u67E5\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5",
   "annot.copyUpgrade": "\u590D\u5236\u5347\u7EA7\u6307\u4EE4",
-  "annot.copied": "\u5DF2\u590D\u5236 \u2713",
+  "annot.copied": "\u5DF2\u590D\u5236 \u2713 \u8BF7\u5728\u4EFB\u610F\u5BF9\u8BDD\u4E2D\u53D1\u9001",
   "annot.howUpdate": "\u66F4\u65B0\u65B9\u6CD5\uFF1A\u70B9\u300C\u590D\u5236\u5347\u7EA7\u6307\u4EE4\u300D\u2192 \u7C98\u8D34\u7ED9\u5F53\u524D AI \u4F1A\u8BDD\u7531\u5B83\u6267\u884C\uFF0C\u5B8C\u6210\u540E\u91CD\u542F DSH\uFF1B\u6216\u624B\u52A8\u5728\u7EC8\u7AEF\u8FD0\u884C\u5347\u7EA7\u547D\u4EE4\u3002",
   "pane.expand": "\u5C55\u5F00\u7A97\u683C",
   "pane.jobsTitle": "\u540E\u53F0\u4EFB\u52A1",
@@ -8802,7 +8804,7 @@ var en = {
   "annot.latest": "Up to date",
   "annot.checkFail": "Check failed \u2014 try again later",
   "annot.copyUpgrade": "Copy upgrade command",
-  "annot.copied": "Copied \u2713",
+  "annot.copied": "Copied \u2713 paste it in any conversation",
   "annot.howUpdate": "How to update: click \u201CCopy upgrade command\u201D and paste it to your AI session to run, then restart DSH; or run the upgrade command in a terminal manually.",
   "pane.expand": "Expand pane",
   "pane.jobsTitle": "Background jobs",
@@ -18545,13 +18547,13 @@ function ConsolePane() {
           " v",
           updInfo.latest
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_gridToggle dsh-wt_gridToggleOn", onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceUpg" + (updCopied ? " dsh-wt_announceUpgOk" : ""), onClick: onCopyUpgrade, children: updCopied ? T("annot.copied") : T("annot.copyUpgrade") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: () => {
           try {
             window.open(updInfo.url, "_blank");
           } catch {
           }
         }, children: T("annot.gotoRelease") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceUpg", onClick: onCopyUpgrade, children: updCopied ? T("annot.copied") : T("annot.copyUpgrade") }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T("annot.skipVer") }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceHow", children: T("annot.howUpdate") })
       ] }),
