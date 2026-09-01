@@ -18033,8 +18033,9 @@ function ConsolePane() {
   const [plainGrid, setPlainGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainGrid?.() ?? 5);
   const [glowGrid, setGlowGridState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowGrid?.() ?? 8);
   const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
-  const [updStatus, setUpdStatus] = (0, import_react.useState)(() => readCache().status);
-  const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info);
+  const [updStatus, setUpdStatus] = (0, import_react.useState)("uptodate");
+  const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info ?? { latest: "0.3.1-demo", notes: "\u6F14\u793A\uFF1A\u8FD9\u662F\u5047\u8BBE\u53D1\u73B0\u7684\u65B0\u7248\u672C\u6A2A\u5E45", url: "https://github.com/Aisland-SJL/dsh-worktable/releases" });
+  void updStatus;
   const [autoCheckOn, setAutoCheckOn] = (0, import_react.useState)(() => getAutoCheck());
   const updBusyRef = (0, import_react.useRef)(false);
   const photoUrlRef = (0, import_react.useRef)("");
@@ -18399,9 +18400,6 @@ function ConsolePane() {
   }, []);
   (0, import_react.useEffect)(() => {
     splitEnv?.console?.refreshPreviews?.();
-  }, []);
-  (0, import_react.useEffect)(() => {
-    if (getAutoCheck()) void runUpdateCheck(false);
   }, []);
   (0, import_react.useEffect)(() => {
     let alive = true;
