@@ -247,8 +247,11 @@ type SplitEnv = {
     setShape: (s: 'square' | 'circle') => void
     getBg: () => 'plain' | 'glow' | 'photo'
     setBg: (m: 'plain' | 'glow' | 'photo') => void
-    getPhoto: () => Promise<string>
-    setPhoto: (blob: Blob) => Promise<void>
+    getPhotoLib: () => Promise<{ list: { id: string; url: string }[]; activeId: string | null }>
+    addPhoto: (blob: Blob) => Promise<{ id: string; url: string }>
+    setPhotoId: (id: string) => void
+    getPhotoHsl: (id: string) => { h: number; s: number; l: number }
+    setPhotoHsl: (id: string, v: { h: number; s: number; l: number }) => void
     getPlainHsl: () => { h: number; s: number; l: number }
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
@@ -1026,9 +1029,9 @@ function AnimPane(props: { row: PaneRow; index: number; tabId: string; content: 
 /** 主题图标（描边风格）：dark=月 / light=日 / system=电脑；主按钮与下拉共用 */
 function ThemeIcon({ mode, size }: { mode: 'dark' | 'light' | 'system'; size?: number }) {
   const s = size ?? 18
-  if (mode === 'dark') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg>
-  if (mode === 'light') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
-  return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><rect x="2" y="3.2" width="12" height="8.8" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M5.4 14.4h5.2M8 12v2.4" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
+  if (mode === 'dark') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><path d="M14 8.53A6 6 0 1 1 7.47 2 4.67 4.67 0 0 0 14 8.53z" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" /></svg>
+  if (mode === 'light') return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" strokeWidth="0.9" /><path d="M8 1.6v1.7M8 12.7v1.7M1.6 8h1.7M12.7 8h1.7M3.5 3.5l1.2 1.2M11.3 11.3l1.2 1.2M12.5 3.5l-1.2 1.2M4.7 11.3l-1.2 1.2" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" /></svg>
+  return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><rect x="2" y="3.2" width="12" height="8.8" rx="1.6" fill="none" stroke="currentColor" strokeWidth="0.9" /><path d="M5.4 14.4h5.2M8 12v2.4" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" /></svg>
 }
 
 /** 两行滑杆图标（设置入口）：2 条轨道 + 2 个旋钮，描边风格 */
@@ -1044,21 +1047,22 @@ function SliderIcon({ size }: { size?: number }) {
 }
 
 /** HSL 数值普通输入框：始终为常规边框输入框，输入提交时自动钳制到 0..max */
-function HslValInput(props: { value: number; max: number; onCommit: (n: number) => void }) {
+function HslValInput(props: { value: number; max: number; min?: number; onCommit: (n: number) => void }) {
+  const lo = props.min ?? 0
   const [draft, setDraft] = useState(String(props.value))
   const [focused, setFocused] = useState(false)
   useEffect(() => { if (!focused) setDraft(String(props.value)) }, [props.value, focused])
   const commit = () => {
     let n = parseInt(draft, 10)
     if (!Number.isFinite(n)) n = props.value
-    n = Math.min(Math.max(n, 0), props.max)
+    n = Math.min(Math.max(n, lo), props.max)
     props.onCommit(n)
   }
   return (
     <input
       className="dsh-wt_hslInput"
       type="number"
-      min={0}
+      min={lo}
       max={props.max}
       value={focused ? draft : String(props.value)}
       onFocus={() => { setFocused(true); setDraft(String(props.value)) }}
@@ -1081,12 +1085,14 @@ function ConsolePane() {
   const [shape, setShapeState] = useState<'square' | 'circle'>(() => splitEnv?.console?.getShape?.() ?? 'square')
   const [bg, setBgState] = useState<'plain' | 'glow' | 'photo'>(() => splitEnv?.console?.getBg?.() ?? 'glow')
   const [bgPhoto, setBgPhoto] = useState<string>('')
+  const [photoId, setPhotoIdLocal] = useState<string>('')
+  const [photoList, setPhotoList] = useState<{ id: string; url: string }[]>([])
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
   const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
   const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
-  const [photoHsl, setPhotoHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPhotoHsl?.() ?? { h: 0, s: 100, l: 100 })
+  const [photoHsl, setPhotoHslState] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 100, l: 100 })
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1107,27 +1113,48 @@ function ConsolePane() {
     setShapeState(s)
     splitEnv?.console?.setShape?.(s)
   }
-  /** 原图上图：原始 Blob 存 IndexedDB，显示用对象 URL（零压缩全分辨率） */
+  /** 选择本地图片文件并入库 */
+  const pickPhotoFile = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      onFilePhoto(file)
+    }
+    input.click()
+  }
+  /** 新增照片：原始 Blob 存 IndexedDB（零压缩），显示用对象 URL；自动设为当前 */
   const onFilePhoto = async (file: Blob) => {
-    try { await splitEnv?.console?.setPhoto?.(file) } catch {}
-    const url = URL.createObjectURL(file)
+    let id = ''
+    let url = ''
+    const rec = await splitEnv?.console?.addPhoto?.(file).catch(() => null)
+    if (rec) { id = rec.id; url = rec.url } else {
+      url = URL.createObjectURL(file)
+    }
     if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
     photoUrlRef.current = url
+    setPhotoIdLocal(id)
+    if (id) setPhotoList((prev) => [{ id, url }, ...prev])
     setBgPhoto(url)
+    setBgState('photo')
+    splitEnv?.console?.setBg?.('photo')
+  }
+  /** 在照片库中选中某张 */
+  const selectPhoto = (p: { id: string; url: string }) => {
+    setPhotoIdLocal(p.id)
+    splitEnv?.console?.setPhotoId?.(p.id)
+    if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
+    photoUrlRef.current = p.url
+    setBgPhoto(p.url)
     setBgState('photo')
     splitEnv?.console?.setBg?.('photo')
   }
   const onBg = (m: 'plain' | 'glow' | 'photo') => {
     if (m === 'photo') {
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = 'image/*'
-      input.onchange = () => {
-        const file = input.files?.[0]
-        if (!file) return
-        onFilePhoto(file)
-      }
-      input.click()
+      // 上传照片 → 统一进入二级照片库菜单
+      setBgEdit('photo')
       return
     }
     setBgState(m)
@@ -1145,19 +1172,19 @@ function ConsolePane() {
     } else {
       const next = { ...photoHsl, ...patch }
       setPhotoHslState(next)
-      splitEnv?.console?.setPhotoHsl?.(next)
+      if (photoId) splitEnv?.console?.setPhotoHsl?.(photoId, next)
     }
   }
   const resetHsl = (kind: 'plain' | 'glow' | 'photo') => {
     if (kind === 'plain') {
-      setPlainHslState({ h: 220, s: 31, l: 6 })
-      splitEnv?.console?.setPlainHsl?.({ h: 220, s: 31, l: 6 })
+      setPlainHslState({ h: 0, s: 31, l: 6 })
+      splitEnv?.console?.setPlainHsl?.({ h: 0, s: 31, l: 6 })
     } else if (kind === 'glow') {
       setGlowHslState({ h: 0, s: 100, l: 100 })
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
     } else {
       setPhotoHslState({ h: 0, s: 100, l: 100 })
-      splitEnv?.console?.setPhotoHsl?.({ h: 0, s: 100, l: 100 })
+      if (photoId) splitEnv?.console?.setPhotoHsl?.(photoId, { h: 0, s: 100, l: 100 })
     }
   }
   useLayoutEffect(() => {
@@ -1203,18 +1230,27 @@ function ConsolePane() {
   useEffect(() => {
     splitEnv?.console?.refreshPreviews?.()
   }, [])
-  // 背景原图：IndexedDB 异步加载（对象 URL 全分辨率；无记录时回退旧压缩图）
+  // 背景照片库：IndexedDB 异步加载记录 → 对象 URL；无记录则空
   useEffect(() => {
     let alive = true
-    splitEnv?.console?.getPhoto?.().then((url) => {
-      if (alive && url && url !== photoUrlRef.current) {
+    splitEnv?.console?.getPhotoLib?.().then((lib) => {
+      if (!alive) return
+      setPhotoList(lib.list)
+      const active = lib.list.find((p) => p.id === lib.activeId) ?? lib.list[0] ?? null
+      if (active) {
+        setPhotoIdLocal(active.id)
         if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
-        photoUrlRef.current = url
-        setBgPhoto(url)
+        photoUrlRef.current = active.url
+        setBgPhoto(active.url)
       }
     }).catch(() => {})
     return () => { alive = false }
   }, [])
+  // 当前照片切换 → 载入该照片记住的 HSL 调节值
+  useEffect(() => {
+    if (!photoId) return
+    setPhotoHslState(splitEnv?.console?.getPhotoHsl?.(photoId) ?? { h: 0, s: 100, l: 100 })
+  }, [photoId])
   // 面板卸载时释放对象 URL
   useEffect(() => () => { if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} } }, [])
   // 运行时长的分钟级刷新：每秒重渲染一次（仅控制室开着时存在）
@@ -1303,9 +1339,9 @@ function ConsolePane() {
       <div className="dsh-wt_consoleDockWrap">
         <div className="dsh-wt_consoleDock">
           <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'theme' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><ThemeIcon mode={themeMode} /></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'shape' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'bg' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => { setOpenMenu(openMenu === 'bg' ? null : 'bg'); setBgEdit(null) }}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="5.9" cy="6.7" r="1.05" fill="none" stroke="currentColor" strokeWidth="1" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /><rect x="6.65" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /><rect x="11.1" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'shape' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="0.9" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="0.9" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'bg' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => { setOpenMenu(openMenu === 'bg' ? null : 'bg'); setBgEdit(null) }}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="0.9" /><circle cx="5.9" cy="6.7" r="1.05" fill="none" stroke="currentColor" strokeWidth="0.8" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="0.9" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="20" height="20" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="0.9" /><rect x="6.65" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="0.9" /><rect x="11.1" y="3.4" width="2.7" height="9.2" rx="0.9" fill="none" stroke="currentColor" strokeWidth="0.9" /></svg></button>
         </div>
         {openMenu === 'theme' && (
           <div className="dsh-wt_drop">
@@ -1332,22 +1368,38 @@ function ConsolePane() {
                 <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><SliderIcon /></button>
               </div>
               <div className="dsh-wt_dropRow">
-                <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+                <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => onBg('photo')}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
                 <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('photo')}><SliderIcon /></button>
               </div>
             </div>
           ) : (
             <div className="dsh-wt_drop">
               <div className="dsh-wt_hslHead">
-                <button type="button" className="dsh-wt_hslBack" title={T('console.bgEditBack')} aria-label={T('console.bgEditBack')} onClick={() => setBgEdit(null)}>‹</button>
+                <button type="button" className="dsh-wt_hslBack" title={T('console.bgEditBack')} aria-label={T('console.bgEditBack')} onClick={() => setBgEdit(null)}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M10.2 3.2 5.4 8l4.8 4.8" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
                 <span className="dsh-wt_hslTitle">{bgEdit === 'plain' ? T('console.bgEditPlain') : bgEdit === 'glow' ? T('console.bgEditGlow') : T('console.bgEditPhoto')}</span>
               </div>
+              {bgEdit === 'photo' && (
+                <>
+                  <button type="button" className="dsh-wt_dropItem" onClick={pickPhotoFile}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+                  {photoList.length > 0 ? (
+                    photoList.slice(0, 4).map((p) => (
+                      <div key={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
+                        <img className="dsh-wt_photoThumb" src={p.url} alt="" />
+                        <span className="dsh-wt_photoName">{photoId === p.id ? T('console.bgPhotoCurrent') : T('console.bgPhotoUse')}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="dsh-wt_photoEmpty">{T('console.bgPhotoNone')}</div>
+                  )}
+                  <div className="dsh-wt_hslDivider" />
+                </>
+              )}
               {(() => {
                 const v = bgEdit === 'plain' ? plainHsl : bgEdit === 'glow' ? glowHsl : photoHsl
                 const sMax = bgEdit === 'plain' ? 100 : 200
                 const lMax = bgEdit === 'plain' ? 100 : 200
                 return (<>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} max={360} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={-180} max={180} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} min={-180} max={180} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
                   <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
                   <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
                   <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>

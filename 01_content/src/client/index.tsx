@@ -78,8 +78,10 @@ type ViewState = {
   consoleBgPlainHsl?: { h: number; s: number; l: number }
   /** 流光背景 HSL（hue-rotate/saturate/brightness；默认无调整 = 0/100/100）*/
   consoleBgGlowHsl?: { h: number; s: number; l: number }
-  /** 照片背景 HSL 滤镜（默认无调整 = 0/100/100）*/
-  consoleBgPhotoHsl?: { h: number; s: number; l: number }
+  /** 当前选中的背景照片 id（photoRecords 中的一条记录）*/
+  consoleBgPhotoId?: string
+  /** 各背景照片的 HSL 滤镜记录（id → {h,s,l}；默认无调整 = 0/100/100）*/
+  consoleBgPhotoHsls?: Record<string, { h: number; s: number; l: number }>
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -287,6 +289,17 @@ const DEFAULT_PROJECTS: ProjectsState = {
   folders: {},
 }
 
+/** HSL 归一化：色相映射到 -180..180（0 = 中性/中间），饱和/明度只接受 0..200 数值；非法返回 undefined */
+function normHsl(v: any): { h: number; s: number; l: number } | undefined {
+  if (!v || typeof v.h !== 'number' || typeof v.s !== 'number' || typeof v.l !== 'number') return undefined
+  const h = ((Math.round(v.h) % 360) + 360) % 360
+  return {
+    h: h > 180 ? h - 360 : h,
+    s: Math.min(Math.max(Math.round(v.s), 0), 200),
+    l: Math.min(Math.max(Math.round(v.l), 0), 200),
+  }
+}
+
 function loadView(): ViewState {
   try {
     const raw = localStorage.getItem(PERSIST_KEY)
@@ -308,15 +321,19 @@ function loadView(): ViewState {
       consoleCols: typeof p.consoleCols === 'number' && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
       consoleShape: p.consoleShape === 'circle' ? 'circle' : 'square',
       consoleBg: p.consoleBg === 'plain' || p.consoleBg === 'photo' ? p.consoleBg : 'glow',
-      consoleBgPlainHsl: typeof p.consoleBgPlainHsl?.h === 'number' && typeof p.consoleBgPlainHsl?.s === 'number' && typeof p.consoleBgPlainHsl?.l === 'number'
-        ? { h: p.consoleBgPlainHsl.h, s: p.consoleBgPlainHsl.s, l: p.consoleBgPlainHsl.l }
-        : undefined,
-      consoleBgGlowHsl: typeof p.consoleBgGlowHsl?.h === 'number' && typeof p.consoleBgGlowHsl?.s === 'number' && typeof p.consoleBgGlowHsl?.l === 'number'
-        ? { h: p.consoleBgGlowHsl.h, s: p.consoleBgGlowHsl.s, l: p.consoleBgGlowHsl.l }
-        : undefined,
-      consoleBgPhotoHsl: typeof p.consoleBgPhotoHsl?.h === 'number' && typeof p.consoleBgPhotoHsl?.s === 'number' && typeof p.consoleBgPhotoHsl?.l === 'number'
-        ? { h: p.consoleBgPhotoHsl.h, s: p.consoleBgPhotoHsl.s, l: p.consoleBgPhotoHsl.l }
-        : undefined,
+      consoleBgPlainHsl: normHsl(p.consoleBgPlainHsl),
+      consoleBgGlowHsl: normHsl(p.consoleBgGlowHsl),
+      consoleBgPhotoId: typeof p.consoleBgPhotoId === 'string' && p.consoleBgPhotoId ? p.consoleBgPhotoId : undefined,
+      consoleBgPhotoHsls: (() => {
+        const src = p.consoleBgPhotoHsls
+        if (!src || typeof src !== 'object') return undefined
+        const out: Record<string, { h: number; s: number; l: number }> = {}
+        for (const k of Object.keys(src)) {
+          const v = normHsl((src as any)[k])
+          if (v) out[k] = v
+        }
+        return Object.keys(out).length > 0 ? out : undefined
+      })(),
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -1361,38 +1378,28 @@ function WorktableSection(props: any) {
         setShape: (s: 'square' | 'circle') => persistView({ consoleShape: s }),
         getBg: () => viewRef.current.consoleBg ?? 'glow',
         setBg: (m: 'plain' | 'glow' | 'photo') => persistView({ consoleBg: m }),
-        getPhoto: () => photoStore.load()
-          .then((blob) => {
-            if (blob) return URL.createObjectURL(blob)
-            try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' }
-          })
-          .catch(() => {
-            try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' }
-          }),
-        setPhoto: async (blob: Blob) => {
-          try {
-            await photoStore.save(blob)
-            // 成功存原图后清掉旧的压缩图键，避免回退时读到旧图
-            try { localStorage.removeItem('dsh.worktable.consoleBgPhoto.v1') } catch {}
-          } catch {
-            // IndexedDB 不可用（隐私模式等）→ 兜底：原图 dataURL 存旧键，超限则静默
-            try {
-              const dataUrl = await new Promise<string>((resolve, reject) => {
-                const fr = new FileReader()
-                fr.onload = () => resolve(String(fr.result))
-                fr.onerror = () => reject(fr.error)
-                fr.readAsDataURL(blob)
-              })
-              localStorage.setItem('dsh.worktable.consoleBgPhoto.v1', dataUrl)
-            } catch {}
+        getPhotoLib: async () => {
+          const records = await photoStore.list().catch(() => [])
+          const stored = viewRef.current.consoleBgPhotoId ?? null
+          const activeId = stored && records.some((r) => r.id === stored) ? stored : null
+          return {
+            list: records.map((r) => ({ id: r.id, url: URL.createObjectURL(r.blob) })),
+            activeId,
           }
         },
-        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 220, s: 31, l: 6 },
+        addPhoto: async (blob: Blob) => {
+          const id = await photoStore.add(blob)
+          persistView({ consoleBgPhotoId: id })
+          try { localStorage.removeItem('dsh.worktable.consoleBgPhoto.v1') } catch {}
+          return { id, url: URL.createObjectURL(blob) }
+        },
+        setPhotoId: (id: string) => persistView({ consoleBgPhotoId: id }),
+        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 0, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
         setGlowHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgGlowHsl: { ...v } }),
-        getPhotoHsl: () => viewRef.current.consoleBgPhotoHsl ?? { h: 0, s: 100, l: 100 },
-        setPhotoHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPhotoHsl: { ...v } }),
+        getPhotoHsl: (id: string) => viewRef.current.consoleBgPhotoHsls?.[id] ?? { h: 0, s: 100, l: 100 },
+        setPhotoHsl: (id: string, v: { h: number; s: number; l: number }) => persistView({ consoleBgPhotoHsls: { ...(viewRef.current.consoleBgPhotoHsls ?? {}), [id]: { ...v } } }),
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
