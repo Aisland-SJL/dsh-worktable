@@ -17379,6 +17379,8 @@ function HslValInput(props) {
     }
   );
 }
+var PLAIN_HSL_DARK = { h: -140, s: 31, l: 6 };
+var PLAIN_HSL_LIGHT = { h: -146, s: 26, l: 95 };
 function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
@@ -17394,7 +17396,11 @@ function ConsolePane() {
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
-  const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: -140, s: 31, l: 6 });
+  const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => {
+    const saved = splitEnv?.console?.getPlainHsl?.();
+    if (saved) return saved;
+    return splitEnv?.console?.getTheme?.() === "light" ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK };
+  });
   const [glowHsl, setGlowHslState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 });
   const [photoHsl, setPhotoHslState] = (0, import_react.useState)({ h: 0, s: 100, l: 100 });
   const gridRef = (0, import_react.useRef)(null);
@@ -17538,8 +17544,9 @@ function ConsolePane() {
   };
   const resetHsl = (kind) => {
     if (kind === "plain") {
-      setPlainHslState({ h: -140, s: 31, l: 6 });
-      splitEnv?.console?.setPlainHsl?.({ h: -140, s: 31, l: 6 });
+      const def = resolvedTheme === "light" ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK };
+      setPlainHslState(def);
+      splitEnv?.console?.setPlainHsl?.(def);
     } else if (kind === "glow") {
       setGlowHslState({ h: 0, s: 100, l: 100 });
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 });
@@ -17666,6 +17673,19 @@ function ConsolePane() {
     setThemeMode(th);
     env?.setTheme?.(th);
   };
+  const prevPlainThemeRef = (0, import_react.useRef)(null);
+  (0, import_react.useEffect)(() => {
+    const prev = prevPlainThemeRef.current;
+    prevPlainThemeRef.current = resolvedTheme;
+    if (!prev || prev === resolvedTheme) return;
+    const isDarkDef = plainHsl.h === PLAIN_HSL_DARK.h && plainHsl.s === PLAIN_HSL_DARK.s && plainHsl.l === PLAIN_HSL_DARK.l;
+    const isLightDef = plainHsl.h === PLAIN_HSL_LIGHT.h && plainHsl.s === PLAIN_HSL_LIGHT.s && plainHsl.l === PLAIN_HSL_LIGHT.l;
+    const next = resolvedTheme === "light" && isDarkDef ? { ...PLAIN_HSL_LIGHT } : resolvedTheme === "dark" && isLightDef ? { ...PLAIN_HSL_DARK } : null;
+    if (next) {
+      setPlainHslState(next);
+      splitEnv?.console?.setPlainHsl?.(next);
+    }
+  }, [resolvedTheme]);
   const fmtDur = (ms) => {
     const s = Math.max(0, Math.floor(ms / 1e3));
     const h = Math.floor(s / 3600);

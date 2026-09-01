@@ -1081,6 +1081,10 @@ function HslValInput(props: { value: number; max: number; min?: number; onCommit
   )
 }
 
+/** 纯色背景默认值（与主题关联）：深色 = 原深蓝黑 #0a0d13；浅色 = 白 #eef1f5；网格线由 --wt-grid 主题变量自动切换 */
+const PLAIN_HSL_DARK = { h: -140, s: 31, l: 6 }
+const PLAIN_HSL_LIGHT = { h: -146, s: 26, l: 95 }
+
 /** 控制室面板：项目卡片网格（每行 3 张、超出换行）；数据由工作台组装推送（纯读镜像）。
  *  主题：dark/light 直接生效；system = 跟随宿主 html 的 color-scheme（DSH 深色/白色/跟随系统都会反映到它） */
 function ConsolePane() {
@@ -1098,7 +1102,11 @@ function ConsolePane() {
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
-  const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: -140, s: 31, l: 6 })
+  const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => {
+    const saved = splitEnv?.console?.getPlainHsl?.()
+    if (saved) return saved
+    return splitEnv?.console?.getTheme?.() === 'light' ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK }
+  })
   const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
   const [photoHsl, setPhotoHslState] = useState<{ h: number; s: number; l: number }>({ h: 0, s: 100, l: 100 })
   const gridRef = useRef<HTMLDivElement | null>(null)
@@ -1222,8 +1230,9 @@ function ConsolePane() {
   }
   const resetHsl = (kind: 'plain' | 'glow' | 'photo') => {
     if (kind === 'plain') {
-      setPlainHslState({ h: -140, s: 31, l: 6 })
-      splitEnv?.console?.setPlainHsl?.({ h: -140, s: 31, l: 6 })
+      const def = resolvedTheme === 'light' ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK }
+      setPlainHslState(def)
+      splitEnv?.console?.setPlainHsl?.(def)
     } else if (kind === 'glow') {
       setGlowHslState({ h: 0, s: 100, l: 100 })
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
@@ -1316,6 +1325,22 @@ function ConsolePane() {
     return sysDark ? 'dark' : 'light'
   })()
   const setTheme = (th: 'dark' | 'light' | 'system') => { setThemeMode(th); env?.setTheme?.(th) }
+  // 主题联动：切换主题时，若纯色还是另一主题的默认值 → 自动跟随新主题默认；自定义过则保持
+  const prevPlainThemeRef = useRef<'dark' | 'light' | null>(null)
+  useEffect(() => {
+    const prev = prevPlainThemeRef.current
+    prevPlainThemeRef.current = resolvedTheme
+    if (!prev || prev === resolvedTheme) return
+    const isDarkDef = plainHsl.h === PLAIN_HSL_DARK.h && plainHsl.s === PLAIN_HSL_DARK.s && plainHsl.l === PLAIN_HSL_DARK.l
+    const isLightDef = plainHsl.h === PLAIN_HSL_LIGHT.h && plainHsl.s === PLAIN_HSL_LIGHT.s && plainHsl.l === PLAIN_HSL_LIGHT.l
+    const next = resolvedTheme === 'light' && isDarkDef ? { ...PLAIN_HSL_LIGHT }
+      : resolvedTheme === 'dark' && isLightDef ? { ...PLAIN_HSL_DARK } : null
+    if (next) {
+      setPlainHslState(next)
+      splitEnv?.console?.setPlainHsl?.(next)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedTheme])
   const fmtDur = (ms: number) => {
     const s = Math.max(0, Math.floor(ms / 1000))
     const h = Math.floor(s / 3600)
