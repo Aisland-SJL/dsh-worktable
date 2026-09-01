@@ -450,7 +450,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_hslBack:hover{background:var(--wt-chip);color:var(--wt-text)}',
   '.dsh-wt_hslTitle{flex:1;min-width:0;font-size:12px;line-height:17px;color:var(--wt-text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
   '.dsh-wt_hslRow{position:relative;display:flex;align-items:center;gap:4px;padding:2px 3px;width:100%;box-sizing:border-box}',
-  '.dsh-wt_hslRow::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);padding:3px 8px;border-radius:6px;background:rgba(10,13,19,.94);border:1px solid rgba(255,255,255,.22);color:#e6e8eb;font-size:11px;line-height:16px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s ease;z-index:30}',
+  '.dsh-wt_hslRow::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% - 2px);transform:translateX(-50%);padding:3px 8px;border-radius:6px;background:rgba(10,13,19,.94);border:1px solid rgba(255,255,255,.22);color:#e6e8eb;font-size:11px;line-height:16px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .12s ease;z-index:30}',
   '.dsh-wt_hslRow:hover::after{opacity:1}',
   '.dsh-wt_hslLabel{flex:none;width:10px;font-size:9px;font-weight:600;color:var(--wt-text3);text-align:center}',
   '.dsh-wt_hslSlider{flex:1;min-width:0;height:14px;accent-color:#4f8ef7;cursor:pointer}',
