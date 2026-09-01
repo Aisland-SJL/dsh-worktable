@@ -1574,7 +1574,23 @@ function ConsolePane() {
   }
   /** 抓手拖拽排序：按住抓手上下移动 → 行实时重排，松手持久化 */
   const dragRowRef = useRef<string | null>(null)
+  const dragFlipRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const [dragRowId, setDragRowId] = useState<string | null>(null)
+  // FLIP：重排后旧位置 → 新位置的平滑滑动（160ms 缓动）
+  useLayoutEffect(() => {
+    const first = dragFlipRef.current
+    if (!first) return
+    dragFlipRef.current = null
+    document.querySelectorAll<HTMLElement>('.dsh-wt_photoRow').forEach((el) => {
+      const key = el.dataset.rid ?? ''
+      const f = first.get(key)
+      if (!f) return
+      const r = el.getBoundingClientRect()
+      const dx = f.x - r.left
+      const dy = f.y - r.top
+      if (dx || dy) el.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], { duration: 160, easing: 'cubic-bezier(.22,.61,.36,1)' })
+    })
+  }, [photoList])
   const onHandleDown = (id: string, e: { button: number; preventDefault: () => void; stopPropagation: () => void }) => {
     if (e.button !== 0) return
     e.preventDefault()
@@ -1584,6 +1600,9 @@ function ConsolePane() {
     const onMove = (ev: PointerEvent) => {
       if (dragRowRef.current !== id) return
       const rows = Array.from(document.querySelectorAll<HTMLElement>('.dsh-wt_photoRow'))
+      // 收集当前（重排前）位置用于 FLIP
+      const rects = new Map<string, { x: number; y: number }>()
+      rows.forEach((el) => { const k = el.dataset.rid ?? ''; const r = el.getBoundingClientRect(); rects.set(k, { x: r.left, y: r.top }) })
       let target = 0
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i].getBoundingClientRect()
@@ -1595,6 +1614,7 @@ function ConsolePane() {
       const moved = next.splice(from, 1)[0]
       const to = Math.max(0, Math.min(target > from ? target - 1 : target, next.length))
       next.splice(to, 0, moved)
+      dragFlipRef.current = rects
       setPhotoList(next)
     }
     const onUp = () => {
@@ -1916,7 +1936,7 @@ function ConsolePane() {
                   </div>
                   {photoList.length > 0 ? (
                     photoList.slice(0, 4).map((p) => (
-                      <div key={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
+                      <div key={p.id} data-rid={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
                         <span className="dsh-wt_thumbWrap">
                           {p.kind === 'video'
                             ? <video className="dsh-wt_photoThumb" src={p.url} muted playsInline preload="metadata" />

@@ -18086,7 +18086,22 @@ function ConsolePane() {
     if (next) void runUpdateCheck(false);
   };
   const dragRowRef = (0, import_react.useRef)(null);
+  const dragFlipRef = (0, import_react.useRef)(null);
   const [dragRowId, setDragRowId] = (0, import_react.useState)(null);
+  (0, import_react.useLayoutEffect)(() => {
+    const first = dragFlipRef.current;
+    if (!first) return;
+    dragFlipRef.current = null;
+    document.querySelectorAll(".dsh-wt_photoRow").forEach((el) => {
+      const key = el.dataset.rid ?? "";
+      const f = first.get(key);
+      if (!f) return;
+      const r = el.getBoundingClientRect();
+      const dx = f.x - r.left;
+      const dy = f.y - r.top;
+      if (dx || dy) el.animate([{ transform: "translate(" + dx + "px," + dy + "px)" }, { transform: "none" }], { duration: 160, easing: "cubic-bezier(.22,.61,.36,1)" });
+    });
+  }, [photoList]);
   const onHandleDown = (id, e) => {
     if (e.button !== 0) return;
     e.preventDefault();
@@ -18096,6 +18111,12 @@ function ConsolePane() {
     const onMove = (ev) => {
       if (dragRowRef.current !== id) return;
       const rows = Array.from(document.querySelectorAll(".dsh-wt_photoRow"));
+      const rects = /* @__PURE__ */ new Map();
+      rows.forEach((el) => {
+        const k = el.dataset.rid ?? "";
+        const r = el.getBoundingClientRect();
+        rects.set(k, { x: r.left, y: r.top });
+      });
       let target = 0;
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i].getBoundingClientRect();
@@ -18107,6 +18128,7 @@ function ConsolePane() {
       const moved = next.splice(from, 1)[0];
       const to = Math.max(0, Math.min(target > from ? target - 1 : target, next.length));
       next.splice(to, 0, moved);
+      dragFlipRef.current = rects;
       setPhotoList(next);
     };
     const onUp = () => {
@@ -18516,7 +18538,7 @@ function ConsolePane() {
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
             ] })
           ] }),
-          photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
+          photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { "data-rid": p.id, className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_thumbWrap", children: [
               p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("video", { className: "dsh-wt_photoThumb", src: p.url, muted: true, playsInline: true, preload: "metadata" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_photoThumb", src: p.url, alt: "" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_thumbBadge", "aria-hidden": true, children: p.kind === "video" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "8", height: "8", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4.5 3.8l8 4.2-8 4.2z", fill: "currentColor" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "8", height: "8", viewBox: "0 0 16 16", children: [
