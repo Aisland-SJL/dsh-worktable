@@ -155,6 +155,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt-annotating iframe{pointer-events:none!important}',
   '.dsh-wt_annotBubble{position:fixed;z-index:5000;left:0;top:0;transform:translate(-50%,-100%) translateY(-4px);pointer-events:none;width:30px;height:22px;border-radius:9px;background:#4f8ef7;box-shadow:0 2px 10px rgba(79,142,247,.5);display:flex;align-items:center;justify-content:center}',
   '.dsh-wt_annotBubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid #4f8ef7;border-top-width:5px;border-bottom-width:0;border-left-color:transparent;border-right-color:transparent}',
+  '.dsh-wt_annotSel{position:fixed;z-index:4999;border:1.5px solid #4f8ef7;background:rgba(79,142,247,.16);box-shadow:0 0 0 1px rgba(79,142,247,.25);pointer-events:none}',
   '.dsh-wt_annotEditor{position:fixed;z-index:5001;width:280px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:10px;background:rgba(16,20,28,.96);border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 30px rgba(0,0,0,.5)}',
   '.dsh-wt_annotInput{width:100%;box-sizing:border-box;height:56px;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(255,255,255,.05);color:#e6e8eb;font:inherit;font-size:12px;line-height:17px;resize:none;outline:none;cursor:text}',
   '.dsh-wt_annotInput:focus{border-color:#4f8ef7}',

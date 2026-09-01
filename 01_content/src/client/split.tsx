@@ -299,15 +299,20 @@ function setDropTarget(t: { row: PaneRow; index: number } | null) {
 type AnnotState = {
   on: boolean
   started: boolean
+  drawing: boolean
   px: number
   py: number
+  bx0: number
+  by0: number
+  bx1: number
+  by1: number
   ex: number
   ey: number
   draft: string
   resp: string
   stat: string
 }
-let annotState: AnnotState = { on: false, started: false, px: 0, py: 0, ex: 0, ey: 0, draft: '', resp: '', stat: '' }
+let annotState: AnnotState = { on: false, started: false, drawing: false, px: 0, py: 0, bx0: 0, by0: 0, bx1: 0, by1: 0, ex: 0, ey: 0, draft: '', resp: '', stat: '' }
 const annotListeners = new Set<() => void>()
 function setAnnot(patch: Partial<AnnotState>) {
   annotState = { ...annotState, ...patch }
@@ -318,11 +323,11 @@ function subscribeAnnot(fn: () => void) { annotListeners.add(fn); return () => {
 /** 进入瞄准模式（resp = 窗口编号等上下文，由调用方拼好） */
 function startAnnot(resp: string) {
   document.body.classList.add('dsh-wt-annotating')
-  setAnnot({ on: true, started: false, resp, stat: '', draft: '' })
+  setAnnot({ on: true, started: false, drawing: false, resp, stat: '', draft: '' })
 }
 function cancelAnnot() {
   document.body.classList.remove('dsh-wt-annotating')
-  setAnnot({ on: false, started: false })
+  setAnnot({ on: false, started: false, drawing: false })
 }
 
 /** 窗口编号（约定：左栏 → 顶行 → 主行，从 1 起） */
@@ -346,6 +351,37 @@ function ctxOf(t: EventTarget | null): string {
   let out = '<' + tag + (cls ? ' .' + cls : '') + '>'
   if (text) out += '「' + text + '」'
   return out
+}
+
+/** 框选区域内的可见文字（最小元素优先、去重，最多 5 条） */
+function elementsInBox(x0: number, y0: number, x1: number, y1: number): string[] {
+  const L = Math.min(x0, x1)
+  const T = Math.min(y0, y1)
+  const R = Math.max(x0, x1)
+  const B = Math.max(y0, y1)
+  const out: { text: string; area: number }[] = []
+  for (const el of document.querySelectorAll<HTMLElement>('*')) {
+    const tag = el.tagName.toLowerCase()
+    if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) continue
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    if (cx < L || cx > R || cy < T || cy > B) continue
+    const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
+    if (text.length < 1 || text.length > 80) continue
+    out.push({ text, area: rect.width * rect.height })
+  }
+  out.sort((a, b) => a.area - b.area)
+  const seen = new Set<string>()
+  const res: string[] = []
+  for (const o of out) {
+    if (seen.has(o.text)) continue
+    seen.add(o.text)
+    res.push(o.text)
+    if (res.length >= 5) break
+  }
+  return res
 }
 
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
@@ -392,38 +428,86 @@ function AnnotationOverlay() {
   const s = annotState
   useEffect(() => {
     if (!s.on || s.started) return
-    const onMove = (e: MouseEvent) => { if (annotState.on && !annotState.started) setAnnot({ px: e.clientX, py: e.clientY }) }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelAnnot() }
-    const onClick = (e: MouseEvent) => {
+    let sx = 0
+    let sy = 0
+    let dragging = false
+    const isUi = (e: MouseEvent) => e.target instanceof Element && e.target.closest('.dsh-wt_annotUi') != null
+    const onMove = (e: MouseEvent) => {
       if (!annotState.on || annotState.started) return
-      if (e.target instanceof Element && e.target.closest('.dsh-wt_annotUi')) return
+      if (annotState.drawing) setAnnot({ bx1: e.clientX, by1: e.clientY, px: e.clientX, py: e.clientY })
+      else setAnnot({ px: e.clientX, py: e.clientY })
+    }
+    const onDown = (e: MouseEvent) => {
+      if (!annotState.on || annotState.started || isUi(e)) return
       e.preventDefault()
       e.stopImmediatePropagation()
+      sx = e.clientX
+      sy = e.clientY
+      dragging = true
+      setAnnot({ drawing: true, bx0: sx, by0: sy, bx1: sx, by1: sy })
+    }
+    const onUp = (e: MouseEvent) => {
+      if (!annotState.on || annotState.started || !dragging) return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      dragging = false
+      const w = Math.abs(e.clientX - sx)
+      const h = Math.abs(e.clientY - sy)
       const paneEl = (e.target instanceof Element ? e.target.closest('.dsh-wt_pane') : null) as HTMLElement | null
-      let stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
-      if (paneEl) {
-        const r = paneEl.getBoundingClientRect()
-        const rx = (((e.clientX - r.left) / Math.max(1, r.width)) * 100).toFixed(1)
-        const ry = (((e.clientY - r.top) / Math.max(1, r.height)) * 100).toFixed(1)
-        stat += '，窗口内 (' + rx + '%, ' + ry + '%)'
+      let stat = ''
+      if (Math.max(w, h) >= 8) {
+        // 框选：中心/宽高 + 窗口内百分比 + 框内可见文字聚合
+        const L = Math.min(sx, e.clientX)
+        const T = Math.min(sy, e.clientY)
+        const R = Math.max(sx, e.clientX)
+        const B = Math.max(sy, e.clientY)
+        stat = '框选屏幕 (' + Math.round(L) + ',' + Math.round(T) + ') → (' + Math.round(R) + ',' + Math.round(B) + ') 宽高 (' + Math.round(w) + '×' + Math.round(h) + 'px)'
+        if (paneEl) {
+          const pr = paneEl.getBoundingClientRect()
+          const rx1 = (((L - pr.left) / Math.max(1, pr.width)) * 100).toFixed(1)
+          const ry1 = (((T - pr.top) / Math.max(1, pr.height)) * 100).toFixed(1)
+          const rx2 = (((R - pr.left) / Math.max(1, pr.width)) * 100).toFixed(1)
+          const ry2 = (((B - pr.top) / Math.max(1, pr.height)) * 100).toFixed(1)
+          stat += '，窗口内 (' + rx1 + '%,' + ry1 + '%)→(' + rx2 + '%,' + ry2 + '%)'
+        }
+        const texts = elementsInBox(L, T, R, B)
+        if (texts.length > 0) stat += '，框内文字：' + texts.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
+      } else {
+        stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
+        if (paneEl) {
+          const r = paneEl.getBoundingClientRect()
+          const rx = (((e.clientX - r.left) / Math.max(1, r.width)) * 100).toFixed(1)
+          const ry = (((e.clientY - r.top) / Math.max(1, r.height)) * 100).toFixed(1)
+          stat += '，窗口内 (' + rx + '%, ' + ry + '%)'
+        }
+        const ctx = ctxOf(e.target)
+        if (ctx) stat += '，元素 ' + ctx
       }
-      const ctx = ctxOf(e.target)
-      if (ctx) stat += '，元素 ' + ctx
       const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288))
       const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148))
-      setAnnot({ started: true, ex, ey, stat })
+      setAnnot({ started: true, drawing: false, ex, ey, stat })
     }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelAnnot() }
     window.addEventListener('mousemove', onMove, true)
-    window.addEventListener('click', onClick, true)
+    window.addEventListener('mousedown', onDown, true)
+    window.addEventListener('mouseup', onUp, true)
     window.addEventListener('keydown', onKey, true)
     return () => {
       window.removeEventListener('mousemove', onMove, true)
-      window.removeEventListener('click', onClick, true)
+      window.removeEventListener('mousedown', onDown, true)
+      window.removeEventListener('mouseup', onUp, true)
       window.removeEventListener('keydown', onKey, true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.on, s.started])
   if (!s.on) return null
+  if (s.drawing) {
+    const L = Math.min(s.bx0, s.bx1)
+    const T = Math.min(s.by0, s.by1)
+    const R = Math.max(s.bx0, s.bx1)
+    const B = Math.max(s.by0, s.by1)
+    return <div className="dsh-wt_annotUi dsh-wt_annotSel" style={{ left: L, top: T, width: R - L, height: B - T }} />
+  }
   if (!s.started) {
     return (
       <div className="dsh-wt_annotUi dsh-wt_annotBubble" style={{ left: s.px, top: s.py }} aria-hidden>

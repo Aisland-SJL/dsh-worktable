@@ -7908,6 +7908,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt-annotating iframe{pointer-events:none!important}",
   ".dsh-wt_annotBubble{position:fixed;z-index:5000;left:0;top:0;transform:translate(-50%,-100%) translateY(-4px);pointer-events:none;width:30px;height:22px;border-radius:9px;background:#4f8ef7;box-shadow:0 2px 10px rgba(79,142,247,.5);display:flex;align-items:center;justify-content:center}",
   '.dsh-wt_annotBubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid #4f8ef7;border-top-width:5px;border-bottom-width:0;border-left-color:transparent;border-right-color:transparent}',
+  ".dsh-wt_annotSel{position:fixed;z-index:4999;border:1.5px solid #4f8ef7;background:rgba(79,142,247,.16);box-shadow:0 0 0 1px rgba(79,142,247,.25);pointer-events:none}",
   ".dsh-wt_annotEditor{position:fixed;z-index:5001;width:280px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:10px;background:rgba(16,20,28,.96);border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 30px rgba(0,0,0,.5)}",
   ".dsh-wt_annotInput{width:100%;box-sizing:border-box;height:56px;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(255,255,255,.05);color:#e6e8eb;font:inherit;font-size:12px;line-height:17px;resize:none;outline:none;cursor:text}",
   ".dsh-wt_annotInput:focus{border-color:#4f8ef7}",
@@ -16654,7 +16655,7 @@ function setDropTarget(t) {
   dropTarget = t;
   for (const fn of dropTargetListeners) fn();
 }
-var annotState = { on: false, started: false, px: 0, py: 0, ex: 0, ey: 0, draft: "", resp: "", stat: "" };
+var annotState = { on: false, started: false, drawing: false, px: 0, py: 0, bx0: 0, by0: 0, bx1: 0, by1: 0, ex: 0, ey: 0, draft: "", resp: "", stat: "" };
 var annotListeners = /* @__PURE__ */ new Set();
 function setAnnot(patch) {
   annotState = { ...annotState, ...patch };
@@ -16668,11 +16669,11 @@ function subscribeAnnot(fn) {
 }
 function startAnnot(resp) {
   document.body.classList.add("dsh-wt-annotating");
-  setAnnot({ on: true, started: false, resp, stat: "", draft: "" });
+  setAnnot({ on: true, started: false, drawing: false, resp, stat: "", draft: "" });
 }
 function cancelAnnot() {
   document.body.classList.remove("dsh-wt-annotating");
-  setAnnot({ on: false, started: false });
+  setAnnot({ on: false, started: false, drawing: false });
 }
 function windowLabelOf(row, index) {
   const spec = splitStore.spec;
@@ -16692,6 +16693,35 @@ function ctxOf(t) {
   let out = "<" + tag + (cls ? " ." + cls : "") + ">";
   if (text2) out += "\u300C" + text2 + "\u300D";
   return out;
+}
+function elementsInBox(x0, y0, x1, y1) {
+  const L = Math.min(x0, x1);
+  const T2 = Math.min(y0, y1);
+  const R = Math.max(x0, x1);
+  const B = Math.max(y0, y1);
+  const out = [];
+  for (const el of document.querySelectorAll("*")) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    if (cx < L || cx > R || cy < T2 || cy > B) continue;
+    const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
+    if (text2.length < 1 || text2.length > 80) continue;
+    out.push({ text: text2, area: rect.width * rect.height });
+  }
+  out.sort((a, b) => a.area - b.area);
+  const seen = /* @__PURE__ */ new Set();
+  const res = [];
+  for (const o of out) {
+    if (seen.has(o.text)) continue;
+    seen.add(o.text);
+    res.push(o.text);
+    if (res.length >= 5) break;
+  }
+  return res;
 }
 function fillHostInput(text2) {
   try {
@@ -16739,41 +16769,86 @@ function AnnotationOverlay() {
   const s = annotState;
   (0, import_react.useEffect)(() => {
     if (!s.on || s.started) return;
+    let sx = 0;
+    let sy = 0;
+    let dragging = false;
+    const isUi = (e) => e.target instanceof Element && e.target.closest(".dsh-wt_annotUi") != null;
     const onMove = (e) => {
-      if (annotState.on && !annotState.started) setAnnot({ px: e.clientX, py: e.clientY });
+      if (!annotState.on || annotState.started) return;
+      if (annotState.drawing) setAnnot({ bx1: e.clientX, by1: e.clientY, px: e.clientX, py: e.clientY });
+      else setAnnot({ px: e.clientX, py: e.clientY });
+    };
+    const onDown = (e) => {
+      if (!annotState.on || annotState.started || isUi(e)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      sx = e.clientX;
+      sy = e.clientY;
+      dragging = true;
+      setAnnot({ drawing: true, bx0: sx, by0: sy, bx1: sx, by1: sy });
+    };
+    const onUp = (e) => {
+      if (!annotState.on || annotState.started || !dragging) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      dragging = false;
+      const w = Math.abs(e.clientX - sx);
+      const h = Math.abs(e.clientY - sy);
+      const paneEl = e.target instanceof Element ? e.target.closest(".dsh-wt_pane") : null;
+      let stat = "";
+      if (Math.max(w, h) >= 8) {
+        const L = Math.min(sx, e.clientX);
+        const T2 = Math.min(sy, e.clientY);
+        const R = Math.max(sx, e.clientX);
+        const B = Math.max(sy, e.clientY);
+        stat = "\u6846\u9009\u5C4F\u5E55 (" + Math.round(L) + "," + Math.round(T2) + ") \u2192 (" + Math.round(R) + "," + Math.round(B) + ") \u5BBD\u9AD8 (" + Math.round(w) + "\xD7" + Math.round(h) + "px)";
+        if (paneEl) {
+          const pr = paneEl.getBoundingClientRect();
+          const rx1 = ((L - pr.left) / Math.max(1, pr.width) * 100).toFixed(1);
+          const ry1 = ((T2 - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
+          const rx2 = ((R - pr.left) / Math.max(1, pr.width) * 100).toFixed(1);
+          const ry2 = ((B - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
+          stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx1 + "%," + ry1 + "%)\u2192(" + rx2 + "%," + ry2 + "%)";
+        }
+        const texts = elementsInBox(L, T2, R, B);
+        if (texts.length > 0) stat += "\uFF0C\u6846\u5185\u6587\u5B57\uFF1A" + texts.map((t, i) => "[" + (i + 1) + "]" + t).join(" ");
+      } else {
+        stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
+        if (paneEl) {
+          const r = paneEl.getBoundingClientRect();
+          const rx = ((e.clientX - r.left) / Math.max(1, r.width) * 100).toFixed(1);
+          const ry = ((e.clientY - r.top) / Math.max(1, r.height) * 100).toFixed(1);
+          stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx + "%, " + ry + "%)";
+        }
+        const ctx = ctxOf(e.target);
+        if (ctx) stat += "\uFF0C\u5143\u7D20 " + ctx;
+      }
+      const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288));
+      const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148));
+      setAnnot({ started: true, drawing: false, ex, ey, stat });
     };
     const onKey = (e) => {
       if (e.key === "Escape") cancelAnnot();
     };
-    const onClick = (e) => {
-      if (!annotState.on || annotState.started) return;
-      if (e.target instanceof Element && e.target.closest(".dsh-wt_annotUi")) return;
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      const paneEl = e.target instanceof Element ? e.target.closest(".dsh-wt_pane") : null;
-      let stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
-      if (paneEl) {
-        const r = paneEl.getBoundingClientRect();
-        const rx = ((e.clientX - r.left) / Math.max(1, r.width) * 100).toFixed(1);
-        const ry = ((e.clientY - r.top) / Math.max(1, r.height) * 100).toFixed(1);
-        stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx + "%, " + ry + "%)";
-      }
-      const ctx = ctxOf(e.target);
-      if (ctx) stat += "\uFF0C\u5143\u7D20 " + ctx;
-      const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288));
-      const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148));
-      setAnnot({ started: true, ex, ey, stat });
-    };
     window.addEventListener("mousemove", onMove, true);
-    window.addEventListener("click", onClick, true);
+    window.addEventListener("mousedown", onDown, true);
+    window.addEventListener("mouseup", onUp, true);
     window.addEventListener("keydown", onKey, true);
     return () => {
       window.removeEventListener("mousemove", onMove, true);
-      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("mousedown", onDown, true);
+      window.removeEventListener("mouseup", onUp, true);
       window.removeEventListener("keydown", onKey, true);
     };
   }, [s.on, s.started]);
   if (!s.on) return null;
+  if (s.drawing) {
+    const L = Math.min(s.bx0, s.bx1);
+    const T2 = Math.min(s.by0, s.by1);
+    const R = Math.max(s.bx0, s.bx1);
+    const B = Math.max(s.by0, s.by1);
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotSel", style: { left: L, top: T2, width: R - L, height: B - T2 } });
+  }
   if (!s.started) {
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotBubble", style: { left: s.px, top: s.py }, "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 3.2v9.6M3.2 8h9.6", fill: "none", stroke: "#fff", strokeWidth: "1.8", strokeLinecap: "round" }) }) });
   }
