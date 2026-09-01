@@ -3,6 +3,7 @@ import { css } from './styles'
 import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
+import { photoStore } from './photoStore'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -1355,8 +1356,32 @@ function WorktableSection(props: any) {
         setShape: (s: 'square' | 'circle') => persistView({ consoleShape: s }),
         getBg: () => viewRef.current.consoleBg ?? 'glow',
         setBg: (m: 'plain' | 'glow' | 'photo') => persistView({ consoleBg: m }),
-        getPhoto: () => { try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' } },
-        setPhoto: (dataUrl: string) => { try { localStorage.setItem('dsh.worktable.consoleBgPhoto.v1', dataUrl) } catch {} },
+        getPhoto: () => photoStore.load()
+          .then((blob) => {
+            if (blob) return URL.createObjectURL(blob)
+            try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' }
+          })
+          .catch(() => {
+            try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' }
+          }),
+        setPhoto: async (blob: Blob) => {
+          try {
+            await photoStore.save(blob)
+            // 成功存原图后清掉旧的压缩图键，避免回退时读到旧图
+            try { localStorage.removeItem('dsh.worktable.consoleBgPhoto.v1') } catch {}
+          } catch {
+            // IndexedDB 不可用（隐私模式等）→ 兜底：原图 dataURL 存旧键，超限则静默
+            try {
+              const dataUrl = await new Promise<string>((resolve, reject) => {
+                const fr = new FileReader()
+                fr.onload = () => resolve(String(fr.result))
+                fr.onerror = () => reject(fr.error)
+                fr.readAsDataURL(blob)
+              })
+              localStorage.setItem('dsh.worktable.consoleBgPhoto.v1', dataUrl)
+            } catch {}
+          }
+        },
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 220, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },

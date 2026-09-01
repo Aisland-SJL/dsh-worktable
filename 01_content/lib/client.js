@@ -17298,7 +17298,8 @@ function ConsolePane() {
   const [cols, setColsState] = (0, import_react.useState)(() => splitEnv?.console?.getCols?.() ?? 3);
   const [shape, setShapeState] = (0, import_react.useState)(() => splitEnv?.console?.getShape?.() ?? "square");
   const [bg, setBgState] = (0, import_react.useState)(() => splitEnv?.console?.getBg?.() ?? "glow");
-  const [bgPhoto, setBgPhoto] = (0, import_react.useState)(() => splitEnv?.console?.getPhoto?.() ?? "");
+  const [bgPhoto, setBgPhoto] = (0, import_react.useState)("");
+  const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
   const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 });
@@ -17325,6 +17326,23 @@ function ConsolePane() {
     setShapeState(s);
     splitEnv?.console?.setShape?.(s);
   };
+  const onFilePhoto = async (file) => {
+    try {
+      await splitEnv?.console?.setPhoto?.(file);
+    } catch {
+    }
+    const url = URL.createObjectURL(file);
+    if (photoUrlRef.current) {
+      try {
+        URL.revokeObjectURL(photoUrlRef.current);
+      } catch {
+      }
+    }
+    photoUrlRef.current = url;
+    setBgPhoto(url);
+    setBgState("photo");
+    splitEnv?.console?.setBg?.("photo");
+  };
   const onBg = (m) => {
     if (m === "photo") {
       const input = document.createElement("input");
@@ -17333,33 +17351,7 @@ function ConsolePane() {
       input.onchange = () => {
         const file = input.files?.[0];
         if (!file) return;
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-          const maxDim = 2400;
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-          const w = Math.max(1, Math.round(img.width * scale));
-          const h = Math.max(1, Math.round(img.height * scale));
-          const canvas = document.createElement("canvas");
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            URL.revokeObjectURL(url);
-            return;
-          }
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = "high";
-          ctx.drawImage(img, 0, 0, w, h);
-          const webp = canvas.toDataURL("image/webp", 0.9);
-          const dataUrl = webp.indexOf("data:image/webp") === 0 ? webp : canvas.toDataURL("image/jpeg", 0.9);
-          URL.revokeObjectURL(url);
-          setBgPhoto(dataUrl);
-          setBgState("photo");
-          splitEnv?.console?.setBg?.("photo");
-          splitEnv?.console?.setPhoto?.(dataUrl);
-        };
-        img.src = url;
+        onFilePhoto(file);
       };
       input.click();
       return;
@@ -17462,6 +17454,33 @@ function ConsolePane() {
   }, []);
   (0, import_react.useEffect)(() => {
     splitEnv?.console?.refreshPreviews?.();
+  }, []);
+  (0, import_react.useEffect)(() => {
+    let alive = true;
+    splitEnv?.console?.getPhoto?.().then((url) => {
+      if (alive && url && url !== photoUrlRef.current) {
+        if (photoUrlRef.current) {
+          try {
+            URL.revokeObjectURL(photoUrlRef.current);
+          } catch {
+          }
+        }
+        photoUrlRef.current = url;
+        setBgPhoto(url);
+      }
+    }).catch(() => {
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  (0, import_react.useEffect)(() => () => {
+    if (photoUrlRef.current) {
+      try {
+        URL.revokeObjectURL(photoUrlRef.current);
+      } catch {
+      }
+    }
   }, []);
   (0, import_react.useEffect)(() => {
     const iv = window.setInterval(() => setNow(Date.now()), 1e3);
@@ -18725,6 +18744,61 @@ try {
 } catch {
 }
 
+// src/client/photoStore.ts
+var DB_NAME = "dsh-worktable";
+var STORE = "consoleBgPhoto";
+var KEY = "original";
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+var photoStore = {
+  /** 保存原始图片（原样存，不重新编码） */
+  async save(blob) {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).put(blob, KEY);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error);
+      };
+      tx.onabort = () => {
+        db.close();
+        reject(tx.error);
+      };
+    });
+  },
+  /** 读取原始图片；无记录返回 null */
+  async load() {
+    const db = await openDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).get(KEY);
+      req.onsuccess = () => {
+        const v = req.result;
+        db.close();
+        resolve(v instanceof Blob ? v : null);
+      };
+      req.onerror = () => {
+        db.close();
+        reject(req.error);
+      };
+    });
+  }
+};
+
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
 var LOCAL_VERSION = false ? "dev" : "0.2.3";
@@ -19942,17 +20016,38 @@ function WorktableSection(props) {
         setShape: (s) => persistView({ consoleShape: s }),
         getBg: () => viewRef.current.consoleBg ?? "glow",
         setBg: (m) => persistView({ consoleBg: m }),
-        getPhoto: () => {
+        getPhoto: () => photoStore.load().then((blob) => {
+          if (blob) return URL.createObjectURL(blob);
           try {
             return localStorage.getItem("dsh.worktable.consoleBgPhoto.v1") ?? "";
           } catch {
             return "";
           }
-        },
-        setPhoto: (dataUrl) => {
+        }).catch(() => {
           try {
-            localStorage.setItem("dsh.worktable.consoleBgPhoto.v1", dataUrl);
+            return localStorage.getItem("dsh.worktable.consoleBgPhoto.v1") ?? "";
           } catch {
+            return "";
+          }
+        }),
+        setPhoto: async (blob) => {
+          try {
+            await photoStore.save(blob);
+            try {
+              localStorage.removeItem("dsh.worktable.consoleBgPhoto.v1");
+            } catch {
+            }
+          } catch {
+            try {
+              const dataUrl = await new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(String(fr.result));
+                fr.onerror = () => reject(fr.error);
+                fr.readAsDataURL(blob);
+              });
+              localStorage.setItem("dsh.worktable.consoleBgPhoto.v1", dataUrl);
+            } catch {
+            }
           }
         },
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 220, s: 31, l: 6 },

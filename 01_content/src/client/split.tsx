@@ -247,8 +247,8 @@ type SplitEnv = {
     setShape: (s: 'square' | 'circle') => void
     getBg: () => 'plain' | 'glow' | 'photo'
     setBg: (m: 'plain' | 'glow' | 'photo') => void
-    getPhoto: () => string
-    setPhoto: (dataUrl: string) => void
+    getPhoto: () => Promise<string>
+    setPhoto: (blob: Blob) => Promise<void>
     getPlainHsl: () => { h: number; s: number; l: number }
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
@@ -1037,7 +1037,8 @@ function ConsolePane() {
   const [cols, setColsState] = useState<number>(() => splitEnv?.console?.getCols?.() ?? 3)
   const [shape, setShapeState] = useState<'square' | 'circle'>(() => splitEnv?.console?.getShape?.() ?? 'square')
   const [bg, setBgState] = useState<'plain' | 'glow' | 'photo'>(() => splitEnv?.console?.getBg?.() ?? 'glow')
-  const [bgPhoto, setBgPhoto] = useState<string>(() => splitEnv?.console?.getPhoto?.() ?? '')
+  const [bgPhoto, setBgPhoto] = useState<string>('')
+  const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | null>(null)
   const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
@@ -1064,6 +1065,16 @@ function ConsolePane() {
     setShapeState(s)
     splitEnv?.console?.setShape?.(s)
   }
+  /** 原图上图：原始 Blob 存 IndexedDB，显示用对象 URL（零压缩全分辨率） */
+  const onFilePhoto = async (file: Blob) => {
+    try { await splitEnv?.console?.setPhoto?.(file) } catch {}
+    const url = URL.createObjectURL(file)
+    if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
+    photoUrlRef.current = url
+    setBgPhoto(url)
+    setBgState('photo')
+    splitEnv?.console?.setBg?.('photo')
+  }
   const onBg = (m: 'plain' | 'glow' | 'photo') => {
     if (m === 'photo') {
       const input = document.createElement('input')
@@ -1072,31 +1083,7 @@ function ConsolePane() {
       input.onchange = () => {
         const file = input.files?.[0]
         if (!file) return
-        const url = URL.createObjectURL(file)
-        const img = new Image()
-        img.onload = () => {
-          const maxDim = 2400
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
-          const w = Math.max(1, Math.round(img.width * scale))
-          const h = Math.max(1, Math.round(img.height * scale))
-          const canvas = document.createElement('canvas')
-          canvas.width = w
-          canvas.height = h
-          const ctx = canvas.getContext('2d')
-          if (!ctx) { URL.revokeObjectURL(url); return }
-          // 高清重采样：大图缩到 2400px 上限，WebP 0.9（不支持时回退 JPEG 0.9）
-          ctx.imageSmoothingEnabled = true
-          ctx.imageSmoothingQuality = 'high'
-          ctx.drawImage(img, 0, 0, w, h)
-          const webp = canvas.toDataURL('image/webp', 0.9)
-          const dataUrl = webp.indexOf('data:image/webp') === 0 ? webp : canvas.toDataURL('image/jpeg', 0.9)
-          URL.revokeObjectURL(url)
-          setBgPhoto(dataUrl)
-          setBgState('photo')
-          splitEnv?.console?.setBg?.('photo')
-          splitEnv?.console?.setPhoto?.(dataUrl)
-        }
-        img.src = url
+        onFilePhoto(file)
       }
       input.click()
       return
@@ -1176,6 +1163,20 @@ function ConsolePane() {
   useEffect(() => {
     splitEnv?.console?.refreshPreviews?.()
   }, [])
+  // 背景原图：IndexedDB 异步加载（对象 URL 全分辨率；无记录时回退旧压缩图）
+  useEffect(() => {
+    let alive = true
+    splitEnv?.console?.getPhoto?.().then((url) => {
+      if (alive && url && url !== photoUrlRef.current) {
+        if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} }
+        photoUrlRef.current = url
+        setBgPhoto(url)
+      }
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [])
+  // 面板卸载时释放对象 URL
+  useEffect(() => () => { if (photoUrlRef.current) { try { URL.revokeObjectURL(photoUrlRef.current) } catch {} } }, [])
   // 运行时长的分钟级刷新：每秒重渲染一次（仅控制室开着时存在）
   useEffect(() => {
     const iv = window.setInterval(() => setNow(Date.now()), 1000)
