@@ -341,15 +341,28 @@ function cancelAnnot() {
   setAnnot({ on: false, started: false, drawing: false })
 }
 
-/** 窗口编号（约定：左栏 → 顶行 → 主行，从 1 起） */
+/** 窗口身份（约定：左栏 → 顶行 → 主行，从 1 起；附窗格标题与内容类型/URL，让接收方无需猜"这是哪个界面"） */
 function windowLabelOf(row: PaneRow, index: number): string {
   const spec = splitStore.spec
   if (!spec) return '窗口?'
   let num = spec.left ? 2 : 1
-  if (row === 'left') return '窗口1'
-  if (row === 'top') return '窗口' + (num + index)
-  num += (spec.top?.length ?? 0)
-  return '窗口' + (num + index)
+  if (row === 'left') num = 1
+  else if (row === 'top') num = num + index
+  else { num += (spec.top?.length ?? 0) + index }
+  let label = '窗口' + num
+  const pane = row === 'left' ? spec.left : row === 'top' ? spec.top?.[index] : spec.main?.[index]
+  const title = pane?.title
+  if (title) label += '「' + title + '」'
+  const tab = pane?.tabs?.[pane.active ?? 0]
+  const c = tab?.content
+  if (c) {
+    try {
+      if (c.kind === 'iframe' && c.url) label += '（网页 ' + new URL(c.url).hostname + '）'
+      else if (c.kind === 'builtin') label += '（内置·' + c.type + '）'
+      else if (c.kind === 'file') label += '（文件）'
+    } catch {}
+  }
+  return label
 }
 
 /** 被点元素上下文（标签 + 类名 + 文字） */
@@ -376,9 +389,8 @@ function elementsInBox(x0: number, y0: number, x1: number, y1: number): string[]
     if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
     const rect = el.getBoundingClientRect()
     if (rect.width <= 0 || rect.height <= 0) continue
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    if (cx < L || cx > R || cy < T || cy > B) continue
+    // 相交即入：元素矩形与框有任意重叠就收录（小框框住一半文字也能抓到）
+    if (rect.right < L || rect.left > R || rect.bottom < T || rect.top > B) continue
     const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
     if (text.length < 1 || text.length > 80) continue
     out.push({ text, area: rect.width * rect.height })

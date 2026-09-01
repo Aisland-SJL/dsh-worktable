@@ -16855,10 +16855,26 @@ function windowLabelOf(row, index) {
   const spec = splitStore.spec;
   if (!spec) return "\u7A97\u53E3?";
   let num = spec.left ? 2 : 1;
-  if (row === "left") return "\u7A97\u53E31";
-  if (row === "top") return "\u7A97\u53E3" + (num + index);
-  num += spec.top?.length ?? 0;
-  return "\u7A97\u53E3" + (num + index);
+  if (row === "left") num = 1;
+  else if (row === "top") num = num + index;
+  else {
+    num += (spec.top?.length ?? 0) + index;
+  }
+  let label = "\u7A97\u53E3" + num;
+  const pane = row === "left" ? spec.left : row === "top" ? spec.top?.[index] : spec.main?.[index];
+  const title = pane?.title;
+  if (title) label += "\u300C" + title + "\u300D";
+  const tab = pane?.tabs?.[pane.active ?? 0];
+  const c = tab?.content;
+  if (c) {
+    try {
+      if (c.kind === "iframe" && c.url) label += "\uFF08\u7F51\u9875 " + new URL(c.url).hostname + "\uFF09";
+      else if (c.kind === "builtin") label += "\uFF08\u5185\u7F6E\xB7" + c.type + "\uFF09";
+      else if (c.kind === "file") label += "\uFF08\u6587\u4EF6\uFF09";
+    } catch {
+    }
+  }
+  return label;
 }
 function ctxOf(t) {
   const el = t instanceof Element ? t : null;
@@ -16881,9 +16897,7 @@ function elementsInBox(x0, y0, x1, y1) {
     if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
     const rect = el.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) continue;
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    if (cx < L || cx > R || cy < T2 || cy > B) continue;
+    if (rect.right < L || rect.left > R || rect.bottom < T2 || rect.top > B) continue;
     const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
     if (text2.length < 1 || text2.length > 80) continue;
     out.push({ text: text2, area: rect.width * rect.height });
