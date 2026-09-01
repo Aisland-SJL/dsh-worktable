@@ -8148,7 +8148,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_subSection{flex:none;padding:6px 8px 2px;font-size:10px;font-weight:600;letter-spacing:.05em;color:var(--dsw-alias-label-tertiary,#6e7683)}",
   // 控制室面板：项目卡片网格（每行 3 张、超出换行；DSH 简洁 + 苹果式卡片）。
   // 主题变量自带作用域：dark 缺省；data-wt-theme=light 换浅色；system 由面板读宿主 color-scheme 落成 dark/light。
-  ".dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:auto;padding:22px;background-color:var(--wt-bg)}",
+  ".dsh-wt_console{--wt-bg:#0a0d13;--wt-card:#171c25;--wt-cardHover:#1d232e;--wt-border:#2a3140;--wt-borderHover:#39445a;--wt-text:#e6e8eb;--wt-text2:#9aa4b2;--wt-text3:#6e7683;--wt-chip:rgba(255,255,255,.06);--wt-grid:rgba(255,255,255,.045);--wt-shadow:0 6px 20px rgba(0,0,0,.35);position:relative;flex:1;min-height:0;overflow:hidden;padding:22px;display:flex;flex-direction:column;background-color:var(--wt-bg)}",
   // 流光玻璃背景：30px 网格不变；网格下层是缓慢漂移的模糊彩光光晕
   ".dsh-wt_consoleBg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}",
   '.dsh-wt_consoleBg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px}',
@@ -8162,19 +8162,19 @@ var css = xterm_default + "\n" + [
   "@keyframes wtBlob3{from{transform:translate(0,0) scale(1)}to{transform:translate(12vw,-8vh) scale(1.15)}}",
   "@keyframes wtBlob4{from{transform:translate(0,0) scale(1)}to{transform:translate(-10vw,-10vh) scale(1.12)}}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_blob{opacity:.28}",
-  ".dsh-wt_consoleHead,.dsh-wt_consoleGrid{position:relative;z-index:1}",
-  // 顶部 4 个圆形控制按钮 + 彩色下拉菜单
-  ".dsh-wt_consoleHead{position:relative;z-index:10}",
-  ".dsh-wt_consoleCtlWrap{position:relative;display:inline-flex}",
-  ".dsh-wt_consoleCtl{width:32px;height:32px;padding:0;border:1.5px solid rgba(255,255,255,.72);border-radius:9px;background:rgba(255,255,255,.04);color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:border-color .15s ease,background .15s ease}",
-  ".dsh-wt_consoleCtl:hover{border-color:rgba(255,255,255,.95);background:rgba(255,255,255,.09)}",
-  ".dsh-wt_consoleCtlOn{border-color:#fff;background:rgba(255,255,255,.14);box-shadow:0 0 10px rgba(255,255,255,.15)}",
+  ".dsh-wt_consoleGrid{position:relative;z-index:1}",
+  // 底部中央玻璃 dock：4 个 ghost 按钮（图标常显，hover 才浮现圆角矩形）+ 统一下拉面板（宽度 = dock 宽 150px）
+  ".dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}",
+  ".dsh-wt_consoleDockWrap{position:relative;z-index:12;flex:none;display:flex;justify-content:center;padding-top:12px}",
+  ".dsh-wt_consoleDock{display:flex;align-items:center;gap:4px;padding:5px;border-radius:14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:blur(14px) saturate(1.3)}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleDock{background:rgba(255,255,255,.62);border-color:rgba(27,31,36,.12);box-shadow:0 8px 24px rgba(31,41,55,.12)}",
+  ".dsh-wt_dockBtn{width:32px;height:32px;padding:0;border:none;border-radius:9px;background:transparent;color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}",
+  ".dsh-wt_dockBtn:hover{background:rgba(255,255,255,.14)}",
+  ".dsh-wt_dockBtnOn{background:rgba(255,255,255,.22)}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtn:hover{background:rgba(27,31,36,.10)}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_dockBtnOn{background:rgba(27,31,36,.14)}",
   ".dsh-wt_dropMask{position:fixed;inset:0;z-index:9;background:transparent;border:none}",
-  ".dsh-wt_drop{position:absolute;top:calc(100% + 6px);right:0;min-width:124px;padding:5px;border-radius:10px;background:#171c25;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:11;display:flex;flex-direction:column;gap:2px}",
-  ".dsh-wt_dropTheme{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropShape{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropBg{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
-  ".dsh-wt_dropCols{border:1px solid rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.4)}",
+  ".dsh-wt_drop{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:150px;box-sizing:border-box;padding:5px;border-radius:12px;background:var(--wt-card);border:1px solid var(--wt-border);box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:11;display:flex;flex-direction:column;gap:2px}",
   ".dsh-wt_dropItem{width:100%;padding:6px 9px;border:none;border-radius:7px;background:transparent;color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;display:flex;align-items:center;gap:7px;text-align:left}",
   ".dsh-wt_dropItem:hover{background:var(--wt-chip);color:var(--wt-text)}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
@@ -8215,11 +8215,6 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard-busy::before{border-radius:50%}",
   ".dsh-wt_consoleGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);width:100%;max-width:calc(var(--wt-cols,3)*242px + (var(--wt-cols,3) - 1)*64px);margin-left:auto;margin-right:auto}",
   ".dsh-wt_consoleCols{display:inline-flex;align-items:center;gap:8px;padding:2px 8px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card);color:var(--wt-text3);font-size:11px}",
-  ".dsh-wt_consoleBar{position:relative;width:128px;height:20px;border-radius:999px;background:rgba(255,255,255,.08);cursor:pointer;flex:none}",
-  ".dsh-wt_consoleBarFill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,#3b82f6,#4f8ef7);transition:width .3s cubic-bezier(.22,.61,.36,1);pointer-events:none}",
-  ".dsh-wt_consoleBarDot{position:absolute;top:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);border:none;padding:0;cursor:pointer;z-index:2}",
-  ".dsh-wt_consoleBarDot:hover{background:rgba(255,255,255,.65)}",
-  ".dsh-wt_consoleBarKnob{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);transition:left .3s cubic-bezier(.22,.61,.36,1);z-index:3;pointer-events:none}",
   ".dsh-wt_consoleCard{position:relative;box-sizing:border-box;flex:none;width:calc((100% - (var(--wt-cols,3) - 1)*64px)/var(--wt-cols,3));display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden}",
   // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
   '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
@@ -17431,87 +17426,7 @@ function ConsolePane() {
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob4" })
     ] }) }),
     openMenu !== null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropMask", onClick: () => setOpenMenu(null) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleHead", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "theme" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z", fill: "currentColor" }) }) }),
-        openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop dsh-wt_dropTheme", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-          setTheme(o.mode);
-          setOpenMenu(null);
-        }, children: T(o.key) }, o.mode)) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "shape" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.shapeLabel"), "aria-label": T("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "2.2", width: "7", height: "7", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.6", cy: "10.6", r: "3.8", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
-        ] }) }),
-        openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop dsh-wt_dropShape", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onShape("square");
-            setOpenMenu(null);
-          }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
-            T("console.shapeSquare")
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onShape("circle");
-            setOpenMenu(null);
-          }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
-            T("console.shapeCircle")
-          ] })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "bg" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.bgLabel"), "aria-label": T("console.bgLabel"), onClick: () => setOpenMenu(openMenu === "bg" ? null : "bg"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.2", width: "11.6", height: "9.6", rx: "1.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.5", r: "1.3", fill: "currentColor" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
-        ] }) }),
-        openMenu === "bg" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop dsh-wt_dropBg", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("plain");
-            setOpenMenu(null);
-          }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "currentColor" }) }),
-            T("console.bgPlain")
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("glow");
-            setOpenMenu(null);
-          }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
-            ] }),
-            T("console.bgGlow")
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-            onBg("photo");
-            setOpenMenu(null);
-          }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
-            ] }),
-            T("console.bgPhoto")
-          ] })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleCtlWrap", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_consoleCtl" + (openMenu === "cols" ? " dsh-wt_consoleCtlOn" : ""), title: T("console.colsLabel"), "aria-label": T("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.4", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "10.8", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" })
-        ] }) }),
-        openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop dsh-wt_dropCols", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_vbar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarFill", style: { height: 8 + (cols - 1) * 21 + "%" } }),
-          [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarLine", style: { top: 8 + (v - 1) * 21 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v) }, v)),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarKnob", style: { top: 8 + (cols - 1) * 21 + "%" } })
-        ] }) })
-      ] })
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "div",
         {
@@ -17554,9 +17469,83 @@ function ConsolePane() {
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleAddLabel", children: T("console.addProject") })
           ]
         }
-      )
-    ] }),
-    cards.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleEmpty", children: T("console.empty") })
+      ),
+      cards.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleEmpty", children: T("console.empty") })
+    ] }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDockWrap", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDock", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "theme" ? " dsh-wt_dockBtnOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z", fill: "currentColor" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "shape" ? " dsh-wt_dockBtnOn" : ""), title: T("console.shapeLabel"), "aria-label": T("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "2.2", width: "7", height: "7", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.6", cy: "10.6", r: "3.8", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "bg" ? " dsh-wt_dockBtnOn" : ""), title: T("console.bgLabel"), "aria-label": T("console.bgLabel"), onClick: () => setOpenMenu(openMenu === "bg" ? null : "bg"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.2", width: "11.6", height: "9.6", rx: "1.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.5", r: "1.3", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6", fill: "none", stroke: "currentColor", strokeWidth: "1.4" })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "cols" ? " dsh-wt_dockBtnOn" : ""), title: T("console.colsLabel"), "aria-label": T("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.4", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "10.8", y: "3", width: "3.2", height: "10", rx: "1.2", fill: "currentColor" })
+        ] }) })
+      ] }),
+      openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+        setTheme(o.mode);
+        setOpenMenu(null);
+      }, children: T(o.key) }, o.mode)) }),
+      openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          onShape("square");
+          setOpenMenu(null);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
+          T("console.shapeSquare")
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          onShape("circle");
+          setOpenMenu(null);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
+          T("console.shapeCircle")
+        ] })
+      ] }),
+      openMenu === "bg" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          onBg("plain");
+          setOpenMenu(null);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "currentColor" }) }),
+          T("console.bgPlain")
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          onBg("glow");
+          setOpenMenu(null);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "3", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "5.5", fill: "none", stroke: "currentColor", strokeWidth: "1", opacity: ".5" })
+          ] }),
+          T("console.bgGlow")
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+          onBg("photo");
+          setOpenMenu(null);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+          ] }),
+          T("console.bgPhoto")
+        ] })
+      ] }),
+      openMenu === "cols" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_vbar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarFill", style: { height: 8 + (cols - 1) * 21 + "%" } }),
+        [1, 2, 3, 4, 5].map((v) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_vbarLine", style: { top: 8 + (v - 1) * 21 + "%" }, "aria-label": String(v), title: String(v), onClick: () => onCols(v) }, v)),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_vbarKnob", style: { top: 8 + (cols - 1) * 21 + "%" } })
+      ] }) })
+    ] })
   ] });
 }
 function FolderIcon() {
