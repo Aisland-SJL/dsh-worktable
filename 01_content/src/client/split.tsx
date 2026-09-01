@@ -243,6 +243,16 @@ type SplitEnv = {
     setTheme: (th: 'dark' | 'light' | 'system') => void
     getCols: () => number
     setCols: (n: number) => void
+    getShape: () => 'square' | 'circle'
+    setShape: (s: 'square' | 'circle') => void
+    getBg: () => 'plain' | 'glow' | 'photo'
+    setBg: (m: 'plain' | 'glow' | 'photo') => void
+    getPhoto: () => string
+    setPhoto: (dataUrl: string) => void
+    getPlainHsl: () => { h: number; s: number; l: number }
+    setPlainHsl: (v: { h: number; s: number; l: number }) => void
+    getGlowHsl: () => { h: number; s: number; l: number }
+    setGlowHsl: (v: { h: number; s: number; l: number }) => void
   }
 }
 let splitEnv: SplitEnv | null = null
@@ -1021,6 +1031,9 @@ function ConsolePane() {
   const [bg, setBgState] = useState<'plain' | 'glow' | 'photo'>(() => splitEnv?.console?.getBg?.() ?? 'glow')
   const [bgPhoto, setBgPhoto] = useState<string>(() => splitEnv?.console?.getPhoto?.() ?? '')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | null>(null)
+  const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
+  const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1076,6 +1089,26 @@ function ConsolePane() {
     }
     setBgState(m)
     splitEnv?.console?.setBg?.(m)
+  }
+  const editHsl = (kind: 'plain' | 'glow', patch: Partial<{ h: number; s: number; l: number }>) => {
+    if (kind === 'plain') {
+      const next = { ...plainHsl, ...patch }
+      setPlainHslState(next)
+      splitEnv?.console?.setPlainHsl?.(next)
+    } else {
+      const next = { ...glowHsl, ...patch }
+      setGlowHslState(next)
+      splitEnv?.console?.setGlowHsl?.(next)
+    }
+  }
+  const resetHsl = (kind: 'plain' | 'glow') => {
+    if (kind === 'plain') {
+      setPlainHslState({ h: 220, s: 31, l: 6 })
+      splitEnv?.console?.setPlainHsl?.({ h: 220, s: 31, l: 6 })
+    } else {
+      setGlowHslState({ h: 0, s: 100, l: 100 })
+      splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
+    }
   }
   useLayoutEffect(() => {
     const first = firstRectsRef.current
@@ -1152,8 +1185,8 @@ function ConsolePane() {
     { mode: 'system', icon: '🖥️', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape}>
-      <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
+      <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center' } : bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
       {openMenu !== null && <div className="dsh-wt_dropMask" onClick={() => setOpenMenu(null)} />}
       <div className="dsh-wt_consoleScroll">
         <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>
@@ -1205,10 +1238,10 @@ function ConsolePane() {
       </div>
       <div className="dsh-wt_consoleDockWrap">
         <div className="dsh-wt_consoleDock">
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'theme' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="currentColor" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'shape' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'bg' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => setOpenMenu(openMenu === 'bg' ? null : 'bg')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="5.8" cy="6.5" r="1.3" fill="currentColor" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="1.4" /></svg></button>
-          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden><rect x="2" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /><rect x="6.4" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /><rect x="10.8" y="3" width="3.2" height="10" rx="1.2" fill="currentColor" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'theme' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.themeLabel')} aria-label={T('console.themeLabel')} onClick={() => setOpenMenu(openMenu === 'theme' ? null : 'theme')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><path d="M9.2 1.4A6.6 6.6 0 1 0 14.6 9.2 5.4 5.4 0 0 1 9.2 1.4z" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'shape' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.shapeLabel')} aria-label={T('console.shapeLabel')} onClick={() => setOpenMenu(openMenu === 'shape' ? null : 'shape')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="2.2" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="10.6" cy="10.6" r="3.8" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'bg' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.bgLabel')} aria-label={T('console.bgLabel')} onClick={() => { setOpenMenu(openMenu === 'bg' ? null : 'bg'); setBgEdit(null) }}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.2" y="3.2" width="11.6" height="9.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><circle cx="5.9" cy="6.7" r="1.05" fill="none" stroke="currentColor" strokeWidth="1" /><path d="M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
+          <button type="button" className={'dsh-wt_dockBtn' + (openMenu === 'cols' ? ' dsh-wt_dockBtnOn' : '')} title={T('console.colsLabel')} aria-label={T('console.colsLabel')} onClick={() => setOpenMenu(openMenu === 'cols' ? null : 'cols')}><svg width="18" height="18" viewBox="0 0 16 16" aria-hidden><rect x="2.4" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /><rect x="6.5" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /><rect x="10.6" y="3.2" width="3" height="9.6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.1" /></svg></button>
         </div>
         {openMenu === 'theme' && (
           <div className="dsh-wt_drop">
@@ -1224,11 +1257,39 @@ function ConsolePane() {
           </div>
         )}
         {openMenu === 'bg' && (
-          <div className="dsh-wt_drop">
-            <button type="button" className={'dsh-wt_dropItem' + (bg === 'plain' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('plain'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" /></svg>{T('console.bgPlain')}</button>
-            <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('glow'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
-            <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
-          </div>
+          bgEdit === null ? (
+            <div className="dsh-wt_drop">
+              <div className="dsh-wt_dropRow">
+                <button type="button" className={'dsh-wt_dropItem' + (bg === 'plain' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('plain'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPlain')}</button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
+              </div>
+              <div className="dsh-wt_dropRow">
+                <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('glow'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M8 2.4v1.8M8 11.8v1.8M2.4 8h1.8M11.8 8h1.8M4 4l1.3 1.3M10.7 10.7L12 12M12 4l-1.3 1.3M5.3 10.7L4 12" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
+              </div>
+              <div className="dsh-wt_dropRow">
+                <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+              </div>
+            </div>
+          ) : (
+            <div className="dsh-wt_drop">
+              <div className="dsh-wt_hslHead">
+                <button type="button" className="dsh-wt_hslBack" title={T('console.bgEditBack')} aria-label={T('console.bgEditBack')} onClick={() => setBgEdit(null)}>‹</button>
+                <span className="dsh-wt_hslTitle">{bgEdit === 'plain' ? T('console.bgEditPlain') : T('console.bgEditGlow')}</span>
+              </div>
+              {(() => {
+                const v = bgEdit === 'plain' ? plainHsl : glowHsl
+                const sMax = bgEdit === 'plain' ? 100 : 200
+                const lMax = bgEdit === 'plain' ? 100 : 200
+                return (<>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.h}°</span></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.s}%</span></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><span className="dsh-wt_hslVal">{v.l}%</span></div>
+                  <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>
+                </>)
+              })()}
+            </div>
+          )
         )}
         {openMenu === 'cols' && (
           <div className="dsh-wt_drop">

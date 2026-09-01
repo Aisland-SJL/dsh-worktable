@@ -73,6 +73,10 @@ type ViewState = {
   consoleShape?: 'square' | 'circle'
   /** 控制室背景：plain/glow/photo（默认 glow）*/
   consoleBg?: 'plain' | 'glow' | 'photo'
+  /** 纯色背景 HSL（默认对应 #0a0d13 = 220/31/6）*/
+  consoleBgPlainHsl?: { h: number; s: number; l: number }
+  /** 流光背景 HSL（hue-rotate/saturate/brightness；默认无调整 = 0/100/100）*/
+  consoleBgGlowHsl?: { h: number; s: number; l: number }
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -301,6 +305,12 @@ function loadView(): ViewState {
       consoleCols: typeof p.consoleCols === 'number' && p.consoleCols >= 1 && p.consoleCols <= 5 ? Math.round(p.consoleCols) : 3,
       consoleShape: p.consoleShape === 'circle' ? 'circle' : 'square',
       consoleBg: p.consoleBg === 'plain' || p.consoleBg === 'photo' ? p.consoleBg : 'glow',
+      consoleBgPlainHsl: typeof p.consoleBgPlainHsl?.h === 'number' && typeof p.consoleBgPlainHsl?.s === 'number' && typeof p.consoleBgPlainHsl?.l === 'number'
+        ? { h: p.consoleBgPlainHsl.h, s: p.consoleBgPlainHsl.s, l: p.consoleBgPlainHsl.l }
+        : undefined,
+      consoleBgGlowHsl: typeof p.consoleBgGlowHsl?.h === 'number' && typeof p.consoleBgGlowHsl?.s === 'number' && typeof p.consoleBgGlowHsl?.l === 'number'
+        ? { h: p.consoleBgGlowHsl.h, s: p.consoleBgGlowHsl.s, l: p.consoleBgGlowHsl.l }
+        : undefined,
     }
   } catch {
     return { ...DEFAULT_VIEW }
@@ -1347,6 +1357,10 @@ function WorktableSection(props: any) {
         setBg: (m: 'plain' | 'glow' | 'photo') => persistView({ consoleBg: m }),
         getPhoto: () => { try { return localStorage.getItem('dsh.worktable.consoleBgPhoto.v1') ?? '' } catch { return '' } },
         setPhoto: (dataUrl: string) => { try { localStorage.setItem('dsh.worktable.consoleBgPhoto.v1', dataUrl) } catch {} },
+        getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: 220, s: 31, l: 6 },
+        setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
+        getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
+        setGlowHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgGlowHsl: { ...v } }),
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }
