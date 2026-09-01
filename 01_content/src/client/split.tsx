@@ -1602,7 +1602,7 @@ function ConsolePane() {
                 <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><SliderIcon /></button>
               </div>
               <div className="dsh-wt_dropRow">
-                <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => onBg('glow')}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
+                <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => onBg('glow')}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><path d="M2.4 5.6c2-1.5 3.9-1.5 5.6 0 1.9 1.6 3.6 1.6 5.6 0M2.4 10.4c2-1.5 3.9-1.5 5.6 0 1.9 1.6 3.6 1.6 5.6 0" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>{T('console.bgGlow')}</button>
                 <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><SliderIcon /></button>
               </div>
               <div className="dsh-wt_dropRow">
