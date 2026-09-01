@@ -481,6 +481,23 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
   return { primary, line, candidates, limited, src }
 }
 
+/** 更新方法：复制给 AI 的升级指令（插件不自更新；升级由用户或其 Agent 执行 + 重启） */
+const UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"'
+const UPGRADE_AI = '帮我升级 dsh-worktable：执行 ' + UPGRADE_CMD + '，完成后提醒我重启 dsh web 并刷新页面'
+
+async function copyTextSafe(text: string): Promise<boolean> {
+  try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true } } catch {}
+  try {
+    const ta = document.createElement('textarea')
+    ta.value = text
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    document.body.removeChild(ta)
+    return ok
+  } catch { return false }
+}
+
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
 function fillHostInput(text: string): boolean {
   try {
@@ -1653,6 +1670,11 @@ function ConsolePane() {
       updBusyRef.current = false
     }
   }
+  const [updCopied, setUpdCopied] = useState(false)
+  const onCopyUpgrade = async () => {
+    const ok = await copyTextSafe(UPGRADE_AI)
+    if (ok) { setUpdCopied(true); window.setTimeout(() => setUpdCopied(false), 2200) }
+  }
   const onSkipVersion = () => {
     if (updInfo) { setSkipVersion(updInfo.latest); setUpdInfo(null); setUpdStatus('uptodate') }
   }
@@ -1921,7 +1943,9 @@ function ConsolePane() {
               <div className="dsh-wt_announceUpdate">
                 <span className="dsh-wt_announceNewVer">{T('annot.newVer')} v{updInfo.latest}</span>
                 <button type="button" className="dsh-wt_gridToggle dsh-wt_gridToggleOn" onClick={() => { try { window.open(updInfo.url, '_blank') } catch {} }}>{T('annot.gotoRelease')}</button>
+                <button type="button" className="dsh-wt_announceUpg" onClick={onCopyUpgrade}>{updCopied ? T('annot.copied') : T('annot.copyUpgrade')}</button>
                 <button type="button" className="dsh-wt_announceSkip" onClick={onSkipVersion}>{T('annot.skipVer')}</button>
+                <div className="dsh-wt_announceHow">{T('annot.howUpdate')}</div>
               </div>
             )}
             {updStatus === 'failed' && <div className="dsh-wt_announceStatus">{T('annot.checkFail')}</div>}

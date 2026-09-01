@@ -8192,6 +8192,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_announceAuto{flex:none;font-size:12px;line-height:17px;color:var(--wt-text2);margin-left:auto}",
   ".dsh-wt_announceUpdate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-radius:8px;background:rgba(79,142,247,.12)}",
   ".dsh-wt_announceNewVer{font-size:12px;line-height:17px;color:#7eb3ff;font-weight:600}",
+  ".dsh-wt_announceUpg{flex:none;padding:3px 10px;border:none;border-radius:6px;background:rgba(79,142,247,.16);color:#7eb3ff;font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
+  ".dsh-wt_announceUpg:hover{background:rgba(79,142,247,.3);color:#bcd6ff}",
+  ".dsh-wt_announceHow{flex:none;width:100%;font-size:11px;line-height:16px;color:var(--wt-text3);padding-top:2px}",
   ".dsh-wt_announceSkip{flex:none;padding:3px 10px;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_announceSkip:hover{background:rgba(244,63,94,.14);color:#f87171}",
   ".dsh-wt_announceStatus{font-size:11px;line-height:16px;color:var(--wt-text3)}",
@@ -8580,6 +8583,9 @@ var zh = {
   "annot.skipVer": "\u5FFD\u7565\u6B64\u7248\u672C",
   "annot.latest": "\u5DF2\u662F\u6700\u65B0\u7248\u672C",
   "annot.checkFail": "\u68C0\u67E5\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5",
+  "annot.copyUpgrade": "\u590D\u5236\u5347\u7EA7\u6307\u4EE4",
+  "annot.copied": "\u5DF2\u590D\u5236 \u2713",
+  "annot.howUpdate": "\u66F4\u65B0\u65B9\u6CD5\uFF1A\u70B9\u300C\u590D\u5236\u5347\u7EA7\u6307\u4EE4\u300D\u2192 \u7C98\u8D34\u7ED9\u5F53\u524D AI \u4F1A\u8BDD\u7531\u5B83\u6267\u884C\uFF0C\u5B8C\u6210\u540E\u91CD\u542F DSH\uFF1B\u6216\u624B\u52A8\u5728\u7EC8\u7AEF\u8FD0\u884C\u5347\u7EA7\u547D\u4EE4\u3002",
   "pane.expand": "\u5C55\u5F00\u7A97\u683C",
   "pane.jobsTitle": "\u540E\u53F0\u4EFB\u52A1",
   "pane.subagents": "\u5B50\u4EE3\u7406",
@@ -8795,6 +8801,9 @@ var en = {
   "annot.skipVer": "Ignore this version",
   "annot.latest": "Up to date",
   "annot.checkFail": "Check failed \u2014 try again later",
+  "annot.copyUpgrade": "Copy upgrade command",
+  "annot.copied": "Copied \u2713",
+  "annot.howUpdate": "How to update: click \u201CCopy upgrade command\u201D and paste it to your AI session to run, then restart DSH; or run the upgrade command in a terminal manually.",
   "pane.expand": "Expand pane",
   "pane.jobsTitle": "Background jobs",
   "pane.subagents": "Subagents",
@@ -17008,6 +17017,28 @@ function boxPayload(x0, y0, x1, y1) {
   }
   return { primary, line, candidates, limited, src };
 }
+var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
+var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
+async function copyTextSafe(text2) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text2);
+      return true;
+    }
+  } catch {
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text2;
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 function fillHostInput(text2) {
   try {
     const ta = document.querySelector("textarea[data-phase]") ?? Array.from(document.querySelectorAll("textarea")).pop();
@@ -18185,6 +18216,14 @@ function ConsolePane() {
       updBusyRef.current = false;
     }
   };
+  const [updCopied, setUpdCopied] = (0, import_react.useState)(false);
+  const onCopyUpgrade = async () => {
+    const ok = await copyTextSafe(UPGRADE_AI);
+    if (ok) {
+      setUpdCopied(true);
+      window.setTimeout(() => setUpdCopied(false), 2200);
+    }
+  };
   const onSkipVersion = () => {
     if (updInfo) {
       setSkipVersion(updInfo.latest);
@@ -18512,7 +18551,9 @@ function ConsolePane() {
           } catch {
           }
         }, children: T("annot.gotoRelease") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T("annot.skipVer") })
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceUpg", onClick: onCopyUpgrade, children: updCopied ? T("annot.copied") : T("annot.copyUpgrade") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T("annot.skipVer") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceHow", children: T("annot.howUpdate") })
       ] }),
       updStatus === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.checkFail") }),
       updStatus === "uptodate" && !updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.latest") }),
@@ -19915,8 +19956,8 @@ var WAVE_BG_B64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgIC
 var import_jsx_runtime2 = require("react/jsx-runtime");
 var LOCAL_VERSION2 = false ? "dev" : "0.2.3";
 var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
-var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
-var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
+var UPGRADE_CMD2 = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
+var UPGRADE_AI2 = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD2 + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
 var ICON_SYNC = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
   /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M1.5 8a6.5 6.5 0 0 1 11.1-4.6L14.5 5" }),
   /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round", d: "M14.5 1.5V5h-3.5" }),
@@ -20921,7 +20962,7 @@ function WorktableSection(props) {
     if (updateCheckOn) void checkUpdates();
   }, [updateCheckOn, checkUpdates]);
   const copyUpgradeAi = async () => {
-    const ok = await copyText(UPGRADE_AI);
+    const ok = await copyText(UPGRADE_AI2);
     if (ok) {
       setUpdateCopied(true);
       setTimeout(() => setUpdateCopied(false), 2200);
@@ -22549,7 +22590,7 @@ function WorktableSection(props) {
           updateInfo.latest
         ] }),
         updateInfo.notes && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateNotes", children: updateInfo.notes }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateCmd", children: UPGRADE_CMD }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_updateCmd", children: UPGRADE_CMD2 }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateBtns", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_updateBtn dsh-wt_updateBtnCopy", onClick: () => void copyUpgradeAi(), children: updateCopied ? "\u2713 " + t("update.copied") : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
             ICON_SPARK,
