@@ -8230,6 +8230,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-bg=plain][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px);background-size:30px 30px}",
+  ".dsh-wt_console[data-wt-theme=light][data-wt-bg=plain] .dsh-wt_consoleBg::after{display:none}",
+  ".dsh-wt_console[data-wt-theme=light][data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlowLight,rgba(27,31,36,.14)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlowLight,rgba(27,31,36,.14)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}",
   ".dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}",
   ".dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}",
@@ -17847,23 +17849,33 @@ function ConsoleVideo(props) {
       if (m && s && !m.paused && m.readyState >= 2 && !firedRef.current) {
         const d = m.duration;
         if (Number.isFinite(d) && d > 0) {
-          const fade = Math.min(1.2, d * 0.15);
+          const fade = Math.min(2, Math.max(1.2, d * 0.18));
           if (m.currentTime >= Math.max(0, d - fade)) {
             firedRef.current = true;
             try {
               try {
-                m.getAnimations().forEach((an) => an.cancel());
+                s.currentTime = 0;
               } catch {
               }
-              try {
-                s.getAnimations().forEach((an) => an.cancel());
-              } catch {
-              }
-              s.currentTime = 0;
-              s.play().catch(() => {
-              });
-              s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
-              m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
+              const startFade = () => {
+                try {
+                  try {
+                    m.getAnimations().forEach((an) => an.cancel());
+                  } catch {
+                  }
+                  try {
+                    s.getAnimations().forEach((an) => an.cancel());
+                  } catch {
+                  }
+                  s.play().catch(() => {
+                  });
+                  s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
+                  m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1e3, easing: "linear", fill: "forwards" });
+                } catch {
+                }
+              };
+              if (s.readyState >= 2) startFade();
+              else s.addEventListener("canplay", startFade, { once: true });
             } catch {
             }
           }
@@ -18287,7 +18299,7 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)", ["--wt-gridPlain"]: "rgba(255,255,255," + plainGrid / 100 + ")" } : {}, ...bg === "glow" ? { ["--wt-gridGlow"]: "rgba(255,255,255," + glowGrid / 100 + ")" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: (bg === "plain" ? plainBlur : bg === "glow" ? glowBlur : cardBlur) + "px" }, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)", ["--wt-gridPlain"]: "rgba(255,255,255," + plainGrid / 100 + ")" } : {}, ...bg === "glow" ? { ["--wt-gridGlow"]: "rgba(255,255,255," + glowGrid / 100 + ")", ["--wt-gridGlowLight"]: "rgba(27,31,36," + glowGrid / 100 + ")" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: (bg === "plain" ? plainBlur : bg === "glow" ? glowBlur : cardBlur) + "px" }, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
       bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ConsoleVideo, { src: bgVideo, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [

@@ -479,6 +479,8 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_console[data-wt-bg=plain][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}',
   '.dsh-wt_console[data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}',
   '.dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px);background-size:30px 30px}',
+  '.dsh-wt_console[data-wt-theme=light][data-wt-bg=plain] .dsh-wt_consoleBg::after{display:none}',
+  '.dsh-wt_console[data-wt-theme=light][data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlowLight,rgba(27,31,36,.14)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlowLight,rgba(27,31,36,.14)) 1px,transparent 1px);background-size:30px 30px}',
   '.dsh-wt_console[data-wt-bg=photo][data-wt-grid=off] .dsh-wt_consoleBg::after{display:none}',
   '.dsh-wt_hslHead{display:flex;align-items:center;gap:4px;padding:2px 4px 4px}',
   '.dsh-wt_hslBack{flex:none;width:20px;height:20px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}',

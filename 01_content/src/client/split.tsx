@@ -1376,16 +1376,22 @@ function ConsoleVideo(props: { src: string; style?: CSSProperties }) {
       if (m && s && !m.paused && m.readyState >= 2 && !firedRef.current) {
         const d = m.duration
         if (Number.isFinite(d) && d > 0) {
-          const fade = Math.min(1.2, d * 0.15)
+          const fade = Math.min(2.0, Math.max(1.2, d * 0.18))
           if (m.currentTime >= Math.max(0, d - fade)) {
             firedRef.current = true
             try {
-              try { m.getAnimations().forEach((an) => an.cancel()) } catch {}
-              try { s.getAnimations().forEach((an) => an.cancel()) } catch {}
-              s.currentTime = 0
-              s.play().catch(() => {})
-              s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
-              m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
+              try { s.currentTime = 0 } catch {}
+              const startFade = () => {
+                try {
+                  try { m.getAnimations().forEach((an) => an.cancel()) } catch {}
+                  try { s.getAnimations().forEach((an) => an.cancel()) } catch {}
+                  s.play().catch(() => {})
+                  s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
+                  m.animate([{ opacity: 1 }, { opacity: 0 }], { duration: fade * 1000, easing: 'linear', fill: 'forwards' })
+                } catch {}
+              }
+              if (s.readyState >= 2) startFade()
+              else s.addEventListener('canplay', startFade, { once: true })
             } catch {}
           }
         }
@@ -1741,7 +1747,7 @@ function ConsolePane() {
     { mode: 'system', key: 'console.themeSystem' },
   ]
   return (
-    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={{ ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)', ['--wt-gridPlain' as any]: 'rgba(255,255,255,' + (plainGrid / 100) + ')' } : {}), ...(bg === 'glow' ? { ['--wt-gridGlow' as any]: 'rgba(255,255,255,' + (glowGrid / 100) + ')' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}), ['--wt-cardBlur' as any]: (bg === 'plain' ? plainBlur : bg === 'glow' ? glowBlur : cardBlur) + 'px' }}>
+    <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} data-wt-bg={bg} data-wt-grid={bg === 'photo' && !photoGrid ? 'off' : 'on'} style={{ ...(bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)', ['--wt-gridPlain' as any]: 'rgba(255,255,255,' + (plainGrid / 100) + ')' } : {}), ...(bg === 'glow' ? { ['--wt-gridGlow' as any]: 'rgba(255,255,255,' + (glowGrid / 100) + ')', ['--wt-gridGlowLight' as any]: 'rgba(27,31,36,' + (glowGrid / 100) + ')' } : {}), ...(bg === 'photo' ? { ['--wt-gridPhoto' as any]: 'rgba(255,255,255,' + (gridOpacity / 100) + ')' } : {}), ['--wt-cardBlur' as any]: (bg === 'plain' ? plainBlur : bg === 'glow' ? glowBlur : cardBlur) + 'px' }}>
       <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>
         {bg === 'photo' && (bgVideo
           ? <ConsoleVideo src={bgVideo} style={photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : undefined} />
