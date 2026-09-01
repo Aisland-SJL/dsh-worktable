@@ -253,6 +253,8 @@ type SplitEnv = {
     setPlainHsl: (v: { h: number; s: number; l: number }) => void
     getGlowHsl: () => { h: number; s: number; l: number }
     setGlowHsl: (v: { h: number; s: number; l: number }) => void
+    getPhotoHsl: () => { h: number; s: number; l: number }
+    setPhotoHsl: (v: { h: number; s: number; l: number }) => void
   }
 }
 let splitEnv: SplitEnv | null = null
@@ -1029,6 +1031,47 @@ function ThemeIcon({ mode, size }: { mode: 'dark' | 'light' | 'system'; size?: n
   return <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden><rect x="2" y="3.2" width="12" height="8.8" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.1" /><path d="M5.4 14.4h5.2M8 12v2.4" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg>
 }
 
+/** 两行滑杆图标（设置入口）：2 条轨道 + 2 个旋钮，描边风格 */
+function SliderIcon({ size }: { size?: number }) {
+  const s = size ?? 14
+  return (
+    <svg width={s} height={s} viewBox="0 0 16 16" aria-hidden>
+      <path d="M2.5 5.6h11M2.5 10.4h11" fill="none" stroke="currentColor" strokeWidth="1.1" />
+      <circle cx="10.4" cy="5.6" r="1.8" fill="currentColor" />
+      <circle cx="5.8" cy="10.4" r="1.8" fill="currentColor" />
+    </svg>
+  )
+}
+
+/** HSL 数值普通输入框：始终为常规边框输入框，输入提交时自动钳制到 0..max */
+function HslValInput(props: { value: number; max: number; onCommit: (n: number) => void }) {
+  const [draft, setDraft] = useState(String(props.value))
+  const [focused, setFocused] = useState(false)
+  useEffect(() => { if (!focused) setDraft(String(props.value)) }, [props.value, focused])
+  const commit = () => {
+    let n = parseInt(draft, 10)
+    if (!Number.isFinite(n)) n = props.value
+    n = Math.min(Math.max(n, 0), props.max)
+    props.onCommit(n)
+  }
+  return (
+    <input
+      className="dsh-wt_hslInput"
+      type="number"
+      min={0}
+      max={props.max}
+      value={focused ? draft : String(props.value)}
+      onFocus={() => { setFocused(true); setDraft(String(props.value)) }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => { setFocused(false); commit() }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+        if (e.key === 'Escape') { setDraft(String(props.value)); (e.target as HTMLInputElement).blur() }
+      }}
+    />
+  )
+}
+
 /** 控制室面板：项目卡片网格（每行 3 张、超出换行）；数据由工作台组装推送（纯读镜像）。
  *  主题：dark/light 直接生效；system = 跟随宿主 html 的 color-scheme（DSH 深色/白色/跟随系统都会反映到它） */
 function ConsolePane() {
@@ -1040,11 +1083,10 @@ function ConsolePane() {
   const [bgPhoto, setBgPhoto] = useState<string>('')
   const photoUrlRef = useRef<string>('')
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | null>(null)
+  const [bgEdit, setBgEdit] = useState<'plain' | 'glow' | 'photo' | null>(null)
   const [plainHsl, setPlainHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 })
   const [glowHsl, setGlowHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 })
-  const [valEdit, setValEdit] = useState<'h' | 's' | 'l' | null>(null)
-  const [valDraft, setValDraft] = useState('')
+  const [photoHsl, setPhotoHslState] = useState<{ h: number; s: number; l: number }>(() => splitEnv?.console?.getPhotoHsl?.() ?? { h: 0, s: 100, l: 100 })
   const gridRef = useRef<HTMLDivElement | null>(null)
   const firstRectsRef = useRef<Map<string, { x: number; y: number }> | null>(null)
   const onCols = (n: number) => {
@@ -1091,34 +1133,32 @@ function ConsolePane() {
     setBgState(m)
     splitEnv?.console?.setBg?.(m)
   }
-  const editHsl = (kind: 'plain' | 'glow', patch: Partial<{ h: number; s: number; l: number }>) => {
+  const editHsl = (kind: 'plain' | 'glow' | 'photo', patch: Partial<{ h: number; s: number; l: number }>) => {
     if (kind === 'plain') {
       const next = { ...plainHsl, ...patch }
       setPlainHslState(next)
       splitEnv?.console?.setPlainHsl?.(next)
-    } else {
+    } else if (kind === 'glow') {
       const next = { ...glowHsl, ...patch }
       setGlowHslState(next)
       splitEnv?.console?.setGlowHsl?.(next)
+    } else {
+      const next = { ...photoHsl, ...patch }
+      setPhotoHslState(next)
+      splitEnv?.console?.setPhotoHsl?.(next)
     }
   }
-  const resetHsl = (kind: 'plain' | 'glow') => {
+  const resetHsl = (kind: 'plain' | 'glow' | 'photo') => {
     if (kind === 'plain') {
       setPlainHslState({ h: 220, s: 31, l: 6 })
       splitEnv?.console?.setPlainHsl?.({ h: 220, s: 31, l: 6 })
-    } else {
+    } else if (kind === 'glow') {
       setGlowHslState({ h: 0, s: 100, l: 100 })
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 })
+    } else {
+      setPhotoHslState({ h: 0, s: 100, l: 100 })
+      splitEnv?.console?.setPhotoHsl?.({ h: 0, s: 100, l: 100 })
     }
-  }
-  const commitVal = (kind: 'plain' | 'glow', k: 'h' | 's' | 'l') => {
-    const v = kind === 'plain' ? plainHsl : glowHsl
-    const max = k === 'h' ? 360 : (kind === 'plain' ? 100 : 200)
-    let n = parseInt(valDraft, 10)
-    if (!Number.isFinite(n)) n = v[k]
-    n = Math.min(Math.max(n, 0), max)
-    editHsl(kind, { [k]: n } as any)
-    setValEdit(null)
   }
   useLayoutEffect(() => {
     const first = firstRectsRef.current
@@ -1210,7 +1250,7 @@ function ConsolePane() {
   ]
   return (
     <div className="dsh-wt_console" data-wt-theme={resolvedTheme} data-wt-shape={shape} style={bg === 'plain' ? { ['--wt-bg' as any]: 'hsl(' + plainHsl.h + ', ' + plainHsl.s + '%, ' + plainHsl.l + '%)' } : undefined}>
-      <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center' } : bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
+      <span className="dsh-wt_consoleBg" aria-hidden style={bg === 'photo' && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: 'cover', backgroundPosition: 'center', ...(photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: 'hue-rotate(' + photoHsl.h + 'deg) saturate(' + photoHsl.s + '%) brightness(' + photoHsl.l + '%)' } : {}) } : bg === 'glow' && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: 'hue-rotate(' + glowHsl.h + 'deg) saturate(' + glowHsl.s + '%) brightness(' + glowHsl.l + '%)' } : undefined}>{bg === 'glow' && (<><i className="dsh-wt_blob dsh-wt_blob1" /><i className="dsh-wt_blob dsh-wt_blob2" /><i className="dsh-wt_blob dsh-wt_blob3" /><i className="dsh-wt_blob dsh-wt_blob4" /></>)}</span>
       {openMenu !== null && <div className="dsh-wt_dropMask" onClick={() => setOpenMenu(null)} />}
       <div className="dsh-wt_consoleScroll">
         <div ref={gridRef} className="dsh-wt_consoleGrid" style={{ ['--wt-cols' as any]: cols }}>
@@ -1285,30 +1325,31 @@ function ConsolePane() {
             <div className="dsh-wt_drop">
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'plain' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('plain'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="3" y="3" width="10" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPlain')}</button>
-                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11" fill="none" stroke="currentColor" strokeWidth="1" /><circle cx="10.2" cy="4.4" r="1.7" fill="currentColor" /><circle cx="5.6" cy="8" r="1.7" fill="currentColor" /><circle cx="11.4" cy="11.6" r="1.7" fill="currentColor" /></svg></button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('plain')}><SliderIcon /></button>
               </div>
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'glow' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('glow'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="3" fill="currentColor" /><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" strokeWidth="1" opacity=".5" /></svg>{T('console.bgGlow')}</button>
-                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.4h11M2.5 8h11M2.5 11.6h11" fill="none" stroke="currentColor" strokeWidth="1" /><circle cx="10.2" cy="4.4" r="1.7" fill="currentColor" /><circle cx="5.6" cy="8" r="1.7" fill="currentColor" /><circle cx="11.4" cy="11.6" r="1.7" fill="currentColor" /></svg></button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('glow')}><SliderIcon /></button>
               </div>
               <div className="dsh-wt_dropRow">
                 <button type="button" className={'dsh-wt_dropItem' + (bg === 'photo' ? ' dsh-wt_dropItemOn' : '')} onClick={() => { onBg('photo'); setOpenMenu(null) }}><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden><rect x="2.5" y="3.5" width="11" height="9" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.2" /><circle cx="5.8" cy="6.6" r="1.1" fill="currentColor" /><path d="M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>{T('console.bgPhoto')}</button>
+                <button type="button" className="dsh-wt_dropGear" title={T('console.bgEdit')} aria-label={T('console.bgEdit')} onClick={() => setBgEdit('photo')}><SliderIcon /></button>
               </div>
             </div>
           ) : (
             <div className="dsh-wt_drop">
               <div className="dsh-wt_hslHead">
                 <button type="button" className="dsh-wt_hslBack" title={T('console.bgEditBack')} aria-label={T('console.bgEditBack')} onClick={() => setBgEdit(null)}>‹</button>
-                <span className="dsh-wt_hslTitle">{bgEdit === 'plain' ? T('console.bgEditPlain') : T('console.bgEditGlow')}</span>
+                <span className="dsh-wt_hslTitle">{bgEdit === 'plain' ? T('console.bgEditPlain') : bgEdit === 'glow' ? T('console.bgEditGlow') : T('console.bgEditPhoto')}</span>
               </div>
               {(() => {
-                const v = bgEdit === 'plain' ? plainHsl : glowHsl
+                const v = bgEdit === 'plain' ? plainHsl : bgEdit === 'glow' ? glowHsl : photoHsl
                 const sMax = bgEdit === 'plain' ? 100 : 200
                 const lMax = bgEdit === 'plain' ? 100 : 200
                 return (<>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} />{valEdit === 'h' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 'h')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 'h'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('h'); setValDraft(String(v.h)) }} onClick={() => { setValEdit('h'); setValDraft(String(v.h)) }}>{v.h}°</span>}</div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} />{valEdit === 's' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 's')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 's'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('s'); setValDraft(String(v.s)) }} onClick={() => { setValEdit('s'); setValDraft(String(v.s)) }}>{v.s}%</span>}</div>
-                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} />{valEdit === 'l' ? <input className="dsh-wt_hslInput" autoFocus value={valDraft} onChange={(e) => setValDraft(e.target.value)} onBlur={() => commitVal(bgEdit, 'l')} onKeyDown={(e) => { if (e.key === 'Enter') commitVal(bgEdit, 'l'); if (e.key === 'Escape') setValEdit(null) }} /> : <span className="dsh-wt_hslVal" title={T('console.bgEditType')} onMouseEnter={() => { setValEdit('l'); setValDraft(String(v.l)) }} onClick={() => { setValEdit('l'); setValDraft(String(v.l)) }}>{v.l}%</span>}</div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={0} max={360} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} max={360} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
+                  <div className="dsh-wt_hslRow"><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
                   <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>
                 </>)
               })()}

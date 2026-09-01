@@ -78,6 +78,8 @@ type ViewState = {
   consoleBgPlainHsl?: { h: number; s: number; l: number }
   /** 流光背景 HSL（hue-rotate/saturate/brightness；默认无调整 = 0/100/100）*/
   consoleBgGlowHsl?: { h: number; s: number; l: number }
+  /** 照片背景 HSL 滤镜（默认无调整 = 0/100/100）*/
+  consoleBgPhotoHsl?: { h: number; s: number; l: number }
 }
 
 /** 卡片上报的项目元信息（协议 v2）。 */
@@ -311,6 +313,9 @@ function loadView(): ViewState {
         : undefined,
       consoleBgGlowHsl: typeof p.consoleBgGlowHsl?.h === 'number' && typeof p.consoleBgGlowHsl?.s === 'number' && typeof p.consoleBgGlowHsl?.l === 'number'
         ? { h: p.consoleBgGlowHsl.h, s: p.consoleBgGlowHsl.s, l: p.consoleBgGlowHsl.l }
+        : undefined,
+      consoleBgPhotoHsl: typeof p.consoleBgPhotoHsl?.h === 'number' && typeof p.consoleBgPhotoHsl?.s === 'number' && typeof p.consoleBgPhotoHsl?.l === 'number'
+        ? { h: p.consoleBgPhotoHsl.h, s: p.consoleBgPhotoHsl.s, l: p.consoleBgPhotoHsl.l }
         : undefined,
     }
   } catch {
@@ -1386,6 +1391,8 @@ function WorktableSection(props: any) {
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
         setGlowHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgGlowHsl: { ...v } }),
+        getPhotoHsl: () => viewRef.current.consoleBgPhotoHsl ?? { h: 0, s: 100, l: 100 },
+        setPhotoHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPhotoHsl: { ...v } }),
         onAck: (id) => { ackRef.current?.(id); setNotifyTick((t) => t + 1); notifyConsole() },
         refreshPreviews: () => {
           if (previewTimer != null) { window.clearTimeout(previewTimer); previewTimer = null }

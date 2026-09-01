@@ -8189,9 +8189,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_hslRow{display:flex;align-items:center;gap:4px;padding:2px 3px;width:100%;box-sizing:border-box}",
   ".dsh-wt_hslLabel{flex:none;width:10px;font-size:9px;font-weight:600;color:var(--wt-text3);text-align:center}",
   ".dsh-wt_hslSlider{flex:1;min-width:0;height:14px;accent-color:#4f8ef7;cursor:pointer}",
-  ".dsh-wt_hslVal{flex:none;width:26px;font-size:10px;color:var(--wt-text2);text-align:right;font-variant-numeric:tabular-nums;cursor:pointer;border-radius:4px;box-sizing:border-box}",
-  ".dsh-wt_hslVal:hover{background:var(--wt-chip);color:var(--wt-text)}",
-  ".dsh-wt_hslInput{flex:none;width:30px;height:18px;padding:0 2px;border:none;border-bottom:1px solid var(--wt-border);background:transparent;color:var(--wt-text);font:inherit;font-size:10px;text-align:right;outline:none}",
+  ".dsh-wt_hslInput{flex:none;width:36px;height:20px;padding:0 4px;border:1px solid var(--wt-border);border-radius:6px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:10px;text-align:right;outline:none;box-sizing:border-box;font-variant-numeric:tabular-nums}",
+  ".dsh-wt_hslInput:focus{border-color:#4f8ef7;color:var(--wt-text)}",
   ".dsh-wt_hslReset{margin:4px 4px 2px;padding:5px 9px;border:none;border-radius:7px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;text-align:center}",
   ".dsh-wt_hslReset:hover{background:rgba(79,142,247,.22);color:var(--wt-text)}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
@@ -8439,6 +8438,7 @@ var zh = {
   "console.bgEdit": "\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditPlain": "\u7EAF\u8272\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditGlow": "\u6D41\u5149\u80CC\u666F\u8BBE\u7F6E",
+  "console.bgEditPhoto": "\u7167\u7247\u989C\u8272\u8BBE\u7F6E",
   "console.bgEditBack": "\u8FD4\u56DE",
   "console.bgEditReset": "\u6062\u590D\u521D\u59CB",
   "console.bgEditType": "\u70B9\u51FB\u6216\u60AC\u505C\u8F93\u5165\u6570\u503C",
@@ -8627,6 +8627,7 @@ var en = {
   "console.bgEdit": "Background settings",
   "console.bgEditPlain": "Plain background",
   "console.bgEditGlow": "Glow background",
+  "console.bgEditPhoto": "Photo tint",
   "console.bgEditBack": "Back",
   "console.bgEditReset": "Reset",
   "console.bgEditType": "Click or hover to type a value",
@@ -17292,6 +17293,53 @@ function ThemeIcon({ mode, size }) {
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M5.4 14.4h5.2M8 12v2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" })
   ] });
 }
+function SliderIcon({ size }) {
+  const s = size ?? 14;
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: s, height: s, viewBox: "0 0 16 16", "aria-hidden": true, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 5.6h11M2.5 10.4h11", fill: "none", stroke: "currentColor", strokeWidth: "1.1" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.4", cy: "5.6", r: "1.8", fill: "currentColor" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "10.4", r: "1.8", fill: "currentColor" })
+  ] });
+}
+function HslValInput(props) {
+  const [draft, setDraft] = (0, import_react.useState)(String(props.value));
+  const [focused, setFocused] = (0, import_react.useState)(false);
+  (0, import_react.useEffect)(() => {
+    if (!focused) setDraft(String(props.value));
+  }, [props.value, focused]);
+  const commit = () => {
+    let n = parseInt(draft, 10);
+    if (!Number.isFinite(n)) n = props.value;
+    n = Math.min(Math.max(n, 0), props.max);
+    props.onCommit(n);
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    "input",
+    {
+      className: "dsh-wt_hslInput",
+      type: "number",
+      min: 0,
+      max: props.max,
+      value: focused ? draft : String(props.value),
+      onFocus: () => {
+        setFocused(true);
+        setDraft(String(props.value));
+      },
+      onChange: (e) => setDraft(e.target.value),
+      onBlur: () => {
+        setFocused(false);
+        commit();
+      },
+      onKeyDown: (e) => {
+        if (e.key === "Enter") e.target.blur();
+        if (e.key === "Escape") {
+          setDraft(String(props.value));
+          e.target.blur();
+        }
+      }
+    }
+  );
+}
 function ConsolePane() {
   const [, setTick] = (0, import_react.useState)(0);
   const [now, setNow] = (0, import_react.useState)(() => Date.now());
@@ -17304,8 +17352,7 @@ function ConsolePane() {
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
   const [plainHsl, setPlainHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainHsl?.() ?? { h: 220, s: 31, l: 6 });
   const [glowHsl, setGlowHslState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowHsl?.() ?? { h: 0, s: 100, l: 100 });
-  const [valEdit, setValEdit] = (0, import_react.useState)(null);
-  const [valDraft, setValDraft] = (0, import_react.useState)("");
+  const [photoHsl, setPhotoHslState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoHsl?.() ?? { h: 0, s: 100, l: 100 });
   const gridRef = (0, import_react.useRef)(null);
   const firstRectsRef = (0, import_react.useRef)(null);
   const onCols = (n) => {
@@ -17364,29 +17411,27 @@ function ConsolePane() {
       const next = { ...plainHsl, ...patch };
       setPlainHslState(next);
       splitEnv?.console?.setPlainHsl?.(next);
-    } else {
+    } else if (kind === "glow") {
       const next = { ...glowHsl, ...patch };
       setGlowHslState(next);
       splitEnv?.console?.setGlowHsl?.(next);
+    } else {
+      const next = { ...photoHsl, ...patch };
+      setPhotoHslState(next);
+      splitEnv?.console?.setPhotoHsl?.(next);
     }
   };
   const resetHsl = (kind) => {
     if (kind === "plain") {
       setPlainHslState({ h: 220, s: 31, l: 6 });
       splitEnv?.console?.setPlainHsl?.({ h: 220, s: 31, l: 6 });
-    } else {
+    } else if (kind === "glow") {
       setGlowHslState({ h: 0, s: 100, l: 100 });
       splitEnv?.console?.setGlowHsl?.({ h: 0, s: 100, l: 100 });
+    } else {
+      setPhotoHslState({ h: 0, s: 100, l: 100 });
+      splitEnv?.console?.setPhotoHsl?.({ h: 0, s: 100, l: 100 });
     }
-  };
-  const commitVal = (kind, k) => {
-    const v = kind === "plain" ? plainHsl : glowHsl;
-    const max = k === "h" ? 360 : kind === "plain" ? 100 : 200;
-    let n = parseInt(valDraft, 10);
-    if (!Number.isFinite(n)) n = v[k];
-    n = Math.min(Math.max(n, 0), max);
-    editHsl(kind, { [k]: n });
-    setValEdit(null);
   };
   (0, import_react.useLayoutEffect)(() => {
     const first = firstRectsRef.current;
@@ -17517,7 +17562,7 @@ function ConsolePane() {
     { mode: "system", key: "console.themeSystem" }
   ];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, style: bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)" } : void 0, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center" } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "photo" && bgPhoto ? { backgroundImage: 'url("' + bgPhoto + '")', backgroundSize: "cover", backgroundPosition: "center", ...photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : {} } : bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob1" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob2" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("i", { className: "dsh-wt_blob dsh-wt_blob3" }),
@@ -17623,12 +17668,7 @@ function ConsolePane() {
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }) }),
             T("console.bgPlain")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.4h11M2.5 8h11M2.5 11.6h11", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.2", cy: "4.4", r: "1.7", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.6", cy: "8", r: "1.7", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "11.4", cy: "11.6", r: "1.7", fill: "currentColor" })
-          ] }) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
@@ -17641,84 +17681,46 @@ function ConsolePane() {
             ] }),
             T("console.bgGlow")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.4h11M2.5 8h11M2.5 11.6h11", fill: "none", stroke: "currentColor", strokeWidth: "1" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.2", cy: "4.4", r: "1.7", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.6", cy: "8", r: "1.7", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "11.4", cy: "11.6", r: "1.7", fill: "currentColor" })
-          ] }) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropRow", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
-          onBg("photo");
-          setOpenMenu(null);
-        }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => {
+            onBg("photo");
+            setOpenMenu(null);
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.5", y: "3.5", width: "11", height: "9", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
+            ] }),
+            T("console.bgPhoto")
           ] }),
-          T("console.bgPhoto")
-        ] }) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
+        ] })
       ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslHead", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslBack", title: T("console.bgEditBack"), "aria-label": T("console.bgEditBack"), onClick: () => setBgEdit(null), children: "\u2039" }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T("console.bgEditPlain") : T("console.bgEditGlow") })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T("console.bgEditPlain") : bgEdit === "glow" ? T("console.bgEditGlow") : T("console.bgEditPhoto") })
         ] }),
         (() => {
-          const v = bgEdit === "plain" ? plainHsl : glowHsl;
+          const v = bgEdit === "plain" ? plainHsl : bgEdit === "glow" ? glowHsl : photoHsl;
           const sMax = bgEdit === "plain" ? 100 : 200;
           const lMax = bgEdit === "plain" ? 100 : 200;
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "H" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 360, step: 1, value: v.h, onChange: (e) => editHsl(bgEdit, { h: Number(e.target.value) }) }),
-              valEdit === "h" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "h"), onKeyDown: (e) => {
-                if (e.key === "Enter") commitVal(bgEdit, "h");
-                if (e.key === "Escape") setValEdit(null);
-              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
-                setValEdit("h");
-                setValDraft(String(v.h));
-              }, onClick: () => {
-                setValEdit("h");
-                setValDraft(String(v.h));
-              }, children: [
-                v.h,
-                "\xB0"
-              ] })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.h, max: 360, onCommit: (n) => editHsl(bgEdit, { h: n }) })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: sMax, step: 1, value: v.s, onChange: (e) => editHsl(bgEdit, { s: Number(e.target.value) }) }),
-              valEdit === "s" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "s"), onKeyDown: (e) => {
-                if (e.key === "Enter") commitVal(bgEdit, "s");
-                if (e.key === "Escape") setValEdit(null);
-              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
-                setValEdit("s");
-                setValDraft(String(v.s));
-              }, onClick: () => {
-                setValEdit("s");
-                setValDraft(String(v.s));
-              }, children: [
-                v.s,
-                "%"
-              ] })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.s, max: sMax, onCommit: (n) => editHsl(bgEdit, { s: n }) })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "L" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: lMax, step: 1, value: v.l, onChange: (e) => editHsl(bgEdit, { l: Number(e.target.value) }) }),
-              valEdit === "l" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslInput", autoFocus: true, value: valDraft, onChange: (e) => setValDraft(e.target.value), onBlur: () => commitVal(bgEdit, "l"), onKeyDown: (e) => {
-                if (e.key === "Enter") commitVal(bgEdit, "l");
-                if (e.key === "Escape") setValEdit(null);
-              } }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_hslVal", title: T("console.bgEditType"), onMouseEnter: () => {
-                setValEdit("l");
-                setValDraft(String(v.l));
-              }, onClick: () => {
-                setValEdit("l");
-                setValDraft(String(v.l));
-              }, children: [
-                v.l,
-                "%"
-              ] })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.l, max: lMax, onCommit: (n) => editHsl(bgEdit, { l: n }) })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslReset", onClick: () => resetHsl(bgEdit), children: T("console.bgEditReset") })
           ] });
@@ -19016,7 +19018,8 @@ function loadView() {
       consoleShape: p.consoleShape === "circle" ? "circle" : "square",
       consoleBg: p.consoleBg === "plain" || p.consoleBg === "photo" ? p.consoleBg : "glow",
       consoleBgPlainHsl: typeof p.consoleBgPlainHsl?.h === "number" && typeof p.consoleBgPlainHsl?.s === "number" && typeof p.consoleBgPlainHsl?.l === "number" ? { h: p.consoleBgPlainHsl.h, s: p.consoleBgPlainHsl.s, l: p.consoleBgPlainHsl.l } : void 0,
-      consoleBgGlowHsl: typeof p.consoleBgGlowHsl?.h === "number" && typeof p.consoleBgGlowHsl?.s === "number" && typeof p.consoleBgGlowHsl?.l === "number" ? { h: p.consoleBgGlowHsl.h, s: p.consoleBgGlowHsl.s, l: p.consoleBgGlowHsl.l } : void 0
+      consoleBgGlowHsl: typeof p.consoleBgGlowHsl?.h === "number" && typeof p.consoleBgGlowHsl?.s === "number" && typeof p.consoleBgGlowHsl?.l === "number" ? { h: p.consoleBgGlowHsl.h, s: p.consoleBgGlowHsl.s, l: p.consoleBgGlowHsl.l } : void 0,
+      consoleBgPhotoHsl: typeof p.consoleBgPhotoHsl?.h === "number" && typeof p.consoleBgPhotoHsl?.s === "number" && typeof p.consoleBgPhotoHsl?.l === "number" ? { h: p.consoleBgPhotoHsl.h, s: p.consoleBgPhotoHsl.s, l: p.consoleBgPhotoHsl.l } : void 0
     };
   } catch {
     return { ...DEFAULT_VIEW };
@@ -20054,6 +20057,8 @@ function WorktableSection(props) {
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
         setGlowHsl: (v) => persistView({ consoleBgGlowHsl: { ...v } }),
+        getPhotoHsl: () => viewRef.current.consoleBgPhotoHsl ?? { h: 0, s: 100, l: 100 },
+        setPhotoHsl: (v) => persistView({ consoleBgPhotoHsl: { ...v } }),
         onAck: (id) => {
           ackRef.current?.(id);
           setNotifyTick((t2) => t2 + 1);
