@@ -430,7 +430,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}',
   '.dsh-wt_announceCtr{display:flex;min-height:100%;align-items:center;justify-content:center;box-sizing:border-box}',
   '.dsh-wt_announceCtr .dsh-wt_announce{margin:auto}',
-  '.dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(var(--wt-cardBlur,0px)) saturate(1.15)}',
+  '.dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(8px) saturate(1.15)}',
   '.dsh-wt_console[data-wt-theme=light] .dsh-wt_announce{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}',
   '.dsh-wt_announceHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--wt-border)}',
   '.dsh-wt_announceVer{font-size:15px;font-weight:700;color:var(--wt-text)}',

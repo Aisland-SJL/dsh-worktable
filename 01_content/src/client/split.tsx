@@ -1424,9 +1424,9 @@ function ConsolePane() {
   const [bgVideo, setBgVideo] = useState<string>('')
   const [photoGrid, setPhotoGridState] = useState<boolean>(() => splitEnv?.console?.getPhotoGrid?.() ?? true)
   const [gridOpacity, setGridOpacityState] = useState<number>(() => splitEnv?.console?.getGridOpacity?.() ?? 8)
-  const [cardBlur, setCardBlurState] = useState<number>(() => splitEnv?.console?.getCardBlur?.() ?? 0)
+  const [cardBlur, setCardBlurState] = useState<number>(() => splitEnv?.console?.getCardBlur?.() ?? 8)
   const [plainBlur, setPlainBlurState] = useState<number>(() => splitEnv?.console?.getPlainBlur?.() ?? 0)
-  const [glowBlur, setGlowBlurState] = useState<number>(() => splitEnv?.console?.getGlowBlur?.() ?? 0)
+  const [glowBlur, setGlowBlurState] = useState<number>(() => splitEnv?.console?.getGlowBlur?.() ?? 8)
   const [plainGrid, setPlainGridState] = useState<number>(() => splitEnv?.console?.getPlainGrid?.() ?? 5)
   const [glowGrid, setGlowGridState] = useState<number>(() => splitEnv?.console?.getGlowGrid?.() ?? 8)
   const [annOpen, setAnnOpen] = useState(false)
@@ -1601,6 +1601,18 @@ function ConsolePane() {
     }
   }
   const resetHsl = (kind: 'plain' | 'glow' | 'photo') => {
+    // 恢复初始：连同贴片模糊(B)/网格不透明度(T)一起复位（纯色 B=0，流光/自定义 B=8）
+    const blurDef = kind === 'plain' ? 0 : 8
+    if (kind === 'plain') {
+      setPlainBlurState(blurDef); splitEnv?.console?.setPlainBlur?.(blurDef)
+      setPlainGridState(5); splitEnv?.console?.setPlainGrid?.(5)
+    } else if (kind === 'glow') {
+      setGlowBlurState(blurDef); splitEnv?.console?.setGlowBlur?.(blurDef)
+      setGlowGridState(8); splitEnv?.console?.setGlowGrid?.(8)
+    } else {
+      setCardBlurState(blurDef); splitEnv?.console?.setCardBlur?.(blurDef)
+      setGridOpacityState(8); splitEnv?.console?.setGridOpacity?.(8)
+    }
     if (kind === 'plain') {
       const def = resolvedTheme === 'light' ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK }
       setPlainHslState(def)
@@ -1890,7 +1902,7 @@ function ConsolePane() {
                   <div className="dsh-wt_hslRow" data-tip={T('console.bgTipH')}><span className="dsh-wt_hslLabel">H</span><input className="dsh-wt_hslSlider" type="range" min={-180} max={180} step={1} value={v.h} onChange={(e) => editHsl(bgEdit, { h: Number(e.target.value) })} /><HslValInput value={v.h} min={-180} max={180} onCommit={(n) => editHsl(bgEdit, { h: n })} /></div>
                   <div className="dsh-wt_hslRow" data-tip={T('console.bgTipS')}><span className="dsh-wt_hslLabel">S</span><input className="dsh-wt_hslSlider" type="range" min={0} max={sMax} step={1} value={v.s} onChange={(e) => editHsl(bgEdit, { s: Number(e.target.value) })} /><HslValInput value={v.s} max={sMax} onCommit={(n) => editHsl(bgEdit, { s: n })} /></div>
                   <div className="dsh-wt_hslRow" data-tip={T('console.bgTipL')}><span className="dsh-wt_hslLabel">L</span><input className="dsh-wt_hslSlider" type="range" min={0} max={lMax} step={1} value={v.l} onChange={(e) => editHsl(bgEdit, { l: Number(e.target.value) })} /><HslValInput value={v.l} max={lMax} onCommit={(n) => editHsl(bgEdit, { l: n })} /></div>
-                  <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}</button>
+                  <button type="button" className="dsh-wt_hslReset" onClick={() => resetHsl(bgEdit)}>{T('console.bgEditReset')}（含 B/T）</button>
                 </>)
               })()}
             </div>

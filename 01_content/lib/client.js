@@ -8182,7 +8182,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}",
   ".dsh-wt_announceCtr{display:flex;min-height:100%;align-items:center;justify-content:center;box-sizing:border-box}",
   ".dsh-wt_announceCtr .dsh-wt_announce{margin:auto}",
-  ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(var(--wt-cardBlur,0px)) saturate(1.15)}",
+  ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(8px) saturate(1.15)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_announce{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}",
   ".dsh-wt_announceHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--wt-border)}",
   ".dsh-wt_announceVer{font-size:15px;font-weight:700;color:var(--wt-text)}",
@@ -17898,9 +17898,9 @@ function ConsolePane() {
   const [bgVideo, setBgVideo] = (0, import_react.useState)("");
   const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
   const [gridOpacity, setGridOpacityState] = (0, import_react.useState)(() => splitEnv?.console?.getGridOpacity?.() ?? 8);
-  const [cardBlur, setCardBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getCardBlur?.() ?? 0);
+  const [cardBlur, setCardBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getCardBlur?.() ?? 8);
   const [plainBlur, setPlainBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainBlur?.() ?? 0);
-  const [glowBlur, setGlowBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowBlur?.() ?? 0);
+  const [glowBlur, setGlowBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowBlur?.() ?? 8);
   const [plainGrid, setPlainGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainGrid?.() ?? 5);
   const [glowGrid, setGlowGridState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowGrid?.() ?? 8);
   const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
@@ -18111,6 +18111,23 @@ function ConsolePane() {
     }
   };
   const resetHsl = (kind) => {
+    const blurDef = kind === "plain" ? 0 : 8;
+    if (kind === "plain") {
+      setPlainBlurState(blurDef);
+      splitEnv?.console?.setPlainBlur?.(blurDef);
+      setPlainGridState(5);
+      splitEnv?.console?.setPlainGrid?.(5);
+    } else if (kind === "glow") {
+      setGlowBlurState(blurDef);
+      splitEnv?.console?.setGlowBlur?.(blurDef);
+      setGlowGridState(8);
+      splitEnv?.console?.setGlowGrid?.(8);
+    } else {
+      setCardBlurState(blurDef);
+      splitEnv?.console?.setCardBlur?.(blurDef);
+      setGridOpacityState(8);
+      splitEnv?.console?.setGridOpacity?.(8);
+    }
     if (kind === "plain") {
       const def = resolvedTheme === "light" ? { ...PLAIN_HSL_LIGHT } : { ...PLAIN_HSL_DARK };
       setPlainHslState(def);
@@ -18492,7 +18509,10 @@ function ConsolePane() {
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: lMax, step: 1, value: v.l, onChange: (e) => editHsl(bgEdit, { l: Number(e.target.value) }) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.l, max: lMax, onCommit: (n) => editHsl(bgEdit, { l: n }) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslReset", onClick: () => resetHsl(bgEdit), children: T("console.bgEditReset") })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_hslReset", onClick: () => resetHsl(bgEdit), children: [
+              T("console.bgEditReset"),
+              "\uFF08\u542B B/T\uFF09"
+            ] })
           ] });
         })()
       ] })),
@@ -20919,11 +20939,11 @@ function WorktableSection(props) {
         setPhotoGrid: (v) => persistView({ consoleBgPhotoGrid: v }),
         getGridOpacity: () => viewRef.current.consoleBgGridOpacity ?? 8,
         setGridOpacity: (v) => persistView({ consoleBgGridOpacity: v }),
-        getCardBlur: () => viewRef.current.consoleCardBlur ?? 0,
+        getCardBlur: () => viewRef.current.consoleCardBlur ?? 8,
         setCardBlur: (v) => persistView({ consoleCardBlur: v }),
         getPlainBlur: () => viewRef.current.consoleBgPlainBlur ?? 0,
         setPlainBlur: (v) => persistView({ consoleBgPlainBlur: v }),
-        getGlowBlur: () => viewRef.current.consoleBgGlowBlur ?? 0,
+        getGlowBlur: () => viewRef.current.consoleBgGlowBlur ?? 8,
         setGlowBlur: (v) => persistView({ consoleBgGlowBlur: v }),
         getPlainGrid: () => viewRef.current.consoleBgPlainGrid ?? 5,
         setPlainGrid: (v) => persistView({ consoleBgPlainGrid: v }),
