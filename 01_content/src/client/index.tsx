@@ -4,6 +4,7 @@ import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 import { photoStore, kindOf } from './photoStore'
+import { DEFAULT_BG_SVG } from './defaultBg'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -1400,7 +1401,15 @@ function WorktableSection(props: any) {
         getBg: () => viewRef.current.consoleBg ?? 'glow',
         setBg: (m: 'plain' | 'glow' | 'photo') => persistView({ consoleBg: m }),
         getPhotoLib: async () => {
-          const records = await photoStore.list().catch(() => [])
+          let records = await photoStore.list().catch(() => [])
+          // 首次使用：媒体库为空且未预置过 → 注入默认背景示例图（极小 SVG，可删）
+          if (records.length === 0 && localStorage.getItem('dsh.worktable.defaultBgSeeded.v1') !== '1') {
+            try {
+              await photoStore.add(new Blob([DEFAULT_BG_SVG], { type: 'image/svg+xml' }))
+              localStorage.setItem('dsh.worktable.defaultBgSeeded.v1', '1')
+              records = await photoStore.list().catch(() => [])
+            } catch {}
+          }
           const stored = viewRef.current.consoleBgPhotoId ?? null
           const activeId = stored && records.some((r) => r.id === stored) ? stored : null
           return {

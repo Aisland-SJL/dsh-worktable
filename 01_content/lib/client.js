@@ -8859,7 +8859,7 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.0
 \u30101.3 \u80CC\u666F\u7CFB\u7EDF\u6269\u81F3\u4E09\u79CD\u53EF\u9009\u3011\u2014\u2014\u5355\u8272\u80CC\u666F\u3001\u67D4\u5149\u80CC\u666F\u3001\u81EA\u5B9A\u4E49\u80CC\u666F\uFF0C\u6BCF\u79CD\u90FD\u6709\u72EC\u7ACB\u9762\u677F\uFF1A
 \xB7 \u5355\u8272\u80CC\u666F\uFF1A\u63D0\u4F9B\u8272\u76F8\u3001\u9971\u548C\u5EA6\u3001\u660E\u5EA6\u8C03\u8282\u6ED1\u6746\uFF0C\u652F\u6301\u76F4\u63A5\u8F93\u5165\u6570\u503C\u4E0E\u4E00\u952E\u6062\u590D\u9ED8\u8BA4\uFF1B\u9ED8\u8BA4\u989C\u8272\u968F\u5F53\u524D\u4E3B\u9898\u81EA\u52A8\u5339\u914D\uFF08\u6DF1\u8272=\u6DF1\u84DD\u9ED1\uFF0C\u6D45\u8272=\u7C73\u767D\uFF09\u3002
 \xB7 \u67D4\u5149\u80CC\u666F\uFF1A\u540C\u6837\u53EF\u8C03\u8282\u5149\u6655\u7684\u8272\u76F8\u3001\u9971\u548C\u5EA6\u4E0E\u660E\u5EA6\uFF0C\u8BA9\u6574\u4F53\u6C1B\u56F4\u8272\u8C03\u968F\u5FC3\u800C\u53D8\u3002
-\xB7 \u81EA\u5B9A\u4E49\u80CC\u666F\uFF1A\u652F\u6301\u7167\u7247\u4E0E\u89C6\u9891\u7EDF\u4E00\u5165\u5E93\u7BA1\u7406\u2014\u2014\u53EF\u4E0A\u4F20\u591A\u5F20\u5A92\u4F53\u3001\u7F29\u7565\u56FE\u5E26\u7C7B\u578B\u89D2\u6807\u3001\u4EFB\u610F\u4E00\u5F20\u53EF\u5355\u72EC\u5220\u9664\uFF1B\u6BCF\u5F20\u5A92\u4F53\u4F1A\u72EC\u7ACB\u8BB0\u4F4F\u4F60\u7684\u8C03\u8272\u8BBE\u7F6E\uFF0C\u9009\u4E2D\u5373\u81EA\u52A8\u6062\u590D\uFF1B\u4E0A\u4F20\u7684\u6587\u4EF6\u4EE5\u539F\u59CB\u753B\u8D28\u5B58\u50A8\uFF08\u4E0D\u518D\u538B\u7F29\u964D\u6E05\u6670\u5EA6\uFF09\uFF1B\u89C6\u9891\u4F5C\u4E3A\u80CC\u666F\u65F6\u81EA\u52A8\u5FAA\u73AF\u64AD\u653E\uFF0C\u5E76\u52A0\u5165\u9996\u5C3E\u5E27\u6E10\u53D8\u4EA4\u63A5\uFF0C\u6D88\u9664\u5FAA\u73AF\u65F6\u7684\u987F\u632B\u611F\u3002\u53E6\u6709\uFF1A\u80CC\u666F\u7F51\u683C\u7EBF\u5F00\u5173\u4E0E\u900F\u660E\u5EA6\u6ED1\u6746\u3001\u5361\u7247\u8D34\u7247\u6A21\u7CCA\u6ED1\u6746\uFF1B\u6240\u6709\u6ED1\u6746\u60AC\u505C\u65F6\u4F1A\u663E\u793A\u5404\u81EA\u7684\u529F\u80FD\u8BF4\u660E\u3002
+\xB7 \u81EA\u5B9A\u4E49\u80CC\u666F\uFF1A\u652F\u6301\u7167\u7247\u4E0E\u89C6\u9891\u7EDF\u4E00\u5165\u5E93\u7BA1\u7406\u2014\u2014\u9996\u6B21\u4F7F\u7528\u9884\u7F6E\u4E00\u5F20\u6781\u5C0F\u7684\u9ED8\u8BA4\u80CC\u666F\u793A\u4F8B\u56FE\uFF08\u53EF\u5220\u9664\uFF09\uFF1B\u53EF\u4E0A\u4F20\u591A\u5F20\u5A92\u4F53\u3001\u7F29\u7565\u56FE\u5E26\u7C7B\u578B\u89D2\u6807\u3001\u4EFB\u610F\u4E00\u5F20\u53EF\u5355\u72EC\u5220\u9664\uFF1B\u6BCF\u5F20\u5A92\u4F53\u4F1A\u72EC\u7ACB\u8BB0\u4F4F\u4F60\u7684\u8C03\u8272\u8BBE\u7F6E\uFF0C\u9009\u4E2D\u5373\u81EA\u52A8\u6062\u590D\uFF1B\u4E0A\u4F20\u7684\u6587\u4EF6\u4EE5\u539F\u59CB\u753B\u8D28\u5B58\u50A8\uFF08\u4E0D\u518D\u538B\u7F29\u964D\u6E05\u6670\u5EA6\uFF09\uFF1B\u89C6\u9891\u4F5C\u4E3A\u80CC\u666F\u65F6\u81EA\u52A8\u5FAA\u73AF\u64AD\u653E\uFF0C\u5E76\u52A0\u5165\u9996\u5C3E\u5E27\u6E10\u53D8\u4EA4\u63A5\uFF0C\u6D88\u9664\u5FAA\u73AF\u65F6\u7684\u987F\u632B\u611F\u3002\u53E6\u6709\uFF1A\u80CC\u666F\u7F51\u683C\u7EBF\u5F00\u5173\u4E0E\u900F\u660E\u5EA6\u6ED1\u6746\u3001\u5361\u7247\u8D34\u7247\u6A21\u7CCA\u6ED1\u6746\uFF1B\u6240\u6709\u6ED1\u6746\u60AC\u505C\u65F6\u4F1A\u663E\u793A\u5404\u81EA\u7684\u529F\u80FD\u8BF4\u660E\u3002
 
 \u30101.4 \u6BCF\u884C\u9879\u76EE\u6570\u3011\u81EA\u7531\u8C03\u6574\u63A7\u5236\u53F0\u6BCF\u884C\u663E\u793A\u7684\u74F7\u7247\u6570\u91CF\uFF081\u20135 \u5F20\uFF09\uFF0C\u62D6\u62FD\u6ED1\u6746\u5373\u65F6\u751F\u6548\u5E76\u914D\u5E73\u6ED1\u52A8\u753B\u3002
 
@@ -19679,6 +19679,9 @@ var photoStore = {
   }
 };
 
+// src/client/defaultBg.ts
+var DEFAULT_BG_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0d13"/><stop offset="1" stop-color="#101a2e"/></linearGradient><radialGradient id="b1"><stop offset="0" stop-color="#4f8ef7" stop-opacity="0.55"/><stop offset="1" stop-color="#4f8ef7" stop-opacity="0"/></radialGradient><radialGradient id="b2"><stop offset="0" stop-color="#7a5cff" stop-opacity="0.45"/><stop offset="1" stop-color="#7a5cff" stop-opacity="0"/></radialGradient><radialGradient id="b3"><stop offset="0" stop-color="#00c2ff" stop-opacity="0.4"/><stop offset="1" stop-color="#00c2ff" stop-opacity="0"/></radialGradient><radialGradient id="b4"><stop offset="0" stop-color="#ff9a3d" stop-opacity="0.28"/><stop offset="1" stop-color="#ff9a3d" stop-opacity="0"/></radialGradient></defs><rect width="1280" height="720" fill="url(#g)"/><ellipse cx="300" cy="180" rx="420" ry="260" fill="url(#b1)"/><ellipse cx="980" cy="220" rx="380" ry="240" fill="url(#b2)"/><ellipse cx="760" cy="560" rx="420" ry="250" fill="url(#b3)"/><ellipse cx="180" cy="600" rx="300" ry="200" fill="url(#b4)"/></svg>';
+
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
 var LOCAL_VERSION2 = false ? "dev" : "0.2.3";
@@ -20926,7 +20929,15 @@ function WorktableSection(props) {
         getBg: () => viewRef.current.consoleBg ?? "glow",
         setBg: (m) => persistView({ consoleBg: m }),
         getPhotoLib: async () => {
-          const records = await photoStore.list().catch(() => []);
+          let records = await photoStore.list().catch(() => []);
+          if (records.length === 0 && localStorage.getItem("dsh.worktable.defaultBgSeeded.v1") !== "1") {
+            try {
+              await photoStore.add(new Blob([DEFAULT_BG_SVG], { type: "image/svg+xml" }));
+              localStorage.setItem("dsh.worktable.defaultBgSeeded.v1", "1");
+              records = await photoStore.list().catch(() => []);
+            } catch {
+            }
+          }
           const stored = viewRef.current.consoleBgPhotoId ?? null;
           const activeId = stored && records.some((r) => r.id === stored) ? stored : null;
           return {
