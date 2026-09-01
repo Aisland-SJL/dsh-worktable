@@ -1420,9 +1420,7 @@ function ConsolePane() {
                       <div key={p.id} className={'dsh-wt_dropRow dsh-wt_photoRow' + (photoId === p.id ? ' dsh-wt_photoRowOn' : '')} onClick={() => selectPhoto(p)}>
                         <img className="dsh-wt_photoThumb" src={p.url} alt="" />
                         <span className="dsh-wt_photoName">{photoId === p.id ? T('console.bgPhotoCurrent') : T('console.bgPhotoUse')}</span>
-                        {photoId === p.id && (
-                          <button type="button" className="dsh-wt_dropTrash" title={T('console.bgPhotoDelete')} aria-label={T('console.bgPhotoDelete')} onClick={(e) => { e.stopPropagation(); removePhotoById(p) }}><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
-                        )}
+                        <button type="button" className="dsh-wt_dropTrash" title={T('console.bgPhotoDelete')} aria-label={T('console.bgPhotoDelete')} onClick={(e) => { e.stopPropagation(); removePhotoById(p) }}><svg width="11" height="11" viewBox="0 0 16 16" aria-hidden><path d="M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" /></svg></button>
                       </div>
                     ))
                   ) : (
