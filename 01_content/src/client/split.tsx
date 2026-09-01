@@ -358,7 +358,11 @@ function windowLabelOf(row: PaneRow, index: number): string {
   if (c) {
     try {
       if (c.kind === 'iframe' && c.url) label += '（网页 ' + new URL(c.url).hostname + '）'
-      else if (c.kind === 'builtin') label += '（内置·' + c.type + '）'
+      else if (c.kind === 'builtin') {
+        label += '（内置·' + c.type
+        try { if (c.url) label += ' ' + new URL(c.url).hostname } catch {}
+        label += '）'
+      }
       else if (c.kind === 'file') label += '（文件）'
     } catch {}
   }
@@ -381,7 +385,7 @@ function ctxOf(t: EventTarget | null): string {
 /** 框选 payload v3.1：主目标 = 框中心点【光标下的字符】所在的 Text 节点（caretPositionFromPoint，
  *  标签即使不是独立元素也能取到真正的词/段）；样式取该 Text 节点的父元素（真实渲染值）；
  *  整行 = 最近的高度≤44px 祖先的内容（供「这行字是什么」类问题）；候选 = 相交的独立短文本。 */
-function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: { text: string; fontSize: string; lineHeight: string; color: string } | null; line: string; candidates: string[] } {
+function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: { text: string; fontSize: string; lineHeight: string; color: string } | null; line: string; candidates: string[]; limited: boolean; src: string } {
   const L = Math.min(x0, x1)
   const T = Math.min(y0, y1)
   const R = Math.max(x0, x1)
@@ -389,55 +393,92 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
   const cx = (L + R) / 2
   const cy = (T + B) / 2
   let primary: { text: string; fontSize: string; lineHeight: string; color: string } | null = null
-  let textParent: HTMLElement | null = null
-  try {
-    const pd = document as any
-    const pos = pd.caretPositionFromPoint ? pd.caretPositionFromPoint(cx, cy) : (pd.caretRangeFromPoint ? pd.caretRangeFromPoint(cx, cy) : null)
-    const textNode: Node | null = pos ? (pos.offsetNode ?? pos.startContainer ?? null) : null
-    if (textNode) {
-      const parent = textNode.parentElement
-      if (parent) {
-        textParent = parent
-        const text = (textNode.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60)
-        if (text) {
-          const cs = getComputedStyle(parent)
-          primary = { text, fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color }
+  let line = ''
+  let candidates: string[] = []
+  let limited = false
+  let src = ''
+  // 在某 document 内取字（rect = 该 doc 视口在顶层页面的偏移）
+  const readDoc = (doc: Document, ox: number, oy: number): boolean => {
+    let ok = false
+    let textParent: HTMLElement | null = null
+    try {
+      const pd = doc as any
+      const px = cx - ox
+      const py = cy - oy
+      let pos: any = null
+      try { if (pd.caretPositionFromPoint) pos = pd.caretPositionFromPoint(px, py) } catch {}
+      if (!pos) { try { if (pd.caretRangeFromPoint) pos = pd.caretRangeFromPoint(px, py) } catch {} }
+      const textNode: Node | null = pos ? (pos.offsetNode ?? pos.startContainer ?? null) : null
+      if (textNode) {
+        const parent = textNode.parentElement
+        if (parent) {
+          textParent = parent
+          const text = (textNode.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60)
+          if (text) {
+            const cs = getComputedStyle(parent)
+            primary = { text, fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color }
+            ok = true
+          }
         }
       }
-    }
-  } catch {}
-  // 整行：从文本父元素向上找最近的高度 ≤44px 的祖先
-  let line = ''
-  if (textParent) {
-    try {
-      let el: HTMLElement | null = textParent
-      while (el && el !== document.body) {
-        const r = el.getBoundingClientRect()
-        if (r.height >= 8 && r.height <= 44 && r.width > 0) {
-          const t = (el.innerText || '').replace(/\s+/g, ' ').trim()
-          if (t) { line = t.slice(0, 120); break }
+    } catch {}
+    // 整行
+    if (textParent) {
+      try {
+        let el: HTMLElement | null = textParent
+        while (el && el !== doc.body) {
+          const r = el.getBoundingClientRect()
+          if (r.height >= 8 && r.height <= 44 && r.width > 0) {
+            const t = (el.innerText || '').replace(/\s+/g, ' ').trim()
+            if (t) { line = t.slice(0, 120); break }
+          }
+          el = el.parentElement
         }
-        el = el.parentElement
+      } catch {}
+    }
+    // 候选
+    const seen = new Set<string>()
+    if (primary) seen.add(primary.text)
+    const cs: string[] = []
+    try {
+      for (const el of Array.from(doc.querySelectorAll<HTMLElement>('*'))) {
+        const tag = el.tagName.toLowerCase()
+        if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
+        const rect = el.getBoundingClientRect()
+        if (rect.width <= 0 || rect.height <= 0) continue
+        if (rect.right + ox < L || rect.left + ox > R || rect.bottom + oy < T || rect.top + oy > B) continue
+        const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
+        if (text.length < 1 || text.length > 30) continue
+        if (seen.has(text)) continue
+        seen.add(text)
+        cs.push(text)
+        if (cs.length >= 4) break
+      }
+    } catch {}
+    if (ok || cs.length > 0) candidates = cs
+    return ok
+  }
+  // 1) 顶层文档
+  readDoc(document, 0, 0)
+  // 2) 顶层取不到 → 中心点所在 iframe 下钻（同源可读；跨域标记受限于 src）
+  if (!primary) {
+    try {
+      for (const iframe of Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe'))) {
+        try {
+          const r = iframe.getBoundingClientRect()
+          if (r.width <= 0 || r.height <= 0) continue
+          if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) continue
+          src = iframe.getAttribute('src') ?? ''
+          let inner: Document | null = null
+          try { inner = iframe.contentDocument } catch { inner = null }
+          if (inner) readDoc(inner, r.left, r.top)
+          else limited = true
+          break
+        } catch { continue }
       }
     } catch {}
   }
-  const seen = new Set<string>()
-  if (primary) seen.add(primary.text)
-  const candidates: string[] = []
-  for (const el of document.querySelectorAll<HTMLElement>('*')) {
-    const tag = el.tagName.toLowerCase()
-    if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
-    const rect = el.getBoundingClientRect()
-    if (rect.width <= 0 || rect.height <= 0) continue
-    if (rect.right < L || rect.left > R || rect.bottom < T || rect.top > B) continue
-    const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
-    if (text.length < 1 || text.length > 30) continue
-    if (seen.has(text)) continue
-    seen.add(text)
-    candidates.push(text)
-    if (candidates.length >= 4) break
-  }
-  return { primary, line, candidates }
+  return { primary, line, candidates, limited, src }
 }
 
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
@@ -465,7 +506,7 @@ function fillHostInput(text: string): boolean {
 function confirmAnnot() {
   const s = annotState
   const text = '📌 标注-' + s.resp + '\n' + (s.stat || '') + '\n要求：' + (s.draft.trim() || '（未填写）')
-    + '\n【工作台标注·已定位，直接作答，无需再问；仅当确实无法从标注定位时才问一次】'
+    + '\n【工作台标注·已定位，直接作答，无需再问；仅当确实无法从标注定位时才问一次。数据缺失或标注标注读取受限时，如实说明无法确定，禁止编造数值；可建议提供截图或使用视觉模型会话】'
   const ok = fillHostInput(text)
   if (!ok) {
     try {
@@ -529,6 +570,7 @@ function AnnotationOverlay() {
         const hit = boxPayload(L, T, R, B)
         if (hit.primary) stat += '，主目标：' + hit.primary.text + '（字号 ' + hit.primary.fontSize + '，行高 ' + hit.primary.lineHeight + '）'
         if (hit.line) stat += '；整行：' + hit.line
+        if (hit.limited) stat += '；读取受限：跨域页面内容不可见（浏览器安全限制），窗口身份见上（' + (hit.src ? hit.src : '无URL') + '）'
         if (hit.candidates.length > 0) stat += '；候选：' + hit.candidates.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
       } else {
         stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'

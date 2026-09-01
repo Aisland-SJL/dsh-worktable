@@ -16869,8 +16869,14 @@ function windowLabelOf(row, index) {
   if (c) {
     try {
       if (c.kind === "iframe" && c.url) label += "\uFF08\u7F51\u9875 " + new URL(c.url).hostname + "\uFF09";
-      else if (c.kind === "builtin") label += "\uFF08\u5185\u7F6E\xB7" + c.type + "\uFF09";
-      else if (c.kind === "file") label += "\uFF08\u6587\u4EF6\uFF09";
+      else if (c.kind === "builtin") {
+        label += "\uFF08\u5185\u7F6E\xB7" + c.type;
+        try {
+          if (c.url) label += " " + new URL(c.url).hostname;
+        } catch {
+        }
+        label += "\uFF09";
+      } else if (c.kind === "file") label += "\uFF08\u6587\u4EF6\uFF09";
     } catch {
     }
   }
@@ -16899,59 +16905,108 @@ function boxPayload(x0, y0, x1, y1) {
   const cx = (L + R) / 2;
   const cy = (T2 + B) / 2;
   let primary = null;
-  let textParent = null;
-  try {
-    const pd = document;
-    const pos = pd.caretPositionFromPoint ? pd.caretPositionFromPoint(cx, cy) : pd.caretRangeFromPoint ? pd.caretRangeFromPoint(cx, cy) : null;
-    const textNode = pos ? pos.offsetNode ?? pos.startContainer ?? null : null;
-    if (textNode) {
-      const parent = textNode.parentElement;
-      if (parent) {
-        textParent = parent;
-        const text2 = (textNode.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
-        if (text2) {
-          const cs = getComputedStyle(parent);
-          primary = { text: text2, fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color };
+  let line = "";
+  let candidates = [];
+  let limited = false;
+  let src = "";
+  const readDoc = (doc, ox, oy) => {
+    let ok = false;
+    let textParent = null;
+    try {
+      const pd = doc;
+      const px = cx - ox;
+      const py = cy - oy;
+      let pos = null;
+      try {
+        if (pd.caretPositionFromPoint) pos = pd.caretPositionFromPoint(px, py);
+      } catch {
+      }
+      if (!pos) {
+        try {
+          if (pd.caretRangeFromPoint) pos = pd.caretRangeFromPoint(px, py);
+        } catch {
         }
       }
-    }
-  } catch {
-  }
-  let line = "";
-  if (textParent) {
-    try {
-      let el = textParent;
-      while (el && el !== document.body) {
-        const r = el.getBoundingClientRect();
-        if (r.height >= 8 && r.height <= 44 && r.width > 0) {
-          const t = (el.innerText || "").replace(/\s+/g, " ").trim();
-          if (t) {
-            line = t.slice(0, 120);
-            break;
+      const textNode = pos ? pos.offsetNode ?? pos.startContainer ?? null : null;
+      if (textNode) {
+        const parent = textNode.parentElement;
+        if (parent) {
+          textParent = parent;
+          const text2 = (textNode.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
+          if (text2) {
+            const cs2 = getComputedStyle(parent);
+            primary = { text: text2, fontSize: cs2.fontSize, lineHeight: cs2.lineHeight, color: cs2.color };
+            ok = true;
           }
         }
-        el = el.parentElement;
+      }
+    } catch {
+    }
+    if (textParent) {
+      try {
+        let el = textParent;
+        while (el && el !== doc.body) {
+          const r = el.getBoundingClientRect();
+          if (r.height >= 8 && r.height <= 44 && r.width > 0) {
+            const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+            if (t) {
+              line = t.slice(0, 120);
+              break;
+            }
+          }
+          el = el.parentElement;
+        }
+      } catch {
+      }
+    }
+    const seen = /* @__PURE__ */ new Set();
+    if (primary) seen.add(primary.text);
+    const cs = [];
+    try {
+      for (const el of Array.from(doc.querySelectorAll("*"))) {
+        const tag = el.tagName.toLowerCase();
+        if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) continue;
+        if (rect.right + ox < L || rect.left + ox > R || rect.bottom + oy < T2 || rect.top + oy > B) continue;
+        const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
+        if (text2.length < 1 || text2.length > 30) continue;
+        if (seen.has(text2)) continue;
+        seen.add(text2);
+        cs.push(text2);
+        if (cs.length >= 4) break;
+      }
+    } catch {
+    }
+    if (ok || cs.length > 0) candidates = cs;
+    return ok;
+  };
+  readDoc(document, 0, 0);
+  if (!primary) {
+    try {
+      for (const iframe of Array.from(document.querySelectorAll("iframe"))) {
+        try {
+          const r = iframe.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) continue;
+          if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) continue;
+          src = iframe.getAttribute("src") ?? "";
+          let inner = null;
+          try {
+            inner = iframe.contentDocument;
+          } catch {
+            inner = null;
+          }
+          if (inner) readDoc(inner, r.left, r.top);
+          else limited = true;
+          break;
+        } catch {
+          continue;
+        }
       }
     } catch {
     }
   }
-  const seen = /* @__PURE__ */ new Set();
-  if (primary) seen.add(primary.text);
-  const candidates = [];
-  for (const el of document.querySelectorAll("*")) {
-    const tag = el.tagName.toLowerCase();
-    if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
-    const rect = el.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) continue;
-    if (rect.right < L || rect.left > R || rect.bottom < T2 || rect.top > B) continue;
-    const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
-    if (text2.length < 1 || text2.length > 30) continue;
-    if (seen.has(text2)) continue;
-    seen.add(text2);
-    candidates.push(text2);
-    if (candidates.length >= 4) break;
-  }
-  return { primary, line, candidates };
+  return { primary, line, candidates, limited, src };
 }
 function fillHostInput(text2) {
   try {
@@ -16974,7 +17029,7 @@ function fillHostInput(text2) {
 }
 function confirmAnnot() {
   const s = annotState;
-  const text2 = "\u{1F4CC} \u6807\u6CE8-" + s.resp + "\n" + (s.stat || "") + "\n\u8981\u6C42\uFF1A" + (s.draft.trim() || "\uFF08\u672A\u586B\u5199\uFF09") + "\n\u3010\u5DE5\u4F5C\u53F0\u6807\u6CE8\xB7\u5DF2\u5B9A\u4F4D\uFF0C\u76F4\u63A5\u4F5C\u7B54\uFF0C\u65E0\u9700\u518D\u95EE\uFF1B\u4EC5\u5F53\u786E\u5B9E\u65E0\u6CD5\u4ECE\u6807\u6CE8\u5B9A\u4F4D\u65F6\u624D\u95EE\u4E00\u6B21\u3011";
+  const text2 = "\u{1F4CC} \u6807\u6CE8-" + s.resp + "\n" + (s.stat || "") + "\n\u8981\u6C42\uFF1A" + (s.draft.trim() || "\uFF08\u672A\u586B\u5199\uFF09") + "\n\u3010\u5DE5\u4F5C\u53F0\u6807\u6CE8\xB7\u5DF2\u5B9A\u4F4D\uFF0C\u76F4\u63A5\u4F5C\u7B54\uFF0C\u65E0\u9700\u518D\u95EE\uFF1B\u4EC5\u5F53\u786E\u5B9E\u65E0\u6CD5\u4ECE\u6807\u6CE8\u5B9A\u4F4D\u65F6\u624D\u95EE\u4E00\u6B21\u3002\u6570\u636E\u7F3A\u5931\u6216\u6807\u6CE8\u6807\u6CE8\u8BFB\u53D6\u53D7\u9650\u65F6\uFF0C\u5982\u5B9E\u8BF4\u660E\u65E0\u6CD5\u786E\u5B9A\uFF0C\u7981\u6B62\u7F16\u9020\u6570\u503C\uFF1B\u53EF\u5EFA\u8BAE\u63D0\u4F9B\u622A\u56FE\u6216\u4F7F\u7528\u89C6\u89C9\u6A21\u578B\u4F1A\u8BDD\u3011";
   const ok = fillHostInput(text2);
   if (!ok) {
     try {
@@ -17043,6 +17098,7 @@ function AnnotationOverlay() {
         const hit = boxPayload(L, T2, R, B);
         if (hit.primary) stat += "\uFF0C\u4E3B\u76EE\u6807\uFF1A" + hit.primary.text + "\uFF08\u5B57\u53F7 " + hit.primary.fontSize + "\uFF0C\u884C\u9AD8 " + hit.primary.lineHeight + "\uFF09";
         if (hit.line) stat += "\uFF1B\u6574\u884C\uFF1A" + hit.line;
+        if (hit.limited) stat += "\uFF1B\u8BFB\u53D6\u53D7\u9650\uFF1A\u8DE8\u57DF\u9875\u9762\u5185\u5BB9\u4E0D\u53EF\u89C1\uFF08\u6D4F\u89C8\u5668\u5B89\u5168\u9650\u5236\uFF09\uFF0C\u7A97\u53E3\u8EAB\u4EFD\u89C1\u4E0A\uFF08" + (hit.src ? hit.src : "\u65E0URL") + "\uFF09";
         if (hit.candidates.length > 0) stat += "\uFF1B\u5019\u9009\uFF1A" + hit.candidates.map((t, i) => "[" + (i + 1) + "]" + t).join(" ");
       } else {
         stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
