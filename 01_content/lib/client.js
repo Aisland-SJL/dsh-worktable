@@ -16899,22 +16899,41 @@ function boxPayload(x0, y0, x1, y1) {
   const cx = (L + R) / 2;
   const cy = (T2 + B) / 2;
   let primary = null;
+  let textParent = null;
   try {
-    const stack = document.elementsFromPoint(cx, cy);
-    for (const el of stack) {
-      const tag = el.tagName.toLowerCase();
-      if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
-      if (el === document.body || el === document.documentElement) continue;
-      const rect = el.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) continue;
-      if (rect.right < L || rect.left > R || rect.bottom < T2 || rect.top > B) continue;
-      const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
-      if (!text2) continue;
-      const cs = getComputedStyle(el);
-      primary = { text: text2.slice(0, 60), fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color };
-      break;
+    const pd = document;
+    const pos = pd.caretPositionFromPoint ? pd.caretPositionFromPoint(cx, cy) : pd.caretRangeFromPoint ? pd.caretRangeFromPoint(cx, cy) : null;
+    const textNode = pos ? pos.offsetNode ?? pos.startContainer ?? null : null;
+    if (textNode) {
+      const parent = textNode.parentElement;
+      if (parent) {
+        textParent = parent;
+        const text2 = (textNode.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
+        if (text2) {
+          const cs = getComputedStyle(parent);
+          primary = { text: text2, fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color };
+        }
+      }
     }
   } catch {
+  }
+  let line = "";
+  if (textParent) {
+    try {
+      let el = textParent;
+      while (el && el !== document.body) {
+        const r = el.getBoundingClientRect();
+        if (r.height >= 8 && r.height <= 44 && r.width > 0) {
+          const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+          if (t) {
+            line = t.slice(0, 120);
+            break;
+          }
+        }
+        el = el.parentElement;
+      }
+    } catch {
+    }
   }
   const seen = /* @__PURE__ */ new Set();
   if (primary) seen.add(primary.text);
@@ -16932,7 +16951,7 @@ function boxPayload(x0, y0, x1, y1) {
     candidates.push(text2);
     if (candidates.length >= 4) break;
   }
-  return { primary, candidates };
+  return { primary, line, candidates };
 }
 function fillHostInput(text2) {
   try {
@@ -17023,7 +17042,8 @@ function AnnotationOverlay() {
         }
         const hit = boxPayload(L, T2, R, B);
         if (hit.primary) stat += "\uFF0C\u4E3B\u76EE\u6807\uFF1A" + hit.primary.text + "\uFF08\u5B57\u53F7 " + hit.primary.fontSize + "\uFF0C\u884C\u9AD8 " + hit.primary.lineHeight + "\uFF09";
-        if (hit.candidates.length > 0) stat += "\uFF0C\u5019\u9009\uFF1A" + hit.candidates.map((t, i) => "[" + (i + 1) + "]" + t).join(" ");
+        if (hit.line) stat += "\uFF1B\u6574\u884C\uFF1A" + hit.line;
+        if (hit.candidates.length > 0) stat += "\uFF1B\u5019\u9009\uFF1A" + hit.candidates.map((t, i) => "[" + (i + 1) + "]" + t).join(" ");
       } else {
         stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
         if (paneEl) {

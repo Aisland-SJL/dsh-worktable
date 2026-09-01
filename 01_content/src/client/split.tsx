@@ -378,10 +378,10 @@ function ctxOf(t: EventTarget | null): string {
   return out
 }
 
-/** 框选 payload v3：主目标 = 框中心点处最具体的可见元素（elementsFromPoint 顶层优先），
- *  直接带出它的文字与 computed style（字号/行高/颜色——「字号多少」类问题直接给答案）；
- *  候选 = 与框相交的独立短文本（去重，最多 4）。 */
-function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: { text: string; fontSize: string; lineHeight: string; color: string } | null; candidates: string[] } {
+/** 框选 payload v3.1：主目标 = 框中心点【光标下的字符】所在的 Text 节点（caretPositionFromPoint，
+ *  标签即使不是独立元素也能取到真正的词/段）；样式取该 Text 节点的父元素（真实渲染值）；
+ *  整行 = 最近的高度≤44px 祖先的内容（供「这行字是什么」类问题）；候选 = 相交的独立短文本。 */
+function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: { text: string; fontSize: string; lineHeight: string; color: string } | null; line: string; candidates: string[] } {
   const L = Math.min(x0, x1)
   const T = Math.min(y0, y1)
   const R = Math.max(x0, x1)
@@ -389,22 +389,38 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
   const cx = (L + R) / 2
   const cy = (T + B) / 2
   let primary: { text: string; fontSize: string; lineHeight: string; color: string } | null = null
+  let textParent: HTMLElement | null = null
   try {
-    const stack = document.elementsFromPoint(cx, cy)
-    for (const el of stack) {
-      const tag = el.tagName.toLowerCase()
-      if (tag === 'script' || tag === 'style' || tag === 'svg' || tag === 'path' || tag === 'br' || tag === 'template' || tag === 'iframe') continue
-      if (el === document.body || el === document.documentElement) continue
-      const rect = el.getBoundingClientRect()
-      if (rect.width <= 0 || rect.height <= 0) continue
-      if (rect.right < L || rect.left > R || rect.bottom < T || rect.top > B) continue
-      const text = (el.textContent || '').trim().replace(/\s+/g, ' ')
-      if (!text) continue
-      const cs = getComputedStyle(el)
-      primary = { text: text.slice(0, 60), fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color }
-      break
+    const pd = document as any
+    const pos = pd.caretPositionFromPoint ? pd.caretPositionFromPoint(cx, cy) : (pd.caretRangeFromPoint ? pd.caretRangeFromPoint(cx, cy) : null)
+    const textNode: Node | null = pos ? (pos.offsetNode ?? pos.startContainer ?? null) : null
+    if (textNode) {
+      const parent = textNode.parentElement
+      if (parent) {
+        textParent = parent
+        const text = (textNode.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60)
+        if (text) {
+          const cs = getComputedStyle(parent)
+          primary = { text, fontSize: cs.fontSize, lineHeight: cs.lineHeight, color: cs.color }
+        }
+      }
     }
   } catch {}
+  // 整行：从文本父元素向上找最近的高度 ≤44px 的祖先
+  let line = ''
+  if (textParent) {
+    try {
+      let el: HTMLElement | null = textParent
+      while (el && el !== document.body) {
+        const r = el.getBoundingClientRect()
+        if (r.height >= 8 && r.height <= 44 && r.width > 0) {
+          const t = (el.innerText || '').replace(/\s+/g, ' ').trim()
+          if (t) { line = t.slice(0, 120); break }
+        }
+        el = el.parentElement
+      }
+    } catch {}
+  }
   const seen = new Set<string>()
   if (primary) seen.add(primary.text)
   const candidates: string[] = []
@@ -421,7 +437,7 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
     candidates.push(text)
     if (candidates.length >= 4) break
   }
-  return { primary, candidates }
+  return { primary, line, candidates }
 }
 
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
@@ -512,7 +528,8 @@ function AnnotationOverlay() {
         }
         const hit = boxPayload(L, T, R, B)
         if (hit.primary) stat += '，主目标：' + hit.primary.text + '（字号 ' + hit.primary.fontSize + '，行高 ' + hit.primary.lineHeight + '）'
-        if (hit.candidates.length > 0) stat += '，候选：' + hit.candidates.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
+        if (hit.line) stat += '；整行：' + hit.line
+        if (hit.candidates.length > 0) stat += '；候选：' + hit.candidates.map((t, i) => '[' + (i + 1) + ']' + t).join(' ')
       } else {
         stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
         if (paneEl) {
