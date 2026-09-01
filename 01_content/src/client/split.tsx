@@ -295,6 +295,162 @@ function setDropTarget(t: { row: PaneRow; index: number } | null) {
   for (const fn of dropTargetListeners) fn()
 }
 
+/** ——「指哪打哪」标注引擎：按钮 → 蓝色冒泡光标 → 点击弹输入框 → ✓ 打包进对话框（不发送） —— */
+type AnnotState = {
+  on: boolean
+  started: boolean
+  px: number
+  py: number
+  ex: number
+  ey: number
+  draft: string
+  resp: string
+  stat: string
+}
+let annotState: AnnotState = { on: false, started: false, px: 0, py: 0, ex: 0, ey: 0, draft: '', resp: '', stat: '' }
+const annotListeners = new Set<() => void>()
+function setAnnot(patch: Partial<AnnotState>) {
+  annotState = { ...annotState, ...patch }
+  for (const fn of annotListeners) fn()
+}
+function subscribeAnnot(fn: () => void) { annotListeners.add(fn); return () => { annotListeners.delete(fn) } }
+
+/** 进入瞄准模式（resp = 窗口编号等上下文，由调用方拼好） */
+function startAnnot(resp: string) {
+  document.body.classList.add('dsh-wt-annotating')
+  setAnnot({ on: true, started: false, resp, stat: '', draft: '' })
+}
+function cancelAnnot() {
+  document.body.classList.remove('dsh-wt-annotating')
+  setAnnot({ on: false, started: false })
+}
+
+/** 窗口编号（约定：左栏 → 顶行 → 主行，从 1 起） */
+function windowLabelOf(row: PaneRow, index: number): string {
+  const spec = splitStore.spec
+  if (!spec) return '窗口?'
+  let num = spec.left ? 2 : 1
+  if (row === 'left') return '窗口1'
+  if (row === 'top') return '窗口' + (num + index)
+  num += (spec.top?.length ?? 0)
+  return '窗口' + (num + index)
+}
+
+/** 被点元素上下文（标签 + 类名 + 文字） */
+function ctxOf(t: EventTarget | null): string {
+  const el = t instanceof Element ? t : null
+  if (!el || el === document.documentElement || el === document.body) return ''
+  const tag = el.tagName.toLowerCase()
+  const cls = (el.getAttribute('class') || '').split(/\s+/).filter(Boolean).slice(0, 4).join('.')
+  const text = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60)
+  let out = '<' + tag + (cls ? ' .' + cls : '') + '>'
+  if (text) out += '「' + text + '」'
+  return out
+}
+
+/** 注入宿主对话框输入框（不发送）；失败返回 false */
+function fillHostInput(text: string): boolean {
+  try {
+    const ta = document.querySelector<HTMLTextAreaElement>('textarea[data-phase]')
+      ?? Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea')).pop()
+    if (!ta) return false
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    if (setter) setter.call(ta, text)
+    else ta.value = text
+    ta.dispatchEvent(new Event('input', { bubbles: true }))
+    try {
+      ta.focus()
+      ta.dispatchEvent(new Event('change', { bubbles: true }))
+      ta.setSelectionRange(ta.value.length, ta.value.length)
+    } catch {}
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** ✓ 确认：打包并注入，不发送 */
+function confirmAnnot() {
+  const s = annotState
+  const text = '📌 标注-' + s.resp + '\n' + (s.stat || '') + '\n要求：' + (s.draft.trim() || '（未填写）')
+  const ok = fillHostInput(text)
+  if (!ok) {
+    try {
+      navigator.clipboard?.writeText(text).catch(() => { try { window.prompt('标注已生成，请手动复制：', text) } catch {} })
+    } catch {
+      try { window.prompt('标注已生成，请手动复制：', text) } catch {}
+    }
+  }
+  cancelAnnot()
+}
+
+/** 标注浮层：瞄准气泡 + 输入编辑器（每个工作区渲染一次；fixed 定位） */
+function AnnotationOverlay() {
+  const [, setTick] = useState(0)
+  useEffect(() => subscribeAnnot(() => setTick((t) => t + 1)), [])
+  const s = annotState
+  useEffect(() => {
+    if (!s.on || s.started) return
+    const onMove = (e: MouseEvent) => { if (annotState.on && !annotState.started) setAnnot({ px: e.clientX, py: e.clientY }) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelAnnot() }
+    const onClick = (e: MouseEvent) => {
+      if (!annotState.on || annotState.started) return
+      if (e.target instanceof Element && e.target.closest('.dsh-wt_annotUi')) return
+      e.preventDefault()
+      e.stopImmediatePropagation()
+      const paneEl = (e.target instanceof Element ? e.target.closest('.dsh-wt_pane') : null) as HTMLElement | null
+      let stat = '屏幕坐标 (' + Math.round(e.clientX) + ', ' + Math.round(e.clientY) + ')'
+      if (paneEl) {
+        const r = paneEl.getBoundingClientRect()
+        const rx = (((e.clientX - r.left) / Math.max(1, r.width)) * 100).toFixed(1)
+        const ry = (((e.clientY - r.top) / Math.max(1, r.height)) * 100).toFixed(1)
+        stat += '，窗口内 (' + rx + '%, ' + ry + '%)'
+      }
+      const ctx = ctxOf(e.target)
+      if (ctx) stat += '，元素 ' + ctx
+      const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288))
+      const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148))
+      setAnnot({ started: true, ex, ey, stat })
+    }
+    window.addEventListener('mousemove', onMove, true)
+    window.addEventListener('click', onClick, true)
+    window.addEventListener('keydown', onKey, true)
+    return () => {
+      window.removeEventListener('mousemove', onMove, true)
+      window.removeEventListener('click', onClick, true)
+      window.removeEventListener('keydown', onKey, true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.on, s.started])
+  if (!s.on) return null
+  if (!s.started) {
+    return (
+      <div className="dsh-wt_annotUi dsh-wt_annotBubble" style={{ left: s.px, top: s.py }} aria-hidden>
+        <svg width="12" height="12" viewBox="0 0 16 16"><path d="M8 3.2v9.6M3.2 8h9.6" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" /></svg>
+      </div>
+    )
+  }
+  return (
+    <div className="dsh-wt_annotUi dsh-wt_annotEditor" style={{ left: s.ex, top: s.ey }}>
+      <textarea
+        className="dsh-wt_annotInput"
+        autoFocus
+        value={s.draft}
+        placeholder={T('annot.placeholder')}
+        onChange={(e) => setAnnot({ draft: e.target.value })}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); confirmAnnot() }
+          if (e.key === 'Escape') cancelAnnot()
+        }}
+      />
+      <div className="dsh-wt_annotBtns">
+        <button type="button" className="dsh-wt_annotOk" title={T('annot.ok')} aria-label={T('annot.ok')} onClick={confirmAnnot}>✓</button>
+        <button type="button" className="dsh-wt_annotNo" title={T('annot.cancel')} aria-label={T('annot.cancel')} onClick={cancelAnnot}>✕</button>
+      </div>
+    </div>
+  )
+}
+
 /** 找到会话根容器：data-phase 元素中排除输入框、取含子元素者；优先 phase=active；无活动会话返回 null */
 function findConversationRoot(): HTMLElement | null {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>('[data-phase]'))
@@ -2353,6 +2509,16 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
       )}
       <PaneBody pane={it.pane} row={row} index={index} />
       {!singleConsole && (
+        <>
+        <button
+          type="button"
+          className="dsh-wt_annotBtn"
+          title={T('annot.label')}
+          aria-label={T('annot.label')}
+          onClick={() => startAnnot(windowLabelOf(row, index))}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden><path d="M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" /><path d="M8 5.3v3.4M6.3 7h3.4" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+        </button>
         <button
           type="button"
           className={'dsh-wt_collapseBtn' + (it.pane.collapsed ? ' dsh-wt_collapseBtnCollapsed' : '')}
@@ -2366,6 +2532,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
             <svg viewBox="0 0 16 16" aria-hidden><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
           )}
         </button>
+        </>
       )}
     </div>
     )
@@ -2439,6 +2606,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
         }}
         onPointerDown={makeDividerHandler(hasLeft ? 'left' : 'chat')}
       />
+      <AnnotationOverlay />
     </>
   )
 }

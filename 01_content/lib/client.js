@@ -7901,6 +7901,19 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_collapseBtn{position:absolute;top:2px;right:4px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
   ".dsh-wt_collapseBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));border-color:var(--dsw-alias-border-l1,#262b36)}",
   ".dsh-wt_collapseBtn svg{width:12px;height:12px;display:block}",
+  ".dsh-wt_annotBtn{position:absolute;top:2px;right:26px;z-index:2;width:18px;height:18px;margin:0;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);cursor:pointer}",
+  ".dsh-wt_annotBtn:hover{color:var(--dsw-alias-label-primary,#e6e8eb);background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));border-color:var(--dsw-alias-border-l1,#262b36)}",
+  ".dsh-wt_annotBtn svg{width:12px;height:12px;display:block}",
+  ".dsh-wt-annotating,.dsh-wt-annotating *{cursor:none!important}",
+  ".dsh-wt_annotBubble{position:fixed;z-index:5000;left:0;top:0;transform:translate(-50%,-100%) translateY(-4px);pointer-events:none;width:30px;height:22px;border-radius:9px;background:#4f8ef7;box-shadow:0 2px 10px rgba(79,142,247,.5);display:flex;align-items:center;justify-content:center}",
+  '.dsh-wt_annotBubble::after{content:"";position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border:6px solid #4f8ef7;border-top-width:5px;border-bottom-width:0;border-left-color:transparent;border-right-color:transparent}',
+  ".dsh-wt_annotEditor{position:fixed;z-index:5001;width:280px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:10px;background:rgba(16,20,28,.96);border:1px solid rgba(255,255,255,.2);box-shadow:0 10px 30px rgba(0,0,0,.5)}",
+  ".dsh-wt_annotInput{width:100%;box-sizing:border-box;height:56px;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:7px;background:rgba(255,255,255,.05);color:#e6e8eb;font:inherit;font-size:12px;line-height:17px;resize:none;outline:none;cursor:text}",
+  ".dsh-wt_annotInput:focus{border-color:#4f8ef7}",
+  ".dsh-wt_annotBtns{display:flex;justify-content:flex-end;gap:6px}",
+  ".dsh-wt_annotOk,.dsh-wt_annotNo{flex:none;width:26px;height:22px;padding:0;border:none;border-radius:6px;background:rgba(255,255,255,.08);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:12px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}",
+  ".dsh-wt_annotOk:hover{background:#1d9a55;color:#fff}",
+  ".dsh-wt_annotNo:hover{background:#c0392b;color:#fff}",
   ".dsh-wt_collapseBtnCollapsed{color:var(--dsw-alias-label-secondary,#9aa4b2)}",
   ".dsh-wt_paneFrame{flex:1;width:100%;border:0;background:#010409;min-height:0}",
   // iframe 内容标签：容器 + 右上角常驻刷新按钮
@@ -8523,6 +8536,10 @@ var zh = {
   "pane.termFail": "\u7EC8\u7AEF\u4E0D\u53EF\u7528\uFF08\u5BBF\u4E3B\u7F3A\u5C11 node-pty/ws \u6216\u8FDE\u63A5\u5931\u8D25\uFF09",
   "pane.closeTab": "\u5173\u95ED\u6807\u7B7E\u9875",
   "pane.collapse": "\u6298\u53E0\u7A97\u683C",
+  "annot.label": "\u6807\u6CE8\uFF1A\u70B9\u51FB\u7A97\u53E3\u4E2D\u7684\u4F4D\u7F6E\u63D0\u8981\u6C42",
+  "annot.placeholder": "\u5BF9\u8FD9\u91CC\u63D0\u8981\u6C42\u2026\uFF08Enter \u786E\u8BA4\uFF0CShift+Enter \u6362\u884C\uFF0CEsc \u53D6\u6D88\uFF09",
+  "annot.ok": "\u786E\u8BA4\uFF1A\u6CE8\u5165\u5BF9\u8BDD\u6846\u8F93\u5165\u6846\uFF08\u4E0D\u53D1\u9001\uFF09",
+  "annot.cancel": "\u53D6\u6D88",
   "pane.expand": "\u5C55\u5F00\u7A97\u683C",
   "pane.jobsTitle": "\u540E\u53F0\u4EFB\u52A1",
   "pane.subagents": "\u5B50\u4EE3\u7406",
@@ -8723,6 +8740,10 @@ var en = {
   "pane.termFail": "Terminal unavailable (host missing node-pty/ws, or connection failed)",
   "pane.closeTab": "Close tab",
   "pane.collapse": "Collapse pane",
+  "annot.label": "Annotate: click a spot in the window",
+  "annot.placeholder": "Describe what to change here\u2026 (Enter to confirm, Shift+Enter newline, Esc cancel)",
+  "annot.ok": "Confirm: put into chat input (not sent)",
+  "annot.cancel": "Cancel",
   "pane.expand": "Expand pane",
   "pane.jobsTitle": "Background jobs",
   "pane.subagents": "Subagents",
@@ -16630,6 +16651,153 @@ function setDropTarget(t) {
   dropTarget = t;
   for (const fn of dropTargetListeners) fn();
 }
+var annotState = { on: false, started: false, px: 0, py: 0, ex: 0, ey: 0, draft: "", resp: "", stat: "" };
+var annotListeners = /* @__PURE__ */ new Set();
+function setAnnot(patch) {
+  annotState = { ...annotState, ...patch };
+  for (const fn of annotListeners) fn();
+}
+function subscribeAnnot(fn) {
+  annotListeners.add(fn);
+  return () => {
+    annotListeners.delete(fn);
+  };
+}
+function startAnnot(resp) {
+  document.body.classList.add("dsh-wt-annotating");
+  setAnnot({ on: true, started: false, resp, stat: "", draft: "" });
+}
+function cancelAnnot() {
+  document.body.classList.remove("dsh-wt-annotating");
+  setAnnot({ on: false, started: false });
+}
+function windowLabelOf(row, index) {
+  const spec = splitStore.spec;
+  if (!spec) return "\u7A97\u53E3?";
+  let num = spec.left ? 2 : 1;
+  if (row === "left") return "\u7A97\u53E31";
+  if (row === "top") return "\u7A97\u53E3" + (num + index);
+  num += spec.top?.length ?? 0;
+  return "\u7A97\u53E3" + (num + index);
+}
+function ctxOf(t) {
+  const el = t instanceof Element ? t : null;
+  if (!el || el === document.documentElement || el === document.body) return "";
+  const tag = el.tagName.toLowerCase();
+  const cls = (el.getAttribute("class") || "").split(/\s+/).filter(Boolean).slice(0, 4).join(".");
+  const text2 = (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 60);
+  let out = "<" + tag + (cls ? " ." + cls : "") + ">";
+  if (text2) out += "\u300C" + text2 + "\u300D";
+  return out;
+}
+function fillHostInput(text2) {
+  try {
+    const ta = document.querySelector("textarea[data-phase]") ?? Array.from(document.querySelectorAll("textarea")).pop();
+    if (!ta) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+    if (setter) setter.call(ta, text2);
+    else ta.value = text2;
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    try {
+      ta.focus();
+      ta.dispatchEvent(new Event("change", { bubbles: true }));
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    } catch {
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+function confirmAnnot() {
+  const s = annotState;
+  const text2 = "\u{1F4CC} \u6807\u6CE8-" + s.resp + "\n" + (s.stat || "") + "\n\u8981\u6C42\uFF1A" + (s.draft.trim() || "\uFF08\u672A\u586B\u5199\uFF09");
+  const ok = fillHostInput(text2);
+  if (!ok) {
+    try {
+      navigator.clipboard?.writeText(text2).catch(() => {
+        try {
+          window.prompt("\u6807\u6CE8\u5DF2\u751F\u6210\uFF0C\u8BF7\u624B\u52A8\u590D\u5236\uFF1A", text2);
+        } catch {
+        }
+      });
+    } catch {
+      try {
+        window.prompt("\u6807\u6CE8\u5DF2\u751F\u6210\uFF0C\u8BF7\u624B\u52A8\u590D\u5236\uFF1A", text2);
+      } catch {
+      }
+    }
+  }
+  cancelAnnot();
+}
+function AnnotationOverlay() {
+  const [, setTick] = (0, import_react.useState)(0);
+  (0, import_react.useEffect)(() => subscribeAnnot(() => setTick((t) => t + 1)), []);
+  const s = annotState;
+  (0, import_react.useEffect)(() => {
+    if (!s.on || s.started) return;
+    const onMove = (e) => {
+      if (annotState.on && !annotState.started) setAnnot({ px: e.clientX, py: e.clientY });
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") cancelAnnot();
+    };
+    const onClick = (e) => {
+      if (!annotState.on || annotState.started) return;
+      if (e.target instanceof Element && e.target.closest(".dsh-wt_annotUi")) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const paneEl = e.target instanceof Element ? e.target.closest(".dsh-wt_pane") : null;
+      let stat = "\u5C4F\u5E55\u5750\u6807 (" + Math.round(e.clientX) + ", " + Math.round(e.clientY) + ")";
+      if (paneEl) {
+        const r = paneEl.getBoundingClientRect();
+        const rx = ((e.clientX - r.left) / Math.max(1, r.width) * 100).toFixed(1);
+        const ry = ((e.clientY - r.top) / Math.max(1, r.height) * 100).toFixed(1);
+        stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx + "%, " + ry + "%)";
+      }
+      const ctx = ctxOf(e.target);
+      if (ctx) stat += "\uFF0C\u5143\u7D20 " + ctx;
+      const ex = Math.max(8, Math.min(e.clientX + 10, window.innerWidth - 288));
+      const ey = Math.max(8, Math.min(e.clientY + 14, window.innerHeight - 148));
+      setAnnot({ started: true, ex, ey, stat });
+    };
+    window.addEventListener("mousemove", onMove, true);
+    window.addEventListener("click", onClick, true);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("mousemove", onMove, true);
+      window.removeEventListener("click", onClick, true);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [s.on, s.started]);
+  if (!s.on) return null;
+  if (!s.started) {
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotBubble", style: { left: s.px, top: s.py }, "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 3.2v9.6M3.2 8h9.6", fill: "none", stroke: "#fff", strokeWidth: "1.8", strokeLinecap: "round" }) }) });
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_annotUi dsh-wt_annotEditor", style: { left: s.ex, top: s.ey }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      "textarea",
+      {
+        className: "dsh-wt_annotInput",
+        autoFocus: true,
+        value: s.draft,
+        placeholder: T("annot.placeholder"),
+        onChange: (e) => setAnnot({ draft: e.target.value }),
+        onKeyDown: (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            confirmAnnot();
+          }
+          if (e.key === "Escape") cancelAnnot();
+        }
+      }
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_annotBtns", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotOk", title: T("annot.ok"), "aria-label": T("annot.ok"), onClick: confirmAnnot, children: "\u2713" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotNo", title: T("annot.cancel"), "aria-label": T("annot.cancel"), onClick: cancelAnnot, children: "\u2715" })
+    ] })
+  ] });
+}
 function findConversationRoot() {
   const candidates = Array.from(document.querySelectorAll("[data-phase]"));
   const ok = (el) => el.tagName !== "TEXTAREA" && el.tagName !== "INPUT" && el.children.length >= 2;
@@ -18764,17 +18932,33 @@ function WorkspaceLayer(props) {
             }
           ),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)(PaneBody, { pane: it.pane, row, index }),
-          !singleConsole && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-            "button",
-            {
-              type: "button",
-              className: "dsh-wt_collapseBtn" + (it.pane.collapsed ? " dsh-wt_collapseBtnCollapsed" : ""),
-              title: it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
-              "aria-label": it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
-              onClick: () => splitStore.toggleCollapsed(row, index),
-              children: it.pane.collapsed ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 6l4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 10l4-4 4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) })
-            }
-          )
+          !singleConsole && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "dsh-wt_annotBtn",
+                title: T("annot.label"),
+                "aria-label": T("annot.label"),
+                onClick: () => startAnnot(windowLabelOf(row, index)),
+                children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinejoin: "round" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 5.3v3.4M6.3 7h3.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinecap: "round" })
+                ] })
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "dsh-wt_collapseBtn" + (it.pane.collapsed ? " dsh-wt_collapseBtnCollapsed" : ""),
+                title: it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
+                "aria-label": it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
+                onClick: () => splitStore.toggleCollapsed(row, index),
+                children: it.pane.collapsed ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 6l4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 10l4-4 4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) })
+              }
+            )
+          ] })
         ]
       },
       it.pane.id
@@ -18846,7 +19030,8 @@ function WorkspaceLayer(props) {
         },
         onPointerDown: makeDividerHandler(hasLeft ? "left" : "chat")
       }
-    )
+    ),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AnnotationOverlay, {})
   ] });
 }
 function SplitWorkspace() {
