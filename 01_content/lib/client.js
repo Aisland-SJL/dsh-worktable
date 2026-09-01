@@ -8463,6 +8463,7 @@ var zh = {
   "console.bgPlain": "\u7EAF\u8272\u80CC\u666F",
   "console.bgGlow": "\u6D41\u5149\u80CC\u666F",
   "console.bgPhoto": "\u4E0A\u4F20\u5A92\u4F53",
+  "console.bgCustom": "\u81EA\u5B9A\u4E49\u80CC\u666F",
   "console.bgEdit": "\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditPlain": "\u7EAF\u8272\u80CC\u666F\u8BBE\u7F6E",
   "console.bgEditGlow": "\u6D41\u5149\u80CC\u666F\u8BBE\u7F6E",
@@ -8657,6 +8658,7 @@ var en = {
   "console.bgPlain": "Plain",
   "console.bgGlow": "Glow",
   "console.bgPhoto": "Upload media",
+  "console.bgCustom": "Custom background",
   "console.bgEdit": "Background settings",
   "console.bgEditPlain": "Plain background",
   "console.bgEditGlow": "Glow background",
@@ -17816,7 +17818,7 @@ function ConsolePane() {
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
             ] }),
-            T("console.bgPhoto")
+            T("console.bgCustom")
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] })
