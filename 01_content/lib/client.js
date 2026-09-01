@@ -8180,10 +8180,26 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleGrid{position:relative;z-index:1}",
   // 底部中央玻璃 dock：4 个 ghost 按钮（图标常显，hover 才浮现圆角矩形）+ 统一下拉面板（宽度 = dock 宽 150px）
   ".dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}",
+  ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(var(--wt-cardBlur,0px)) saturate(1.15)}",
+  ".dsh-wt_console[data-wt-theme=light] .dsh-wt_announce{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}",
+  ".dsh-wt_announceHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--wt-border)}",
+  ".dsh-wt_announceVer{font-size:15px;font-weight:700;color:var(--wt-text)}",
+  ".dsh-wt_announceBtn{flex:none;padding:4px 12px;border:none;border-radius:7px;background:var(--wt-chip);color:var(--wt-text2);font:inherit;font-size:12px;line-height:17px;cursor:pointer;transition:background .15s ease,color .15s ease}",
+  ".dsh-wt_announceBtn:hover{background:rgba(79,142,247,.22);color:var(--wt-text)}",
+  ".dsh-wt_announceBtn:disabled{opacity:.6;cursor:default}",
+  ".dsh-wt_announceAuto{flex:none;font-size:12px;line-height:17px;color:var(--wt-text2);margin-left:auto}",
+  ".dsh-wt_announceUpdate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border-radius:8px;background:rgba(79,142,247,.12)}",
+  ".dsh-wt_announceNewVer{font-size:12px;line-height:17px;color:#7eb3ff;font-weight:600}",
+  ".dsh-wt_announceSkip{flex:none;padding:3px 10px;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
+  ".dsh-wt_announceSkip:hover{background:rgba(244,63,94,.14);color:#f87171}",
+  ".dsh-wt_announceStatus{font-size:11px;line-height:16px;color:var(--wt-text3)}",
+  ".dsh-wt_announceBody{white-space:pre-wrap;font-size:13px;line-height:1.75;color:var(--wt-text2);user-select:text}",
   ".dsh-wt_consoleDockWrap{position:relative;z-index:12;flex:none;display:flex;justify-content:center;padding-top:12px}",
   ".dsh-wt_consoleDock{display:flex;align-items:center;gap:4px;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:blur(14px) saturate(1.3)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleDock{background:rgba(255,255,255,.62);border-color:rgba(27,31,36,.12);box-shadow:0 8px 24px rgba(31,41,55,.12)}",
-  ".dsh-wt_dockBtn{width:32px;height:32px;padding:0;border:none;border-radius:9px;background:transparent;color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}",
+  ".dsh-wt_dockBtn{position:relative;width:32px;height:32px;padding:0;border:none;border-radius:9px;background:transparent;color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}",
+  ".dsh-wt_dockBadge{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.95);animation:wtAnnPulse 1.6s ease-in-out infinite}",
+  "@keyframes wtAnnPulse{0%,100%{opacity:1}50%{opacity:.3}}",
   ".dsh-wt_dockBtn svg{transition:transform .15s ease}",
   ".dsh-wt_dockBtn:hover svg{transform:scale(1.12)}",
   ".dsh-wt_dockBtn:hover{background:rgba(255,255,255,.14)}",
@@ -8544,6 +8560,16 @@ var zh = {
   "annot.placeholder": "\u5BF9\u8FD9\u91CC\u63D0\u8981\u6C42\u2026\uFF08Enter \u786E\u8BA4\uFF0CShift+Enter \u6362\u884C\uFF0CEsc \u53D6\u6D88\uFF09",
   "annot.ok": "\u786E\u8BA4\uFF1A\u6CE8\u5165\u5BF9\u8BDD\u6846\u8F93\u5165\u6846\uFF08\u4E0D\u53D1\u9001\uFF09",
   "annot.cancel": "\u53D6\u6D88",
+  "annot.updateTitle": "\u66F4\u65B0\u516C\u544A",
+  "annot.curVer": "\u5F53\u524D\u7248\u672C",
+  "annot.checkNow": "\u68C0\u67E5\u66F4\u65B0",
+  "annot.checking": "\u68C0\u67E5\u4E2D\u2026",
+  "annot.autoCheck": "\u81EA\u52A8\u68C0\u67E5\u66F4\u65B0",
+  "annot.newVer": "\u53D1\u73B0\u65B0\u7248\u672C",
+  "annot.gotoRelease": "\u67E5\u770B\u53D1\u5E03\u9875",
+  "annot.skipVer": "\u5FFD\u7565\u6B64\u7248\u672C",
+  "annot.latest": "\u5DF2\u662F\u6700\u65B0\u7248\u672C",
+  "annot.checkFail": "\u68C0\u67E5\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5",
   "pane.expand": "\u5C55\u5F00\u7A97\u683C",
   "pane.jobsTitle": "\u540E\u53F0\u4EFB\u52A1",
   "pane.subagents": "\u5B50\u4EE3\u7406",
@@ -8748,6 +8774,16 @@ var en = {
   "annot.placeholder": "Describe what to change here\u2026 (Enter to confirm, Shift+Enter newline, Esc cancel)",
   "annot.ok": "Confirm: put into chat input (not sent)",
   "annot.cancel": "Cancel",
+  "annot.updateTitle": "Changelog",
+  "annot.curVer": "Current version",
+  "annot.checkNow": "Check now",
+  "annot.checking": "Checking\u2026",
+  "annot.autoCheck": "Auto check",
+  "annot.newVer": "New version",
+  "annot.gotoRelease": "View release",
+  "annot.skipVer": "Ignore this version",
+  "annot.latest": "Up to date",
+  "annot.checkFail": "Check failed \u2014 try again later",
   "pane.expand": "Expand pane",
   "pane.jobsTitle": "Background jobs",
   "pane.subagents": "Subagents",
@@ -8804,6 +8840,135 @@ function basenameOf(p) {
 
 // src/client/split.tsx
 var import_react = require("react");
+
+// src/client/changelog.ts
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.0
+
+\u{1F6E0}\uFE0F \u4E00\u3001\u63A7\u5236\u5BA4 UI \u8C03\u6574
+
+\u30101.1 \u4E3B\u9898\u5207\u6362\u4E0E\u754C\u9762\u4F18\u5316\u3011\u63A7\u5236\u53F0\u652F\u6301\u6DF1\u8272 / \u6D45\u8272\u4E24\u5957\u5B8C\u6574\u4E3B\u9898\uFF0C\u5E76\u5728\u6D45\u8272\u6A21\u5F0F\u4E0B\u5B8C\u6210\u5168\u5957\u9002\u914D\uFF08\u7EAF\u8272\u80CC\u666F\u81EA\u52A8\u5207\u6362\u4E3A\u6D45\u8272\u3001\u7F51\u683C\u7EBF\u8F6C\u4E3A\u7070\u8272\u3001\u4EFB\u52A1\u8FDB\u884C\u4E2D\u7684\u5361\u7247\u5149\u6548\u6539\u7528\u9AD8\u9971\u548C\u84DD\u8272\uFF0C\u786E\u4FDD\u767D\u8272\u80CC\u666F\u4E0B\u4F9D\u7136\u6E05\u6670\u9192\u76EE\uFF09\u3002\u754C\u9762\u9876\u90E8\u56DB\u4E2A\u96F6\u6563\u6309\u94AE\u6574\u5408\u4E3A\u5E95\u90E8\u4E2D\u592E\u7684\u300C\u73BB\u7483\u64CD\u4F5C\u53F0\u300D\uFF0C\u56FE\u6807\u6539\u4E3A\u7EC6\u7EBF\u63CF\u8FB9\u98CE\u683C\u5E76\u652F\u6301\u60AC\u505C\u653E\u5927\uFF1B\u4E3B\u9898\u6309\u94AE\u7684\u56FE\u6807\u4F1A\u968F\u5F53\u524D\u9009\u62E9\u81EA\u52A8\u5207\u6362\uFF08\u6708\u4EAE / \u592A\u9633 / \u7535\u8111\uFF09\u3002
+
+\u30101.2 \u74F7\u7247\u5F62\u6001\u5207\u6362\u3011\u9879\u76EE\u5361\u7247\u652F\u6301\u300C\u65B9\u5757\u300D\u4E0E\u300C\u5706\u5708\u300D\u4E24\u79CD\u5F62\u72B6\uFF0C\u4E00\u952E\u5207\u6362\uFF1B\u5207\u6362\u65F6\u5361\u7247\u81EA\u52A8\u5E73\u6ED1\u8FC7\u6E21\uFF0C\u5706\u5F62\u6A21\u5F0F\u4E0B\u5185\u5BB9\u81EA\u52A8\u8C03\u6574\u4E3A\u5C45\u4E2D\u6392\u7248\u3002
+
+\u30101.3 \u80CC\u666F\u7CFB\u7EDF\u6269\u81F3\u4E09\u79CD\u53EF\u9009\u3011\u2014\u2014\u5355\u8272\u80CC\u666F\u3001\u67D4\u5149\u80CC\u666F\u3001\u81EA\u5B9A\u4E49\u80CC\u666F\uFF0C\u6BCF\u79CD\u90FD\u6709\u72EC\u7ACB\u9762\u677F\uFF1A
+\xB7 \u5355\u8272\u80CC\u666F\uFF1A\u63D0\u4F9B\u8272\u76F8\u3001\u9971\u548C\u5EA6\u3001\u660E\u5EA6\u8C03\u8282\u6ED1\u6746\uFF0C\u652F\u6301\u76F4\u63A5\u8F93\u5165\u6570\u503C\u4E0E\u4E00\u952E\u6062\u590D\u9ED8\u8BA4\uFF1B\u9ED8\u8BA4\u989C\u8272\u968F\u5F53\u524D\u4E3B\u9898\u81EA\u52A8\u5339\u914D\uFF08\u6DF1\u8272=\u6DF1\u84DD\u9ED1\uFF0C\u6D45\u8272=\u7C73\u767D\uFF09\u3002
+\xB7 \u67D4\u5149\u80CC\u666F\uFF1A\u540C\u6837\u53EF\u8C03\u8282\u5149\u6655\u7684\u8272\u76F8\u3001\u9971\u548C\u5EA6\u4E0E\u660E\u5EA6\uFF0C\u8BA9\u6574\u4F53\u6C1B\u56F4\u8272\u8C03\u968F\u5FC3\u800C\u53D8\u3002
+\xB7 \u81EA\u5B9A\u4E49\u80CC\u666F\uFF1A\u652F\u6301\u7167\u7247\u4E0E\u89C6\u9891\u7EDF\u4E00\u5165\u5E93\u7BA1\u7406\u2014\u2014\u53EF\u4E0A\u4F20\u591A\u5F20\u5A92\u4F53\u3001\u7F29\u7565\u56FE\u5E26\u7C7B\u578B\u89D2\u6807\u3001\u4EFB\u610F\u4E00\u5F20\u53EF\u5355\u72EC\u5220\u9664\uFF1B\u6BCF\u5F20\u5A92\u4F53\u4F1A\u72EC\u7ACB\u8BB0\u4F4F\u4F60\u7684\u8C03\u8272\u8BBE\u7F6E\uFF0C\u9009\u4E2D\u5373\u81EA\u52A8\u6062\u590D\uFF1B\u4E0A\u4F20\u7684\u6587\u4EF6\u4EE5\u539F\u59CB\u753B\u8D28\u5B58\u50A8\uFF08\u4E0D\u518D\u538B\u7F29\u964D\u6E05\u6670\u5EA6\uFF09\uFF1B\u89C6\u9891\u4F5C\u4E3A\u80CC\u666F\u65F6\u81EA\u52A8\u5FAA\u73AF\u64AD\u653E\uFF0C\u5E76\u52A0\u5165\u9996\u5C3E\u5E27\u6E10\u53D8\u4EA4\u63A5\uFF0C\u6D88\u9664\u5FAA\u73AF\u65F6\u7684\u987F\u632B\u611F\u3002\u53E6\u6709\uFF1A\u80CC\u666F\u7F51\u683C\u7EBF\u5F00\u5173\u4E0E\u900F\u660E\u5EA6\u6ED1\u6746\u3001\u5361\u7247\u8D34\u7247\u6A21\u7CCA\u6ED1\u6746\uFF1B\u6240\u6709\u6ED1\u6746\u60AC\u505C\u65F6\u4F1A\u663E\u793A\u5404\u81EA\u7684\u529F\u80FD\u8BF4\u660E\u3002
+
+\u30101.4 \u6BCF\u884C\u9879\u76EE\u6570\u3011\u81EA\u7531\u8C03\u6574\u63A7\u5236\u53F0\u6BCF\u884C\u663E\u793A\u7684\u74F7\u7247\u6570\u91CF\uFF081\u20135 \u5F20\uFF09\uFF0C\u62D6\u62FD\u6ED1\u6746\u5373\u65F6\u751F\u6548\u5E76\u914D\u5E73\u6ED1\u52A8\u753B\u3002
+
+\u30101.5 \u66F4\u65B0\u516C\u544A\u3011\u63A7\u5236\u53F0\u65B0\u589E\u72EC\u7ACB\u7684\u66F4\u65B0\u5165\u53E3\uFF0C\u968F\u65F6\u67E5\u770B\u672C\u7248\u672C\u7684\u5B8C\u6574\u8BF4\u660E\u3001\u4E00\u952E\u68C0\u67E5\u66F4\u65B0\u3001\u5F00\u542F\u81EA\u52A8\u68C0\u67E5\u66F4\u65B0\u5F00\u5173\uFF1B\u53D1\u73B0\u65B0\u7248\u672C\u65F6\u53EF\u9009\u62E9\u300C\u5FFD\u7565\u6B64\u7248\u672C\u300D\u3002
+
+\u{1F680} \u4E8C\u3001\u9879\u76EE UX \u4F18\u5316
+
+\u30102.1 \u6807\u7B7E\u6298\u53E0\u3011\u7A97\u53E3\u6807\u9898\u680F\u65B0\u589E\u6298\u53E0\u6309\u952E\uFF0C\u53EF\u5C06\u7A97\u683C\u6807\u9898\u4E0E\u6807\u7B7E\u680F\u4E00\u952E\u6536\u8D77/\u5C55\u5F00\uFF0C\u754C\u9762\u7ED3\u6784\u66F4\u7D27\u51D1\u3001\u5185\u5BB9\u533A\u57DF\u66F4\u5B8C\u6574\uFF08\u6536\u8D77\u540E\u4ECD\u53EF\u4ECE\u7A97\u53E3\u53F3\u4E0A\u89D2\u4E00\u952E\u6062\u590D\uFF09\u3002
+
+\u30102.2 \u65B0\u589E\u6807\u6CE8\u529F\u80FD\u3011\u6BCF\u4E2A\u7A97\u53E3\u6298\u53E0\u952E\u65C1\u65B0\u589E\u300C\u6807\u6CE8\u300D\u6309\u94AE\u2014\u2014\u70B9\u51FB\u540E\u9F20\u6807\u53D8\u4E3A\u84DD\u8272\u5C0F\u6CE1\u5149\u6807\uFF1B\u6309\u4F4F\u5DE6\u952E\u62D6\u62FD\u53EF\u753B\u6846\u9009\u5B9A\u533A\u57DF\uFF08\u70B9\u6309\u5373\u4E3A\u5355\u70B9\u5B9A\u4F4D\uFF09\uFF0C\u968F\u540E\u5199\u4E0B\u4F60\u7684\u8981\u6C42\uFF08\u5982\u300C\u628A\u8FD9\u91CC\u653E\u5927\u4E00\u4E9B\u300D\uFF09\u5E76\u786E\u8BA4\uFF1B\u7CFB\u7EDF\u5C06\u81EA\u52A8\u628A\u300C\u7A97\u53E3\u7F16\u53F7 + \u7CBE\u786E\u5750\u6807 + \u6846\u9009\u5185\u5BB9 + \u4F60\u7684\u8981\u6C42\u300D\u6253\u5305\u586B\u5165\u804A\u5929\u8F93\u5165\u6846\uFF08\u4E0D\u4F1A\u81EA\u52A8\u53D1\u9001\uFF09\u3002\u63A5\u6536\u7684 AI \u4F1A\u6309\u8FD9\u4EFD\u6807\u6CE8\u76F4\u63A5\u5B9A\u4F4D\u5E76\u4F5C\u7B54\u2014\u2014\u80FD\u67E5\u770B\u753B\u9762\u65F6\u5148\u6838\u5B9E\u518D\u56DE\u7B54\uFF0C\u65E0\u6CD5\u67E5\u770B\u65F6\u4E5F\u53EA\u8FFD\u95EE\u4E00\u6761\u6700\u5173\u952E\u7684\u4FE1\u606F\uFF0C\u4E0D\u518D\u6CDB\u6CDB\u731C\u6D4B\u3002
+
+\u{1F380} \u4E09\u3001\u5176\u4ED6
+
+\u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
+
+// src/client/updateCheck.ts
+var LOCAL_VERSION = false ? "dev" : "0.2.3";
+var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
+var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
+var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
+var K_SKIP = "dsh.worktable.skipVersion.v1";
+var K_CACHE = "dsh.worktable.updateCache.v1";
+function cmpVer(a, b) {
+  const pa = String(a).split(".").map((x) => parseInt(x, 10) || 0);
+  const pb = String(b).split(".").map((x) => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] || 0) - (pb[i] || 0);
+    if (d !== 0) return d > 0 ? 1 : -1;
+  }
+  return 0;
+}
+function getSkipVersion() {
+  try {
+    return localStorage.getItem(K_SKIP) ?? "";
+  } catch {
+    return "";
+  }
+}
+function setSkipVersion(v) {
+  try {
+    localStorage.setItem(K_SKIP, v);
+  } catch {
+  }
+}
+function getAutoCheck() {
+  try {
+    return localStorage.getItem(K_UPDATE_CHECK) !== "0";
+  } catch {
+    return true;
+  }
+}
+function setAutoCheck(on) {
+  try {
+    localStorage.setItem(K_UPDATE_CHECK, on ? "1" : "0");
+  } catch {
+  }
+}
+function readCache() {
+  try {
+    const raw = localStorage.getItem(K_CACHE);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c && typeof c.status === "string") {
+        return { status: c.status === "checking" ? "idle" : c.status, info: c.info ?? null };
+      }
+    }
+  } catch {
+  }
+  return { status: "idle", info: null };
+}
+function writeCache(status, info) {
+  try {
+    localStorage.setItem(K_CACHE, JSON.stringify({ status, info }));
+  } catch {
+  }
+}
+async function checkUpdate(force = false) {
+  const last = Number(localStorage.getItem(K_LAST_CHECK) ?? "0");
+  if (!force && Date.now() - last < 24 * 3600 * 1e3) return readCache();
+  try {
+    localStorage.setItem(K_LAST_CHECK, String(Date.now()));
+  } catch {
+  }
+  let d = null;
+  for (let attempt = 0; attempt < 3 && !d; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8e3);
+    try {
+      const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store", signal: ctrl.signal });
+      if (r.ok) d = await r.json();
+      else if (r.status === 403 || r.status === 404) break;
+    } catch {
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  if (!d) {
+    writeCache("failed", null);
+    return { status: "failed", info: null };
+  }
+  const tag = (d.tag_name ?? "").replace(/^v/, "");
+  if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+    writeCache("uptodate", null);
+    return { status: "uptodate", info: null };
+  }
+  if (getSkipVersion() === tag) {
+    writeCache("uptodate", null);
+    return { status: "uptodate", info: null };
+  }
+  const info = { latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" };
+  writeCache("uptodate", info);
+  return { status: "uptodate", info };
+}
+
+// src/client/split.tsx
 var import_xterm2 = __toESM(require_xterm(), 1);
 
 // node_modules/mdurl/index.mjs
@@ -17730,6 +17895,11 @@ function ConsolePane() {
   const [photoGrid, setPhotoGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPhotoGrid?.() ?? true);
   const [gridOpacity, setGridOpacityState] = (0, import_react.useState)(() => splitEnv?.console?.getGridOpacity?.() ?? 8);
   const [cardBlur, setCardBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getCardBlur?.() ?? 0);
+  const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
+  const [updStatus, setUpdStatus] = (0, import_react.useState)(() => readCache().status);
+  const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info);
+  const [autoCheckOn, setAutoCheckOn] = (0, import_react.useState)(() => getAutoCheck());
+  const updBusyRef = (0, import_react.useRef)(false);
   const photoUrlRef = (0, import_react.useRef)("");
   const [openMenu, setOpenMenu] = (0, import_react.useState)(null);
   const [bgEdit, setBgEdit] = (0, import_react.useState)(null);
@@ -17841,6 +18011,31 @@ function ConsolePane() {
     const v = Math.min(Math.max(Math.round(n), 0), 20);
     setCardBlurState(v);
     splitEnv?.console?.setCardBlur?.(v);
+  };
+  const runUpdateCheck = async (force) => {
+    if (updBusyRef.current) return;
+    updBusyRef.current = true;
+    setUpdStatus("checking");
+    try {
+      const r = await checkUpdate(force);
+      setUpdStatus(r.status);
+      setUpdInfo(r.info);
+    } finally {
+      updBusyRef.current = false;
+    }
+  };
+  const onSkipVersion = () => {
+    if (updInfo) {
+      setSkipVersion(updInfo.latest);
+      setUpdInfo(null);
+      setUpdStatus("uptodate");
+    }
+  };
+  const onAutoCheckToggle = () => {
+    const next = !autoCheckOn;
+    setAutoCheckOn(next);
+    setAutoCheck(next);
+    if (next) void runUpdateCheck(false);
   };
   const selectPhoto = (p) => {
     setPhotoIdLocal(p.id);
@@ -17965,6 +18160,9 @@ function ConsolePane() {
     splitEnv?.console?.refreshPreviews?.();
   }, []);
   (0, import_react.useEffect)(() => {
+    if (getAutoCheck()) void runUpdateCheck(false);
+  }, []);
+  (0, import_react.useEffect)(() => {
     let alive = true;
     splitEnv?.console?.getPhotoLib?.().then((lib2) => {
       if (!alive) return;
@@ -18052,7 +18250,35 @@ function ConsolePane() {
       ] })
     ] }),
     openMenu !== null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_dropMask", onClick: () => setOpenMenu(null) }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: annOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announce", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announceHead", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_announceVer", children: [
+          T("annot.curVer"),
+          " v",
+          LOCAL_VERSION
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceBtn", disabled: updStatus === "checking", onClick: () => runUpdateCheck(true), children: updStatus === "checking" ? T("annot.checking") : T("annot.checkNow") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_announceAuto", children: T("annot.autoCheck") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (autoCheckOn ? " dsh-wt_switchOn" : ""), "aria-pressed": autoCheckOn, "aria-label": T("annot.autoCheck"), onClick: onAutoCheckToggle, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+      ] }),
+      updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announceUpdate", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_announceNewVer", children: [
+          T("annot.newVer"),
+          " v",
+          updInfo.latest
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_gridToggle dsh-wt_gridToggleOn", onClick: () => {
+          try {
+            window.open(updInfo.url, "_blank");
+          } catch {
+          }
+        }, children: T("annot.gotoRelease") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T("annot.skipVer") })
+      ] }),
+      updStatus === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.checkFail") }),
+      updStatus === "uptodate" && !updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.latest") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceBody", children: CHANGELOG_V030 })
+    ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
         "div",
         {
@@ -18117,7 +18343,17 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.65", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "11.1", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" })
-        ] }) })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dockBtn" + (annOpen ? " dsh-wt_dockBtnOn" : ""), title: T("annot.updateTitle"), "aria-label": T("annot.updateTitle"), onClick: () => {
+          setOpenMenu(null);
+          setAnnOpen((v) => !v);
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "18", height: "18", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.6 7c0-2.9 2.4-4.9 5.4-4.9s5.4 2 5.4 4.9v2.9l1.2 1.7H1.4l1.2-1.7z", fill: "none", stroke: "currentColor", strokeWidth: "0.9", strokeLinejoin: "round" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M6.2 12.9c.3.7 1 1.2 1.8 1.2s1.5-.5 1.8-1.2", fill: "none", stroke: "currentColor", strokeWidth: "0.9", strokeLinecap: "round" })
+          ] }),
+          updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_dockBadge", "aria-hidden": true })
+        ] })
       ] }),
       openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => setTheme(o.mode), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: o.mode, size: 13 }),
@@ -19382,8 +19618,8 @@ var photoStore = {
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION = false ? "dev" : "0.2.3";
-var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
+var LOCAL_VERSION2 = false ? "dev" : "0.2.3";
+var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
 var ICON_SYNC = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
@@ -19396,7 +19632,7 @@ var ICON_SPARK = /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("svg", { viewBox:
   /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 1.6l1.5 3.9 3.9 1.5-3.9 1.5L8 12.4 6.5 8.5 2.6 7l3.9-1.5z", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinejoin: "round" }),
   /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12.6 11.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z", fill: "currentColor" })
 ] });
-function cmpVer(a, b) {
+function cmpVer2(a, b) {
   const pa = a.split(".").map(Number);
   const pb = b.split(".").map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
@@ -20353,7 +20589,7 @@ function WorktableSection(props) {
         const ctrl = new AbortController();
         const timer = setTimeout(() => ctrl.abort(), 8e3);
         try {
-          const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store", signal: ctrl.signal });
+          const r = await fetch("https://api.github.com/repos/" + UPDATE_REPO2 + "/releases/latest", { headers: { Accept: "application/vnd.github+json" }, cache: "no-store", signal: ctrl.signal });
           if (r.ok) d = await r.json();
           else if (r.status === 403 || r.status === 404) break;
         } catch {
@@ -20368,7 +20604,7 @@ function WorktableSection(props) {
       }
       localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
       const tag = (d.tag_name ?? "").replace(/^v/, "");
-      if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+      if (!tag || cmpVer2(tag, LOCAL_VERSION2) <= 0) {
         setUpdateStatus("uptodate");
         return;
       }
@@ -21989,7 +22225,7 @@ function WorktableSection(props) {
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_updateVers", children: [
           t("update.current"),
           " v",
-          LOCAL_VERSION,
+          LOCAL_VERSION2,
           " \u2192 v",
           updateInfo.latest
         ] }),
@@ -22125,7 +22361,7 @@ function WorktableSection(props) {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_versionRow", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
           "v",
-          LOCAL_VERSION,
+          LOCAL_VERSION2,
           updateStatus === "uptodate" && !updateInfo ? " \xB7 " + t("update.upToDate") : "",
           updateStatus === "failed" && !updateInfo ? " \xB7 " + t("update.checkFail") : ""
         ] }),
