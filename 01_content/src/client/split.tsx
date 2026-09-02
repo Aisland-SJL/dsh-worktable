@@ -1813,6 +1813,7 @@ function ConsolePane() {
     } else if (kind === 'glow') {
       setGlowBlurState(blurDef); splitEnv?.console?.setGlowBlur?.(blurDef)
       setGlowGridState(8); splitEnv?.console?.setGlowGrid?.(8)
+      setGlowSpeedState(50); splitEnv?.console?.setGlowSpeed?.(50)
     } else {
       setCardBlurState(blurDef); splitEnv?.console?.setCardBlur?.(blurDef)
       setGridOpacityState(8); splitEnv?.console?.setGridOpacity?.(8)
