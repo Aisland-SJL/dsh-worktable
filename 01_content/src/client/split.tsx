@@ -1828,6 +1828,8 @@ function ConsolePane() {
     } else {
       setPhotoHslState({ h: 0, s: 100, l: 100 })
       if (photoId) splitEnv?.console?.setPhotoHsl?.(photoId, { h: 0, s: 100, l: 100 })
+      // 照片网格线开关一并复位为默认「开」
+      setPhotoGridState(true); splitEnv?.console?.setPhotoGrid?.(true)
     }
   }
   useLayoutEffect(() => {
