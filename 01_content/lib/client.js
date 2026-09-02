@@ -16833,6 +16833,9 @@ function setSplitEnv(env) {
   splitEnv = env;
 }
 async function postJson(url, body) {
+  if (typeof url !== "string" || !/^\/api\/[A-Za-z0-9/_-]+$/.test(url)) {
+    throw new Error("Invalid request URL");
+  }
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
