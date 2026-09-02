@@ -96,7 +96,7 @@ type ViewState = {
   /** 按背景记忆：纯色/流光的网格线不透明度 %（0-30，默认 5 / 8）*/
   consoleBgPlainGrid?: number
   consoleBgGlowGrid?: number
-  /** 流光移动速度 %（25-1000，默认 500；1000 = 2× 快）*/
+  /** 流光移动速度（25-100，默认 50 = 原速×1；100 = 2× 快）*/
   consoleGlowSpeed?: number
 }
 
@@ -347,7 +347,7 @@ function loadView(): ViewState {
       consoleBgGlowBlur: typeof p.consoleBgGlowBlur === 'number' && p.consoleBgGlowBlur >= 0 && p.consoleBgGlowBlur <= 20 ? Math.round(p.consoleBgGlowBlur) : undefined,
       consoleBgPlainGrid: typeof p.consoleBgPlainGrid === 'number' && p.consoleBgPlainGrid >= 0 && p.consoleBgPlainGrid <= 30 ? Math.round(p.consoleBgPlainGrid) : undefined,
       consoleBgGlowGrid: typeof p.consoleBgGlowGrid === 'number' && p.consoleBgGlowGrid >= 0 && p.consoleBgGlowGrid <= 30 ? Math.round(p.consoleBgGlowGrid) : undefined,
-      consoleGlowSpeed: typeof p.consoleGlowSpeed === 'number' && p.consoleGlowSpeed >= 25 && p.consoleGlowSpeed <= 1000 ? Math.round(p.consoleGlowSpeed) : undefined,
+      consoleGlowSpeed: typeof p.consoleGlowSpeed === 'number' && p.consoleGlowSpeed >= 25 && p.consoleGlowSpeed <= 100 ? Math.round(p.consoleGlowSpeed) : undefined,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls
         if (!src || typeof src !== 'object') return undefined
@@ -1445,7 +1445,7 @@ function WorktableSection(props: any) {
         setPlainGrid: (v: number) => persistView({ consoleBgPlainGrid: v }),
         getGlowGrid: () => viewRef.current.consoleBgGlowGrid ?? 8,
         setGlowGrid: (v: number) => persistView({ consoleBgGlowGrid: v }),
-        getGlowSpeed: () => viewRef.current.consoleGlowSpeed ?? 500,
+        getGlowSpeed: () => viewRef.current.consoleGlowSpeed ?? 50,
         setGlowSpeed: (v: number) => persistView({ consoleGlowSpeed: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v: { h: number; s: number; l: number }) => persistView({ consoleBgPlainHsl: { ...v } }),
