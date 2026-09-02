@@ -8170,10 +8170,10 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleBg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}",
   '.dsh-wt_consoleBg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px}',
   ".dsh-wt_blob{position:absolute;width:56vmax;height:56vmax;border-radius:50%;filter:blur(64px);opacity:.45;mix-blend-mode:screen}",
-  ".dsh-wt_blob1{background:radial-gradient(circle,#ff5f9e,transparent 66%);top:-18%;left:-14%;animation:wtBlob1 13s ease-in-out infinite alternate}",
-  ".dsh-wt_blob2{background:radial-gradient(circle,#7a5cff,transparent 66%);top:4%;right:-20%;animation:wtBlob2 17s ease-in-out infinite alternate}",
-  ".dsh-wt_blob3{background:radial-gradient(circle,#00c2ff,transparent 66%);bottom:-22%;left:14%;animation:wtBlob3 11s ease-in-out infinite alternate}",
-  ".dsh-wt_blob4{background:radial-gradient(circle,#ff9a3d,transparent 66%);bottom:-8%;right:4%;animation:wtBlob4 15s ease-in-out infinite alternate}",
+  ".dsh-wt_blob1{background:radial-gradient(circle,#ff5f9e,transparent 66%);top:-18%;left:-14%;animation:wtBlob1 calc(13s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
+  ".dsh-wt_blob2{background:radial-gradient(circle,#7a5cff,transparent 66%);top:4%;right:-20%;animation:wtBlob2 calc(17s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
+  ".dsh-wt_blob3{background:radial-gradient(circle,#00c2ff,transparent 66%);bottom:-22%;left:14%;animation:wtBlob3 calc(11s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
+  ".dsh-wt_blob4{background:radial-gradient(circle,#ff9a3d,transparent 66%);bottom:-8%;right:4%;animation:wtBlob4 calc(15s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
   "@keyframes wtBlob1{from{transform:translate(0,0) scale(1)}to{transform:translate(14vw,10vh) scale(1.12)}}",
   "@keyframes wtBlob2{from{transform:translate(0,0) scale(1)}to{transform:translate(-13vw,11vh) scale(1.1)}}",
   "@keyframes wtBlob3{from{transform:translate(0,0) scale(1)}to{transform:translate(12vw,-8vh) scale(1.15)}}",
@@ -8184,7 +8184,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleScroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}",
   ".dsh-wt_announceCtr{display:flex;min-height:100%;align-items:center;justify-content:center;box-sizing:border-box}",
   ".dsh-wt_announceCtr .dsh-wt_announce{margin:auto}",
-  ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(8px) saturate(1.15)}",
+  ".dsh-wt_announce{width:100%;max-width:856px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding:26px;border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);box-sizing:border-box;backdrop-filter:blur(8px) saturate(1.15);animation:wtAnnounceIn .28s cubic-bezier(.25,.6,.3,1)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_announce{background:linear-gradient(135deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.65) 30%,rgba(255,255,255,.12) 60%,rgba(31,41,55,.06) 100%),rgba(255,255,255,.34);box-shadow:0 10px 28px rgba(31,41,55,.18),inset 0 1px 0 rgba(255,255,255,1)}",
   ".dsh-wt_announceHead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--wt-border)}",
   ".dsh-wt_announceVer{font-size:15px;font-weight:700;color:var(--wt-text)}",
@@ -8210,6 +8210,7 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dockBtn{position:relative;width:32px;height:32px;padding:0;border:none;border-radius:9px;background:transparent;color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}",
   ".dsh-wt_dockBadge{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.95);animation:wtAnnPulse 1.6s ease-in-out infinite}",
   "@keyframes wtAnnPulse{0%,100%{opacity:1}50%{opacity:.3}}",
+  "@keyframes wtAnnounceIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}",
   ".dsh-wt_dockBtn svg{transition:transform .15s ease}",
   ".dsh-wt_dockBtn:hover svg{transform:scale(1.12)}",
   ".dsh-wt_dockBtn:hover{background:rgba(255,255,255,.14)}",
@@ -8533,6 +8534,7 @@ var zh = {
   "console.bgTipT": "\u7F51\u683C\u7EBF\u900F\u660E\u5EA6",
   "console.bgTipH": "\u8272\u76F8",
   "console.bgTipS": "\u9971\u548C\u5EA6",
+  "console.bgTipSpeed": "\u6D41\u5149\u79FB\u52A8\u901F\u5EA6\uFF08100=\u9ED8\u8BA4\uFF0C\u8D8A\u5927\u8D8A\u5FEB\uFF09",
   "console.bgTipL": "\u660E\u5EA6",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
@@ -8752,6 +8754,7 @@ var en = {
   "console.bgTipT": "Grid opacity",
   "console.bgTipH": "Hue",
   "console.bgTipS": "Saturation",
+  "console.bgTipSpeed": "Glow speed (100 = default, higher is faster)",
   "console.bgTipL": "Lightness",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
@@ -18093,6 +18096,7 @@ function ConsolePane() {
   const [glowBlur, setGlowBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowBlur?.() ?? 8);
   const [plainGrid, setPlainGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainGrid?.() ?? 5);
   const [glowGrid, setGlowGridState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowGrid?.() ?? 8);
+  const [glowSpeed, setGlowSpeedState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowSpeed?.() ?? 100);
   const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
   const [updStatus, setUpdStatus] = (0, import_react.useState)(() => readCache().status);
   const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info);
@@ -18232,6 +18236,11 @@ function ConsolePane() {
       setGlowGridState(v);
       splitEnv?.console?.setGlowGrid?.(v);
     }
+  };
+  const onGlowSpeed = (n) => {
+    const v = Math.min(Math.max(Math.round(n), 25), 400);
+    setGlowSpeedState(v);
+    splitEnv?.console?.setGlowSpeed?.(v);
   };
   const runUpdateCheck = async (force) => {
     if (updBusyRef.current) return;
@@ -18549,7 +18558,7 @@ function ConsolePane() {
     { mode: "light", key: "console.themeLight" },
     { mode: "system", key: "console.themeSystem" }
   ];
-  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)", ["--wt-gridPlain"]: "rgba(255,255,255," + plainGrid / 100 + ")", ["--wt-gridPlainLight"]: "rgba(27,31,36," + plainGrid / 100 + ")" } : {}, ...bg === "glow" ? { ["--wt-gridGlow"]: "rgba(255,255,255," + glowGrid / 100 + ")", ["--wt-gridGlowLight"]: "rgba(27,31,36," + glowGrid / 100 + ")" } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: (bg === "plain" ? plainBlur : bg === "glow" ? glowBlur : cardBlur) + "px" }, children: [
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_console", "data-wt-theme": resolvedTheme, "data-wt-shape": shape, "data-wt-bg": bg, "data-wt-grid": bg === "photo" && !photoGrid ? "off" : "on", style: { ...bg === "plain" ? { ["--wt-bg"]: "hsl(" + plainHsl.h + ", " + plainHsl.s + "%, " + plainHsl.l + "%)", ["--wt-gridPlain"]: "rgba(255,255,255," + plainGrid / 100 + ")", ["--wt-gridPlainLight"]: "rgba(27,31,36," + plainGrid / 100 + ")" } : {}, ...bg === "glow" ? { ["--wt-gridGlow"]: "rgba(255,255,255," + glowGrid / 100 + ")", ["--wt-gridGlowLight"]: "rgba(27,31,36," + glowGrid / 100 + ")", ["--wt-glowScale"]: String(100 / glowSpeed) } : {}, ...bg === "photo" ? { ["--wt-gridPhoto"]: "rgba(255,255,255," + gridOpacity / 100 + ")" } : {}, ["--wt-cardBlur"]: (bg === "plain" ? plainBlur : bg === "glow" ? glowBlur : cardBlur) + "px" }, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_consoleBg", "aria-hidden": true, style: bg === "glow" && (glowHsl.h !== 0 || glowHsl.s !== 100 || glowHsl.l !== 100) ? { filter: "hue-rotate(" + glowHsl.h + "deg) saturate(" + glowHsl.s + "%) brightness(" + glowHsl.l + "%)" } : void 0, children: [
       bg === "photo" && (bgVideo ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ConsoleVideo, { src: bgVideo, style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : bgPhoto ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("img", { className: "dsh-wt_consoleMedia", src: bgPhoto, alt: "", style: photoHsl.h !== 0 || photoHsl.s !== 100 || photoHsl.l !== 100 ? { filter: "hue-rotate(" + photoHsl.h + "deg) saturate(" + photoHsl.s + "%) brightness(" + photoHsl.l + "%)" } : void 0 }) : null),
       bg === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
@@ -18756,6 +18765,11 @@ function ConsolePane() {
           const sMax = bgEdit === "plain" ? 100 : 200;
           const lMax = bgEdit === "plain" ? 100 : 200;
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+            bgEdit === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipSpeed"), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 25, max: 400, step: 5, value: glowSpeed, onChange: (e) => onGlowSpeed(Number(e.target.value)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: glowSpeed, min: 25, max: 400, onCommit: onGlowSpeed })
+            ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipB"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "B" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 20, step: 1, value: bgEdit === "plain" ? plainBlur : bgEdit === "glow" ? glowBlur : cardBlur, onChange: (e) => onModeBlur(bgEdit, Number(e.target.value)) }),
@@ -20216,6 +20230,7 @@ function loadView() {
       consoleBgGlowBlur: typeof p.consoleBgGlowBlur === "number" && p.consoleBgGlowBlur >= 0 && p.consoleBgGlowBlur <= 20 ? Math.round(p.consoleBgGlowBlur) : void 0,
       consoleBgPlainGrid: typeof p.consoleBgPlainGrid === "number" && p.consoleBgPlainGrid >= 0 && p.consoleBgPlainGrid <= 30 ? Math.round(p.consoleBgPlainGrid) : void 0,
       consoleBgGlowGrid: typeof p.consoleBgGlowGrid === "number" && p.consoleBgGlowGrid >= 0 && p.consoleBgGlowGrid <= 30 ? Math.round(p.consoleBgGlowGrid) : void 0,
+      consoleGlowSpeed: typeof p.consoleGlowSpeed === "number" && p.consoleGlowSpeed >= 25 && p.consoleGlowSpeed <= 400 ? Math.round(p.consoleGlowSpeed) : void 0,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls;
         if (!src || typeof src !== "object") return void 0;
@@ -21275,6 +21290,8 @@ function WorktableSection(props) {
         setPlainGrid: (v) => persistView({ consoleBgPlainGrid: v }),
         getGlowGrid: () => viewRef.current.consoleBgGlowGrid ?? 8,
         setGlowGrid: (v) => persistView({ consoleBgGlowGrid: v }),
+        getGlowSpeed: () => viewRef.current.consoleGlowSpeed ?? 100,
+        setGlowSpeed: (v) => persistView({ consoleGlowSpeed: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
         getGlowHsl: () => viewRef.current.consoleBgGlowHsl ?? { h: 0, s: 100, l: 100 },
