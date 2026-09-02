@@ -8534,7 +8534,7 @@ var zh = {
   "console.bgTipT": "\u7F51\u683C\u7EBF\u900F\u660E\u5EA6",
   "console.bgTipH": "\u8272\u76F8",
   "console.bgTipS": "\u9971\u548C\u5EA6",
-  "console.bgTipSpeed": "\u6D41\u5149\u79FB\u52A8\u901F\u5EA6\uFF08100=\u9ED8\u8BA4\uFF0C\u8D8A\u5927\u8D8A\u5FEB\uFF09",
+  "console.bgTipSpeed": "\u6D41\u5149\u79FB\u52A8\u901F\u5EA6\uFF08500=\u9ED8\u8BA4\uFF0C\u8D8A\u5927\u8D8A\u5FEB\uFF09",
   "console.bgTipL": "\u660E\u5EA6",
   "console.shapeSquare": "\u65B9\u5F62",
   "console.shapeCircle": "\u5706\u5F62",
@@ -8754,7 +8754,7 @@ var en = {
   "console.bgTipT": "Grid opacity",
   "console.bgTipH": "Hue",
   "console.bgTipS": "Saturation",
-  "console.bgTipSpeed": "Glow speed (100 = default, higher is faster)",
+  "console.bgTipSpeed": "Glow speed (500 = default, higher is faster)",
   "console.bgTipL": "Lightness",
   "console.shapeSquare": "Square",
   "console.shapeCircle": "Circle",
@@ -18096,7 +18096,7 @@ function ConsolePane() {
   const [glowBlur, setGlowBlurState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowBlur?.() ?? 8);
   const [plainGrid, setPlainGridState] = (0, import_react.useState)(() => splitEnv?.console?.getPlainGrid?.() ?? 5);
   const [glowGrid, setGlowGridState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowGrid?.() ?? 8);
-  const [glowSpeed, setGlowSpeedState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowSpeed?.() ?? 100);
+  const [glowSpeed, setGlowSpeedState] = (0, import_react.useState)(() => splitEnv?.console?.getGlowSpeed?.() ?? 500);
   const [annOpen, setAnnOpen] = (0, import_react.useState)(false);
   const [updStatus, setUpdStatus] = (0, import_react.useState)(() => readCache().status);
   const [updInfo, setUpdInfo] = (0, import_react.useState)(() => readCache().info);
@@ -18238,7 +18238,7 @@ function ConsolePane() {
     }
   };
   const onGlowSpeed = (n) => {
-    const v = Math.min(Math.max(Math.round(n), 25), 400);
+    const v = Math.min(Math.max(Math.round(n), 25), 1e3);
     setGlowSpeedState(v);
     splitEnv?.console?.setGlowSpeed?.(v);
   };
@@ -18767,8 +18767,8 @@ function ConsolePane() {
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
             bgEdit === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipSpeed"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 25, max: 400, step: 5, value: glowSpeed, onChange: (e) => onGlowSpeed(Number(e.target.value)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: glowSpeed, min: 25, max: 400, onCommit: onGlowSpeed })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 25, max: 1e3, step: 5, value: glowSpeed, onChange: (e) => onGlowSpeed(Number(e.target.value)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: glowSpeed, min: 25, max: 1e3, onCommit: onGlowSpeed })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipB"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "B" }),
@@ -20230,7 +20230,7 @@ function loadView() {
       consoleBgGlowBlur: typeof p.consoleBgGlowBlur === "number" && p.consoleBgGlowBlur >= 0 && p.consoleBgGlowBlur <= 20 ? Math.round(p.consoleBgGlowBlur) : void 0,
       consoleBgPlainGrid: typeof p.consoleBgPlainGrid === "number" && p.consoleBgPlainGrid >= 0 && p.consoleBgPlainGrid <= 30 ? Math.round(p.consoleBgPlainGrid) : void 0,
       consoleBgGlowGrid: typeof p.consoleBgGlowGrid === "number" && p.consoleBgGlowGrid >= 0 && p.consoleBgGlowGrid <= 30 ? Math.round(p.consoleBgGlowGrid) : void 0,
-      consoleGlowSpeed: typeof p.consoleGlowSpeed === "number" && p.consoleGlowSpeed >= 25 && p.consoleGlowSpeed <= 400 ? Math.round(p.consoleGlowSpeed) : void 0,
+      consoleGlowSpeed: typeof p.consoleGlowSpeed === "number" && p.consoleGlowSpeed >= 25 && p.consoleGlowSpeed <= 1e3 ? Math.round(p.consoleGlowSpeed) : void 0,
       consoleBgPhotoHsls: (() => {
         const src = p.consoleBgPhotoHsls;
         if (!src || typeof src !== "object") return void 0;
@@ -21290,7 +21290,7 @@ function WorktableSection(props) {
         setPlainGrid: (v) => persistView({ consoleBgPlainGrid: v }),
         getGlowGrid: () => viewRef.current.consoleBgGlowGrid ?? 8,
         setGlowGrid: (v) => persistView({ consoleBgGlowGrid: v }),
-        getGlowSpeed: () => viewRef.current.consoleGlowSpeed ?? 100,
+        getGlowSpeed: () => viewRef.current.consoleGlowSpeed ?? 500,
         setGlowSpeed: (v) => persistView({ consoleGlowSpeed: v }),
         getPlainHsl: () => viewRef.current.consoleBgPlainHsl ?? { h: -140, s: 31, l: 6 },
         setPlainHsl: (v) => persistView({ consoleBgPlainHsl: { ...v } }),
