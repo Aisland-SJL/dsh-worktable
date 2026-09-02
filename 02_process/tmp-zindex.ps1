@@ -1,0 +1,4 @@
+$ErrorActionPreference = 'Stop'
+opencli --profile 74u3g3us browser wt eval "(() => { const root = document.querySelector('[data-phase]'); if (!root) return 'no-root'; const out = []; let el = root; let d = 0; while (el && d < 8) { const cs = getComputedStyle(el); out.push({ tag: el.tagName, z: cs.zIndex, pos: cs.position, cls: String(el.className).slice(0, 40) }); el = el.parentElement; d++; } return JSON.stringify(out); })()"
+Start-Sleep -Milliseconds 300
+opencli --profile 74u3g3us browser wt eval "(() => { const divs = Array.from(document.querySelectorAll('.dsh-wt_splitDivider')); return JSON.stringify({ count: divs.length, one: divs[0] ? { z: getComputedStyle(divs[0]).zIndex, pos: getComputedStyle(divs[0]).position, rect: (() => { const r = divs[0].getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(','); })() } : null }); })()"

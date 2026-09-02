@@ -797,6 +797,12 @@ export const splitStore: SplitState = {
     this.savedMarginRight = viewArea.style.marginRight
     this.savedMarginTop = viewArea.style.marginTop
     this.refreshGeom()
+    // 存档 sanitize：chatW 等尺寸按本布局规格钳制（防老版本/脏存值越界，如 1067 > max 600）
+    if (this.geom) {
+      const minContent = main.reduce((a: number, p: SplitPane) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP
+      const hi = Math.max(spec.chatWidth.min, (this.geom.right - this.geom.left) - minContent)
+      this.chatW = clamp(Math.round(this.chatW), spec.chatWidth.min, Math.min(spec.chatWidth.max, hi))
+    }
     // 均衡默认：无存档尺寸时按当前可用空间比例分配，
     // 不再出现“其余窗全部贴 min、最后一个吃掉全部余量”的悬殊观感。
     const g0 = this.geom
@@ -951,7 +957,7 @@ export const splitStore: SplitState = {
     const main = spec.main ?? []
     const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP
     const hi = Math.max(spec.chatWidth.min, colW - minContent)
-    this.chatW = clamp(Math.round(w), spec.chatWidth.min, hi)
+    this.chatW = clamp(Math.round(w), spec.chatWidth.min, Math.min(spec.chatWidth.max, hi))
     this.applyMargin()
     this.persist()
     this.notify()
@@ -3053,7 +3059,7 @@ function WorkspaceLayer(props: { spec: LayoutSpec; geom: Geom | null; chatW: num
         title={hasLeft ? '拖动调整左右列宽' : '拖动调整聊天宽度'}
         style={{
           position: 'fixed',
-          left: (hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.right - chatW)) - DIVIDER / 2,
+          left: (hasLeft ? g.left + leftW : (chatLeft ? g.left + chatW : g.right - chatW)) - DIVIDER / 2 + (hasLeft ? 0 : (chatLeft ? 3 : -3)),
           top: hasLeft || chatFull ? barTop + BAR_H : bodyTop,
           width: DIVIDER,
           height: hasLeft || chatFull ? g.bottom - barTop - BAR_H : mainH,
