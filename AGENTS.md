@@ -138,6 +138,7 @@ node --check lib/index.js
     徽章、无 💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
   - 背景三选一（data-wt-bg）：纯色/流光/自定义，各自独立记忆——色相/饱和度/明度（-180..180/0..200，纯色随主题默认：深 #0a0d13、浅 #eef1f5）、
     贴片模糊 B（0-20；预设 纯色0/流光8/自定义8）、网格线不透明度 T（0-30；纯色/流光各自）、
+    流光速度 S（0-100，0=完全不动，默认50=原速，consoleGlowSpeed；--wt-glowScale=50/速度；恢复初始一并复位）、
     照片网格开关（consoleBgPhotoGrid）+ 网格透明度（consoleBgGridOpacity）；卡片 glass 底含 backdrop-filter blur(var(--wt-cardBlur))。
   - 自定义背景 = 媒体库（照片+视频）：IndexedDB photoRecords（id/createdAt/kind/blob/order）；
     首用预置两张默认图（defaultBg.ts SVG 极光 + waveBg.ts JPEG 181KB，标记 defaultBgSeeded.v1）；

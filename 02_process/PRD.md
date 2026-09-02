@@ -169,6 +169,7 @@ ctx.slots.register({
     consoleCols/consoleShape/consoleBg（plain|glow|photo）；
     各背景独立记忆：consoleBgPlainHsl、consoleBgGlowHsl、consoleBgPlainGrid、consoleBgGlowGrid、
     consoleBgPlainBlur、consoleBgGlowBlur、consoleCardBlur（照片贴片模糊，预设 纯色0/流光8/自定义8）、
+    consoleGlowSpeed（流光速度 0-100，0=完全不动，默认 50）、
     consoleBgPhotoId、consoleBgPhotoHsls（媒体 id→HSL）、consoleBgPhotoGrid、consoleBgGridOpacity；
   - `dsh.worktable.projects.v1`：order/lastUsed/hidden/nameOverrides/iconOverrides/
     removed/shortcuts/layouts/views/bindings/folders；
