@@ -17347,7 +17347,7 @@ var splitStore = {
     if (this.geom) {
       const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP;
       const hi = Math.max(spec.chatWidth.min, this.geom.right - this.geom.left - minContent);
-      this.chatW = clamp(Math.round(this.chatW), spec.chatWidth.min, Math.min(spec.chatWidth.max, hi));
+      this.chatW = clamp(Math.round(this.chatW), spec.chatWidth.min, hi);
     }
     const g0 = this.geom;
     if (g0) {
@@ -17487,7 +17487,7 @@ var splitStore = {
     const main = spec.main ?? [];
     const minContent = main.reduce((a, p) => a + p.min, 0) + Math.max(0, main.length - 1) * GAP;
     const hi = Math.max(spec.chatWidth.min, colW - minContent);
-    this.chatW = clamp(Math.round(w), spec.chatWidth.min, Math.min(spec.chatWidth.max, hi));
+    this.chatW = clamp(Math.round(w), spec.chatWidth.min, hi);
     this.applyMargin();
     this.persist();
     this.notify();
@@ -19749,7 +19749,7 @@ function WorkspaceLayer(props) {
         title: hasLeft ? "\u62D6\u52A8\u8C03\u6574\u5DE6\u53F3\u5217\u5BBD" : "\u62D6\u52A8\u8C03\u6574\u804A\u5929\u5BBD\u5EA6",
         style: {
           position: "fixed",
-          left: (hasLeft ? g.left + leftW : chatLeft ? g.left + chatW : g.right - chatW) - DIVIDER / 2 + (hasLeft ? 0 : chatLeft ? 3 : -3),
+          left: (hasLeft ? g.left + leftW : chatLeft ? g.left + chatW : g.right - chatW) - DIVIDER / 2,
           top: hasLeft || chatFull ? barTop + BAR_H : bodyTop,
           width: DIVIDER,
           height: hasLeft || chatFull ? g.bottom - barTop - BAR_H : mainH,
