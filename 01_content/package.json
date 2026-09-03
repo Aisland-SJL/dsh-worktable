@@ -1,7 +1,7 @@
 {
   "name": "dsh-worktable",
   "description": "工作台 Worktable：DeepSeek Harness 侧边栏的 agent 级项目容器（应用抽屉）",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
