@@ -2562,6 +2562,407 @@ function buildCustomLayoutPrompt(req: string): string {
     }
   }
 
+  // 弹层（新增项目/设置/绑定/图标选择/确认等）：宽态与收起态（rail）共用。
+  // 收起侧边栏后控制室「创建卡片」/侧栏操作仍需弹出这些浮层，若只随宽态分支渲染则看不到弹窗。
+  const popupLayer = (
+    <>
+    {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => setAddOpen(false)} />}
+    {addOpen && (
+      <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 360, zIndex: 80 }}>
+        <span className="dsh-wt_menuLabel">{t('add.chooseLayout')}</span>
+        <div className="dsh-wt_presets">
+          {PRESET_DEFS.map((def) => (
+            <button
+              key={def.id}
+              type="button"
+              className="dsh-wt_preset"
+              data-on={wsPreset === def.id ? 'true' : 'false'}
+              onClick={() => { setWsPreset(def.id); setWsError(false) }}
+            >
+              {presetThumb(def.id)}
+            </button>
+          ))}
+          <button type="button" className="dsh-wt_preset dsh-wt_presetAdd" title={t('customLayout.addTitle')}
+            onClick={() => { setAddOpen(false); setCustomOpen(true) }}>
+            <span className="dsh-wt_presetAddIcon" aria-hidden>＋</span>
+            <span className="dsh-wt_presetAddText">{t('customLayout.add')}</span>
+          </button>
+        </div>
+        <div className="dsh-wt_addForm">
+          <input type="text" placeholder={t('add.layoutNamePh')} value={wsName}
+            onChange={(e) => { setWsName(e.target.value); setWsError(false) }} />
+          <div className="dsh-wt_addFolderRow">
+            <span className="dsh-wt_customLabel">{t('add.folderParent')}</span>
+            <span className={'dsh-wt_addFolderPath' + (wsFolderParent ? '' : ' dsh-wt_addFolderPathNone')} title={wsFolderParent || ''}>
+              {wsFolderParent || t('add.folderNone')}
+            </span>
+            <button type="button" className="dsh-wt_bindFolderChange" onClick={() => { pickFolder((p) => { setWsFolderParent(p); setWsFolderError(false) }); setWsError(false) }}>{t('add.folderPick')}</button>
+          </div>
+          <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
+        </div>
+        {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
+        {wsFolderError && <p className="dsh-wt_addError">{t('add.folderRequired')}</p>}
+      </div>
+    )}
+
+    {iconPick && (
+      <>
+        <div className="dsh-wt_popBackdrop" onClick={() => setIconPick(null)} />
+        <div className="dsh-wt_iconPop" style={{ left: iconPick.x, top: iconPick.y }}>
+          <div className="dsh-wt_iconPopTitle">{t('icons.title')}</div>
+          <div className="dsh-wt_iconGrid">
+            {EMOJI_SET.map((em) => {
+              const cur = iconPick.kind === 'layout'
+                ? (projects.layouts.find((l) => l.id === iconPick.id)?.icon ?? '🧱')
+                : iconPick.kind === 'shortcut'
+                  ? (projects.shortcuts.find((s) => s.id === iconPick.id)?.icon ?? '🔗')
+                  : (projects.iconOverrides[iconPick.id] ?? metas[iconPick.id]?.icon ?? '📦')
+              return (
+                <button
+                  key={em}
+                  type="button"
+                  className="dsh-wt_iconCell"
+                  data-on={cur === em ? 'true' : 'false'}
+                  onClick={() => {
+                    if (iconPick.kind === 'layout') setLayoutIcon(iconPick.id, em)
+                    else if (iconPick.kind === 'shortcut') setShortcutIcon(iconPick.id, em)
+                    else setProjectIcon(iconPick.id, em)
+                    setIconPick(null)
+                  }}
+                >{em}</button>
+              )
+            })}
+          </div>
+        </div>
+      </>
+    )}
+
+    {viewOptionsOpen && <div className="dsh-wt_popBackdrop" onClick={() => setViewOptionsOpen(false)} />}
+    {viewOptionsOpen && (
+      <div ref={settingsRef} className="dsh-wt_manage dsh-wt_pop dsh-wt_settings" style={{ position: 'fixed', left: popLeft, top: settingsTop ?? popTop, width: 280, zIndex: 80 }}>
+        <button
+          type="button"
+          className="dsh-wt_settingsClose"
+          aria-label={t('manage.done')}
+          title={t('manage.done')}
+          onClick={() => setViewOptionsOpen(false)}
+        >✕</button>
+        {updateInfo && (
+          <div className="dsh-wt_updateCard">
+            <div className="dsh-wt_updateHead"><span className="dsh-wt_updateDot" />{t('update.available')} · v{updateInfo.latest}</div>
+            <div className="dsh-wt_updateVers">{t('update.current')} v{LOCAL_VERSION} → v{updateInfo.latest}</div>
+            {updateInfo.notes && <div className="dsh-wt_updateNotes">{updateInfo.notes}</div>}
+            <div className="dsh-wt_updateCmd">{UPGRADE_CMD}</div>
+            <div className="dsh-wt_updateBtns">
+              <button type="button" className="dsh-wt_updateBtn dsh-wt_updateBtnCopy" onClick={() => void copyUpgradeAi()}>
+                {updateCopied ? '✓ ' + t('update.copied') : <>{ICON_SPARK} {t('update.copyAi')}</>}
+              </button>
+              <button type="button" className="dsh-wt_updateBtn" onClick={skipUpdate}>{t('update.skip')}</button>
+            </div>
+            <div className="dsh-wt_updateHint">{t('update.upgradeHint')}</div>
+          </div>
+        )}
+        <div className="dsh-wt_manageHead">
+          <span className="dsh-wt_manageTitle">{t('sort.label')}</span>
+        </div>
+        <div className="dsh-wt_sortRow">
+          <button type="button" className="dsh-wt_sortBtn" data-on={view.orderBy === 'manual'}
+            onClick={() => persistView({ orderBy: 'manual' })}>{t('sort.manual')}</button>
+          <button type="button" className="dsh-wt_sortBtn" data-on={view.orderBy === 'recent'}
+            onClick={() => persistView({ orderBy: 'recent' })}>{t('sort.recent')}</button>
+        </div>
+        <div className="dsh-wt_menuSep" />
+        <div className="dsh-wt_manageHead">
+          <span className="dsh-wt_manageTitle">{t('manage.title')}</span>
+        </div>
+        {effectiveOrder.map((id) => {
+          const meta = metas[id]
+          const layout = projects.layouts.find((l) => l.id === id)
+          const display = projects.nameOverrides[id] ?? layout?.title ?? meta?.name ?? id
+          const isHidden = projects.hidden.includes(id)
+          return (
+            <div
+              key={id}
+              className={'dsh-wt_manageRow' + (isHidden ? ' dsh-wt_manageRowOff' : '')}
+              draggable
+              onDragStart={(e: any) => { dragIdRef.current = id; try { e.dataTransfer.effectAllowed = 'move' } catch {} }}
+              onDragOver={(e: any) => {
+                e.preventDefault()
+                const dragId = dragIdRef.current
+                if (dragId && dragId !== id) moveTo(dragId, id)
+              }}
+              onDrop={(e: any) => e.preventDefault()}
+              onDragEnd={() => { dragIdRef.current = null }}
+            >
+              <span className="dsh-wt_manageGrip" aria-hidden>≡</span>
+              {layout
+                ? <span
+                    className="dsh-wt_manageIcon dsh-wt_iconPick"
+                    role="button"
+                    tabIndex={0}
+                    title={t('icons.change')}
+                    onClick={(e) => { e.stopPropagation(); openIconPick('layout', id, e.currentTarget as HTMLElement) }}
+                  >{layout.icon ?? '🧱'}</span>
+                : <span
+                    className="dsh-wt_manageIcon dsh-wt_iconPick"
+                    role="button"
+                    tabIndex={0}
+                    title={t('icons.change')}
+                    onClick={(e) => { e.stopPropagation(); openIconPick('project', id, e.currentTarget as HTMLElement) }}
+                  >{projects.iconOverrides[id] ?? meta?.icon ?? '📦'}</span>}
+              <RenameInput initial={display} placeholder={t('manage.renamePh')} onCommit={(v) => renameProject(id, v)} />
+              <button type="button" className="dsh-wt_manageBtn" title={isHidden ? t('manage.show') : t('manage.hide')} onClick={() => toggleHidden(id)}>
+                <EyeIcon closed={isHidden} />
+              </button>
+              <button type="button" className="dsh-wt_manageBtn" title={t('manage.changeView')} onClick={() => setViewPickFor(id)}>🧩</button>
+              <button
+                type="button"
+                className="dsh-wt_manageBtn"
+                title={layout ? t('manage.deleteLayout') : t('manage.deleteProject')}
+                onClick={() => askDelete(layout ? 'layout' : 'project', id, display)}
+              >✕</button>
+            </div>
+          )
+        })}
+        {projects.shortcuts.map((s) => (
+          <div key={s.id} className="dsh-wt_manageRow dsh-wt_manageRowSc">
+            <span className="dsh-wt_manageGrip" aria-hidden>🔗</span>
+            <span
+              className="dsh-wt_manageIcon dsh-wt_iconPick"
+              role="button"
+              tabIndex={0}
+              title={t('icons.change')}
+              onClick={(e) => { e.stopPropagation(); openIconPick('shortcut', s.id, e.currentTarget as HTMLElement) }}
+            >{s.icon}</span>
+            <span className="dsh-wt_manageScName">{s.name}</span>
+            <button type="button" className="dsh-wt_manageBtn" title={t('manage.deleteShortcut')} onClick={() => askDelete('shortcut', s.id, s.name)}>✕</button>
+          </div>
+        ))}
+        <div className="dsh-wt_versionRow">
+          <span>
+            v{LOCAL_VERSION}
+            {updateStatus === 'uptodate' && !updateInfo ? ' · ' + t('update.upToDate') : ''}
+            {updateStatus === 'failed' && !updateInfo ? ' · ' + t('update.checkFail') : ''}
+          </span>
+          <span className="dsh-wt_versionActions">
+            <button type="button" className="dsh-wt_updateBtn" disabled={updateStatus === 'checking'} onClick={() => void checkUpdates(true)}>
+              {updateStatus === 'checking' ? t('update.checking') : t('update.checkNow')}
+            </button>
+            <span className="dsh-wt_updateToggle" onClick={toggleUpdateCheck}>
+              <span>{t('update.autoCheck')}</span>
+              <span className="dsh-wt_updateSwitch" data-off={updateCheckOn ? undefined : 'true'} />
+            </span>
+          </span>
+        </div>
+      </div>
+    )}
+
+    {viewPickFor && <div className="dsh-wt_popBackdrop" style={{ zIndex: 81 }} onClick={() => setViewPickFor(null)} />}
+    {viewPickFor && (
+      <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 320, zIndex: 82 }}>
+        <span className="dsh-wt_menuLabel">{t('viewPick.title')}</span>
+        <div className="dsh-wt_presets">
+          {PRESET_DEFS.map((def) => {
+            const cur = projects.layouts.find((l) => l.id === viewPickFor) ?? projects.views[viewPickFor]
+            return (
+              <button
+                key={def.id}
+                type="button"
+                className="dsh-wt_preset"
+                data-on={cur && presetOf(cur) === def.id ? 'true' : 'false'}
+                onClick={() => applyLayoutChange(viewPickFor, def.id)}
+              >
+                {presetThumb(def.id)}
+              </button>
+            )
+          })}
+          <button type="button" className="dsh-wt_preset dsh-wt_presetAdd" title={t('customLayout.addTitle')}
+            onClick={() => { setViewPickFor(null); setCustomOpen(true) }}>
+            <span className="dsh-wt_presetAddIcon" aria-hidden>＋</span>
+            <span className="dsh-wt_presetAddText">{t('customLayout.add')}</span>
+          </button>
+        </div>
+      </div>
+    )}
+
+    {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { setBindPick(null); setBindListOpen(false) }} />}
+    {bindPick && (
+      <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
+        {/* 项目文件夹框（格式基准）：第一行 emoji+标题，第二行路径；可随时更改 */}
+        <div className="dsh-wt_bindFolderBox">
+          <div className="dsh-wt_bindFolderRow">
+            <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
+            <button type="button" className="dsh-wt_bindFolderChange" onClick={changeBindFolder}>{t('bind.folderChange')} ↻</button>
+          </div>
+          <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
+            {projects.folders[bindPick.id] ?? t('bind.folderNone')}
+          </div>
+        </div>
+        {/* 绑定对话框（与项目文件夹同格式）：第一行 💬+标题（最右解绑）；第二行 分组 | 对话名（点击右侧弹列表，再点反选收起）；框内下方：说明 */}
+        <div className="dsh-wt_bindFolderBox">
+          <div className="dsh-wt_bindFolderRow">
+            <span className="dsh-wt_bindFolderLabel">💬 {t('bind.title')}</span>
+            {projects.bindings[bindPick.id] && (
+              <button type="button" className="dsh-wt_bindUnbind" onClick={() => setProjectBinding(bindPick.id, null)}>{t('bind.unbind')} ✕</button>
+            )}
+          </div>
+          {(() => {
+            const sid = projects.bindings[bindPick.id]
+            if (!sid) {
+              return (
+                <button type="button" className="dsh-wt_bindConvRow dsh-wt_bindConvRowNone" title={t('bind.tipUnbound')} onClick={() => setBindListOpen((v) => !v)}>
+                  <span className="dsh-wt_bindNoneText">{t('bind.unbound')} · {t('bind.clickPick')}</span>
+                </button>
+              )
+            }
+            const info = bindInfoOf(bindGroups, sid)
+            return (
+              <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen((v) => !v)}>
+                <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
+                <span className="dsh-wt_bindSep" aria-hidden>|</span>
+                <span className="dsh-wt_bindConvName" title={info.title}>{info.title}</span>
+                <span className="dsh-wt_bindConvChevron" aria-hidden>▾</span>
+              </button>
+            )
+          })()}
+          <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
+        </div>
+      </div>
+    )}
+    {/* 对话列表弹层：点「绑定对话」行弹出（优先右侧，放不下翻到左侧）；选中即绑定并收起 */}
+    {bindPick && bindListOpen && (() => {
+      // 主弹窗实际渲染宽 = 280 + 菜单内边距/边框（约 292），右侧列表按 300 偏移避免重叠
+      const rightFits = bindPick.x + 300 + 260 <= window.innerWidth - 8
+      const listLeft = rightFits ? bindPick.x + 300 : Math.max(8, bindPick.x - 268)
+      return (
+      <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop" style={{ position: 'fixed', left: listLeft, top: clamp(bindPick.y, 8, window.innerHeight - 348), width: 260, zIndex: 86 }}>
+        <div className="dsh-wt_selectList dsh-wt_bindList">
+          {bindGroups.map((g, gi) => (
+            <Fragment key={g.title || 'g' + gi}>
+              {g.title && (
+                <>
+                  <div className="dsh-wt_selectDivider" />
+                  <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                </>
+              )}
+              {g.sessions.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={'dsh-wt_selectItem' + (projects.bindings[bindPick.id] === s.id ? ' dsh-wt_selectItemOn' : '')}
+                  onClick={() => { setProjectBinding(bindPick.id, s.id); setBindListOpen(false) }}
+                >
+                  <span className="dsh-wt_selectItemTitle">{s.title}</span>
+                  {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+                </button>
+              ))}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+      )
+    })()}
+
+    {/* 控制室强制绑定弹窗：左「加入现有对话」+ 右「新建对话」，选定/建成后自动打开控制室 */}
+    {consoleBind && <div className="dsh-wt_popBackdrop" style={{ zIndex: 85 }} onClick={() => setConsoleBind(null)} />}
+    {consoleBind && (
+      <div className="dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop" style={{ position: 'fixed', left: consoleBind.x, top: consoleBind.y, width: 560, zIndex: 86 }}>
+        <div className="dsh-wt_consoleBindCols">
+          <div className="dsh-wt_consoleBindCol">
+            <span className="dsh-wt_consoleBindLabel">➕ {t('console.joinExisting')}</span>
+            <div className="dsh-wt_selectList dsh-wt_consoleBindList">
+              {consoleGroups.map((g, gi) => (
+                <Fragment key={g.title || 'g' + gi}>
+                  {g.title && (
+                    <>
+                      <div className="dsh-wt_selectDivider" />
+                      <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                    </>
+                  )}
+                  {g.sessions.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={'dsh-wt_selectItem' + (projects.bindings[CONSOLE_ID] === s.id ? ' dsh-wt_selectItemOn' : '')}
+                      onClick={() => bindConsoleExisting(s.id)}
+                    >
+                      <span className="dsh-wt_selectItemTitle">{s.title}</span>
+                      {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+                    </button>
+                  ))}
+                </Fragment>
+              ))}
+              {consoleGroups.length === 0 && <div className="dsh-wt_consoleBindEmpty">{t('console.noSessions')}</div>}
+            </div>
+          </div>
+          <div className="dsh-wt_consoleBindCol dsh-wt_consoleBindColNew">
+            <span className="dsh-wt_consoleBindLabel">✨ {t('console.newConv')}</span>
+            <select className="dsh-wt_consoleSelect" value={consoleMode} onChange={(e) => setConsoleMode(e.target.value as 'none' | 'existing' | 'new')}>
+              <option value="none">{t('console.groupNone')}</option>
+              <option value="existing">{t('console.groupExisting')}</option>
+              <option value="new">{t('console.groupNew')}</option>
+            </select>
+            {consoleMode === 'existing' && (
+              <select className="dsh-wt_consoleSelect" value={consoleWsId} onChange={(e) => setConsoleWsId(e.target.value)}>
+                {listWorkspaces().map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
+              </select>
+            )}
+            {consoleMode === 'new' && (
+              <>
+                <input className="dsh-wt_consoleInput" placeholder={t('console.newParentPh')} value={consoleParent} onChange={(e) => setConsoleParent(e.target.value)} />
+                <input className="dsh-wt_consoleInput" placeholder={t('console.newNamePh')} value={consoleName} onChange={(e) => setConsoleName(e.target.value)} />
+              </>
+            )}
+            {consoleErr && <p className="dsh-wt_consoleErr">{t('console.bindFail')}</p>}
+            <button type="button" className="dsh-wt_consoleCreateBtn" disabled={consoleBusy} onClick={bindConsoleNew}>
+              {consoleBusy ? '…' : t('console.createBind')}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {customOpen && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => setCustomOpen(false)} />}
+    {customOpen && (
+      <div className="dsh-wt_menu dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 340, zIndex: 84 }}>
+        <span className="dsh-wt_menuLabel">✨ {t('customLayout.title')}</span>
+        <textarea
+          className="dsh-wt_customLayoutInput"
+          autoFocus
+          rows={6}
+          placeholder={t('customLayout.placeholder')}
+          value={customLayoutText}
+          onChange={(e) => setCustomLayoutText(e.target.value)}
+        />
+        <button type="button" className="dsh-wt_customLayoutBtn" onClick={copyCustomLayout}>{t('customLayout.copy')}</button>
+        {copiedToast && (
+          <p className={'dsh-wt_customLayoutToast' + (copiedToast === 'fail' ? ' dsh-wt_customLayoutToastFail' : '')}>
+            {copiedToast === 'ok' ? '✅ ' + t('customLayout.copied') : '⚠️ ' + t('customLayout.copyFail')}
+          </p>
+        )}
+      </div>
+    )}
+
+    {requestDelete && <div className="dsh-wt_confirmBackdrop" onClick={() => setRequestDelete(null)} />}
+    {requestDelete && (
+      <div className="dsh-wt_confirm" role="alertdialog">
+        <div className="dsh-wt_confirmTitle">⚠️ {t('confirm.title')}</div>
+        <div className="dsh-wt_confirmBody">
+          {requestDelete.kind === 'layout'
+            ? t('confirm.layoutBody', { name: requestDelete.name })
+            : requestDelete.kind === 'shortcut'
+              ? t('confirm.shortcutBody', { name: requestDelete.name })
+              : t('confirm.projectBody', { name: requestDelete.name })}
+        </div>
+        <div className="dsh-wt_confirmActions">
+          <button type="button" className="dsh-wt_confirmCancel" onClick={() => setRequestDelete(null)}>{t('confirm.cancel')}</button>
+          <button type="button" className="dsh-wt_confirmDelete" onClick={doDelete}>{t('confirm.delete')}</button>
+        </div>
+      </div>
+    )}
+    </>
+  )
+
   if (!wide) {
     // 收起态 = 等行高的正方形圆角按钮，中间只留 emoji；点击 = 进入对应项目
     const railItems: { icon: string; name: string; onClick: (e: any) => void }[] = [
@@ -2587,23 +2988,29 @@ function buildCustomLayoutPrompt(req: string): string {
       ? { position: 'fixed' as const, top: float.top, left: railRect.left, width: railRect.width, zIndex: 70 }
       : bottomInset > 0 ? { marginBottom: bottomInset } : undefined
     return (
-      <div ref={rootRef} className="dsh-wt_section dsh-wt_rail" style={railStyle}>
-        <div className="dsh-wt_divider" />
-        <div className="dsh-wt_railBox">
-          {railItems.length > 0
-            ? railItems.map((it, i) => (
-                <button key={i} type="button" className="dsh-wt_railBtn" title={it.name} aria-label={it.name} onClick={it.onClick}>
-                  <span aria-hidden>{it.icon}</span>
-                </button>
-              ))
-            : <span className="dsh-wt_railIcon">≡</span>}
+      <>
+        {/* 收起态同样渲染弹层：控制室「创建卡片」等共用 openAddPanel，收起侧边栏后仍能弹出新增项目窗 */}
+        {popupLayer}
+        <div ref={rootRef} className="dsh-wt_section dsh-wt_rail" style={railStyle}>
+          <div className="dsh-wt_divider" />
+          <div className="dsh-wt_railBox">
+            {railItems.length > 0
+              ? railItems.map((it, i) => (
+                  <button key={i} type="button" className="dsh-wt_railBtn" title={it.name} aria-label={it.name} onClick={it.onClick}>
+                    <span aria-hidden>{it.icon}</span>
+                  </button>
+                ))
+              : <span className="dsh-wt_railIcon">≡</span>}
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <div ref={rootRef} className={'dsh-wt_section' + (isFloat ? ' dsh-wt_float' : '')} style={isFloat ? floatStyle : dockedStyle}>
+    <>
+      {popupLayer}
+      <div ref={rootRef} className={'dsh-wt_section' + (isFloat ? ' dsh-wt_float' : '')} style={isFloat ? floatStyle : dockedStyle}>
       <div className="dsh-wt_divider" />
       <div className="dsh-wt_header">
         <button
@@ -3170,6 +3577,7 @@ function buildCustomLayoutPrompt(req: string): string {
         </div>
       )}
     </div>
+    </>
   )
 }
 
