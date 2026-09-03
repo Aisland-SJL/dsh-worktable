@@ -8,9 +8,8 @@
  *   - 绝不执行：git 操作 / push / tag / gh release / 任何对外发布动作。
  *   - 任何断言失败 = 进程以非零码退出，绝不输出"验收通过"。
  *
- * 用法（脚本以自身位置解析 01_content，不依赖执行 cwd）：
+ * 用法（脚本以自身位置解析 01_content，不依赖执行 cwd；任何目录都可调用）：
  *   node release-prep.mjs
- *   node release-prep.mjs --skip-build    # 仅重新验收现有 lib（排障用）
  */
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -20,7 +19,6 @@ import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 
 const HERE = dirname(fileURLToPath(import.meta.url)) // 固定 = 01_content，绝不依赖执行 cwd
-const SKIP_BUILD = process.argv.includes('--skip-build')
 // Windows 下 spawnSync('npm') 有 ENOENT、spawnSync('npm.cmd') 有 EINVAL 问题。
 // 统一通过 node 的 npm-cli.js 调用（node 自带 npm 前缀，跨平台稳定）。
 const { execPath } = await import('node:process')
@@ -50,10 +48,9 @@ const VERSION = pkg.version
 console.log('[release-prep] version = ' + VERSION)
 
 // ---------- 2. 构建 + 语法检查 ----------
-if (!SKIP_BUILD) {
-  const build = spawnSync(process.execPath, [join(HERE, 'build.mjs')], { stdio: 'inherit' })
-  if (build.status !== 0) { console.error('[release-prep] FAIL: build failed'); process.exit(1) }
-}
+// 构建必带 cwd: HERE（脚本自身位置=01_content），否则从仓库根调用会输出到根 lib/ 造成旧包
+const build = spawnSync(process.execPath, [join(HERE, 'build.mjs')], { stdio: 'inherit', cwd: HERE })
+if (build.status !== 0) { console.error('[release-prep] FAIL: build failed'); process.exit(1) }
 for (const f of ['lib/index.js', 'lib/client.js']) {
   const chk = spawnSync(process.execPath, ['--check', join(HERE, f)], { stdio: 'pipe' })
   if (chk.status !== 0) { console.error('[release-prep] FAIL: node --check ' + f); process.exit(1) }
@@ -102,7 +99,28 @@ mkdirSync(inst, { recursive: true })
 writeFileSync(join(inst, 'package.json'), JSON.stringify({ name: 'wt-prep-test', version: '0.0.0', private: true }))
 const ins = runNpm(['install', tgz, '--no-audit', '--no-fund', '--loglevel=error'], { cwd: inst })
 if (ins.status !== 0) { console.error('[release-prep] FAIL: npm install'); console.error(ins.stderr); process.exit(1) }
-const imp = spawnSync(process.execPath, ['--input-type=module', '-e', "const m = await import('dsh-worktable'); const k = Object.keys(m); if (!['apply','inject','name','HEALTH_PATH'].every(x => k.includes(x))) { console.error('missing exports: ' + k.join(',')); process.exit(3) }"], { cwd: inst, stdio: 'pipe', encoding: 'utf8' })
+// import 断言脚本（写临时文件，避免 -e 多行转义）：导出名称 + 类型 + 内容 + 包内版本文件
+const assertJs = join(inst, 'assert.mjs')
+writeFileSync(assertJs, [
+  "import { readFileSync } from 'node:fs'",
+  "const TARGET_VERSION = " + JSON.stringify(VERSION),
+  "const m = await import('dsh-worktable')",
+  "const fails = []",
+  "if (typeof m.apply !== 'function') fails.push('apply not function: ' + typeof m.apply)",
+  "if (!Array.isArray(m.inject)) fails.push('inject not array')",
+  "if (m.name !== 'dsh-worktable') fails.push('name mismatch: ' + m.name)",
+  "if (m.HEALTH_PATH !== '/api/worktable/health') fails.push('HEALTH_PATH mismatch: ' + m.HEALTH_PATH)",
+  "const pkg = JSON.parse(readFileSync('./node_modules/dsh-worktable/package.json', 'utf8'))",
+  "if (pkg.version !== TARGET_VERSION) fails.push('installed version mismatch: ' + pkg.version)",
+  "const idx = readFileSync('./node_modules/dsh-worktable/lib/index.js', 'utf8')",
+  "const cli = readFileSync('./node_modules/dsh-worktable/lib/client.js', 'utf8')",
+  "if (!idx.includes(JSON.stringify(TARGET_VERSION))) fails.push('index.js missing target version')",
+  "if (!cli.includes(JSON.stringify(TARGET_VERSION))) fails.push('client.js missing target version')",
+  "if (fails.length) { console.error(fails.join(String.fromCharCode(10))); process.exit(3) }",
+  "console.log('assert ok: apply/inject/name/HEALTH_PATH + versions(' + TARGET_VERSION + ')')",
+].join('\n'))
+const assertUrl = 'file:///' + assertJs.replace(/\\/g, '/')
+const imp = spawnSync(process.execPath, ['--input-type=module', '--eval', 'await import(' + JSON.stringify(assertUrl) + ')'], { cwd: inst, stdio: 'pipe', encoding: 'utf8' })
 if (imp.status !== 0) { console.error('[release-prep] FAIL: import() assertion'); console.error(imp.stderr); process.exit(1) }
 console.log('[release-prep] install + import assertion passed')
 
