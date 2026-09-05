@@ -1,7 +1,7 @@
 {
   "name": "dsh-worktable",
   "description": "工作台：DSH 侧边栏的 agent 级项目容器，收纳如 TravelAtlas 等自装项目",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "entry": {
     "name": "dsh-worktable",
     "inject": []

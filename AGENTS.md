@@ -50,11 +50,18 @@ node --check lib/index.js
 - 变更视图状态结构时同步更新 PRD 的持久化说明。
 - **构建必须 `cd 01_content` 后执行**：误在仓库根跑会把 lib 写到仓库根 `lib/`，宿主仍加载
   `01_content/lib` 旧 bundle，出现「改完不生效」假象（已有教训，见工作日志）。
-- **发布打包唯一入口 = `npm run pack`（01_content/release-prep.mjs）**：版本一致性 → 构建（cwd 固定 01_content）→
-  node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，无 src/、无 .map）→
-  独立临时目录 npm install + import() 断言（apply 函数/inject 数组/name/HEALTH_PATH/包内双 bundle 版本）
-  → 双资产同源复制 + SHA-256。脚本零 git/gh 动作，发布上传由 gh 手动完成并下载远端比对。
+- **发布打包唯一入口 = `npm run pack`（01_content/release-prep.mjs）**：身份断言（package/manifest/cordis.patch.yml 严格结构）→
+  版本一致性 → 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
+  无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
+  HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
+  白名单 react/react/jsx-runtime + apply/inject 断言）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
+  脚本零 git/gh 动作，发布上传由 gh 手动完成。
   **发布禁止裸 npm pack 或手工 tar 生成发布包**；脚本从仓库任意目录调用均安全（以自身位置解析）。
+- **配套检查入口**：`npm run test:gate` = 工厂门禁 9 个失败/正向用例；
+  `npm run verify:remote -- --expect-sha <release-prep 输出的 SHA> [tag]` = 发布后只读核对
+  （远端固定名+版本化双资产文件名/结构/版本/双 SHA 同源且等于本地验收 SHA/安装/导入；
+  远端只读，本地仅临时目录）。上传后必须跑 verify:remote 并用 --expect-sha 比对，
+  防「双资产同错」；tag 模式断言 tag==='v'+包内版本。
 
 ## 领域约定（会话中必须遵守）
 

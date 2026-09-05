@@ -13,10 +13,11 @@
  */
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, rmSync, copyFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, copyFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
+import { gateClientFactory } from './client-factory-gate.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url)) // 固定 = 01_content，绝不依赖执行 cwd
 // Windows 下 spawnSync('npm') 有 ENOENT、spawnSync('npm.cmd') 有 EINVAL 问题。
@@ -46,6 +47,40 @@ if (manifest.version !== pkg.version) {
 }
 const VERSION = pkg.version
 console.log('[release-prep] version = ' + VERSION)
+
+// ---------- 1b. 身份断言（package/manifest/patch 统一为 dsh-worktable） ----------
+const IDENTITY = 'dsh-worktable'
+if (pkg.name !== IDENTITY) { console.error('[release-prep] FAIL: package.json name = ' + pkg.name); process.exit(1) }
+if (manifest.name !== IDENTITY) { console.error('[release-prep] FAIL: dsh.plugin.json name = ' + manifest.name); process.exit(1) }
+if (!manifest.entry || manifest.entry.name !== IDENTITY) { console.error('[release-prep] FAIL: dsh.plugin.json entry.name != ' + IDENTITY); process.exit(1) }
+// cordis.patch.yml 严格检查：按缩进层级解析，只接受「- insert: 下的子列表项（id/name=IDENTITY）」结构
+const patchRaw = readFileSync(join(HERE, 'cordis.patch.yml'), 'utf8')
+const patchLines = patchRaw.split(/\r?\n/)
+let patchOk = true
+const patchEntries = []
+let cur = null
+for (const rawLine of patchLines) {
+  const line = rawLine.trimEnd()
+  if (line.trim() === '' || line.trim().startsWith('#')) continue
+  const indent = line.length - line.trimStart().length
+  const text = line.trim()
+  if (indent === 0 && text === '- insert:') { cur = {}; patchEntries.push(cur); continue }
+  if (indent === 0) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml unexpected top-level line: ' + JSON.stringify(text)); break }
+  if (indent === 4 && text === '- id: ' + IDENTITY) { if (cur && cur.id !== undefined) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml duplicate - id: item (only one plugin entry allowed)'); break }; if (cur) cur.id = IDENTITY; continue }
+  if (indent === 4 && /^- id:/.test(text)) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml insert item id != ' + IDENTITY + ': ' + JSON.stringify(text)); break }
+  if (indent === 6 && text === 'name: ' + IDENTITY) { if (cur && cur.name !== undefined) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml duplicate name field'); break }; if (cur) cur.name = IDENTITY; continue }
+  if (indent === 6 && /^name:/.test(text)) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml insert item name != ' + IDENTITY + ': ' + JSON.stringify(text)); break }
+  patchOk = false
+  console.error('[release-prep] FAIL: cordis.patch.yml unexpected line (indent ' + indent + '): ' + JSON.stringify(text))
+  break
+}
+if (patchOk && patchEntries.length !== 1) { patchOk = false; console.error('[release-prep] FAIL: cordis.patch.yml must contain exactly one insert entry, got ' + patchEntries.length) }
+if (patchOk && (patchEntries[0].id !== IDENTITY || patchEntries[0].name !== IDENTITY)) {
+  patchOk = false
+  console.error('[release-prep] FAIL: cordis.patch.yml insert entry incomplete: ' + JSON.stringify(patchEntries[0]))
+}
+if (!patchOk) process.exit(1)
+console.log('[release-prep] identity check passed (' + IDENTITY + ', cordis.patch.yml strict)')
 
 // ---------- 2. 构建 + 语法检查 ----------
 // 构建必带 cwd: HERE（脚本自身位置=01_content），否则从仓库根调用会输出到根 lib/ 造成旧包
@@ -108,6 +143,8 @@ writeFileSync(assertJs, [
   "const fails = []",
   "if (typeof m.apply !== 'function') fails.push('apply not function: ' + typeof m.apply)",
   "if (!Array.isArray(m.inject)) fails.push('inject not array')",
+  "if (!m.inject.includes('webServer')) fails.push('server inject missing webServer')",
+  "if (!m.inject.includes('sessions')) fails.push('server inject missing sessions')",
   "if (m.name !== 'dsh-worktable') fails.push('name mismatch: ' + m.name)",
   "if (m.HEALTH_PATH !== '/api/worktable/health') fails.push('HEALTH_PATH mismatch: ' + m.HEALTH_PATH)",
   "const pkg = JSON.parse(readFileSync('./node_modules/dsh-worktable/package.json', 'utf8'))",
@@ -124,16 +161,46 @@ const imp = spawnSync(process.execPath, ['--input-type=module', '--eval', 'await
 if (imp.status !== 0) { console.error('[release-prep] FAIL: import() assertion'); console.error(imp.stderr); process.exit(1) }
 console.log('[release-prep] install + import assertion passed')
 
+// ---------- 5b. 客户端工厂求值门禁（ModuleLoader 握手真实执行一次；非端到端验收） ----------
+// 读「安装目录中的最终产物」lib/client.js（node_modules/dsh-worktable/lib/client.js），而非工作目录——验收最终包
+const clientSrc = readFileSync(join(inst, 'node_modules', 'dsh-worktable', 'lib', 'client.js'), 'utf8')
+const CLIENT_EXPECTED_INJECT = ['slots', 'locale', 'sessions', 'conversation', 'workspaces']
+try {
+  gateClientFactory(clientSrc, 'dsh-worktable', CLIENT_EXPECTED_INJECT)
+} catch (e) {
+  console.error('[release-prep] FAIL: client factory gate: ' + (e && e.message ? e.message : String(e)))
+  process.exit(1)
+}
+console.log('[release-prep] client factory gate passed (ModuleLoader id + factory evaluation + inject)')
+
 // ---------- 6. 双资产从同一已验证包复制 + SHA-256 ----------
-const fixedDir = join(HERE, 'dist')
-mkdirSync(fixedDir, { recursive: true })
-const assetFixed = join(fixedDir, 'dsh-worktable.tgz')
-const assetVer = join(fixedDir, 'dsh-worktable-' + VERSION + '.tgz')
-copyFileSync(tgz, assetFixed)
+const outDir = join(HERE, 'dist', 'v' + VERSION)
+mkdirSync(outDir, { recursive: true })
+// 输出目录终态约束：只允许固定名 + 版本化两个 tgz；出现未知文件 = 报错，绝不删除
+const KNOWN = new Set(['dsh-worktable.tgz', 'dsh-worktable-' + VERSION + '.tgz'])
+for (const ent of readdirSync(outDir)) {
+  if (!KNOWN.has(ent)) {
+    console.error('[release-prep] FAIL: dist/v' + VERSION + '/ contains unknown file: ' + ent + ' (not deleting; fix manually)')
+    process.exit(1)
+  }
+}
+const assetFixed = join(outDir, 'dsh-worktable.tgz')
+const assetVer = join(outDir, 'dsh-worktable-' + VERSION + '.tgz')
+copyFileSync(tgz, assetFixed) // 同版本重跑：覆盖这两个已知文件是允许的
 copyFileSync(tgz, assetVer)
+// 复制后终态断言：目录恰好两个已知文件（无遗漏/无多余），双 SHA 一致
+const finalEntries = readdirSync(outDir).sort()
+const finalSet = new Set(finalEntries)
+if (finalEntries.length !== 2 || !finalSet.has('dsh-worktable.tgz') || !finalSet.has('dsh-worktable-' + VERSION + '.tgz')) {
+  console.error('[release-prep] FAIL: post-copy final listing mismatch: ' + finalEntries.join(', '))
+  process.exit(1)
+}
 const sha = (p) => createHash('sha256').update(readFileSync(p)).digest('hex')
-console.log('[release-prep] DONE — 双资产同源（同 SHA-256）:')
-console.log('  dist/dsh-worktable.tgz           sha256:' + sha(assetFixed))
-console.log('  dist/dsh-worktable-' + VERSION + '.tgz sha256:' + sha(assetVer))
-console.log('[release-prep] 提示：本脚本未推送、未打 tag、未发布。请用 gh 手动上传双资产并下载远端比对。')
+const shaFixed = sha(assetFixed)
+const shaVer = sha(assetVer)
+if (shaFixed !== shaVer) { console.error('[release-prep] FAIL: two assets differ after copy'); process.exit(1) }
+console.log('[release-prep] DONE — 双资产同源（同 SHA-256），终态目录恰好 2 文件:')
+console.log('  dist/v' + VERSION + '/dsh-worktable.tgz           sha256:' + shaFixed)
+console.log('  dist/v' + VERSION + '/dsh-worktable-' + VERSION + '.tgz sha256:' + shaVer)
+console.log('[release-prep] 提示：本脚本未推送、未打 tag、未发布。上传后请运行 verify-remote.mjs --expect-sha ' + shaFixed + ' 核对远端。')
 rmSync(work, { recursive: true, force: true })

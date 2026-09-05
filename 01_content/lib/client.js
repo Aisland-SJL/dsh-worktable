@@ -8031,11 +8031,15 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_addFolderPath{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-primary,#e6e8eb);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
   ".dsh-wt_addFolderPathNone{color:var(--dsw-alias-label-tertiary,#6b7280);border-style:dashed}",
   ".dsh-wt_addFolderRow .dsh-wt_customLabel{flex:none;width:auto;text-align:left}",
+  ".dsh-wt_manualPathInput{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:6px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_addFolderRow .dsh-wt_bindFolderChange:disabled{opacity:.5;cursor:default}",
+  ".dsh-wt_folderPickHint{margin-top:6px;margin-bottom:0;font-size:11.5px;line-height:17px;color:var(--dsw-alias-state-warning,#e0a33c)}",
+  ".dsh-wt_bindFolderBox .dsh-wt_addError{margin-top:6px;margin-bottom:0}",
   // 绑定弹窗内的项目文件夹区
   ".dsh-wt_bindFolderBox{margin-top:8px;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px}",
-  ".dsh-wt_bindFolderRow{display:flex;align-items:center;justify-content:space-between}",
-  ".dsh-wt_bindFolderLabel{font-size:12px;line-height:18px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  ".dsh-wt_bindFolderChange{flex:none;padding:1px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
+  ".dsh-wt_bindFolderRow{display:flex;align-items:center;gap:6px}",
+  ".dsh-wt_bindFolderLabel{font-size:12px;line-height:18px;color:var(--dsw-alias-label-primary,#e6e8eb);margin-right:auto}",
+  ".dsh-wt_bindFolderChange{flex:none;padding:2px 10px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:5px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_bindFolderChange:hover{color:var(--dsw-alias-label-primary,#e6e8eb);border-color:var(--dsw-alias-border-l2,#3a4150)}",
   ".dsh-wt_bindFolderPath{margin-top:4px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#9aa4b2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
   ".dsh-wt_bindFolderPathNone{color:var(--dsw-alias-label-tertiary,#6b7280)}",
@@ -8437,6 +8441,16 @@ var zh = {
   "add.folderPick": "\u9009\u62E9\u4F4D\u7F6E\u2026",
   "add.folderNone": "\u672A\u9009\u62E9\uFF08\u70B9\u53F3\u4FA7\u300C\u9009\u62E9\u4F4D\u7F6E\u2026\u300D\u5728\u8D44\u6E90\u7BA1\u7406\u5668\u7A97\u53E3\u91CC\u6311\u4E00\u4E2A\u6587\u4EF6\u5939\uFF09",
   "add.folderRequired": "\u8BF7\u5148\u9009\u62E9\u9879\u76EE\u6587\u4EF6\u5939\u7684\u4F4D\u7F6E",
+  "add.folderPicking": "\u7B49\u5F85\u9009\u62E9\u2026",
+  "add.folderPickerHint": "\u6B63\u5728\u7B49\u5F85\u6587\u4EF6\u5939\u9009\u62E9\uFF1B\u82E5\u672A\u770B\u5230\u9009\u62E9\u7A97\u53E3\uFF0C\u53EF\u68C0\u67E5\u4EFB\u52A1\u680F\uFF0C\u6216\u4F7F\u7528\u300C\u624B\u52A8\u8F93\u5165\u300D\u3002",
+  "add.folderPickFail": "\u76EE\u5F55\u9009\u62E9\u5931\u8D25\uFF1A{msg}",
+  "add.folderPickerUnavailable": "\u7CFB\u7EDF\u76EE\u5F55\u9009\u62E9\u5668\u4E0D\u53EF\u7528\uFF0C\u8BF7\u7528\u300C\u624B\u52A8\u8F93\u5165\u300D\u7C98\u8D34\u8DEF\u5F84",
+  "add.folderManual": "\u624B\u52A8\u8F93\u5165",
+  "add.folderManualPh": "\u7C98\u8D34\u6587\u4EF6\u5939\u7EDD\u5BF9\u8DEF\u5F84\uFF0C\u56DE\u8F66\u786E\u8BA4",
+  "add.folderManualOk": "\u4F7F\u7528\u6B64\u8DEF\u5F84",
+  "add.folderManualEmpty": "\u8BF7\u8F93\u5165\u6587\u4EF6\u5939\u7EDD\u5BF9\u8DEF\u5F84",
+  "add.folderManualAbs": "\u8BF7\u8F93\u5165\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u5982 C:\\Users\\me\\Projects \u6216 /home/me/projects\uFF09",
+  "add.folderCreateFail": "\u9879\u76EE\u6587\u4EF6\u5939\u521B\u5EFA\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u8DEF\u5F84\u540E\u91CD\u8BD5",
   "add.layoutSave": "\u8FDB\u5165\u5DE5\u4F5C\u533A",
   "add.layoutInvalid": "\u8BF7\u586B\u5199\u5E03\u5C40\u540D\u79F0",
   "manage.deleteLayout": "\u5220\u9664\u5E03\u5C40",
@@ -8657,6 +8671,16 @@ var en = {
   "add.folderPick": "Choose\u2026",
   "add.folderNone": "Not chosen (click Choose\u2026 to pick a folder in the explorer window)",
   "add.folderRequired": "Pick the project folder location first",
+  "add.folderPicking": "Waiting for picker\u2026",
+  "add.folderPickerHint": "Waiting for the folder picker. If no window appears, check the taskbar or use \u201CManual\u201D.",
+  "add.folderPickFail": "Folder pick failed: {msg}",
+  "add.folderPickerUnavailable": "System folder picker unavailable \u2014 paste the path via \u201CManual\u201D",
+  "add.folderManual": "Manual",
+  "add.folderManualPh": "Paste an absolute folder path, Enter to confirm",
+  "add.folderManualOk": "Use this path",
+  "add.folderManualEmpty": "Enter an absolute folder path first",
+  "add.folderManualAbs": "Absolute path required (e.g. C:\\Users\\me\\Projects or /home/me/projects)",
+  "add.folderCreateFail": "Failed to create the project folder \u2014 check the path and retry",
   "add.layoutSave": "Enter workspace",
   "add.layoutInvalid": "Enter a layout name",
   "manage.deleteLayout": "Delete layout",
@@ -8872,9 +8896,19 @@ function basenameOf(p) {
 var import_react = require("react");
 
 // src/client/changelog.ts
-var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.1
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.2
 
-\u{1F527} \u672C\u7248\u672C\u4FEE\u590D\u8BF4\u660E\uFF1Av0.3.0 \u53D1\u5E03\u5305\u5B58\u5728\u6253\u5305\u7F3A\u9677\uFF08\u975E\u6807\u51C6 npm \u5305\u683C\u5F0F\uFF0C\u5B89\u88C5\u65F6\u4F1A\u62A5\u9519\u5BFC\u81F4\u63D2\u4EF6\u65E0\u6CD5\u52A0\u8F7D\uFF09\uFF0Cv0.3.1 \u5DF2\u6309\u6807\u51C6\u683C\u5F0F\u91CD\u65B0\u6253\u5305\u3002\u6B64\u524D\u5B89\u88C5\u5931\u8D25\u7684\u7528\u6237\uFF0C\u91CD\u65B0\u6267\u884C\u4E00\u6B21\u5347\u7EA7\u5B89\u88C5\u547D\u4EE4\u5373\u53EF\u6B63\u5E38\u4F7F\u7528\u672C\u7248\u672C\u3002
+\u{1F6E0}\uFE0F \u672C\u7248\u672C\u66F4\u65B0
+
+\u3010\u6587\u4EF6\u5939\u9009\u62E9\u4F53\u9A8C\u3011\u9009\u62E9\u9879\u76EE\u6587\u4EF6\u5939\u65F6\uFF1A\u7B49\u5F85\u671F\u95F4\u6309\u94AE\u663E\u793A\u300C\u7B49\u5F85\u9009\u62E9\u2026\u300D\u5E76\u63D0\u793A\u300C\u82E5\u672A\u770B\u5230\u9009\u62E9\u7A97\u53E3\uFF0C\u53EF\u68C0\u67E5\u4EFB\u52A1\u680F\uFF0C\u6216\u4F7F\u7528\u624B\u52A8\u8F93\u5165\u300D\uFF1B\u65B0\u589E\u300C\u624B\u52A8\u8F93\u5165\u300D\u5165\u53E3\uFF0C\u53EF\u76F4\u63A5\u7C98\u8D34\u6587\u4EF6\u5939\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u76F8\u5BF9\u8DEF\u5F84\u4F1A\u88AB\u62D2\u7EDD\u5E76\u63D0\u793A\uFF09\uFF1B\u9009\u62E9\u5931\u8D25\u65F6\u663E\u793A\u5177\u4F53\u9519\u8BEF\uFF0C\u4E0D\u518D\u9759\u9ED8\u65E0\u53CD\u5E94\uFF1B\u4FEE\u590D\u4E86\u65E7\u9009\u62E9\u7A97\u53E3\u8FD4\u56DE\u540E\u8986\u76D6\u624B\u5DE5\u8F93\u5165\u3001\u5F39\u7A97\u5173\u95ED/\u5207\u6362\u540E\u72B6\u6001\u6B8B\u7559\u7B49\u95EE\u9898\u3002
+
+\u3010\u53D1\u5E03\u6D41\u7A0B\u52A0\u56FA\u3011\u53D1\u5E03\u5305\u65B0\u589E\u7ED3\u6784\u4E0E\u8EAB\u4EFD\u6821\u9A8C\u3001\u5BA2\u6237\u7AEF\u5DE5\u5382\u6C42\u503C\u95E8\u7981\u3001\u53CC\u8D44\u4EA7\u540C\u6E90\u6838\u5BF9\u4E0E\u8FDC\u7AEF SHA \u6BD4\u5BF9\uFF08\u5F00\u53D1\u8005\u4FA7\u6539\u8FDB\uFF0C\u4E0D\u5F71\u54CD\u63D2\u4EF6\u529F\u80FD\uFF09\u3002
+
+\u3010\u8FB9\u754C\u8BF4\u660E\u3011\u672C\u7248\u672C\u662F\u63D2\u4EF6\u4FA7\u4F53\u9A8C\u6539\u5584\u4E0E\u53D1\u5E03\u6D41\u7A0B\u52A0\u56FA\uFF1A\u4E0D\u6539\u53D8\u5BBF\u4E3B\u539F\u751F\u76EE\u5F55\u9009\u62E9\u5668\u7684\u884C\u4E3A\uFF08\u9009\u62E9\u7A97\u53E3\u4E0D\u7F6E\u524D\u5C5E DSH \u5BBF\u4E3B\u5DF2\u77E5\u95EE\u9898\uFF0C\u7B49\u5F85\u5B98\u65B9\u4FEE\u590D\uFF09\uFF0C\u4E5F\u4E0D\u4EE3\u8868\u6240\u6709\u542F\u52A8\u5931\u8D25\u5DF2\u89E3\u51B3\u3002\u5347\u7EA7\u5B89\u88C5\u540E\u8BF7\u5B8C\u6574\u9000\u51FA\u5E76\u91CD\u542F DSH \u518D\u5237\u65B0\u9875\u9762\uFF1B\u82E5\u91CD\u542F\u540E\u4ECD\u663E\u793A\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u4FDD\u7559\u5B8C\u6574\u9519\u8BEF\u4FE1\u606F\u53CD\u9988\u3002
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+\u{1F527} \u6B64\u524D\u7248\u672C\u8BF4\u660E\uFF08v0.3.1\uFF09\uFF1Av0.3.0 \u53D1\u5E03\u5305\u5B58\u5728\u6253\u5305\u7F3A\u9677\uFF08\u975E\u6807\u51C6 npm \u5305\u683C\u5F0F\uFF0C\u5B89\u88C5\u65F6\u62A5\u9519\u5BFC\u81F4\u63D2\u4EF6\u65E0\u6CD5\u52A0\u8F7D\uFF09\uFF0Cv0.3.1 \u5DF2\u6309\u6807\u51C6\u683C\u5F0F\u91CD\u65B0\u6253\u5305\u3002
 
 \u{1F6E0}\uFE0F \u4E00\u3001\u63A7\u5236\u5BA4 UI \u8C03\u6574
 
@@ -8902,7 +8936,7 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.1
 \u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
 
 // src/client/updateCheck.ts
-var LOCAL_VERSION = false ? "dev" : "0.3.1";
+var LOCAL_VERSION = false ? "dev" : "0.3.2";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
 var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
@@ -20008,7 +20042,7 @@ var WAVE_BG_B64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgIC
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION2 = false ? "dev" : "0.3.1";
+var LOCAL_VERSION2 = false ? "dev" : "0.3.2";
 var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD2 = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI2 = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD2 + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
@@ -21040,6 +21074,16 @@ function WorktableSection(props) {
   const [wsError, setWsError] = (0, import_react2.useState)(false);
   const [wsFolderParent, setWsFolderParent] = (0, import_react2.useState)("");
   const [wsFolderError, setWsFolderError] = (0, import_react2.useState)(false);
+  const [pickBusy, setPickBusy] = (0, import_react2.useState)(false);
+  const [pickErr, setPickErr] = (0, import_react2.useState)({ add: "", bind: "" });
+  const [manualPathFor, setManualPathFor] = (0, import_react2.useState)(null);
+  const [manualPathText, setManualPathText] = (0, import_react2.useState)("");
+  const pickSeqRef = (0, import_react2.useRef)(0);
+  const pickBusyRef = (0, import_react2.useRef)(false);
+  const mountedRef = (0, import_react2.useRef)(true);
+  (0, import_react2.useEffect)(() => () => {
+    mountedRef.current = false;
+  }, []);
   const [iconPick, setIconPick] = (0, import_react2.useState)(null);
   const [bindPick, setBindPick] = (0, import_react2.useState)(null);
   const [bindGroups, setBindGroups] = (0, import_react2.useState)([]);
@@ -21700,6 +21744,7 @@ function WorktableSection(props) {
   };
   actionsRef.current = { openSplit, openConsole };
   const openBindPick = (0, import_react2.useCallback)((id, anchor) => {
+    invalidatePickState();
     const r = anchor.getBoundingClientRect();
     const x = clamp2(Math.round(r.right + 8), 8, window.innerWidth - 300);
     const y = clamp2(Math.round(r.top), 8, window.innerHeight - 420);
@@ -21708,19 +21753,68 @@ function WorktableSection(props) {
     setBindGroups([]);
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]));
   }, []);
-  const pickFolder = async (apply2) => {
+  const pickFolder = async (target, apply2) => {
+    if (pickBusyRef.current) return;
+    const ws = sessionBridge?.workspaces;
+    if (!ws || typeof ws.pickDirectory !== "function") {
+      setPickErr((prev) => ({ ...prev, [target]: t("add.folderPickerUnavailable") }));
+      return;
+    }
+    pickBusyRef.current = true;
+    setPickBusy(true);
+    setPickErr((prev) => ({ ...prev, [target]: "" }));
+    const seq = ++pickSeqRef.current;
     try {
-      const ws = sessionBridge?.workspaces;
-      if (ws && typeof ws.pickDirectory === "function") {
-        const p = await ws.pickDirectory();
-        if (p && typeof p === "string") apply2(p);
+      const p = await ws.pickDirectory();
+      if (seq !== pickSeqRef.current) return;
+      if (!mountedRef.current) return;
+      if (p && typeof p === "string") apply2(p);
+    } catch (e) {
+      if (seq !== pickSeqRef.current) return;
+      if (!mountedRef.current) return;
+      const msg = e && typeof e === "object" && typeof e.message === "string" ? e.message : String(e ?? "");
+      setPickErr((prev) => ({ ...prev, [target]: t("add.folderPickFail", { msg: msg || "unknown" }) }));
+    } finally {
+      if (seq === pickSeqRef.current && mountedRef.current) {
+        pickBusyRef.current = false;
+        setPickBusy(false);
       }
-    } catch {
     }
   };
+  const invalidatePickState = () => {
+    pickSeqRef.current++;
+    pickBusyRef.current = false;
+    setPickBusy(false);
+    setManualPathFor(null);
+    setManualPathText("");
+    setPickErr({ add: "", bind: "" });
+  };
+  const applyManualPath = (target) => {
+    const p = manualPathText.trim();
+    if (!p) {
+      setPickErr((prev) => ({ ...prev, [target]: t("add.folderManualEmpty") }));
+      return;
+    }
+    if (!isAbs(p)) {
+      setPickErr((prev) => ({ ...prev, [target]: t("add.folderManualAbs") }));
+      return;
+    }
+    pickSeqRef.current++;
+    pickBusyRef.current = false;
+    setPickBusy(false);
+    if (target === "add") {
+      setWsFolderParent(p);
+      setWsFolderError(false);
+    } else if (bindPick) {
+      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }));
+    }
+    setManualPathFor(null);
+    setManualPathText("");
+    setPickErr((prev) => ({ ...prev, [target]: "" }));
+  };
   const changeBindFolder = () => {
-    if (!bindPick) return;
-    pickFolder((p) => {
+    if (!bindPick || pickBusyRef.current) return;
+    pickFolder("bind", (p) => {
       persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }));
     });
   };
@@ -22001,6 +22095,7 @@ function WorktableSection(props) {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
     }
+    invalidatePickState();
     setViewOptionsOpen(false);
     setAddOpen(false);
   };
@@ -22081,12 +22176,25 @@ function WorktableSection(props) {
       setWsFolderError(true);
       return;
     }
+    if (!isAbs(folderPath)) {
+      setWsFolderError(true);
+      return;
+    }
     try {
-      await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: folderPath }) });
+      const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: folderPath }) });
+      if (!r.ok) {
+        setWsFolderError(true);
+        setPickErr((prev) => ({ ...prev, add: t("add.folderCreateFail") }));
+        return;
+      }
     } catch {
+      setWsFolderError(true);
+      setPickErr((prev) => ({ ...prev, add: t("add.folderCreateFail") }));
+      return;
     }
     const layout = buildLayout(wsPreset, name);
     persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout], folders: { ...prev.folders, [layout.id]: folderPath } }));
+    invalidatePickState();
     setWsName("");
     setWsFolderParent("");
     setWsError(false);
@@ -22481,6 +22589,7 @@ function WorktableSection(props) {
             "aria-label": t("menu.viewOptions"),
             title: t("menu.viewOptions"),
             onClick: () => {
+              invalidatePickState();
               setViewOptionsOpen((v) => !v);
               setAddOpen(false);
             },
@@ -22495,6 +22604,7 @@ function WorktableSection(props) {
             "aria-label": t("menu.add"),
             title: t("menu.add"),
             onClick: () => {
+              invalidatePickState();
               setAddOpen((v) => !v);
               setViewOptionsOpen(false);
               if (!wsFolderParent) {
@@ -22530,7 +22640,10 @@ function WorktableSection(props) {
         }
       )
     ] }),
-    addOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_popBackdrop", onClick: () => setAddOpen(false) }),
+    addOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_popBackdrop", onClick: () => {
+      invalidatePickState();
+      setAddOpen(false);
+    } }),
     addOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_menu dsh-wt_add dsh-wt_pop", style: { position: "fixed", left: popLeft, top: popTop, width: 360, zIndex: 80 }, children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_menuLabel", children: t("add.chooseLayout") }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_presets", children: [
@@ -22555,6 +22668,7 @@ function WorktableSection(props) {
             className: "dsh-wt_preset dsh-wt_presetAdd",
             title: t("customLayout.addTitle"),
             onClick: () => {
+              invalidatePickState();
               setAddOpen(false);
               setCustomOpen(true);
             },
@@ -22581,14 +22695,54 @@ function WorktableSection(props) {
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_addFolderRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customLabel", children: t("add.folderParent") }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_addFolderPath" + (wsFolderParent ? "" : " dsh-wt_addFolderPathNone"), title: wsFolderParent || "", children: wsFolderParent || t("add.folderNone") }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_bindFolderChange", onClick: () => {
-            pickFolder((p) => {
-              setWsFolderParent(p);
-              setWsFolderError(false);
-            });
-            setWsError(false);
-          }, children: t("add.folderPick") })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "button",
+            {
+              type: "button",
+              className: "dsh-wt_bindFolderChange",
+              disabled: pickBusy,
+              onClick: () => {
+                pickFolder("add", (p) => {
+                  setWsFolderParent(p);
+                  setWsFolderError(false);
+                });
+                setWsError(false);
+              },
+              children: pickBusy ? t("add.folderPicking") : t("add.folderPick")
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "button",
+            {
+              type: "button",
+              className: "dsh-wt_bindFolderChange",
+              title: t("add.folderManual"),
+              onClick: () => {
+                setManualPathFor(manualPathFor === "add" ? null : "add");
+                setPickErr((prev) => ({ ...prev, add: "" }));
+              },
+              children: t("add.folderManual")
+            }
+          )
         ] }),
+        pickBusy && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_folderPickHint", children: t("add.folderPickerHint") }),
+        manualPathFor === "add" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_addFolderRow", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              type: "text",
+              className: "dsh-wt_manualPathInput",
+              placeholder: t("add.folderManualPh"),
+              value: manualPathText,
+              onChange: (e) => setManualPathText(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") applyManualPath("add");
+              }
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_bindFolderChange", onClick: () => applyManualPath("add"), children: t("add.folderManualOk") })
+        ] }),
+        pickErr.add && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_addError", children: pickErr.add }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_addBtn", onClick: saveLayout, children: t("add.layoutSave") })
       ] }),
       wsError && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_addError", children: t("add.layoutInvalid") }),
@@ -22828,6 +22982,7 @@ function WorktableSection(props) {
       ] })
     ] }),
     bindPick && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_popBackdrop", style: { zIndex: 83 }, onClick: () => {
+      invalidatePickState();
       setBindPick(null);
       setBindListOpen(false);
     } }),
@@ -22838,12 +22993,40 @@ function WorktableSection(props) {
             "\u{1F4C1} ",
             t("bind.folder")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "dsh-wt_bindFolderChange", onClick: changeBindFolder, children: [
-            t("bind.folderChange"),
-            " \u21BB"
-          ] })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_bindFolderChange", disabled: pickBusy, onClick: changeBindFolder, children: pickBusy ? t("add.folderPicking") : t("bind.folderChange") + " \u21BB" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "button",
+            {
+              type: "button",
+              className: "dsh-wt_bindFolderChange",
+              title: t("add.folderManual"),
+              onClick: () => {
+                setManualPathFor(manualPathFor === "bind" ? null : "bind");
+                setPickErr((prev) => ({ ...prev, bind: "" }));
+              },
+              children: t("add.folderManual")
+            }
+          )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_bindFolderPath" + (projects.folders[bindPick.id] ? "" : " dsh-wt_bindFolderPathNone"), title: projects.folders[bindPick.id] ?? "", children: projects.folders[bindPick.id] ?? t("bind.folderNone") })
+        pickBusy && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_folderPickHint", children: t("add.folderPickerHint") }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_bindFolderPath" + (projects.folders[bindPick.id] ? "" : " dsh-wt_bindFolderPathNone"), title: projects.folders[bindPick.id] ?? "", children: projects.folders[bindPick.id] ?? t("bind.folderNone") }),
+        manualPathFor === "bind" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_addFolderRow", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              type: "text",
+              className: "dsh-wt_manualPathInput",
+              placeholder: t("add.folderManualPh"),
+              value: manualPathText,
+              onChange: (e) => setManualPathText(e.target.value),
+              onKeyDown: (e) => {
+                if (e.key === "Enter") applyManualPath("bind");
+              }
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_bindFolderChange", onClick: () => applyManualPath("bind"), children: t("add.folderManualOk") })
+        ] }),
+        pickErr.bind && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_addError", children: pickErr.bind })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_bindFolderBox", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_bindFolderRow", children: [

@@ -1179,6 +1179,17 @@ function WorktableSection(props: any) {
   // 新建项目强制工作文件夹：经「选择位置…」弹窗选定（系统资源管理器式选择窗）
   const [wsFolderParent, setWsFolderParent] = useState('')
   const [wsFolderError, setWsFolderError] = useState(false)
+  /** 文件夹选择器状态：busy=等待系统选择器；err=按入口分开的失败原因（用户取消不报错）；manual=手工输入展开目标 */
+  const [pickBusy, setPickBusy] = useState(false)
+  const [pickErr, setPickErr] = useState<{ add: string; bind: string }>({ add: '', bind: '' })
+  const [manualPathFor, setManualPathFor] = useState<'add' | 'bind' | null>(null)
+  const [manualPathText, setManualPathText] = useState('')
+  /** 文件夹选择在途锁 + 请求序号（useRef：跨渲染稳定；弹窗关闭/切换目标/手工确认时自增使旧请求失效） */
+  const pickSeqRef = useRef(0)
+  const pickBusyRef = useRef(false)
+  /** 组件卸载后不再应用旧选择结果 */
+  const mountedRef = useRef(true)
+  useEffect(() => () => { mountedRef.current = false }, [])
   /** 图标选择器：kind + 目标 id + 弹窗锚点坐标（fixed 定位） */
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组；
@@ -1820,6 +1831,7 @@ function buildCustomLayoutPrompt(req: string): string {
 
   /** 打开对话绑定弹窗：抓取会话分组 + 锚点定位 */
   const openBindPick = useCallback((id: string, anchor: HTMLElement) => {
+    invalidatePickState() // 切换目标：失效在途选择请求、清空旧错误与手工输入
     const r = anchor.getBoundingClientRect()
     const x = clamp(Math.round(r.right + 8), 8, window.innerWidth - 300)
     const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
@@ -1829,21 +1841,70 @@ function buildCustomLayoutPrompt(req: string): string {
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
   }, [])
 
-  /** 弹出系统文件夹选择窗（宿主 pickDirectory）；选中后回调 */
-  const pickFolder = async (apply: (p: string) => void) => {
+  /** 弹出系统文件夹选择窗（宿主 pickDirectory）；选中后回调。
+   *  - useRef 在途锁 + 请求序号：真实防重入；手工确认/新请求会使旧请求失效，旧弹窗返回后丢弃
+   *  - 返回 null = 用户取消：不报错
+   *  - 抛异常 = 显示真实错误信息，不再静默吞掉
+   *  - 宿主能力不可用 = 提示改用「手动输入」 */
+  const pickFolder = async (target: 'add' | 'bind', apply: (p: string) => void) => {
+    if (pickBusyRef.current) return
+    const ws = sessionBridge?.workspaces as any
+    if (!ws || typeof ws.pickDirectory !== 'function') {
+      setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickerUnavailable') }))
+      return
+    }
+    pickBusyRef.current = true
+    setPickBusy(true)
+    setPickErr((prev) => ({ ...prev, [target]: '' }))
+    const seq = ++pickSeqRef.current
     try {
-      const ws = sessionBridge?.workspaces as any
-      if (ws && typeof ws.pickDirectory === 'function') {
-        const p = await ws.pickDirectory()
-        if (p && typeof p === 'string') apply(p)
+      const p = await ws.pickDirectory()
+      if (seq !== pickSeqRef.current) return // 已被手工确认/新请求/弹窗关闭失效：丢弃旧弹窗结果
+      if (!mountedRef.current) return // 组件已卸载：不再应用
+      if (p && typeof p === 'string') apply(p)
+      // p 为 null：用户取消，静默
+    } catch (e: any) {
+      if (seq !== pickSeqRef.current) return
+      if (!mountedRef.current) return // 组件已卸载：不再更新状态
+      const msg = (e && typeof e === 'object' && typeof e.message === 'string') ? e.message : String(e ?? '')
+      setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickFail', { msg: msg || 'unknown' }) }))
+    } finally {
+      if (seq === pickSeqRef.current && mountedRef.current) {
+        pickBusyRef.current = false
+        setPickBusy(false)
       }
-    } catch { /* 取消或不可用 */ }
+    }
+  }
+
+  /** 使在途选择请求失效并清空选择器 UI 状态（弹窗关闭/切换目标时调用） */
+  const invalidatePickState = () => {
+    pickSeqRef.current++
+    pickBusyRef.current = false
+    setPickBusy(false)
+    setManualPathFor(null)
+    setManualPathText('')
+    setPickErr({ add: '', bind: '' })
+  }
+
+  /** 手工输入绝对路径（选择器不可用/失败的降级入口）：必须通过 isAbs，并失效在途系统选择请求 */
+  const applyManualPath = (target: 'add' | 'bind') => {
+    const p = manualPathText.trim()
+    if (!p) { setPickErr((prev) => ({ ...prev, [target]: t('add.folderManualEmpty') })); return }
+    if (!isAbs(p)) { setPickErr((prev) => ({ ...prev, [target]: t('add.folderManualAbs') })); return }
+    pickSeqRef.current++ // 使在途系统选择请求失效（旧弹窗返回后丢弃）
+    pickBusyRef.current = false
+    setPickBusy(false)
+    if (target === 'add') { setWsFolderParent(p); setWsFolderError(false) }
+    else if (bindPick) { persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } })) }
+    setManualPathFor(null)
+    setManualPathText('')
+    setPickErr((prev) => ({ ...prev, [target]: '' }))
   }
 
   /** 绑定弹窗「更改」：弹窗选择文件夹，直接作为项目文件夹 */
   const changeBindFolder = () => {
-    if (!bindPick) return
-    pickFolder((p) => {
+    if (!bindPick || pickBusyRef.current) return
+    pickFolder('bind', (p) => {
       persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
     })
   }
@@ -2123,6 +2184,7 @@ function buildCustomLayoutPrompt(req: string): string {
     const startRect = root.getBoundingClientRect()
     dragRef.current = { startY: e.clientY, startX: e.clientX, startRect, dragging: false, prevFloat: float }
     try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch {}
+    invalidatePickState()
     setViewOptionsOpen(false); setAddOpen(false)
   }
 
@@ -2219,12 +2281,15 @@ function buildCustomLayoutPrompt(req: string): string {
     if (!name) { setWsError(true); return }
     const folderPath = wsFolderParent.trim()
     if (!folderPath) { setWsFolderError(true); return }
+    if (!isAbs(folderPath)) { setWsFolderError(true); return }
     try {
-      // 轻量兜底：选中的路径理应存在，mkdir 幂等无害
-      await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
-    } catch { /* 非致命 */ }
+      // 兜底建目录；HTTP 非 2xx 视为失败，不能继续保存（路径可能无效）
+      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
+      if (!r.ok) { setWsFolderError(true); setPickErr((prev) => ({ ...prev, add: t('add.folderCreateFail') })); return }
+    } catch { setWsFolderError(true); setPickErr((prev) => ({ ...prev, add: t('add.folderCreateFail') })); return }
     const layout = buildLayout(wsPreset, name)
     persistProjects((prev) => ({ ...prev, layouts: [...prev.layouts, layout], folders: { ...prev.folders, [layout.id]: folderPath } }))
+    invalidatePickState() // 保存成功：失效在途选择请求（防止旧选择器稍后返回写回已重置的表单）
     setWsName(''); setWsFolderParent(''); setWsError(false); setWsFolderError(false)
     setAddOpen(false)
     openSplit(layout)
@@ -2649,7 +2714,7 @@ function buildCustomLayoutPrompt(req: string): string {
             className="dsh-wt_iconBtn"
             aria-label={t('menu.viewOptions')}
             title={t('menu.viewOptions')}
-            onClick={() => { setViewOptionsOpen((v) => !v); setAddOpen(false) }}
+            onClick={() => { invalidatePickState(); setViewOptionsOpen((v) => !v); setAddOpen(false) }}
           >{ICON_VIEW_OPTIONS}</button>
           <button
             type="button"
@@ -2657,6 +2722,7 @@ function buildCustomLayoutPrompt(req: string): string {
             aria-label={t('menu.add')}
             title={t('menu.add')}
             onClick={() => {
+              invalidatePickState()
               setAddOpen((v) => !v); setViewOptionsOpen(false)
               // 父目录默认 = 当前会话工作目录（不落 C 盘默认位置）
               if (!wsFolderParent) {
@@ -2683,7 +2749,7 @@ function buildCustomLayoutPrompt(req: string): string {
         </div>
       )}
 
-      {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => setAddOpen(false)} />}
+      {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => { invalidatePickState(); setAddOpen(false) }} />}
       {addOpen && (
         <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 360, zIndex: 80 }}>
           <span className="dsh-wt_menuLabel">{t('add.chooseLayout')}</span>
@@ -2700,7 +2766,7 @@ function buildCustomLayoutPrompt(req: string): string {
               </button>
             ))}
             <button type="button" className="dsh-wt_preset dsh-wt_presetAdd" title={t('customLayout.addTitle')}
-              onClick={() => { setAddOpen(false); setCustomOpen(true) }}>
+              onClick={() => { invalidatePickState(); setAddOpen(false); setCustomOpen(true) }}>
               <span className="dsh-wt_presetAddIcon" aria-hidden>＋</span>
               <span className="dsh-wt_presetAddText">{t('customLayout.add')}</span>
             </button>
@@ -2713,8 +2779,23 @@ function buildCustomLayoutPrompt(req: string): string {
               <span className={'dsh-wt_addFolderPath' + (wsFolderParent ? '' : ' dsh-wt_addFolderPathNone')} title={wsFolderParent || ''}>
                 {wsFolderParent || t('add.folderNone')}
               </span>
-              <button type="button" className="dsh-wt_bindFolderChange" onClick={() => { pickFolder((p) => { setWsFolderParent(p); setWsFolderError(false) }); setWsError(false) }}>{t('add.folderPick')}</button>
+              <button type="button" className="dsh-wt_bindFolderChange" disabled={pickBusy}
+                onClick={() => { pickFolder('add', (p) => { setWsFolderParent(p); setWsFolderError(false) }); setWsError(false) }}>
+                {pickBusy ? t('add.folderPicking') : t('add.folderPick')}
+              </button>
+              <button type="button" className="dsh-wt_bindFolderChange" title={t('add.folderManual')}
+                onClick={() => { setManualPathFor(manualPathFor === 'add' ? null : 'add'); setPickErr((prev) => ({ ...prev, add: '' })) }}>{t('add.folderManual')}</button>
             </div>
+            {pickBusy && <p className="dsh-wt_folderPickHint">{t('add.folderPickerHint')}</p>}
+            {manualPathFor === 'add' && (
+              <div className="dsh-wt_addFolderRow">
+                <input type="text" className="dsh-wt_manualPathInput" placeholder={t('add.folderManualPh')} value={manualPathText}
+                  onChange={(e) => setManualPathText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') applyManualPath('add') }} />
+                <button type="button" className="dsh-wt_bindFolderChange" onClick={() => applyManualPath('add')}>{t('add.folderManualOk')}</button>
+              </div>
+            )}
+            {pickErr.add && <p className="dsh-wt_addError">{pickErr.add}</p>}
             <button type="button" className="dsh-wt_addBtn" onClick={saveLayout}>{t('add.layoutSave')}</button>
           </div>
           {wsError && <p className="dsh-wt_addError">{t('add.layoutInvalid')}</p>}
@@ -2902,18 +2983,32 @@ function buildCustomLayoutPrompt(req: string): string {
         </div>
       )}
 
-      {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { setBindPick(null); setBindListOpen(false) }} />}
+      {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { invalidatePickState(); setBindPick(null); setBindListOpen(false) }} />}
       {bindPick && (
         <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
           {/* 项目文件夹框（格式基准）：第一行 emoji+标题，第二行路径；可随时更改 */}
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
               <span className="dsh-wt_bindFolderLabel">📁 {t('bind.folder')}</span>
-              <button type="button" className="dsh-wt_bindFolderChange" onClick={changeBindFolder}>{t('bind.folderChange')} ↻</button>
+              <button type="button" className="dsh-wt_bindFolderChange" disabled={pickBusy} onClick={changeBindFolder}>
+                {pickBusy ? t('add.folderPicking') : t('bind.folderChange') + ' ↻'}
+              </button>
+              <button type="button" className="dsh-wt_bindFolderChange" title={t('add.folderManual')}
+                onClick={() => { setManualPathFor(manualPathFor === 'bind' ? null : 'bind'); setPickErr((prev) => ({ ...prev, bind: '' })) }}>{t('add.folderManual')}</button>
             </div>
+            {pickBusy && <p className="dsh-wt_folderPickHint">{t('add.folderPickerHint')}</p>}
             <div className={'dsh-wt_bindFolderPath' + (projects.folders[bindPick.id] ? '' : ' dsh-wt_bindFolderPathNone')} title={projects.folders[bindPick.id] ?? ''}>
               {projects.folders[bindPick.id] ?? t('bind.folderNone')}
             </div>
+            {manualPathFor === 'bind' && (
+              <div className="dsh-wt_addFolderRow">
+                <input type="text" className="dsh-wt_manualPathInput" placeholder={t('add.folderManualPh')} value={manualPathText}
+                  onChange={(e) => setManualPathText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') applyManualPath('bind') }} />
+                <button type="button" className="dsh-wt_bindFolderChange" onClick={() => applyManualPath('bind')}>{t('add.folderManualOk')}</button>
+              </div>
+            )}
+            {pickErr.bind && <p className="dsh-wt_addError">{pickErr.bind}</p>}
           </div>
           {/* 绑定对话框（与项目文件夹同格式）：第一行 💬+标题（最右解绑）；第二行 分组 | 对话名（点击右侧弹列表，再点反选收起）；框内下方：说明 */}
           <div className="dsh-wt_bindFolderBox">
