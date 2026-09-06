@@ -2,6 +2,14 @@
   "name": "dsh-worktable",
   "description": "工作台 Worktable：DeepSeek Harness 侧边栏的 agent 级项目容器（应用抽屉）",
   "version": "0.3.3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Aisland-SJL/dsh-worktable.git",
+    "directory": "01_content"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "license": "MIT",
   "type": "module",
   "main": "lib/index.js",
@@ -29,6 +37,13 @@
         "@deepseek-ai/dsh-client-ui-primitives",
         "@deepseek-ai/dsh-client-locale"
       ]
+    },
+    "compatibility": {
+      "dsh": "0.1.1-rc.2 || 0.1.2-rc.1",
+      "dshReleases": {
+        "0.1.1-rc.2": "compatible",
+        "0.1.2-rc.1": "compatible"
+      }
     }
   },
   "scripts": {
