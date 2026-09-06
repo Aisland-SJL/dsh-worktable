@@ -8,6 +8,45 @@ import { homedir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 /**
+ * 基础数据目录解析：不加载任何官方包（loadPkg 的兜底只能用它，禁止反向调用包加载函数——否则成环）。
+ * 规则与官方 @deepseek-ai/dsh-home-paths 的 resolveDshHome 一致：
+ *   DSH_HOME 环境变量优先（空/纯空白视为未设置），否则 ~/.dsh；
+ *   支持 ~、~/、~\ 前缀展开；相对路径按进程 cwd 解析；结果归一为绝对路径。
+ * 禁止任何业务代码直接拼 homedir()/.dsh —— 自定义 DSH_HOME（Desktop/隔离测试）会读错数据。
+ */
+function baseDshHome(): string {
+  const env = process.env.DSH_HOME
+  // 与官方一致：trim 只用于判断是否全空白，实际路径保留原字符串（两端空格有含义）
+  const value = env !== undefined && env.trim().length > 0 ? env : pathResolve(homedir(), '.dsh')
+  if (value === '~') return homedir()
+  if (value.startsWith('~/') || value.startsWith('~\\')) return pathResolve(homedir(), value.slice(2))
+  return pathResolve(value)
+}
+
+/** 解析 DSH 数据根目录：优先官方 @deepseek-ai/dsh-home-paths（显式配置/DSH_HOME/默认），
+ *  不可用或返回非法值时回退 baseDshHome()（同官方规则）。带缓存。 */
+let cachedDshHome: string | null = null
+/** 本次解析实际走了哪条路径（供测试断言官方包是否真的被使用） */
+let dshHomeSource: 'official' | 'fallback' = 'fallback'
+function resolveDshHomeSafe(): string {
+  if (cachedDshHome) return cachedDshHome
+  try {
+    const pkg = loadPkg('@deepseek-ai/dsh-home-paths') as any
+    if (pkg && typeof pkg.resolveDshHome === 'function') {
+      const home = pkg.resolveDshHome(undefined, process.env)
+      if (typeof home === 'string' && home.trim() !== '') {
+        dshHomeSource = 'official'
+        cachedDshHome = home
+        return cachedDshHome
+      }
+    }
+  } catch {}
+  dshHomeSource = 'fallback'
+  cachedDshHome = baseDshHome()
+  return cachedDshHome
+}
+
+/**
  * dsh-worktable 服务端：健康路由 + 工作区内容窗的数据路由。
  * 参考 dsh-better-sidebar 的架构——内容窗能力由本插件自己的服务端路由提供：
  *   - POST /api/worktable/fs     目录列表（资源管理器窗）
@@ -53,6 +92,8 @@ const TEMPLATE_PREFIX = '/api/worktable/template'
  * 本包经 junction 链接进 profile，普通 import 可能解析不到 profile 级依赖；
  * 同时尝试 junction 路径与 realpath 两条祖先链。
  */
+/** 依赖探测尝试计数（供测试断言「有界探测、无循环重入」） */
+let loadProbeAttempts = 0
 function loadPkg(pkg: string): any | null {
   const starts = new Set<string>()
   try { starts.add(dirname(fileURLToPath(import.meta.url))) } catch {}
@@ -60,6 +101,7 @@ function loadPkg(pkg: string): any | null {
   for (const start of starts) {
     let dir: string | null = start
     while (dir && dir !== pathResolve(dir, '..')) {
+      loadProbeAttempts++
       try {
         const req = createRequire(pathToFileURL(pathResolve(dir, '__wt_probe__.js')).href)
         return req(pkg)
@@ -67,12 +109,13 @@ function loadPkg(pkg: string): any | null {
       dir = pathResolve(dir, '..')
     }
   }
-  // 兜底：DSH 标准目录 ~/.dsh/profiles/*/node_modules（宿主按 realpath 加载时前两条链都找不到）
+  // 兜底：DSH profiles/*/node_modules（按 baseDshHome 解析根目录——不能用 resolveDshHomeSafe，否则与本函数成环）
   try {
-    const profilesDir = pathResolve(homedir(), '.dsh', 'profiles')
+    const profilesDir = pathResolve(baseDshHome(), 'profiles')
     for (const profile of readdirSync(profilesDir, { withFileTypes: true })) {
       if (!profile.isDirectory() && !profile.isSymbolicLink()) continue
       const nm = pathResolve(profilesDir, profile.name, 'node_modules')
+      loadProbeAttempts++
       try {
         const req = createRequire(pathToFileURL(pathResolve(nm, '__wt_probe__.js')).href)
         return req(pkg)
@@ -80,6 +123,11 @@ function loadPkg(pkg: string): any | null {
     }
   } catch {}
   return null
+}
+
+/** 测试钩子：依赖探测尝试次数 + 数据目录解析路径（循环回归与官方路径断言用） */
+export function __wtLoadProbeStats(): { attempts: number; homeSource: 'official' | 'fallback' } {
+  return { attempts: loadProbeAttempts, homeSource: dshHomeSource }
 }
 
 /** 解析会话工作目录：服务端 header.cwd 优先，其次客户端传入 cwd，最后进程 cwd */
@@ -316,13 +364,44 @@ export function apply(ctx: Context) {
     },
   })
 
-  // 工作区列表（自定义窗口会话分组用）：读宿主 ~/.dsh/storages/workspace.json（只读）
+  // 工作区列表（自定义窗口会话分组用）：
+  // 优先走宿主正式服务 ctx.workspaceRegistry（0.1.1/0.1.2 均有，正确感知 DSH_HOME 与存储后端）；
+  // 不可用时回退按 resolveDshHomeSafe() 读 storages/workspace.json（只读）。
+  // 返回结构是客户端契约，两种来源都映射成同一 shape。
   webServer.register({
     kind: 'exact',
     path: '/api/worktable/workspaces',
     handler: async (_req: any, res: any) => {
       try {
-        const file = pathResolve(homedir(), '.dsh', 'storages', 'workspace.json')
+        // cordis 对未 inject 服务的属性访问会直接 throw（不返回 undefined），必须 try-catch 探测
+        let registry: any = null
+        try { registry = (ctx as any).workspaceRegistry ?? null } catch {}
+        if (!registry) {
+          try { registry = ctx.get?.('workspaceRegistry') ?? null } catch {}
+        }
+        if (registry && typeof registry.list === 'function') {
+          const list = registry.list() ?? []
+          const workspaceIds: string[] = []
+          const tables: Record<string, { title?: string; sessionIds?: string[] }> = {}
+          for (const ws of list) {
+            const id = String(ws?.id ?? '')
+            if (!id) continue
+            workspaceIds.push(id)
+            tables[id] = {
+              title: typeof ws?.title === 'string' ? ws.title : undefined,
+              sessionIds: Array.isArray(ws?.sessionIds) ? ws.sessionIds.map(String) : [],
+            }
+          }
+          let archived: string[] = []
+          try { archived = (registry.archivedSessionIds ?? []).map(String) } catch {}
+          json(res, 200, {
+            unit: { name: 'workspace', version: 2 },
+            global: { initialized: true, workspaceIds, archivedSessionIds: archived },
+            tables: { workspaces: tables },
+          })
+          return
+        }
+        const file = pathResolve(resolveDshHomeSafe(), 'storages', 'workspace.json')
         const raw = await readFile(file, 'utf8')
         // 容忍 BOM（外部工具改写可能带 EF BB BF，JSON.parse 会抛错）
         json(res, 200, JSON.parse(raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw))

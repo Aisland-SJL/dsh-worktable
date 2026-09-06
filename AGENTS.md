@@ -54,10 +54,14 @@ node --check lib/index.js
   版本一致性 → 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
   无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
   HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
-  白名单 react/react/jsx-runtime + apply/inject 断言）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
+  白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（8 场景，评估安装产物 lib/client.js；
+  测试接受包路径参数）→ **服务端数据目录回归**（3 组场景，评估安装产物 lib/index.js）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
   脚本零 git/gh 动作，发布上传由 gh 手动完成。
   **发布禁止裸 npm pack 或手工 tar 生成发布包**；脚本从仓库任意目录调用均安全（以自身位置解析）。
-- **配套检查入口**：`npm run test:gate` = 工厂门禁 9 个失败/正向用例；
+- **配套检查入口**：`npm run test:gate` = 工厂门禁 10 个失败/正向用例；
+  `node 04_test/anchor-dom.test.mjs [lib/client.js 路径]` = 分栏锚点 8 场景（缺省用工作目录构建产物）；
+  `node 04_test/server-home.test.mjs [lib/index.js 路径]` = 数据目录解析 3 组场景（子进程隔离夹具；
+  **突变体验证法**：把 loadPkg 兜底的 baseDshHome() 故意改回 resolveDshHomeSafe() 恢复循环，测试必须红）。
   `npm run verify:remote -- --expect-sha <release-prep 输出的 SHA> [tag]` = 发布后只读核对
   （远端固定名+版本化双资产文件名/结构/版本/双 SHA 同源且等于本地验收 SHA/安装/导入；
   远端只读，本地仅临时目录）。上传后必须跑 verify:remote 并用 --expect-sha 比对，
@@ -71,6 +75,20 @@ node --check lib/index.js
 - **预设追加规则**：新布局预设只允许追加到 `PRESET_DEFS` 末尾（选择器里的「＋自定义」磁贴
   永远是最后一个）；字段 leftCount/topCount/contentCount/chatFull/topHeightDefault/topHeightRatio，
   聊天窗恒在右侧；缩略图在 presetThumb() 加分支。
+- **分栏引擎双版本锚点（v0.3.3 兼容契约，0.1.1-rc.2 与 0.1.2-rc.1）**：会话根三种结构——
+  0.1.1 active = [头部, 滚动区]；空会话 hero = [隐藏头部(headerHidden), 内容区]；0.1.2 无会话
+  hero = [内容区]（单子元素）。resolveAnchor：仅「存在第二个子元素」且第一个可见（自身有高度，
+  或零高槽位包装内第一个可见后代——visibleHeaderIn）才作头部；否则顶部取根顶部。phase 排序
+  active > hero > settling，settling 等待不关闭。**同根重锚（hero↔active）只在锚点元素真正
+  更换时才更新 saved 原值**，否则关闭时泄漏已应用的 margin/宽度变量。改锚点必须跑
+  anchor-dom 8 场景（含 H：0.1.2 零高包装+内部头部）。0.1.2 的 children[0] 是 display:contents
+  式零高包装、真实标题栏在内部——不要凭 0.1.1 的结构想当然。
+- **数据目录解析无循环（v0.3.3 红线）**：resolveDshHomeSafe = 官方 @deepseek-ai/dsh-home-paths
+  （可用时）→ baseDshHome 兜底；**loadPkg 的 profiles 兜底只能用 baseDshHome，禁止回调
+  resolveDshHomeSafe（会成环）**。baseDshHome 规则对齐官方：DSH_HOME 优先、空/纯空白视为未设、
+  ~ 与 ~/ 与 ~\ 展开、相对路径按 cwd、默认 ~/.dsh；trim 只用于空白判断、路径保留原字符串。
+  **不把 dsh-home-paths 声明为生产依赖**（其 peer cordis ^4.0.2 不满足 0.1.1-rc.2 的 4.0.1，
+  已试过并撤回）。改这块必须跑 server-home 3 组场景 + 突变体验证（恢复循环测试必须红）。
 - **新会话预设修复**：新建会话（createCustomSession / bindConsoleNew）创建后调用
   ensureSessionPreset——用宿主 api.agentPresets.list/select 显式应用「部署默认预设」
   （isDefault ?? 首个，失败逐个尝试其余预设；select 仅对 blank 会话生效）。
@@ -197,29 +215,17 @@ node --check lib/index.js
   与版本化资产。版本注入：build.mjs 把 package.json version 打进 __WT_VERSION__，发版前
   改 version 再构建；升级动作（执行 add + 重启）永远留给用户或其 Agent，插件不自更新。
 
-## 宿主升级事故（0.1.1-rc.2 link 插件回归）
+## 宿主升级事故（0.1.1-rc.2 link 插件回归，备忘）
 
-- 现象：rc.2 的 cordis-plugin-loader 对裸包名走原生 ESM import()（realpath 解析），
-  link: 挂载的自研插件（dsh-worktable 等服务端 cordis 插件）找不到 profile 里的 peer
-  依赖，插件树加载失败、服务启动即崩。--preserve-symlinks 不可用（破坏 pnpm 虚拟存储
-  下 sharp/koffi 等 native 模块）。
-- 临时修复（已验证）：在 link 插件共同祖先目录建 junction：
-  `E:\AI_Workspace\DeepseekHarness\node_modules` → `C:\Users\SJL\.dsh\profiles\node_modules`
-  （覆盖本目录下所有 link 插件；另一个 Agent 已建好）。**上游 loader 修复后必须删除该
-  junction**，避免双解析叠加。
-- 我们仓库侧核查结论：package.json peerDependencies 全部 `"*"` + optional（干净）；
-  dsh.client.inject 里的 dsh-client-ui-slots / dsh-client-ui-primitives 是运行时服务注入
-  （无版本解析），工作正常，不删除。
-- 恢复后验收：functional-diag 全 20 STEP ERROR_COUNT: 0；/api/worktable/health ok、
-  /workspaces 200。
+- rc.2 的 loader 对裸包名走原生 ESM import()，link: 插件找不到 profile 里的 peer 依赖 → 启动即崩。
+  临时修复：junction `E:\AI_Workspace\DeepseekHarness\node_modules` → `C:\Users\SJL\.dsh\profiles\node_modules`。
+  **上游 loader 修复后必须删除该 junction**（双解析叠加）。peerDependencies 全部 `"*"` + optional 已核查（干净）。
 
 ## 宿主 bug 跟踪（UTF-16 路径截断）
 
-- 官方 `dsh-host-directory-picker-native` 的 readUtf16 只查 UTF-16LE 码元低字节，含 U+XX00
-  字符（开/一/言/Ā/🀀 等）的文件夹路径在选目录时被截断 → 创建工作区异常。非我们插件问题。
-- 修复与回归测试以 patch 存档：`02_process/upstream/utf16-picker-fix.patch`；官方 Discussions
-  #580 已接单（tianyicui「我们修复一下」），我们的补证评论已发（Aisland-SJL）。
-- 待办：官方修 master 后核验对应 npm 版本是否含修复，随后可清理 patch 存档。
+- 官方 native picker 的 readUtf16 只看 UTF-16LE 低字节，含 U+XX00 字符（开/一/言/Ā/🀀 等）的路径被截断。非我们插件问题。
+  修复与回归测试存档：`02_process/upstream/utf16-picker-fix.patch`；官方 Discussions #580 已接单。
+  待办：官方修 master 后核验对应 npm 版本是否含修复，随后可清理 patch 存档。
 
 ## 安装 / 重启
 

@@ -173,6 +173,37 @@ try {
 }
 console.log('[release-prep] client factory gate passed (ModuleLoader id + factory evaluation + inject)')
 
+// ---------- 5c. 分栏引擎 DOM 锚点回归（0.1.1/0.1.2 双会话根结构 + 过渡重锚 + 关闭还原） ----------
+// 评估「安装目录中的最终产物」lib/client.js（与 5b 同一文件），用假 DOM 驱动 splitStore 全路径
+const anchorTest = join(HERE, '..', '04_test', 'anchor-dom.test.mjs')
+if (!existsSync(anchorTest)) {
+  console.error('[release-prep] FAIL: anchor-dom.test.mjs missing')
+  process.exit(1)
+}
+const anchorRun = spawnSync(process.execPath, [anchorTest, join(inst, 'node_modules', 'dsh-worktable', 'lib', 'client.js')], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (anchorRun.status !== 0) {
+  console.error('[release-prep] FAIL: anchor-dom.test.mjs')
+  console.error(anchorRun.stderr || anchorRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] split anchor dom tests passed (8 scenarios, on installed artifact)')
+
+// ---------- 5d. 服务端数据目录解析回归（loadPkg ↔ resolveDshHomeSafe 循环调用修复） ----------
+// 评估「安装目录中的最终产物」lib/index.js；官方路径 / 包不可解析兜底 / ~ 与相对路径展开
+const serverHomeTest = join(HERE, '..', '04_test', 'server-home.test.mjs')
+const serverSrc = join(inst, 'node_modules', 'dsh-worktable', 'lib', 'index.js')
+if (!existsSync(serverHomeTest) || !existsSync(serverSrc)) {
+  console.error('[release-prep] FAIL: server-home.test.mjs or installed lib/index.js missing')
+  process.exit(1)
+}
+const serverRun = spawnSync(process.execPath, [serverHomeTest, serverSrc], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (serverRun.status !== 0) {
+  console.error('[release-prep] FAIL: server-home.test.mjs')
+  console.error(serverRun.stderr || serverRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] server home resolution tests passed (3 scenarios, on installed artifact)')
+
 // ---------- 6. 双资产从同一已验证包复制 + SHA-256 ----------
 const outDir = join(HERE, 'dist', 'v' + VERSION)
 mkdirSync(outDir, { recursive: true })

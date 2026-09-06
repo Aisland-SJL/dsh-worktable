@@ -98,7 +98,9 @@ node --check lib/index.js
 
 - **构建必须在 01_content 内执行**——在仓库根构建会把 lib 写到错误位置，宿主仍加载旧 bundle
 - 客户端 bundle 保持 `window.__ModuleLoader__.load` 握手；react 与 @deepseek-ai/* 全部 external
-- 回归：`04_test/functional-diag.cjs`（20 步）+ 专项探测（控制室、绑定弹窗、收起态贴片、模型继承）
+- 回归：`04_test/functional-diag.cjs`（20 步）+ 专项探测（控制室、绑定弹窗、收起态贴片、模型继承）；
+  发布流水线内嵌：分栏锚点 DOM 回归 `04_test/anchor-dom.test.mjs`（8 场景，双宿主会话结构）与
+  数据目录解析回归 `04_test/server-home.test.mjs`（3 组场景，无循环/路径展开/官方分支夹具）
 
 ---
 

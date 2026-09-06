@@ -8896,9 +8896,21 @@ function basenameOf(p) {
 var import_react = require("react");
 
 // src/client/changelog.ts
-var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.2
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.3
 
 \u{1F6E0}\uFE0F \u672C\u7248\u672C\u66F4\u65B0
+
+\u3010\u517C\u5BB9\u65B0\u7248 DeepSeek Harness\u3011\u9002\u914D\u5DF2\u6D4B\u7248\u672C DSH 0.1.2-rc.1 \u4E0E 0.1.1-rc.2\uFF1A\u70B9\u51FB\u9879\u76EE\u5361\u7247\u4E0D\u518D\u65E0\u53CD\u5E94\u2014\u2014\u5206\u680F\u5DE5\u4F5C\u533A\u5728\u65E0\u4F1A\u8BDD / \u7A7A\u4F1A\u8BDD / \u6709\u6D88\u606F\u4F1A\u8BDD\u4E0B\u90FD\u80FD\u6B63\u5E38\u6253\u5F00\uFF080.1.1-rc.2 \u5B9E\u6D4B\u672A\u53D1\u73B0\u56DE\u5F52\uFF09\uFF1B\u9009\u62E9\u9879\u76EE\u6587\u4EF6\u5939\u7684\u7A97\u53E3\u5728 0.1.2-rc.1 \u4E0A\u6062\u590D\u6B63\u5E38\u53EF\u7528\uFF1B\u5DE5\u4F5C\u53F0\u6570\u636E\u8BFB\u53D6\u4E0D\u518D\u4F9D\u8D56\u9ED8\u8BA4\u5B89\u88C5\u8DEF\u5F84\uFF0C\u81EA\u5B9A\u4E49\u5B89\u88C5\u4F4D\u7F6E\uFF08DSH_HOME\uFF09\u4E5F\u80FD\u6B63\u786E\u8BFB\u53D6\u9879\u76EE\u4E0E\u5206\u7EC4\u6570\u636E\u3002
+
+\u3010\u5173\u4E8E\u9009\u62E9\u6587\u4EF6\u5939\u7A97\u53E3\u7684\u5DF2\u77E5\u95EE\u9898\uFF08DeepSeek Harness \u5BBF\u4E3B\u81EA\u8EAB\u95EE\u9898\uFF0C\u4E0D\u662F\u672C\u63D2\u4EF6\u7684\u95EE\u9898\uFF09\u3011\u5728\u90E8\u5206\u7CFB\u7EDF\u4E0A\uFF0C\u70B9\u51FB\u300C\u9009\u62E9\u4F4D\u7F6E\u2026\u300D\u4E4B\u540E\u6587\u4EF6\u5939\u9009\u62E9\u7A97\u53E3\u53EF\u80FD\u4E0D\u4F1A\u81EA\u52A8\u8DF3\u5230\u6700\u524D\u9762\uFF0C\u800C\u662F\u85CF\u5728\u4EFB\u52A1\u680F\u6216\u5176\u4ED6\u7A97\u53E3\u540E\u9762\u3002\u8FD9\u662F DeepSeek Harness \u5BBF\u4E3B\u9009\u62E9\u5668\u7684\u5DF2\u77E5\u7F3A\u9677\uFF0C\u4E0E\u5DE5\u4F5C\u53F0\u65E0\u5173\uFF0C\u7B49\u5F85\u5B98\u65B9\u4FEE\u590D\u3002\u9047\u5230\u65F6\u70B9\u4E00\u4E0B\u4EFB\u52A1\u680F\u91CC\u7684 DSH \u56FE\u6807\u5373\u53EF\u5207\u51FA\u7A97\u53E3\uFF1B\u82E5\u4E0D\u60F3\u7B49\uFF0C\u76F4\u63A5\u7528\u300C\u624B\u52A8\u8F93\u5165\u300D\u7C98\u8D34\u6587\u4EF6\u5939\u7EDD\u5BF9\u8DEF\u5F84\uFF0C\u529F\u80FD\u5B8C\u5168\u4E0D\u53D7\u5F71\u54CD\u3002
+
+\u3010\u8C01\u9700\u8981\u5347\u7EA7\u3011\u4ECD\u5728\u7528\u8001\u7248\u672C DSH \u4E14\u5DE5\u4F5C\u53F0\u4E00\u5207\u6B63\u5E38\u7684\u7528\u6237\uFF0C\u53EF\u4EE5\u6682\u4E0D\u5347\u7EA7\uFF1B\u5347\u7EA7\u5230 0.1.2 \u7CFB\u5217\u3001\u6216\u9047\u5230\u300C\u70B9\u51FB\u9879\u76EE\u5361\u7247\u6CA1\u6709\u53CD\u5E94\u300D\u7684\u7528\u6237\uFF0C\u5EFA\u8BAE\u5347\u7EA7\u672C\u7248\u672C\u3002
+
+\u3010\u5347\u7EA7\u8BF4\u660E\u3011\u5347\u7EA7\u5B89\u88C5\u540E\u8BF7\u5B8C\u6574\u9000\u51FA\u5E76\u91CD\u542F DSH \u518D\u5237\u65B0\u9875\u9762\uFF1B\u82E5\u91CD\u542F\u540E\u4ECD\u663E\u793A\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u4FDD\u7559\u5B8C\u6574\u9519\u8BEF\u4FE1\u606F\u53CD\u9988\u3002
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+\u6B64\u524D\u7248\u672C\u8BF4\u660E\uFF08v0.3.2\uFF09
 
 \u3010\u6587\u4EF6\u5939\u9009\u62E9\u4F53\u9A8C\u3011\u9009\u62E9\u9879\u76EE\u6587\u4EF6\u5939\u65F6\uFF1A\u7B49\u5F85\u671F\u95F4\u6309\u94AE\u663E\u793A\u300C\u7B49\u5F85\u9009\u62E9\u2026\u300D\u5E76\u63D0\u793A\u300C\u82E5\u672A\u770B\u5230\u9009\u62E9\u7A97\u53E3\uFF0C\u53EF\u68C0\u67E5\u4EFB\u52A1\u680F\uFF0C\u6216\u4F7F\u7528\u624B\u52A8\u8F93\u5165\u300D\uFF1B\u65B0\u589E\u300C\u624B\u52A8\u8F93\u5165\u300D\u5165\u53E3\uFF0C\u53EF\u76F4\u63A5\u7C98\u8D34\u6587\u4EF6\u5939\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u76F8\u5BF9\u8DEF\u5F84\u4F1A\u88AB\u62D2\u7EDD\u5E76\u63D0\u793A\uFF09\uFF1B\u9009\u62E9\u5931\u8D25\u65F6\u663E\u793A\u5177\u4F53\u9519\u8BEF\uFF0C\u4E0D\u518D\u9759\u9ED8\u65E0\u53CD\u5E94\uFF1B\u4FEE\u590D\u4E86\u65E7\u9009\u62E9\u7A97\u53E3\u8FD4\u56DE\u540E\u8986\u76D6\u624B\u5DE5\u8F93\u5165\u3001\u5F39\u7A97\u5173\u95ED/\u5207\u6362\u540E\u72B6\u6001\u6B8B\u7559\u7B49\u95EE\u9898\u3002
 
@@ -8936,7 +8948,7 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.2
 \u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
 
 // src/client/updateCheck.ts
-var LOCAL_VERSION = false ? "dev" : "0.3.2";
+var LOCAL_VERSION = false ? "dev" : "0.3.3";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
 var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
@@ -17266,8 +17278,33 @@ function AnnotationOverlay() {
 }
 function findConversationRoot() {
   const candidates = Array.from(document.querySelectorAll("[data-phase]"));
-  const ok = (el) => el.tagName !== "TEXTAREA" && el.tagName !== "INPUT" && el.children.length >= 2;
-  return candidates.find((el) => ok(el) && el.dataset.phase === "active") ?? candidates.find(ok) ?? null;
+  const ok = (el) => el.tagName !== "TEXTAREA" && el.tagName !== "INPUT" && el.children.length >= 1 && !/input/i.test(String(el.className));
+  const rank = (el) => el.dataset.phase === "active" ? 0 : el.dataset.phase === "hero" ? 1 : 2;
+  let best = null;
+  let bestRank = Infinity;
+  for (const el of candidates) {
+    if (!ok(el)) continue;
+    const r = rank(el);
+    if (r < bestRank) {
+      bestRank = r;
+      best = el;
+    }
+  }
+  return best;
+}
+function visibleHeaderIn(first) {
+  if (first.getBoundingClientRect().height > 0) return first;
+  for (const el of Array.from(first.querySelectorAll("*"))) {
+    const r = el.getBoundingClientRect();
+    if (r.height > 0 && r.width > 0) return el;
+  }
+  return null;
+}
+function resolveAnchor(root) {
+  const first = root.children[0];
+  const second = root.children[1];
+  const header = !!second && !!first ? visibleHeaderIn(first) : null;
+  return { header, viewArea: second ?? first };
 }
 function loadSaved(layoutId) {
   try {
@@ -17316,6 +17353,7 @@ var splitStore = {
   savedMarginLeft: "",
   savedMarginRight: "",
   savedMarginTop: "",
+  savedWidthVar: "",
   observer: null,
   fallback: null,
   yieldObserver: null,
@@ -17343,9 +17381,7 @@ var splitStore = {
     }
     const root = findConversationRoot();
     if (!root) return false;
-    const header = root.children[0];
-    const viewArea = root.children[1];
-    if (!header || !viewArea) return false;
+    const { header, viewArea } = resolveAnchor(root);
     this.spec = { ...spec, chatSide: spec.chatSide === "left" ? "left" : "right" };
     const normalize2 = (p) => {
       if (p.tabs && p.tabs.length > 0) return p;
@@ -17376,6 +17412,7 @@ var splitStore = {
     this.root = root;
     this.header = header;
     this.viewArea = viewArea;
+    this.savedWidthVar = root.style.getPropertyValue("--dsh-chat-user-width");
     this.savedMarginLeft = viewArea.style.marginLeft;
     this.savedMarginRight = viewArea.style.marginRight;
     this.savedMarginTop = viewArea.style.marginTop;
@@ -17420,7 +17457,12 @@ var splitStore = {
     this.applyMargin();
     this.observer = new ResizeObserver(() => {
       const r = this.root;
-      if (!(r && r.isConnected && r.dataset.phase === "active")) {
+      if (!(r && r.isConnected)) {
+        this.syncAnchor();
+        return;
+      }
+      const anchor = resolveAnchor(r);
+      if (anchor.header !== this.header || anchor.viewArea !== this.viewArea) {
         this.syncAnchor();
         return;
       }
@@ -17431,8 +17473,12 @@ var splitStore = {
     this.observer.observe(root);
     this.fallback = new MutationObserver(() => {
       const r = this.root;
-      if (r && r.isConnected && r.dataset.phase === "active") return;
-      this.syncAnchor();
+      if (!(r && r.isConnected)) {
+        this.syncAnchor();
+        return;
+      }
+      const anchor = resolveAnchor(r);
+      if (anchor.header !== this.header || anchor.viewArea !== this.viewArea) this.syncAnchor();
     });
     this.fallback.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-phase"] });
     this.yieldObserver = new MutationObserver(() => {
@@ -17446,7 +17492,7 @@ var splitStore = {
     this.notify();
     return true;
   },
-  /** 会话根失效（切换会话）时重新锚定：左侧内容保持不关闭；无会话才关闭 */
+  /** 会话根失效（切换会话 / hero↔active 结构变化）时重新锚定：左侧内容保持不关闭；无会话根才关闭 */
   syncAnchor() {
     if (!this.active) return;
     const next = findConversationRoot();
@@ -17454,30 +17500,38 @@ var splitStore = {
       this.close();
       return;
     }
-    if (next.dataset.phase !== "active") return;
-    if (next === this.root) {
+    const ph = next.dataset.phase;
+    if (ph !== "active" && ph !== "hero") return;
+    const anchor = resolveAnchor(next);
+    if (next === this.root && anchor.header === this.header && anchor.viewArea === this.viewArea) {
       this.refreshGeom();
       this.applyMargin();
       this.notify();
       return;
     }
-    const header = next.children[0];
-    const viewArea = next.children[1];
-    if (!header || !viewArea) {
-      this.close();
-      return;
+    const viewArea = anchor.viewArea;
+    const oldRoot = this.root;
+    const oldViewArea = this.viewArea;
+    if (oldViewArea && oldViewArea.isConnected && oldViewArea !== viewArea) {
+      oldViewArea.style.marginLeft = this.savedMarginLeft;
+      oldViewArea.style.marginRight = this.savedMarginRight;
+      oldViewArea.style.marginTop = this.savedMarginTop;
     }
-    if (this.viewArea && this.viewArea.isConnected && this.viewArea !== viewArea) {
-      this.viewArea.style.marginLeft = this.savedMarginLeft;
-      this.viewArea.style.marginRight = this.savedMarginRight;
-      this.viewArea.style.marginTop = this.savedMarginTop;
+    if (oldRoot && oldRoot.isConnected && oldRoot !== next) {
+      if (this.savedWidthVar) oldRoot.style.setProperty("--dsh-chat-user-width", this.savedWidthVar);
+      else oldRoot.style.removeProperty("--dsh-chat-user-width");
     }
     this.root = next;
-    this.header = header;
+    this.header = anchor.header;
     this.viewArea = viewArea;
-    this.savedMarginLeft = viewArea.style.marginLeft;
-    this.savedMarginRight = viewArea.style.marginRight;
-    this.savedMarginTop = viewArea.style.marginTop;
+    if (oldRoot !== next) {
+      this.savedWidthVar = next.style.getPropertyValue("--dsh-chat-user-width");
+    }
+    if (oldViewArea !== viewArea) {
+      this.savedMarginLeft = viewArea.style.marginLeft;
+      this.savedMarginRight = viewArea.style.marginRight;
+      this.savedMarginTop = viewArea.style.marginTop;
+    }
     this.observer?.disconnect();
     this.observer.observe(next);
     this.refreshGeom();
@@ -17486,11 +17540,11 @@ var splitStore = {
   },
   refreshGeom() {
     const root = this.root;
-    const header = this.header;
-    if (!root || !header) return;
+    if (!root) return;
     const rr = root.getBoundingClientRect();
-    const hr2 = header.getBoundingClientRect();
-    this.geom = { left: rr.left, top: hr2.bottom, right: rr.right, bottom: rr.bottom };
+    const hr2 = this.header ? this.header.getBoundingClientRect() : null;
+    const top = hr2 && hr2.height > 0 ? hr2.bottom : rr.top;
+    this.geom = { left: rr.left, top, right: rr.right, bottom: rr.bottom };
   },
   applyMargin() {
     const viewArea = this.viewArea;
@@ -17502,6 +17556,9 @@ var splitStore = {
     const hasLeft = !!spec.left;
     const hasTop = !!(spec.top && spec.top.length > 0);
     const chatW = clamp(this.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60));
+    if (this.root && this.root.isConnected) {
+      this.root.style.setProperty("--dsh-chat-user-width", Math.round(chatW) + "px");
+    }
     const topH = hasTop ? clamp(this.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80)) : 0;
     const leftW = hasLeft ? clamp(this.leftW, spec.leftWidth?.min ?? 160, Math.max(spec.leftWidth?.min ?? 160, colW - 260)) : 0;
     const chatFull = spec.chatFullHeight === true;
@@ -17826,6 +17883,10 @@ var splitStore = {
     persistSaved(this.spec.id, { chatW: this.chatW, topH: this.topH, leftW: this.leftW, paneWs: this.paneWs, topWs: this.topWs, leftWs: this.leftWs });
   },
   close() {
+    if (this.root && this.root.isConnected) {
+      if (this.savedWidthVar) this.root.style.setProperty("--dsh-chat-user-width", this.savedWidthVar);
+      else this.root.style.removeProperty("--dsh-chat-user-width");
+    }
     if (this.viewArea) {
       this.viewArea.style.marginLeft = this.savedMarginLeft;
       this.viewArea.style.marginRight = this.savedMarginRight;
@@ -17840,6 +17901,7 @@ var splitStore = {
     this.root = null;
     this.header = null;
     this.viewArea = null;
+    this.savedWidthVar = "";
     this.geom = null;
     this.spec = null;
     this.active = false;
@@ -20042,7 +20104,7 @@ var WAVE_BG_B64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgIC
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION2 = false ? "dev" : "0.3.2";
+var LOCAL_VERSION2 = false ? "dev" : "0.3.3";
 var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD2 = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI2 = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD2 + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
@@ -20326,6 +20388,7 @@ function findSidebar(start) {
 }
 var registryStore = { ids: [], listeners: /* @__PURE__ */ new Set() };
 var sessionBridge = null;
+var clientCtx = null;
 var hostApi = null;
 async function ensureSessionPreset(sessionId) {
   const api = hostApi?.agentPresets;
@@ -21756,7 +21819,21 @@ function WorktableSection(props) {
   const pickFolder = async (target, apply2) => {
     if (pickBusyRef.current) return;
     const ws = sessionBridge?.workspaces;
-    if (!ws || typeof ws.pickDirectory !== "function") {
+    const legacy = ws && typeof ws.pickDirectory === "function" ? () => ws.pickDirectory() : null;
+    let remotePicker = null;
+    try {
+      const rp = clientCtx?.get?.("remote.directoryPicker");
+      if (rp && typeof rp.pick === "function") remotePicker = () => rp.pick();
+    } catch {
+    }
+    if (!remotePicker) {
+      try {
+        const dp = clientCtx?.directoryPicker;
+        if (dp && typeof dp.pick === "function") remotePicker = () => dp.pick();
+      } catch {
+      }
+    }
+    if (!legacy && !remotePicker) {
       setPickErr((prev) => ({ ...prev, [target]: t("add.folderPickerUnavailable") }));
       return;
     }
@@ -21765,7 +21842,19 @@ function WorktableSection(props) {
     setPickErr((prev) => ({ ...prev, [target]: "" }));
     const seq = ++pickSeqRef.current;
     try {
-      const p = await ws.pickDirectory();
+      let p = null;
+      if (legacy) {
+        p = await legacy();
+      } else {
+        const r = await remotePicker();
+        if (r && typeof r === "object" && "ok" in r) {
+          if (!r.ok) throw new Error(r?.error?.message ?? "directory picker failed");
+          const v = r.value;
+          p = typeof v === "string" ? v : v && typeof v === "object" && typeof v.path === "string" ? v.path : null;
+        } else {
+          p = typeof r === "string" ? r : null;
+        }
+      }
       if (seq !== pickSeqRef.current) return;
       if (!mountedRef.current) return;
       if (p && typeof p === "string") apply2(p);
@@ -23293,6 +23382,7 @@ function WorktableSection(props) {
 var inject = ["slots", "locale", "sessions", "conversation", "workspaces"];
 function apply(ctx) {
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null };
+  clientCtx = ctx;
   try {
     hostApi = ctx.get?.("connection")?.api ?? null;
   } catch {

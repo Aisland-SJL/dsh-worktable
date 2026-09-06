@@ -90,6 +90,8 @@ type SplitState = {
   savedMarginLeft: string
   savedMarginRight: string
   savedMarginTop: string
+  /** 打开前会话根上 --dsh-chat-user-width 的内联值（关闭时原样恢复；0.1.1 上该变量闲置无害） */
+  savedWidthVar: string
   observer: ResizeObserver | null
   fallback: MutationObserver | null
   yieldObserver: MutationObserver | null
@@ -671,13 +673,48 @@ function AnnotationOverlay() {
   )
 }
 
-/** 找到会话根容器：data-phase 元素中排除输入框、取含子元素者；优先 phase=active；无活动会话返回 null */
+/** 找到会话根容器：data-phase 元素中排除输入框、取含子元素者。
+ * DSH 0.1.1-rc.2 与 0.1.2-rc.1 的会话阶段一致：active（有消息）/ hero（无会话或空会话）/ settling（过渡）。
+ * 优先 active，其次 hero（空会话/无会话时也能打开分栏），settling 兜底（锚定后由观察器修正）。 */
 function findConversationRoot(): HTMLElement | null {
   const candidates = Array.from(document.querySelectorAll<HTMLElement>('[data-phase]'))
-  const ok = (el: HTMLElement) => el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT' && el.children.length >= 2
-  return candidates.find((el) => ok(el) && el.dataset.phase === 'active')
-    ?? candidates.find(ok)
-    ?? null
+  const ok = (el: HTMLElement) => el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT'
+    && el.children.length >= 1 && !/input/i.test(String(el.className))
+  const rank = (el: HTMLElement) => (el.dataset.phase === 'active' ? 0 : el.dataset.phase === 'hero' ? 1 : 2)
+  let best: HTMLElement | null = null
+  let bestRank = Infinity
+  for (const el of candidates) {
+    if (!ok(el)) continue
+    const r = rank(el)
+    if (r < bestRank) { bestRank = r; best = el }
+  }
+  return best
+}
+
+/** 从首个槽位元素里解析「可见头部」：
+ * - 0.1.1：children[0] 就是 <header> 本身（可见时自身有高度）。
+ * - 0.1.2：children[0] 是零高的槽位包装（display:contents 式），真实头部渲染在其内部——
+ *   此时向内找第一个可见后代（文档序 = 头部自身，先于其子元素）。
+ * - 空会话（headerHidden，整棵子树 display:none）：找不到任何可见元素 → null（顶部 = 根顶部）。 */
+function visibleHeaderIn(first: HTMLElement): HTMLElement | null {
+  if (first.getBoundingClientRect().height > 0) return first
+  for (const el of Array.from(first.querySelectorAll<HTMLElement>('*'))) {
+    const r = el.getBoundingClientRect()
+    if (r.height > 0 && r.width > 0) return el
+  }
+  return null
+}
+
+/** 从会话根解析分栏锚点（兼容 0.1.1 与 0.1.2 两种 DOM 结构）：
+ * - 0.1.1 与 0.1.2 会话打开：root.children = [头部(或头部包装), 内容滚动区]（0.1.2 多一层 body 包装，不影响取 children[1]）。
+ * - 0.1.2 无会话：root.children = [body]（无头部元素）。
+ * - 空会话（blank）：头部带 headerHidden 样式（高度为 0），按「无头部」处理（顶部 = 根顶部）。
+ * header 仅当存在第二个子元素且能解析出可见头部时生效；viewArea = 第二个子元素，只有一个时 = 第一个。 */
+function resolveAnchor(root: HTMLElement): { header: HTMLElement | null; viewArea: HTMLElement } {
+  const first = root.children[0] as HTMLElement | undefined
+  const second = root.children[1] as HTMLElement | undefined
+  const header = !!second && !!first ? visibleHeaderIn(first) : null
+  return { header, viewArea: second ?? first! }
 }
 
 function loadSaved(layoutId: string): { chatW: number; topH: number; leftW: number; paneWs: number[]; topWs: number[]; leftWs: number[] } | null {
@@ -730,6 +767,7 @@ export const splitStore: SplitState = {
   savedMarginLeft: '',
   savedMarginRight: '',
   savedMarginTop: '',
+  savedWidthVar: '',
   observer: null,
   fallback: null,
   yieldObserver: null,
@@ -759,9 +797,7 @@ export const splitStore: SplitState = {
     } catch {}
     const root = findConversationRoot()
     if (!root) return false
-    const header = root.children[0] as HTMLElement | undefined
-    const viewArea = root.children[1] as HTMLElement | undefined
-    if (!header || !viewArea) return false
+    const { header, viewArea } = resolveAnchor(root)
     this.spec = { ...spec, chatSide: spec.chatSide === 'left' ? 'left' : 'right' }
     // 向后兼容归一化：单内容声明 → 一个标签页
     const normalize = (p: SplitPane): SplitPane => {
@@ -793,6 +829,7 @@ export const splitStore: SplitState = {
     this.root = root
     this.header = header
     this.viewArea = viewArea
+    this.savedWidthVar = root.style.getPropertyValue('--dsh-chat-user-width')
     this.savedMarginLeft = viewArea.style.marginLeft
     this.savedMarginRight = viewArea.style.marginRight
     this.savedMarginTop = viewArea.style.marginTop
@@ -841,20 +878,21 @@ export const splitStore: SplitState = {
     this.applyMargin()
     this.observer = new ResizeObserver(() => {
       const r = this.root
-      if (!(r && r.isConnected && r.dataset.phase === 'active')) {
-        this.syncAnchor()
-        return
-      }
+      if (!(r && r.isConnected)) { this.syncAnchor(); return }
+      const anchor = resolveAnchor(r)
+      if (anchor.header !== this.header || anchor.viewArea !== this.viewArea) { this.syncAnchor(); return }
       this.refreshGeom()
       this.applyMargin()
       this.notify()
     })
     this.observer.observe(root)
-    // 兜底：会话根被替换/phase 变化时 RO 可能不再回调，用 body 级 MutationObserver 驱动重锚定
+    // 兜底：会话根被替换/子结构变化（如 hero→active 头部出现）时 RO 可能不再回调，
+    // 用 body 级 MutationObserver 驱动重锚定；锚点未变时静默（避免流式消息期间高频刷新）
     this.fallback = new MutationObserver(() => {
       const r = this.root
-      if (r && r.isConnected && r.dataset.phase === 'active') return
-      this.syncAnchor()
+      if (!(r && r.isConnected)) { this.syncAnchor(); return }
+      const anchor = resolveAnchor(r)
+      if (anchor.header !== this.header || anchor.viewArea !== this.viewArea) this.syncAnchor()
     })
     this.fallback.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-phase'] })
     // 让位观察器：会话视图区 margin 被外部改写（其他未接入协议的分栏引擎接管）时关闭自身
@@ -872,7 +910,7 @@ export const splitStore: SplitState = {
     return true
   },
 
-  /** 会话根失效（切换会话）时重新锚定：左侧内容保持不关闭；无会话才关闭 */
+  /** 会话根失效（切换会话 / hero↔active 结构变化）时重新锚定：左侧内容保持不关闭；无会话根才关闭 */
   syncAnchor() {
     if (!this.active) return
     const next = findConversationRoot()
@@ -880,31 +918,42 @@ export const splitStore: SplitState = {
       this.close()
       return
     }
-    if (next.dataset.phase !== 'active') return // 过渡态：保持等待（phase 变化会再次触发）
-    if (next === this.root) {
+    const ph = next.dataset.phase
+    if (ph !== 'active' && ph !== 'hero') return // settling 等过渡态：保持等待（phase 变化会再次触发）
+    const anchor = resolveAnchor(next)
+    if (next === this.root && anchor.header === this.header && anchor.viewArea === this.viewArea) {
+      // 同锚点：头部可能由隐藏变可见（hero→active），刷新几何与挤位
       this.refreshGeom()
       this.applyMargin()
       this.notify()
       return
     }
-    const header = next.children[0] as HTMLElement | undefined
-    const viewArea = next.children[1] as HTMLElement | undefined
-    if (!header || !viewArea) {
-      this.close()
-      return
+    const viewArea = anchor.viewArea
+    const oldRoot = this.root
+    const oldViewArea = this.viewArea
+    // 恢复旧锚点（若仍连接），锚定到新会话根
+    if (oldViewArea && oldViewArea.isConnected && oldViewArea !== viewArea) {
+      oldViewArea.style.marginLeft = this.savedMarginLeft
+      oldViewArea.style.marginRight = this.savedMarginRight
+      oldViewArea.style.marginTop = this.savedMarginTop
     }
-    // 恢复旧视图区 margin（若仍连接），锚定到新会话根
-    if (this.viewArea && this.viewArea.isConnected && this.viewArea !== viewArea) {
-      this.viewArea.style.marginLeft = this.savedMarginLeft
-      this.viewArea.style.marginRight = this.savedMarginRight
-      this.viewArea.style.marginTop = this.savedMarginTop
+    if (oldRoot && oldRoot.isConnected && oldRoot !== next) {
+      if (this.savedWidthVar) oldRoot.style.setProperty('--dsh-chat-user-width', this.savedWidthVar)
+      else oldRoot.style.removeProperty('--dsh-chat-user-width')
     }
     this.root = next
-    this.header = header
+    this.header = anchor.header
     this.viewArea = viewArea
-    this.savedMarginLeft = viewArea.style.marginLeft
-    this.savedMarginRight = viewArea.style.marginRight
-    this.savedMarginTop = viewArea.style.marginTop
+    // 仅锚点元素真正更换时才记录「打开前」原值——同元素重锚（hero→active 头部出现）
+    // 必须保留最初存档，否则关闭时会把已应用的 margin/变量误还原成「新原值」
+    if (oldRoot !== next) {
+      this.savedWidthVar = next.style.getPropertyValue('--dsh-chat-user-width')
+    }
+    if (oldViewArea !== viewArea) {
+      this.savedMarginLeft = viewArea.style.marginLeft
+      this.savedMarginRight = viewArea.style.marginRight
+      this.savedMarginTop = viewArea.style.marginTop
+    }
     this.observer?.disconnect()
     this.observer.observe(next)
     this.refreshGeom()
@@ -914,11 +963,12 @@ export const splitStore: SplitState = {
 
   refreshGeom() {
     const root = this.root
-    const header = this.header
-    if (!root || !header) return
+    if (!root) return
     const rr = root.getBoundingClientRect()
-    const hr = header.getBoundingClientRect()
-    this.geom = { left: rr.left, top: hr.bottom, right: rr.right, bottom: rr.bottom }
+    const hr = this.header ? this.header.getBoundingClientRect() : null
+    // 头部隐藏（blank 会话）或无头部（0.1.2 无会话）时以根顶部为分栏上沿
+    const top = hr && hr.height > 0 ? hr.bottom : rr.top
+    this.geom = { left: rr.left, top, right: rr.right, bottom: rr.bottom }
   },
 
   applyMargin() {
@@ -931,6 +981,11 @@ export const splitStore: SplitState = {
     const hasLeft = !!spec.left
     const hasTop = !!(spec.top && spec.top.length > 0)
     const chatW = clamp(this.chatW, spec.chatWidth.min, Math.max(spec.chatWidth.min, colW - 60))
+    // 会话内容宽 clamp(680px, …, 920px) 不随挤出的聊天列收缩 → 显式钉到挤出的列宽
+    // （close/重锚定时原样恢复；0.1.1 上该 CSS 变量闲置，设置无害）
+    if (this.root && this.root.isConnected) {
+      this.root.style.setProperty('--dsh-chat-user-width', Math.round(chatW) + 'px')
+    }
     const topH = hasTop
       ? clamp(this.topH, spec.topHeight?.min ?? 80, Math.max(spec.topHeight?.min ?? 80, rowH - BAR_H - 80))
       : 0
@@ -1261,6 +1316,10 @@ export const splitStore: SplitState = {
   },
 
   close() {
+    if (this.root && this.root.isConnected) {
+      if (this.savedWidthVar) this.root.style.setProperty('--dsh-chat-user-width', this.savedWidthVar)
+      else this.root.style.removeProperty('--dsh-chat-user-width')
+    }
     if (this.viewArea) {
       this.viewArea.style.marginLeft = this.savedMarginLeft
       this.viewArea.style.marginRight = this.savedMarginRight
@@ -1275,6 +1334,7 @@ export const splitStore: SplitState = {
     this.root = null
     this.header = null
     this.viewArea = null
+    this.savedWidthVar = ''
     this.geom = null
     this.spec = null
     this.active = false

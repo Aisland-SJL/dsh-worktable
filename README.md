@@ -99,6 +99,7 @@ node --check lib/index.js
 - **Build must run inside `01_content`** — building from the repo root writes `lib/` to the wrong place while the host keeps loading the old bundle
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
 - Regression: `04_test/functional-diag.cjs` (20 steps, strict gate) plus targeted probes (control room, bind panel, collapsed rail, model inheritance), the path matrix (`04_test/pathutil-matrix.cjs`) and update-check scenarios (`04_test/probe-update-scenarios.cjs`)
+- In the release pipeline: split-anchor DOM regression `04_test/anchor-dom.test.mjs` (8 scenarios, both host conversation-root shapes) and data-home resolution regression `04_test/server-home.test.mjs` (3 groups: no-cycle fallback, path expansion, official-branch fixture)
 
 ---
 

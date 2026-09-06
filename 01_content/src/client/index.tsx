@@ -412,6 +412,8 @@ const registryStore: { ids: string[]; listeners: Set<() => void> } = { ids: [], 
 
 /** 自定义窗口 → 宿主会话桥（apply 时注入；不可用时 CustomPane 降级提示） */
 let sessionBridge: { sessions: any; conversation: any; list: any; workspaces: any } | null = null
+/** 客户端根 ctx（apply 时保存；用于运行时探测 0.1.2 的 remote.directoryPicker 等新服务，不硬写 inject） */
+let clientCtx: any = null
 
 /** 宿主 API 客户端（apply 时从 connection 服务取；agentPresets/sessions 用于修复新会话继承失效模型的 bug） */
 let hostApi: { agentPresets?: any; sessions?: any } | null = null
@@ -1845,11 +1847,29 @@ function buildCustomLayoutPrompt(req: string): string {
    *  - useRef 在途锁 + 请求序号：真实防重入；手工确认/新请求会使旧请求失效，旧弹窗返回后丢弃
    *  - 返回 null = 用户取消：不报错
    *  - 抛异常 = 显示真实错误信息，不再静默吞掉
-   *  - 宿主能力不可用 = 提示改用「手动输入」 */
+   *  - 宿主能力三级探测（运行时，不硬写 inject）：
+   *      ① 0.1.1-rc.2：ctx.workspaces.pickDirectory() → string | null
+   *      ② 0.1.2-rc.1：ctx remote.directoryPicker.pick() → { ok, value, error }（value 即路径或 null）
+   *      ③ 0.1.2 新能力不可用 → 提示改用「手动输入」 */
   const pickFolder = async (target: 'add' | 'bind', apply: (p: string) => void) => {
     if (pickBusyRef.current) return
+    // 解析本次选择器调用路径
     const ws = sessionBridge?.workspaces as any
-    if (!ws || typeof ws.pickDirectory !== 'function') {
+    const legacy = ws && typeof ws.pickDirectory === 'function'
+      ? () => ws.pickDirectory()
+      : null
+    let remotePicker: (() => Promise<any>) | null = null
+    try {
+      const rp = clientCtx?.get?.('remote.directoryPicker')
+      if (rp && typeof rp.pick === 'function') remotePicker = () => rp.pick()
+    } catch {}
+    if (!remotePicker) {
+      try {
+        const dp = (clientCtx as any)?.directoryPicker
+        if (dp && typeof dp.pick === 'function') remotePicker = () => dp.pick()
+      } catch {}
+    }
+    if (!legacy && !remotePicker) {
       setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickerUnavailable') }))
       return
     }
@@ -1858,7 +1878,19 @@ function buildCustomLayoutPrompt(req: string): string {
     setPickErr((prev) => ({ ...prev, [target]: '' }))
     const seq = ++pickSeqRef.current
     try {
-      const p = await ws.pickDirectory()
+      let p: string | null = null
+      if (legacy) {
+        p = await legacy()
+      } else {
+        const r = await remotePicker!()
+        if (r && typeof r === 'object' && 'ok' in r) {
+          if (!r.ok) throw new Error(r?.error?.message ?? 'directory picker failed')
+          const v = r.value
+          p = typeof v === 'string' ? v : (v && typeof v === 'object' && typeof v.path === 'string' ? v.path : null)
+        } else {
+          p = typeof r === 'string' ? r : null
+        }
+      }
       if (seq !== pickSeqRef.current) return // 已被手工确认/新请求/弹窗关闭失效：丢弃旧弹窗结果
       if (!mountedRef.current) return // 组件已卸载：不再应用
       if (p && typeof p === 'string') apply(p)
@@ -3273,6 +3305,7 @@ export const inject = ['slots', 'locale', 'sessions', 'conversation', 'workspace
 export function apply(ctx: any) {
   // 自定义窗口 → 宿主会话桥：保存 sessions/conversation/list 服务引用（模块级）
   sessionBridge = { sessions: ctx.sessions ?? null, conversation: ctx.conversation ?? null, list: ctx.sessions?.list ?? null, workspaces: ctx.workspaces ?? null }
+  clientCtx = ctx
   try { hostApi = ctx.get?.('connection')?.api ?? null } catch { hostApi = null }
   try { (window as any).__dshHostApi = hostApi } catch {}
   try { (window as any).__dshOpenSession = (id: string) => ctx.sessions?.open?.(id); (window as any).__dshSessions = ctx.sessions; (window as any).__dshPromptIntoSession = (id: string, text: string) => promptIntoSession(id, text); (window as any).__dshWorkspaces = ctx.workspaces; (window as any).__dshBuildWindowTaskText = buildWindowTaskText; (window as any).__dshSyncSessionScope = () => syncSessionScope(sessionBridge?.list) } catch {}
