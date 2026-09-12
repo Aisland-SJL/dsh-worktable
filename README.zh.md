@@ -81,6 +81,7 @@
 一个包同时包含**宿主 Cordis 插件**与 **Web 客户端**：
 
 - **宿主**：`/api/worktable/*` 路由——健康检查、文件系统、git、文件读写、站点托管、mkdir、工作区、原生皮肤模板；WebSocket `/api/worktable/term` 提供终端窗格（Windows 下为 PowerShell）
+- **访问密码**：上面这些路由能读写任意文件、按任意 cwd 跑 git，终端那条 WebSocket 更是直接给出 shell，所以**除健康检查与皮肤模板外全部要过访问密码门禁**——浏览器首次打开工作台时在页面上设置（`~/.dsh/storages/worktable-auth.json` 只存 scrypt 加盐哈希），之后 30 天免输入；脚本/远程调用用 `X-WT-Pin: <密码>` 头或登录换来的 `?auth=<token>`
 - **客户端**：经 slot 协议注入侧边栏与 shell overlay；分栏引擎、标签模型、拖拽与持久化均为自研
 - **控制室**：读取宿主会话列表快照（运行中/待决/已完成、后台任务、子代理目录）——事件驱动镜像，模型不参与
 - **窗口任务**：agent 完成后在项目文件夹写 `widget-result.json`，客户端把产物挂载进指定窗口并锁死

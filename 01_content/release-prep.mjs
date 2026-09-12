@@ -204,6 +204,21 @@ if (serverRun.status !== 0) {
 }
 console.log('[release-prep] server home resolution tests passed (3 scenarios, on installed artifact)')
 
+// ---------- 5e. 访问密码门禁回归（全端点鉴权 + WS 握手门禁 + 首次设置 + 限速 + 跨进程持久化） ----------
+// 评估「安装目录中的最终产物」lib/index.js：门禁是安全边界，必须在发布前对最终产物跑一遍
+const serverAuthTest = join(HERE, '..', '04_test', 'server-auth.test.mjs')
+if (!existsSync(serverAuthTest) || !existsSync(serverSrc)) {
+  console.error('[release-prep] FAIL: server-auth.test.mjs or installed lib/index.js missing')
+  process.exit(1)
+}
+const authRun = spawnSync(process.execPath, [serverAuthTest, serverSrc], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (authRun.status !== 0) {
+  console.error('[release-prep] FAIL: server-auth.test.mjs')
+  console.error(authRun.stderr || authRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] server auth gate tests passed (32 assertions, on installed artifact)')
+
 // ---------- 6. 双资产从同一已验证包复制 + SHA-256 ----------
 const outDir = join(HERE, 'dist', 'v' + VERSION)
 mkdirSync(outDir, { recursive: true })

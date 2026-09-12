@@ -234,6 +234,16 @@ export const zh = {
   'update.copyFail': '复制失败，请手动选择文本',
   'update.skipDone': '已忽略此版本（下一版发布时再提醒）',
   'update.upgradeHint': '执行命令后需重启 dsh web 并刷新页面',
+  'auth.title': '工作台访问密码',
+  'auth.titleFirst': '设置工作台访问密码',
+  'auth.hint': '本机工作台接口受访问密码保护；验证一次后 30 天内免再次输入。',
+  'auth.hintFirst': '首次使用：给本机工作台接口设置一个访问密码（只在本机保存加盐哈希，不写进项目文件）。',
+  'auth.placeholder': '访问密码',
+  'auth.submit': '进入',
+  'auth.submitFirst': '设置并进入',
+  'auth.cancel': '取消',
+  'auth.failed': '密码错误',
+  'auth.netFail': '连接失败，请稍后重试',
 } satisfies Record<string, string>
 
 /** The worktable namespace key union. */
@@ -469,6 +479,16 @@ export const en = {
   'update.copyFail': 'Copy failed — select the text manually',
   'update.skipDone': 'Skipped (will remind on the next release)',
   'update.upgradeHint': 'Run the command, then restart dsh web and refresh',
+  'auth.title': 'Worktable access password',
+  'auth.titleFirst': 'Set worktable access password',
+  'auth.hint': 'The worktable API on this machine is protected. Verify once, then it is remembered for 30 days.',
+  'auth.hintFirst': 'First run: choose an access password for the local worktable API (only a salted hash is stored on this machine).',
+  'auth.placeholder': 'Access password',
+  'auth.submit': 'Continue',
+  'auth.submitFirst': 'Set and continue',
+  'auth.cancel': 'Cancel',
+  'auth.failed': 'Wrong password',
+  'auth.netFail': 'Request failed — try again',
 } satisfies Record<WorktableKey, string>
 
 /** Locale namespace id registered under ctx.locale. */

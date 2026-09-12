@@ -4,6 +4,7 @@ import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 import { photoStore, kindOf } from './photoStore'
+import { authFetch, setAuthT } from './auth'
 import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
 import { WAVE_BG_B64 } from './waveBg'
 
@@ -703,7 +704,7 @@ async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions
     // 工作区分组：服务端读宿主 workspace.json（含 archived 排除），按用户面板结构分组；
     // 不属于任何工作区的会话收进「未分组」组（绑定弹窗/发送到会话都要能看到它们）
     try {
-      const r = await fetch('/api/worktable/workspaces')
+      const r = await authFetch('/api/worktable/workspaces')
       const d = await r.json()
       const order: string[] = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : []
       const archived: string[] = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : []
@@ -858,7 +859,7 @@ export async function createCustomSession(projectId: string, projectName: string
     try { await ws.createDirectory?.(parent, name) } catch { /* 宿主 browse 能力本机为 native 时不可用 */ }
     try {
       // 兜底：插件服务端 mkdir（父目录必须已存在，避免误建深层目录）
-      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
+      const r = await authFetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
       const d = await r.json()
       if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
     } catch { /* 目录建不出来的错误最终由 workspace.create 暴露 */ }
@@ -1559,10 +1560,11 @@ function WorktableSection(props: any) {
     return () => { splitStore.onSpecMutated = null }
   }, [])
 
-  // 分栏引擎 UI 文案（窗选择器等）
+  // 分栏引擎 UI 文案（窗选择器等）+ 访问密码浮层文案
   useEffect(() => {
     setSplitT((k, p) => t(k as WorktableKey, p as Record<string, string> | undefined))
-    return () => setSplitT(null)
+    setAuthT((k) => t(k as WorktableKey))
+    return () => { setSplitT(null); setAuthT(null) }
   }, [t])
 
   // 侧边栏折叠/展开：保持原停靠位置（不再回弹 footer）；折叠态由项目图标框承载。
@@ -1807,7 +1809,7 @@ function buildCustomLayoutPrompt(req: string): string {
         const full = joinPath(parent, name)
         try { await ws?.createDirectory?.(parent, name) } catch {}
         try {
-          const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
+          const r = await authFetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
           const d = await r.json()
           if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
         } catch { /* 目录建不出的错误最终由 workspace.create 暴露 */ }
@@ -2002,7 +2004,7 @@ function buildCustomLayoutPrompt(req: string): string {
     try {
       let raw = rawManifest
       if (raw == null) {
-        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
+        const r = await authFetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
         if (!r.ok) return
         raw = (await r.text()).trim()
       }
@@ -2081,7 +2083,7 @@ function buildCustomLayoutPrompt(req: string): string {
         const folder = folders[pid]
         if (!folder) continue
         try {
-          const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
+          const r = await authFetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
           if (!r.ok) continue
           const raw = (await r.text()).trim()
           if (!raw) continue
@@ -2316,7 +2318,7 @@ function buildCustomLayoutPrompt(req: string): string {
     if (!isAbs(folderPath)) { setWsFolderError(true); return }
     try {
       // 兜底建目录；HTTP 非 2xx 视为失败，不能继续保存（路径可能无效）
-      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
+      const r = await authFetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folderPath }) })
       if (!r.ok) { setWsFolderError(true); setPickErr((prev) => ({ ...prev, add: t('add.folderCreateFail') })); return }
     } catch { setWsFolderError(true); setPickErr((prev) => ({ ...prev, add: t('add.folderCreateFail') })); return }
     const layout = buildLayout(wsPreset, name)

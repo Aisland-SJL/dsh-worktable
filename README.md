@@ -81,6 +81,7 @@
 One package ships the **host Cordis plugin** and the **web client**:
 
 - **host**: `/api/worktable/*` routes — health, file system, git, file read/write, site serving, mkdir, workspaces, native skin template; WebSocket `/api/worktable/term` for the terminal pane (PowerShell on Windows)
+- **access password**: those routes can read/write arbitrary files, run git in any cwd, and the terminal WebSocket hands out a shell — so **everything except the health probe and the skin template sits behind an access password**. The browser sets it on first open (only a salted scrypt hash is stored, in `~/.dsh/storages/worktable-auth.json`), then it is remembered for 30 days; scripts and remote callers use the `X-WT-Pin: <password>` header or the `?auth=<token>` returned by the login route
 - **client**: injected into the sidebar and the shell overlay via the slot protocol; the split engine, tab model, drag/drop and persistence are self-built
 - **control room**: reads the host session list snapshot (running / pending / completed, jobs, subagent catalogs) — an event-driven mirror, no model involvement
 - **window tasks**: the agent writes `widget-result.json` into the project folder on completion; the client mounts the artifact into the addressed window and locks it
