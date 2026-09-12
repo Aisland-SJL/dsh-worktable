@@ -463,7 +463,7 @@ WARNING: This link could potentially be dangerous`)) {
         t2.ScreenDprMonitor = r;
       }, 3236: (e2, t2, i2) => {
         Object.defineProperty(t2, "__esModule", { value: true }), t2.Terminal = void 0;
-        const s2 = i2(3614), r = i2(3656), n = i2(6465), o = i2(9042), a = i2(3730), h = i2(1680), c = i2(3107), l = i2(5744), d = i2(2950), _ = i2(1296), u = i2(428), f = i2(4269), v = i2(5114), p = i2(8934), g = i2(3230), m = i2(9312), S2 = i2(4725), C = i2(6731), b = i2(8055), y = i2(8969), w = i2(8460), E = i2(844), k = i2(6114), L = i2(8437), D = i2(2584), R = i2(7399), x = i2(5941), A = i2(9074), B = i2(2585), T2 = i2(5435), M = i2(4567), O = "undefined" != typeof window ? window.document : null;
+        const s2 = i2(3614), r = i2(3656), n = i2(6465), o = i2(9042), a = i2(3730), h = i2(1680), c = i2(3107), l = i2(5744), d = i2(2950), _ = i2(1296), u = i2(428), f = i2(4269), v = i2(5114), p = i2(8934), g = i2(3230), m = i2(9312), S2 = i2(4725), C = i2(6731), b = i2(8055), y = i2(8969), w = i2(8460), E = i2(844), k = i2(6114), L = i2(8437), D = i2(2584), R = i2(7399), x = i2(5941), A = i2(9074), B = i2(2585), T3 = i2(5435), M = i2(4567), O = "undefined" != typeof window ? window.document : null;
         class P2 extends y.CoreTerminal {
           get onFocus() {
             return this._onFocus.event;
@@ -778,11 +778,11 @@ WARNING: This link could potentially be dangerous`)) {
           }
           _reportWindowsOptions(e3) {
             if (this._renderService) switch (e3) {
-              case T2.WindowsOptionsReportType.GET_WIN_SIZE_PIXELS:
+              case T3.WindowsOptionsReportType.GET_WIN_SIZE_PIXELS:
                 const e4 = this._renderService.dimensions.css.canvas.width.toFixed(0), t3 = this._renderService.dimensions.css.canvas.height.toFixed(0);
                 this.coreService.triggerDataEvent(`${D.C0.ESC}[4;${t3};${e4}t`);
                 break;
-              case T2.WindowsOptionsReportType.GET_CELL_SIZE_PIXELS:
+              case T3.WindowsOptionsReportType.GET_CELL_SIZE_PIXELS:
                 const i3 = this._renderService.dimensions.css.cell.width.toFixed(0), s3 = this._renderService.dimensions.css.cell.height.toFixed(0);
                 this.coreService.triggerDataEvent(`${D.C0.ESC}[6;${s3};${i3}t`);
             }
@@ -1391,7 +1391,7 @@ WARNING: This link could potentially be dangerous`)) {
             let C, b = e3.getNoBgTrimmedLength();
             i3 && b < a2 + 1 && (b = a2 + 1);
             let y = 0, w = "", E = 0, k = 0, L = 0, D = false, R = 0, x = false, A = 0;
-            const B = [], T2 = -1 !== f2 && -1 !== p;
+            const B = [], T3 = -1 !== f2 && -1 !== p;
             for (let M = 0; M < b; M++) {
               e3.loadCell(M, this._workCell);
               let b2 = this._workCell.getWidth();
@@ -1402,7 +1402,7 @@ WARNING: This link could potentially be dangerous`)) {
                 const t4 = m.shift();
                 I = new d.JoinedCellData(this._workCell, e3.translateToString(true, t4[0], t4[1]), t4[1] - t4[0]), P2 = t4[1] - 1, b2 = I.getWidth();
               }
-              const H = this._isCellInSelection(M, t3), F = i3 && M === a2, W = T2 && M >= f2 && M <= p;
+              const H = this._isCellInSelection(M, t3), F = i3 && M === a2, W = T3 && M >= f2 && M <= p;
               let U = false;
               this._decorationService.forEachDecorationAtCell(M, t3, void 0, ((e4) => {
                 U = true;
@@ -8398,7 +8398,18 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_updateSwitch{position:relative;width:26px;height:14px;border-radius:999px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);cursor:pointer}",
   '.dsh-wt_updateSwitch::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:right .15s}',
   ".dsh-wt_updateSwitch[data-off=true]{background:var(--dsw-alias-border-l1,#333a48)}",
-  ".dsh-wt_updateSwitch[data-off=true]::after{right:14px}"
+  ".dsh-wt_updateSwitch[data-off=true]::after{right:14px}",
+  // 访问密码浮层（服务端门禁返回 401 时弹出；挂 document.body，不受侧栏堆叠上下文限制）
+  ".dsh-wt_authMask{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}",
+  ".dsh-wt_authBox{width:280px;padding:16px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:12px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4));display:flex;flex-direction:column;gap:8px}",
+  ".dsh-wt_authTitle{font-size:12.5px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_authHint{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
+  ".dsh-wt_authInput{padding:7px 9px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:7px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.04));color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;outline:none}",
+  ".dsh-wt_authErr{min-height:14px;font-size:11px;color:#f85149}",
+  ".dsh-wt_authRow{display:flex;gap:8px}",
+  ".dsh-wt_authBtn{flex:1;padding:7px 10px;border:none;border-radius:7px;background:#3fb950;color:#07130a;font:inherit;font-size:12px;font-weight:600;cursor:pointer}",
+  ".dsh-wt_authBtn:disabled{opacity:.6;cursor:default}",
+  ".dsh-wt_authCancel{padding:7px 10px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:12px;cursor:pointer}"
 ].join("\n");
 
 // src/client/locales.ts
@@ -8630,7 +8641,17 @@ var zh = {
   "update.copied": "\u5DF2\u590D\u5236",
   "update.copyFail": "\u590D\u5236\u5931\u8D25\uFF0C\u8BF7\u624B\u52A8\u9009\u62E9\u6587\u672C",
   "update.skipDone": "\u5DF2\u5FFD\u7565\u6B64\u7248\u672C\uFF08\u4E0B\u4E00\u7248\u53D1\u5E03\u65F6\u518D\u63D0\u9192\uFF09",
-  "update.upgradeHint": "\u6267\u884C\u547D\u4EE4\u540E\u9700\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762"
+  "update.upgradeHint": "\u6267\u884C\u547D\u4EE4\u540E\u9700\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762",
+  "auth.title": "\u5DE5\u4F5C\u53F0\u8BBF\u95EE\u5BC6\u7801",
+  "auth.titleFirst": "\u8BBE\u7F6E\u5DE5\u4F5C\u53F0\u8BBF\u95EE\u5BC6\u7801",
+  "auth.hint": "\u672C\u673A\u5DE5\u4F5C\u53F0\u63A5\u53E3\u53D7\u8BBF\u95EE\u5BC6\u7801\u4FDD\u62A4\uFF1B\u9A8C\u8BC1\u4E00\u6B21\u540E 30 \u5929\u5185\u514D\u518D\u6B21\u8F93\u5165\u3002",
+  "auth.hintFirst": "\u9996\u6B21\u4F7F\u7528\uFF1A\u7ED9\u672C\u673A\u5DE5\u4F5C\u53F0\u63A5\u53E3\u8BBE\u7F6E\u4E00\u4E2A\u8BBF\u95EE\u5BC6\u7801\uFF08\u53EA\u5728\u672C\u673A\u4FDD\u5B58\u52A0\u76D0\u54C8\u5E0C\uFF0C\u4E0D\u5199\u8FDB\u9879\u76EE\u6587\u4EF6\uFF09\u3002",
+  "auth.placeholder": "\u8BBF\u95EE\u5BC6\u7801",
+  "auth.submit": "\u8FDB\u5165",
+  "auth.submitFirst": "\u8BBE\u7F6E\u5E76\u8FDB\u5165",
+  "auth.cancel": "\u53D6\u6D88",
+  "auth.failed": "\u5BC6\u7801\u9519\u8BEF",
+  "auth.netFail": "\u8FDE\u63A5\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5"
 };
 var en = {
   "title": "Worktable",
@@ -8860,7 +8881,17 @@ var en = {
   "update.copied": "Copied",
   "update.copyFail": "Copy failed \u2014 select the text manually",
   "update.skipDone": "Skipped (will remind on the next release)",
-  "update.upgradeHint": "Run the command, then restart dsh web and refresh"
+  "update.upgradeHint": "Run the command, then restart dsh web and refresh",
+  "auth.title": "Worktable access password",
+  "auth.titleFirst": "Set worktable access password",
+  "auth.hint": "The worktable API on this machine is protected. Verify once, then it is remembered for 30 days.",
+  "auth.hintFirst": "First run: choose an access password for the local worktable API (only a salted hash is stored on this machine).",
+  "auth.placeholder": "Access password",
+  "auth.submit": "Continue",
+  "auth.submitFirst": "Set and continue",
+  "auth.cancel": "Cancel",
+  "auth.failed": "Wrong password",
+  "auth.netFail": "Request failed \u2014 try again"
 };
 var NS = "worktable";
 
@@ -8894,6 +8925,142 @@ function basenameOf(p) {
 
 // src/client/split.tsx
 var import_react = require("react");
+
+// src/client/auth.ts
+var uiT = null;
+function setAuthT(fn) {
+  uiT = fn;
+}
+var T = (key) => uiT ? uiT(key) : key;
+var authEl = null;
+var authWait = null;
+var authDone = null;
+function settleAuth(ok) {
+  const done = authDone;
+  authDone = null;
+  authWait = null;
+  if (authEl) {
+    try {
+      authEl.remove();
+    } catch {
+    }
+    authEl = null;
+  }
+  if (done) done(ok);
+}
+async function submitPin(pin) {
+  try {
+    const res = await fetch("/api/worktable/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin })
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.ok === true) return "";
+    return String(data?.error ?? T("auth.failed"));
+  } catch {
+    return T("auth.netFail");
+  }
+}
+function promptAuth(firstTime = false) {
+  if (authWait) return authWait;
+  authWait = new Promise((resolve) => {
+    authDone = resolve;
+  });
+  const mask = document.createElement("div");
+  mask.className = "dsh-wt_authMask";
+  const box = document.createElement("div");
+  box.className = "dsh-wt_authBox";
+  const title = document.createElement("div");
+  title.className = "dsh-wt_authTitle";
+  title.textContent = T(firstTime ? "auth.titleFirst" : "auth.title");
+  const hint = document.createElement("div");
+  hint.className = "dsh-wt_authHint";
+  hint.textContent = T(firstTime ? "auth.hintFirst" : "auth.hint");
+  const input = document.createElement("input");
+  input.className = "dsh-wt_authInput";
+  input.type = "password";
+  input.placeholder = T("auth.placeholder");
+  const err = document.createElement("div");
+  err.className = "dsh-wt_authErr";
+  const row = document.createElement("div");
+  row.className = "dsh-wt_authRow";
+  const okBtn = document.createElement("button");
+  okBtn.className = "dsh-wt_authBtn";
+  okBtn.type = "button";
+  okBtn.textContent = T(firstTime ? "auth.submitFirst" : "auth.submit");
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "dsh-wt_authCancel";
+  cancelBtn.type = "button";
+  cancelBtn.textContent = T("auth.cancel");
+  row.appendChild(okBtn);
+  row.appendChild(cancelBtn);
+  box.appendChild(title);
+  box.appendChild(hint);
+  box.appendChild(input);
+  box.appendChild(err);
+  box.appendChild(row);
+  mask.appendChild(box);
+  let busy = false;
+  const submit = async () => {
+    const pin = input.value;
+    if (busy || !pin) {
+      if (!pin) err.textContent = T("auth.failed");
+      return;
+    }
+    busy = true;
+    okBtn.disabled = true;
+    err.textContent = "";
+    const fail = await submitPin(pin);
+    busy = false;
+    okBtn.disabled = false;
+    if (fail) {
+      err.textContent = fail;
+      input.select();
+      return;
+    }
+    settleAuth(true);
+  };
+  okBtn.addEventListener("click", () => {
+    void submit();
+  });
+  cancelBtn.addEventListener("click", () => settleAuth(false));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void submit();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      settleAuth(false);
+    }
+  });
+  mask.addEventListener("pointerdown", (e) => {
+    if (e.target === mask) settleAuth(false);
+  });
+  authEl = mask;
+  document.body.appendChild(mask);
+  try {
+    input.focus();
+  } catch {
+  }
+  return authWait;
+}
+async function authFetch(input, init) {
+  const res = await fetch(input, init);
+  if (res.status !== 401) return res;
+  const ok = await promptAuth(res.headers.get("x-wt-first") === "1");
+  if (!ok) return res;
+  return fetch(input, init);
+}
+async function ensureAuth() {
+  try {
+    const res = await fetch("/api/worktable/auth", { cache: "no-store" });
+    if (res.ok || res.status !== 401) return true;
+    return await promptAuth(res.headers.get("x-wt-first") === "1");
+  } catch {
+    return true;
+  }
+}
 
 // src/client/changelog.ts
 var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.3
@@ -16851,7 +17018,7 @@ var BUILTIN_LABEL_KEYS = {
   console: "pane.console"
 };
 function tabTitleOf(content) {
-  if (content.kind === "builtin") return T(BUILTIN_LABEL_KEYS[content.type]);
+  if (content.kind === "builtin") return T2(BUILTIN_LABEL_KEYS[content.type]);
   if (content.kind === "file") return basenameOf2(content.path);
   if (content.kind === "iframe" && content.title) return content.title;
   try {
@@ -16871,17 +17038,17 @@ function sameContent(a, b) {
   if (a.kind === "builtin" && b.kind === "builtin") return a.type === b.type;
   return false;
 }
-var uiT = null;
+var uiT2 = null;
 function setSplitT(fn) {
-  uiT = fn;
+  uiT2 = fn;
 }
-var T = (key, params) => uiT ? uiT(key, params) : key;
+var T2 = (key, params) => uiT2 ? uiT2(key, params) : key;
 var splitEnv = null;
 function setSplitEnv(env) {
   splitEnv = env;
 }
 async function postJson(url, body) {
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body)
@@ -16966,11 +17133,11 @@ function ctxOf(t) {
 }
 function boxPayload(x0, y0, x1, y1) {
   const L = Math.min(x0, x1);
-  const T2 = Math.min(y0, y1);
+  const T3 = Math.min(y0, y1);
   const R = Math.max(x0, x1);
   const B = Math.max(y0, y1);
   const cx = (L + R) / 2;
-  const cy = (T2 + B) / 2;
+  const cy = (T3 + B) / 2;
   let primary = null;
   let line = "";
   let candidates = [];
@@ -17035,7 +17202,7 @@ function boxPayload(x0, y0, x1, y1) {
         if (tag === "script" || tag === "style" || tag === "svg" || tag === "path" || tag === "br" || tag === "template" || tag === "iframe") continue;
         const rect = el.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) continue;
-        if (rect.right + ox < L || rect.left + ox > R || rect.bottom + oy < T2 || rect.top + oy > B) continue;
+        if (rect.right + ox < L || rect.left + ox > R || rect.bottom + oy < T3 || rect.top + oy > B) continue;
         const text2 = (el.textContent || "").trim().replace(/\s+/g, " ");
         if (text2.length < 1 || text2.length > 30) continue;
         if (seen.has(text2)) continue;
@@ -17173,19 +17340,19 @@ function AnnotationOverlay() {
       let stat = "";
       if (Math.max(w, h) >= 8) {
         const L = Math.min(sx, e.clientX);
-        const T2 = Math.min(sy, e.clientY);
+        const T3 = Math.min(sy, e.clientY);
         const R = Math.max(sx, e.clientX);
         const B = Math.max(sy, e.clientY);
-        stat = "\u6846\u9009\u5C4F\u5E55 (" + Math.round(L) + "," + Math.round(T2) + ") \u2192 (" + Math.round(R) + "," + Math.round(B) + ") \u5BBD\u9AD8 (" + Math.round(w) + "\xD7" + Math.round(h) + "px)";
+        stat = "\u6846\u9009\u5C4F\u5E55 (" + Math.round(L) + "," + Math.round(T3) + ") \u2192 (" + Math.round(R) + "," + Math.round(B) + ") \u5BBD\u9AD8 (" + Math.round(w) + "\xD7" + Math.round(h) + "px)";
         if (paneEl) {
           const pr = paneEl.getBoundingClientRect();
           const rx1 = ((L - pr.left) / Math.max(1, pr.width) * 100).toFixed(1);
-          const ry1 = ((T2 - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
+          const ry1 = ((T3 - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
           const rx2 = ((R - pr.left) / Math.max(1, pr.width) * 100).toFixed(1);
           const ry2 = ((B - pr.top) / Math.max(1, pr.height) * 100).toFixed(1);
           stat += "\uFF0C\u7A97\u53E3\u5185 (" + rx1 + "%," + ry1 + "%)\u2192(" + rx2 + "%," + ry2 + "%)";
         }
-        const hit = boxPayload(L, T2, R, B);
+        const hit = boxPayload(L, T3, R, B);
         if (hit.primary) stat += "\uFF0C\u4E3B\u76EE\u6807\uFF1A" + hit.primary.text + "\uFF08\u5B57\u53F7 " + hit.primary.fontSize + "\uFF0C\u884C\u9AD8 " + hit.primary.lineHeight + "\uFF09";
         if (hit.line) stat += "\uFF1B\u6574\u884C\uFF1A" + hit.line;
         if (hit.limited) stat += "\uFF1B\u8BFB\u53D6\u53D7\u9650\uFF1A\u8DE8\u57DF\u9875\u9762\u5185\u5BB9\u4E0D\u53EF\u89C1\uFF08\u6D4F\u89C8\u5668\u5B89\u5168\u9650\u5236\uFF09\uFF0C\u7A97\u53E3\u8EAB\u4EFD\u89C1\u4E0A\uFF08" + (hit.src ? hit.src : "\u65E0URL") + "\uFF09";
@@ -17240,14 +17407,14 @@ function AnnotationOverlay() {
   }, [s.on, hintOnce]);
   if (!s.on) return null;
   {
-    hintVisible && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotHint", children: T("annot.hint") });
+    hintVisible && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotHint", children: T2("annot.hint") });
   }
   if (s.drawing) {
     const L = Math.min(s.bx0, s.bx1);
-    const T2 = Math.min(s.by0, s.by1);
+    const T3 = Math.min(s.by0, s.by1);
     const R = Math.max(s.bx0, s.bx1);
     const B = Math.max(s.by0, s.by1);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotSel", style: { left: L, top: T2, width: R - L, height: B - T2 } });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotSel", style: { left: L, top: T3, width: R - L, height: B - T3 } });
   }
   if (!s.started) {
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_annotUi dsh-wt_annotBubble", style: { left: s.px, top: s.py }, "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M8 3.2v9.6M3.2 8h9.6", fill: "none", stroke: "#fff", strokeWidth: "1.8", strokeLinecap: "round" }) }) });
@@ -17259,7 +17426,7 @@ function AnnotationOverlay() {
         className: "dsh-wt_annotInput",
         autoFocus: true,
         value: s.draft,
-        placeholder: T("annot.placeholder"),
+        placeholder: T2("annot.placeholder"),
         onChange: (e) => setAnnot({ draft: e.target.value }),
         onKeyDown: (e) => {
           if (e.key === "Enter" && !e.shiftKey) {
@@ -17271,8 +17438,8 @@ function AnnotationOverlay() {
       }
     ),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_annotBtns", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotOk", title: T("annot.ok"), "aria-label": T("annot.ok"), onClick: confirmAnnot, children: "\u2713" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotNo", title: T("annot.cancel"), "aria-label": T("annot.cancel"), onClick: cancelAnnot, children: "\u2715" })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotOk", title: T2("annot.ok"), "aria-label": T2("annot.ok"), onClick: confirmAnnot, children: "\u2713" }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_annotNo", title: T2("annot.cancel"), "aria-label": T2("annot.cancel"), onClick: cancelAnnot, children: "\u2715" })
     ] })
   ] });
 }
@@ -18022,7 +18189,7 @@ function AnimPane(props) {
         {
           className: "dsh-wt_browserInput",
           value: url,
-          placeholder: T("pane.animUrlPh"),
+          placeholder: T2("pane.animUrlPh"),
           onChange: (e) => setUrl(e.target.value),
           onKeyDown: (e) => {
             if (e.key === "Enter") go();
@@ -18659,7 +18826,7 @@ function ConsolePane() {
     const ss = s % 60;
     return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + String(ss).padStart(2, "0") : m + ":" + String(ss).padStart(2, "0");
   };
-  const statusLabel = { idle: T("console.idle"), busy: T("console.busy"), need: T("console.need"), done: T("console.done") };
+  const statusLabel = { idle: T2("console.idle"), busy: T2("console.busy"), need: T2("console.need"), done: T2("console.done") };
   const themeOpts = [
     { mode: "dark", key: "console.themeDark" },
     { mode: "light", key: "console.themeLight" },
@@ -18679,32 +18846,32 @@ function ConsolePane() {
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleScroll", children: annOpen ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceCtr", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announce", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announceHead", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_announceVer", children: [
-          T("annot.curVer"),
+          T2("annot.curVer"),
           " v",
           LOCAL_VERSION
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceBtn", disabled: updStatus === "checking", onClick: () => runUpdateCheck(true), children: updStatus === "checking" ? T("annot.checking") : T("annot.checkNow") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_announceAuto", children: T("annot.autoCheck") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (autoCheckOn ? " dsh-wt_switchOn" : ""), "aria-pressed": autoCheckOn, "aria-label": T("annot.autoCheck"), onClick: onAutoCheckToggle, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceBtn", disabled: updStatus === "checking", onClick: () => runUpdateCheck(true), children: updStatus === "checking" ? T2("annot.checking") : T2("annot.checkNow") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_announceAuto", children: T2("annot.autoCheck") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (autoCheckOn ? " dsh-wt_switchOn" : ""), "aria-pressed": autoCheckOn, "aria-label": T2("annot.autoCheck"), onClick: onAutoCheckToggle, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
       ] }),
       updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_announceUpdate", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_announceNewVer", children: [
-          T("annot.newVer"),
+          T2("annot.newVer"),
           " v",
           updInfo.latest
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceUpg" + (updCopied ? " dsh-wt_announceUpgOk" : ""), onClick: onCopyUpgrade, children: updCopied ? T("annot.copied") : T("annot.copyUpgrade") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceUpg" + (updCopied ? " dsh-wt_announceUpgOk" : ""), onClick: onCopyUpgrade, children: updCopied ? T2("annot.copied") : T2("annot.copyUpgrade") }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip dsh-wt_announceSkipGo", onClick: () => {
           try {
             window.open(updInfo.url, "_blank");
           } catch {
           }
-        }, children: T("annot.gotoRelease") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T("annot.skipVer") }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceHow", children: T("annot.howUpdate") })
+        }, children: T2("annot.gotoRelease") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_announceSkip", onClick: onSkipVersion, children: T2("annot.skipVer") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceHow", children: T2("annot.howUpdate") })
       ] }),
-      updStatus === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.checkFail") }),
-      updStatus === "uptodate" && !updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T("annot.latest") }),
+      updStatus === "failed" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T2("annot.checkFail") }),
+      updStatus === "uptodate" && !updInfo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceStatus", children: T2("annot.latest") }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_announceBody", children: CHANGELOG_V030 })
     ] }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: gridRef, className: "dsh-wt_consoleGrid", style: { ["--wt-cols"]: cols }, children: [
       cards.map((c) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
@@ -18731,7 +18898,7 @@ function ConsolePane() {
               c.runtimeMs != null && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleRuntime", children: fmtDur(c.runtimeMs) })
             ] }),
             c.status === "busy" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleSweep", "aria-hidden": true }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consolePreview" + (c.preview ? "" : " dsh-wt_consolePreviewNone"), title: c.preview, children: c.preview || (c.bound ? T("console.noPreview") : T("console.unboundShort")) })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consolePreview" + (c.preview ? "" : " dsh-wt_consolePreviewNone"), title: c.preview, children: c.preview || (c.bound ? T2("console.noPreview") : T2("console.unboundShort")) })
           ]
         },
         c.id
@@ -18742,24 +18909,24 @@ function ConsolePane() {
           role: "button",
           tabIndex: 0,
           className: "dsh-wt_consoleCard dsh-wt_consoleAdd",
-          title: T("console.addProject"),
+          title: T2("console.addProject"),
           onClick: () => env?.onAdd?.(),
           children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleAddPlus", "aria-hidden": true, children: "\uFF0B" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleAddLabel", children: T("console.addProject") })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_consoleAddLabel", children: T2("console.addProject") })
           ]
         }
       ),
-      cards.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleEmpty", children: T("console.empty") })
+      cards.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_consoleEmpty", children: T2("console.empty") })
     ] }) }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDockWrap", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_consoleDock", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "theme" ? " dsh-wt_dockBtnOn" : ""), title: T("console.themeLabel"), "aria-label": T("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: themeMode }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "shape" ? " dsh-wt_dockBtnOn" : ""), title: T("console.shapeLabel"), "aria-label": T("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "20", height: "20", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "theme" ? " dsh-wt_dockBtnOn" : ""), title: T2("console.themeLabel"), "aria-label": T2("console.themeLabel"), onClick: () => setOpenMenu(openMenu === "theme" ? null : "theme"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: themeMode }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "shape" ? " dsh-wt_dockBtnOn" : ""), title: T2("console.shapeLabel"), "aria-label": T2("console.shapeLabel"), onClick: () => setOpenMenu(openMenu === "shape" ? null : "shape"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "20", height: "20", viewBox: "0 0 16 16", "aria-hidden": true, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "2.2", width: "7", height: "7", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "0.9" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "10.6", cy: "10.6", r: "3.8", fill: "none", stroke: "currentColor", strokeWidth: "0.9" })
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "bg" ? " dsh-wt_dockBtnOn" : ""), title: T("console.bgLabel"), "aria-label": T("console.bgLabel"), onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "bg" ? " dsh-wt_dockBtnOn" : ""), title: T2("console.bgLabel"), "aria-label": T2("console.bgLabel"), onClick: () => {
           setOpenMenu(openMenu === "bg" ? null : "bg");
           setBgEdit(null);
         }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "18", height: "18", viewBox: "0 0 16 16", "aria-hidden": true, children: [
@@ -18767,12 +18934,12 @@ function ConsolePane() {
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.9", cy: "6.7", r: "1.05", fill: "none", stroke: "currentColor", strokeWidth: "0.8" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11.4l3-3 2.3 2.3 1.9-1.9 3 2.6", fill: "none", stroke: "currentColor", strokeWidth: "0.9" })
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "cols" ? " dsh-wt_dockBtnOn" : ""), title: T("console.colsLabel"), "aria-label": T("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "20", height: "20", viewBox: "0 0 16 16", "aria-hidden": true, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dockBtn" + (openMenu === "cols" ? " dsh-wt_dockBtnOn" : ""), title: T2("console.colsLabel"), "aria-label": T2("console.colsLabel"), onClick: () => setOpenMenu(openMenu === "cols" ? null : "cols"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "20", height: "20", viewBox: "0 0 16 16", "aria-hidden": true, children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "2.2", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "6.65", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "11.1", y: "3.4", width: "2.7", height: "9.2", rx: "0.9", fill: "none", stroke: "currentColor", strokeWidth: "0.9" })
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dockBtn" + (annOpen ? " dsh-wt_dockBtnOn" : ""), title: T("annot.updateTitle"), "aria-label": T("annot.updateTitle"), onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dockBtn" + (annOpen ? " dsh-wt_dockBtnOn" : ""), title: T2("annot.updateTitle"), "aria-label": T2("annot.updateTitle"), onClick: () => {
           setOpenMenu(null);
           setAnnOpen((v) => !v);
         }, children: [
@@ -18785,32 +18952,32 @@ function ConsolePane() {
       ] }),
       openMenu === "theme" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_drop", children: themeOpts.map((o) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (themeMode === o.mode ? " dsh-wt_dropItemOn" : ""), onClick: () => setTheme(o.mode), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ThemeIcon, { mode: o.mode, size: 13 }),
-        T(o.key)
+        T2(o.key)
       ] }, o.mode)) }),
       openMenu === "shape" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "square" ? " dsh-wt_dropItemOn" : ""), onClick: () => onShape("square"), children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "4", y: "4", width: "8", height: "8", rx: "1.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
-          T("console.shapeSquare")
+          T2("console.shapeSquare")
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (shape === "circle" ? " dsh-wt_dropItemOn" : ""), onClick: () => onShape("circle"), children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "8", cy: "8", r: "4.5", fill: "none", stroke: "currentColor", strokeWidth: "1.5" }) }),
-          T("console.shapeCircle")
+          T2("console.shapeCircle")
         ] })
       ] }),
       openMenu === "bg" && (bgEdit === null ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "plain" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("plain"), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "10", height: "10", rx: "2", fill: "none", stroke: "currentColor", strokeWidth: "1.2" }) }),
-            T("console.bgPlain")
+            T2("console.bgPlain")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T2("console.bgEdit"), "aria-label": T2("console.bgEdit"), onClick: () => setBgEdit("plain"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "glow" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("glow"), children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "13", height: "13", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.4 5.6c2-1.5 3.9-1.5 5.6 0 1.9 1.6 3.6 1.6 5.6 0M2.4 10.4c2-1.5 3.9-1.5 5.6 0 1.9 1.6 3.6 1.6 5.6 0", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round" }) }),
-            T("console.bgGlow")
+            T2("console.bgGlow")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T2("console.bgEdit"), "aria-label": T2("console.bgEdit"), onClick: () => setBgEdit("glow"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_dropItem" + (bg === "photo" ? " dsh-wt_dropItemOn" : ""), onClick: () => onBg("photo"), children: [
@@ -18819,14 +18986,14 @@ function ConsolePane() {
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
             ] }),
-            T("console.bgCustom")
+            T2("console.bgCustom")
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T("console.bgEdit"), "aria-label": T("console.bgEdit"), onClick: () => setBgEdit("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropGear", title: T2("console.bgEdit"), "aria-label": T2("console.bgEdit"), onClick: () => setBgEdit("photo"), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(SliderIcon, {}) })
         ] })
       ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_drop" + (bgEdit === "photo" ? " dsh-wt_dropWide" : ""), children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslHead", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslBack", title: T("console.bgEditBack"), "aria-label": T("console.bgEditBack"), onClick: () => setBgEdit(null), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M10.2 3.2 5.4 8l4.8 4.8", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T("console.bgEditPlain") : bgEdit === "glow" ? T("console.bgEditGlow") : T("console.bgEditPhoto") })
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslBack", title: T2("console.bgEditBack"), "aria-label": T2("console.bgEditBack"), onClick: () => setBgEdit(null), children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M10.2 3.2 5.4 8l4.8 4.8", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinecap: "round", strokeLinejoin: "round" }) }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslTitle", children: bgEdit === "plain" ? T2("console.bgEditPlain") : bgEdit === "glow" ? T2("console.bgEditGlow") : T2("console.bgEditPhoto") })
         ] }),
         bgEdit === "photo" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_dropRow", children: [
@@ -18836,11 +19003,11 @@ function ConsolePane() {
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "5.8", cy: "6.6", r: "1.1", fill: "currentColor" }),
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.2 11.2l2.8-2.8 2.2 2.2 1.8-1.8 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.2" })
               ] }),
-              T("console.bgPhoto")
+              T2("console.bgPhoto")
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_gridHalf", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T("console.bgGridLabel") }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gridLabel", children: T2("console.bgGridLabel") }),
+              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_switch" + (photoGrid ? " dsh-wt_switchOn" : ""), "aria-pressed": photoGrid, "aria-label": T2("console.bgGridLabel"), onClick: togglePhotoGrid, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_switchKnob" }) })
             ] })
           ] }),
           photoList.length > 0 ? photoList.slice(0, 4).map((p) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { "data-rid": p.id, className: "dsh-wt_dropRow dsh-wt_photoRow" + (photoId === p.id ? " dsh-wt_photoRowOn" : ""), onClick: () => selectPhoto(p), children: [
@@ -18851,8 +19018,8 @@ function ConsolePane() {
                 /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M3.4 11l2.6-2.6 2.1 2.1 1.7-1.7 2.8 2.4", fill: "none", stroke: "currentColor", strokeWidth: "1.5" })
               ] }) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T("console.bgPhotoCurrent") : T("console.bgPhotoUse") }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dragHandle" + (dragRowId === p.id ? " dsh-wt_dragHandleOn" : ""), title: T("console.bgMediaDrag"), "aria-label": T("console.bgMediaDrag"), onPointerDown: (e) => onHandleDown(p.id, e), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "10", height: "12", viewBox: "0 0 10 12", "aria-hidden": true, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_photoName", children: photoId === p.id ? T2("console.bgPhotoCurrent") : T2("console.bgPhotoUse") }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dragHandle" + (dragRowId === p.id ? " dsh-wt_dragHandleOn" : ""), title: T2("console.bgMediaDrag"), "aria-label": T2("console.bgMediaDrag"), onPointerDown: (e) => onHandleDown(p.id, e), children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "10", height: "12", viewBox: "0 0 10 12", "aria-hidden": true, children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "2", r: "1.1", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "7.5", cy: "2", r: "1.1", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "6", r: "1.1", fill: "currentColor" }),
@@ -18860,11 +19027,11 @@ function ConsolePane() {
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "2.5", cy: "10", r: "1.1", fill: "currentColor" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "7.5", cy: "10", r: "1.1", fill: "currentColor" })
             ] }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T("console.bgPhotoDelete"), "aria-label": T("console.bgPhotoDelete"), onClick: (e) => {
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_dropTrash", title: T2("console.bgPhotoDelete"), "aria-label": T2("console.bgPhotoDelete"), onClick: (e) => {
               e.stopPropagation();
               removePhotoById(p);
             }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { width: "11", height: "11", viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2.5 4.2h11M6.5 4.2V2.9c0-.6.4-1 .9-1h1.2c.5 0 .9.4.9 1v1.3M4.2 4.2l.5 8.1c0 .7.5 1.2 1.2 1.2h4.2c.7 0 1.2-.5 1.2-1.2l.5-8.1", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinecap: "round" }) }) })
-          ] }, p.id)) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_photoEmpty", children: T("console.bgPhotoNone") }),
+          ] }, p.id)) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_photoEmpty", children: T2("console.bgPhotoNone") }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_hslDivider" })
         ] }),
         (() => {
@@ -18872,37 +19039,37 @@ function ConsolePane() {
           const sMax = bgEdit === "plain" ? 100 : 200;
           const lMax = bgEdit === "plain" ? 100 : 200;
           return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-            bgEdit === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipSpeed"), children: [
+            bgEdit === "glow" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipSpeed"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 100, step: 5, value: glowSpeed, onChange: (e) => onGlowSpeed(Number(e.target.value)) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: glowSpeed, min: 0, max: 100, onCommit: onGlowSpeed })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipB"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipB"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "B" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 20, step: 1, value: bgEdit === "plain" ? plainBlur : bgEdit === "glow" ? glowBlur : cardBlur, onChange: (e) => onModeBlur(bgEdit, Number(e.target.value)) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: bgEdit === "plain" ? plainBlur : bgEdit === "glow" ? glowBlur : cardBlur, min: 0, max: 20, onCommit: (n) => onModeBlur(bgEdit, n) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipT"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipT"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "T" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: 30, step: 1, value: bgEdit === "plain" ? plainGrid : bgEdit === "glow" ? glowGrid : gridOpacity, onChange: (e) => bgEdit === "photo" ? onGridOpacity(Number(e.target.value)) : onModeGrid(bgEdit, Number(e.target.value)) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: bgEdit === "plain" ? plainGrid : bgEdit === "glow" ? glowGrid : gridOpacity, min: 0, max: 30, onCommit: (n) => bgEdit === "photo" ? onGridOpacity(n) : onModeGrid(bgEdit, n) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipH"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipH"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "H" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: -180, max: 180, step: 1, value: v.h, onChange: (e) => editHsl(bgEdit, { h: Number(e.target.value) }) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.h, min: -180, max: 180, onCommit: (n) => editHsl(bgEdit, { h: n }) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipS"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipS"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "S" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: sMax, step: 1, value: v.s, onChange: (e) => editHsl(bgEdit, { s: Number(e.target.value) }) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.s, max: sMax, onCommit: (n) => editHsl(bgEdit, { s: n }) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T("console.bgTipL"), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_hslRow", "data-tip": T2("console.bgTipL"), children: [
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_hslLabel", children: "L" }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { className: "dsh-wt_hslSlider", type: "range", min: 0, max: lMax, step: 1, value: v.l, onChange: (e) => editHsl(bgEdit, { l: Number(e.target.value) }) }),
               /* @__PURE__ */ (0, import_jsx_runtime.jsx)(HslValInput, { value: v.l, max: lMax, onCommit: (n) => editHsl(bgEdit, { l: n }) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslReset", onClick: () => resetHsl(bgEdit), children: T("console.bgEditReset") })
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_hslReset", onClick: () => resetHsl(bgEdit), children: T2("console.bgEditReset") })
           ] });
         })()
       ] })),
@@ -19015,7 +19182,7 @@ function ExplorerPane(props) {
                 } else if (/\.(md|markdown|mdown|txt|log|tsx|ts|jsx|js|css|json|pdf|png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(e.name)) {
                   splitStore.openTab(props.row, props.index, { kind: "file", path: e.path });
                 } else {
-                  setError(T("pane.openLater"));
+                  setError(T2("pane.openLater"));
                 }
               },
               children: [
@@ -19063,8 +19230,8 @@ function GitPane() {
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_subList", children: [
       error2 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: error2 }),
-      !error2 && snap && !snap.isRepo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T("pane.gitNotRepo") }),
-      !error2 && snap?.isRepo && snap.entries.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T("pane.gitClean") }),
+      !error2 && snap && !snap.isRepo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T2("pane.gitNotRepo") }),
+      !error2 && snap?.isRepo && snap.entries.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T2("pane.gitClean") }),
       !error2 && snap?.isRepo && snap.entries.map((e, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_subRow dsh-wt_subRowStatic", children: [
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_gitXY dsh-wt_gitXY" + (e.xy.includes("A") || e.xy.includes("M") ? "Mod" : "New"), children: e.xy.trim() }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_subName", children: e.path })
@@ -19081,15 +19248,15 @@ function JobsPane() {
   const jobs = splitEnv?.getJobs?.() ?? [];
   const subagents = splitEnv?.getSubagents?.() ?? [];
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_subList", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subSection", children: T("pane.jobsTitle") }),
-    jobs.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T("pane.jobsEmpty") }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subSection", children: T2("pane.jobsTitle") }),
+    jobs.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T2("pane.jobsEmpty") }),
     jobs.map((j) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_subRow dsh-wt_subRowStatic", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_jobDot dsh-wt_jobDot-" + j.status, "aria-hidden": true, children: "\u25CF" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_subName", children: j.label }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_subTag", children: j.kind })
     ] }, j.id)),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subSection", children: T("pane.subagents") }),
-    subagents.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T("pane.subagentsEmpty") }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subSection", children: T2("pane.subagents") }),
+    subagents.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_subEmpty", children: T2("pane.subagentsEmpty") }),
     subagents.map((s, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_subRow dsh-wt_subRowStatic", style: { paddingLeft: 8 + (s?.depth ?? 0) * 12 }, children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_jobDot dsh-wt_jobDot-" + (s?.status ?? "stopping"), "aria-hidden": true, children: "\u25CF" }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_subName", children: s?.label ?? s?.title ?? s?.name ?? "\u2014" }),
@@ -19115,7 +19282,7 @@ function TerminalPane() {
         theme: { background: "#010409" }
       });
     } catch {
-      setFailed(T("pane.termFail"));
+      setFailed(T2("pane.termFail"));
       return;
     }
     term.open(el);
@@ -19134,39 +19301,53 @@ function TerminalPane() {
     const scope = splitEnv?.getScope?.();
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
     const url = proto + "//" + location.host + "/api/worktable/term?sessionId=" + encodeURIComponent(scope?.sessionId ?? "") + "&cwd=" + encodeURIComponent(scope?.cwd ?? "") + "&cols=80&rows=24";
-    try {
-      ws = new WebSocket(url);
-    } catch {
-      term.dispose();
-      setFailed(T("pane.termFail"));
-      return;
-    }
-    ws.onopen = () => {
-      focusTerm();
-      try {
-        term.write("\x1B[?7h");
-      } catch {
-      }
-    };
-    ws.onmessage = (ev) => {
-      try {
-        term.write(String(ev.data));
-      } catch {
-      }
-    };
-    ws.onclose = () => {
-      if (!disposed) {
+    void ensureAuth().then((authed) => {
+      if (disposed) return;
+      if (!authed) {
         try {
-          term.write("\r\n[\u8FDE\u63A5\u5DF2\u5173\u95ED]");
+          term.dispose();
         } catch {
         }
+        setFailed(T2("pane.termFail"));
+        return;
       }
-    };
-    ws.onerror = () => {
-      if (!disposed) setFailed(T("pane.termFail"));
-    };
-    term.onData((d) => {
-      if (ws && ws.readyState === 1) ws.send(d);
+      try {
+        ws = new WebSocket(url);
+      } catch {
+        try {
+          term.dispose();
+        } catch {
+        }
+        setFailed(T2("pane.termFail"));
+        return;
+      }
+      ws.onopen = () => {
+        focusTerm();
+        try {
+          term.write("\x1B[?7h");
+        } catch {
+        }
+      };
+      ws.onmessage = (ev) => {
+        try {
+          term.write(String(ev.data));
+        } catch {
+        }
+      };
+      ws.onclose = () => {
+        if (!disposed) {
+          try {
+            term.write("\r\n[\u8FDE\u63A5\u5DF2\u5173\u95ED]");
+          } catch {
+          }
+        }
+      };
+      ws.onerror = () => {
+        if (!disposed) setFailed(T2("pane.termFail"));
+      };
+      term.onData((d) => {
+        if (ws && ws.readyState === 1) ws.send(d);
+      });
     });
     const ro = new ResizeObserver(() => {
       if (typeof term.fit === "function") {
@@ -19237,7 +19418,7 @@ function TextViewer(props) {
     let dead = false;
     setText(null);
     setError("");
-    fetch(props.fileUrl).then((r) => {
+    authFetch(props.fileUrl).then((r) => {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.text();
     }).then((t) => {
@@ -19258,7 +19439,7 @@ function TextViewer(props) {
     setSaving(true);
     setSaveFail(false);
     try {
-      const r = await fetch("/api/worktable/write", {
+      const r = await authFetch("/api/worktable/write", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ path: props.path, content: draft })
@@ -19274,22 +19455,22 @@ function TextViewer(props) {
   };
   if (error2) {
     return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_paneWip", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_paneWipText", children: [
-      T("file.fail"),
+      T2("file.fail"),
       "\uFF1A",
       error2
     ] }) });
   }
   if (text2 == null) {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_paneWip", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T("file.loading") }) });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_paneWip", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T2("file.loading") }) });
   }
   const ext = (props.path.split(".").pop() || "").toLowerCase();
   const isCode = CODE_EXTS.test("." + ext);
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_mdBar", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdBtn" + (mode === "preview" ? " dsh-wt_mdBtnOn" : ""), onClick: () => setMode("preview"), children: T("file.preview") }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdBtn" + (mode === "edit" ? " dsh-wt_mdBtnOn" : ""), onClick: enterEdit, children: T("file.edit") }),
-      mode === "edit" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdSave", disabled: saving, onClick: save, children: saving ? "\u2026" : T("file.save") }),
-      saveFail && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_mdMsg", children: T("file.saveFail") })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdBtn" + (mode === "preview" ? " dsh-wt_mdBtnOn" : ""), onClick: () => setMode("preview"), children: T2("file.preview") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdBtn" + (mode === "edit" ? " dsh-wt_mdBtnOn" : ""), onClick: enterEdit, children: T2("file.edit") }),
+      mode === "edit" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_mdSave", disabled: saving, onClick: save, children: saving ? "\u2026" : T2("file.save") }),
+      saveFail && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_mdMsg", children: T2("file.saveFail") })
     ] }),
     mode === "edit" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("textarea", { className: "dsh-wt_mdEdit", value: draft, spellCheck: false, onChange: (e) => setDraft(e.target.value) }) : props.isMd ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_fileView", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
       "div",
@@ -19335,7 +19516,7 @@ function SelectPop(props) {
           },
           children: [
             /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_selectItemTitle", children: it.label }),
-            it.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_selectCurrent", children: T("custom.sessionCurrent") })
+            it.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_selectCurrent", children: T2("custom.sessionCurrent") })
           ]
         },
         it.id
@@ -19398,7 +19579,7 @@ function CustomPane(props) {
         if (groupMode === "existing" && groupId) group = { kind: "existing", workspaceId: groupId };
         else if (groupMode === "new") {
           if (!newGroupParent.trim() || !newGroupName.trim()) {
-            setFail(T("custom.groupNeedPath"));
+            setFail(T2("custom.groupNeedPath"));
             return;
           }
           group = { kind: "new", parent: newGroupParent.trim(), name: newGroupName.trim() };
@@ -19418,38 +19599,38 @@ function CustomPane(props) {
     }
   };
   if (!custom) {
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_paneWip", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T("pane.wip") }) });
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_paneWip", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T2("pane.wip") }) });
   }
   if (done) {
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customBox", children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customDone", "aria-hidden": true, children: "\u2705" }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneText", children: mode === "new" ? T("custom.done") : T("custom.sent") }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneHint", children: T("custom.doneHint") }),
-      bindNote !== "none" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneBind", children: bindNote === "auto" ? T("custom.autoBound") : T("custom.keptBinding") })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneText", children: mode === "new" ? T2("custom.done") : T2("custom.sent") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneHint", children: T2("custom.doneHint") }),
+      bindNote !== "none" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customDoneBind", children: bindNote === "auto" ? T2("custom.autoBound") : T2("custom.keptBinding") })
     ] });
   }
   return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "dsh-wt_customBox", children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customCard", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", { className: "dsh-wt_customTitle", children: [
       "\u2728 ",
-      T("custom.title")
+      T2("custom.title")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customModes", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "existing" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("existing"), children: T("custom.modeSend") }),
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "new" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("new"), children: T("custom.modeNew") })
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "existing" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("existing"), children: T2("custom.modeSend") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "new" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("new"), children: T2("custom.modeNew") })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customHint", children: mode === "new" ? T("custom.hint") : T("custom.hintSend") }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "dsh-wt_customHint", children: mode === "new" ? T2("custom.hint") : T2("custom.hintSend") }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
       "textarea",
       {
         className: "dsh-wt_customInput",
         autoFocus: true,
-        placeholder: T("custom.placeholder"),
+        placeholder: T2("custom.placeholder"),
         value: requirement,
         onChange: (e) => setRequirement(e.target.value)
       }
     ),
     mode === "existing" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customRow", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.session") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T2("custom.session") }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         SelectPop,
         {
@@ -19458,25 +19639,25 @@ function CustomPane(props) {
             title: g.title,
             items: g.sessions.map((s) => ({ id: s.id, label: s.title, isCurrent: s.isCurrent }))
           })),
-          placeholder: T("custom.session"),
+          placeholder: T2("custom.session"),
           onChange: setSessionId
         }
       )
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customRow", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.project") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T2("custom.project") }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         SelectPop,
         {
           value: projectId,
           groups: [{ title: "", items: projects.map((p) => ({ id: p.id, label: p.name })) }],
-          placeholder: T("custom.project"),
+          placeholder: T2("custom.project"),
           onChange: setProjectId
         }
       )
     ] }),
     mode === "new" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customRow", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.group") }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T2("custom.group") }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
         SelectPop,
         {
@@ -19484,12 +19665,12 @@ function CustomPane(props) {
           groups: [{
             title: "",
             items: [
-              { id: "__none", label: T("custom.groupNone") },
+              { id: "__none", label: T2("custom.groupNone") },
               ...wsGroups.map((w) => ({ id: w.id, label: w.title })),
-              { id: "__new", label: T("custom.groupNew") }
+              { id: "__new", label: T2("custom.groupNew") }
             ]
           }],
-          placeholder: T("custom.group"),
+          placeholder: T2("custom.group"),
           onChange: (id) => {
             if (id === "__none") setGroupMode("none");
             else if (id === "__new") setGroupMode("new");
@@ -19503,24 +19684,24 @@ function CustomPane(props) {
     ] }),
     mode === "new" && groupMode === "new" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customRow", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.groupNewParent") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T2("custom.groupNewParent") }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "input",
           {
             className: "dsh-wt_customPathInput",
-            placeholder: T("custom.groupNewParentPh"),
+            placeholder: T2("custom.groupNewParentPh"),
             value: newGroupParent,
             onChange: (e) => setNewGroupParent(e.target.value)
           }
         )
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_customRow", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.groupNewName") }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_customLabel", children: T2("custom.groupNewName") }),
         /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
           "input",
           {
             className: "dsh-wt_customPathInput",
-            placeholder: T("custom.groupNewNamePh"),
+            placeholder: T2("custom.groupNewNamePh"),
             value: newGroupName,
             onChange: (e) => setNewGroupName(e.target.value)
           }
@@ -19534,11 +19715,11 @@ function CustomPane(props) {
         className: "dsh-wt_customSend",
         disabled: busy || !requirement.trim() || !projectId || mode === "existing" && !sessionId || mode === "new" && groupMode === "new" && (!newGroupParent.trim() || !newGroupName.trim()),
         onClick: submit,
-        children: busy ? "\u2026" : mode === "new" ? T("custom.send") : T("custom.sendToSession")
+        children: busy ? "\u2026" : mode === "new" ? T2("custom.send") : T2("custom.sendToSession")
       }
     ),
     fail && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "dsh-wt_customFail", children: [
-      T("custom.fail"),
+      T2("custom.fail"),
       "\uFF1A",
       fail
     ] })
@@ -19562,7 +19743,7 @@ function PaneTabBody(props) {
   if (content.type === "custom") return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(CustomPane, { paneTitle: props.paneTitle ?? "" });
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "dsh-wt_paneWip", children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipIcon", "aria-hidden": true, children: BUILTIN_ICONS[content.type] }),
-    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T("pane.wip") })
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "dsh-wt_paneWipText", children: T2("pane.wip") })
   ] });
 }
 function refreshableTab(t) {
@@ -19609,8 +19790,8 @@ function PaneBody(props) {
               {
                 type: "button",
                 className: "dsh-wt_tabRefresh",
-                title: T("pane.refresh"),
-                "aria-label": T("pane.refresh"),
+                title: T2("pane.refresh"),
+                "aria-label": T2("pane.refresh"),
                 onClick: (e) => {
                   e.stopPropagation();
                   refreshTab(t);
@@ -19624,7 +19805,7 @@ function PaneBody(props) {
               {
                 type: "button",
                 className: "dsh-wt_tabClose",
-                title: T("pane.closeTab"),
+                title: T2("pane.closeTab"),
                 onClick: (e) => {
                   e.stopPropagation();
                   splitStore.closeTab(row, index, t.id);
@@ -19661,23 +19842,23 @@ function PanePicker(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { ref: hostRef, className: "dsh-wt_panePicker dsh-wt_panePicker-" + mode, children: [
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_panePick", onClick: () => pick({ kind: "builtin", type: "browser" }), children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: "\u{1F310}" }),
-      T("pane.browser")
+      T2("pane.browser")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_panePick", onClick: () => pick({ kind: "builtin", type: "anim" }), children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: "\u{1F3AC}" }),
-      T("pane.anim")
+      T2("pane.anim")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_panePick", onClick: () => pick({ kind: "builtin", type: "explorer" }), children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: "\u{1F4C1}" }),
-      T("pane.explorer")
+      T2("pane.explorer")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_panePick", onClick: () => pick({ kind: "builtin", type: "terminal" }), children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: "\u25B8_" }),
-      T("pane.terminal")
+      T2("pane.terminal")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { type: "button", className: "dsh-wt_panePick", onClick: () => pick({ kind: "builtin", type: "custom" }), children: [
       /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { "aria-hidden": true, children: "\u2728" }),
-      T("pane.custom")
+      T2("pane.custom")
     ] })
   ] });
 }
@@ -19737,7 +19918,7 @@ function WorkspaceLayer(props) {
             "div",
             {
               className: "dsh-wt_paneBar",
-              title: T("split.dragSwap"),
+              title: T2("split.dragSwap"),
               draggable: true,
               onDragStart: (e) => {
                 dragPane = { row, index };
@@ -19766,8 +19947,8 @@ function WorkspaceLayer(props) {
               {
                 type: "button",
                 className: "dsh-wt_annotBtn",
-                title: T("annot.label"),
-                "aria-label": T("annot.label"),
+                title: T2("annot.label"),
+                "aria-label": T2("annot.label"),
                 onClick: () => startAnnot(windowLabelOf(row, index)),
                 children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M2 5.6c0-1.2 1-2.2 2.2-2.2h7.6c1.2 0 2.2 1 2.2 2.2v3.6c0 1.2-1 2.2-2.2 2.2H7.5L5 13.6l.3-2.4H4.2c-1.2 0-2.2-1-2.2-2.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.2", strokeLinejoin: "round" }) })
               }
@@ -19777,8 +19958,8 @@ function WorkspaceLayer(props) {
               {
                 type: "button",
                 className: "dsh-wt_collapseBtn" + (it.pane.collapsed ? " dsh-wt_collapseBtnCollapsed" : ""),
-                title: it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
-                "aria-label": it.pane.collapsed ? T("pane.expand") : T("pane.collapse"),
+                title: it.pane.collapsed ? T2("pane.expand") : T2("pane.collapse"),
+                "aria-label": it.pane.collapsed ? T2("pane.expand") : T2("pane.collapse"),
                 onClick: () => splitStore.toggleCollapsed(row, index),
                 children: it.pane.collapsed ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 6l4 4 4-4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("path", { d: "M4 10l4-4 4 4", fill: "none", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round", strokeLinejoin: "round" }) })
               }
@@ -19797,7 +19978,7 @@ function WorkspaceLayer(props) {
         {
           type: "button",
           className: "dsh-wt_splitFlip",
-          title: T("split.flip"),
+          title: T2("split.flip"),
           onClick: () => splitStore.setChatSide(chatLeft ? "right" : "left"),
           children: "\u21C4"
         }
@@ -20673,7 +20854,7 @@ async function fetchSessionGroups() {
     const titleOf = (sid) => byId[sid]?.title ?? byId[sid]?.displayTitle ?? sid;
     const mk = (sid) => ({ id: sid, title: titleOf(sid), isCurrent: sid === current });
     try {
-      const r = await fetch("/api/worktable/workspaces");
+      const r = await authFetch("/api/worktable/workspaces");
       const d = await r.json();
       const order = Array.isArray(d?.global?.workspaceIds) ? d.global.workspaceIds : [];
       const archived = Array.isArray(d?.global?.archivedSessionIds) ? d.global.archivedSessionIds : [];
@@ -20816,7 +20997,7 @@ async function createCustomSession(projectId, projectName, requirement, group, w
     } catch {
     }
     try {
-      const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
+      const r = await authFetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
       const d = await r.json();
       if (!r.ok || !d?.ok) throw new Error(d?.error ?? "mkdir failed");
     } catch {
@@ -21536,7 +21717,11 @@ function WorktableSection(props) {
   }, []);
   (0, import_react2.useEffect)(() => {
     setSplitT((k, p) => t(k, p));
-    return () => setSplitT(null);
+    setAuthT((k) => t(k));
+    return () => {
+      setSplitT(null);
+      setAuthT(null);
+    };
   }, [t]);
   const measureRailRect = (0, import_react2.useCallback)(() => {
     const el = rootRef.current;
@@ -21779,7 +21964,7 @@ function WorktableSection(props) {
         } catch {
         }
         try {
-          const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
+          const r = await authFetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
           const d = await r.json();
           if (!r.ok || !d?.ok) throw new Error(d?.error ?? "mkdir failed");
         } catch {
@@ -21971,7 +22156,7 @@ function WorktableSection(props) {
     try {
       let raw = rawManifest;
       if (raw == null) {
-        const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
+        const r = await authFetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
         if (!r.ok) return;
         raw = (await r.text()).trim();
       }
@@ -22045,7 +22230,7 @@ function WorktableSection(props) {
         const folder = folders[pid];
         if (!folder) continue;
         try {
-          const r = await fetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
+          const r = await authFetch("/api/worktable/file?path=" + encodeURIComponent(joinPath(folder, "widget-result.json")), { cache: "no-store" });
           if (!r.ok) continue;
           const raw = (await r.text()).trim();
           if (!raw) continue;
@@ -22270,7 +22455,7 @@ function WorktableSection(props) {
       return;
     }
     try {
-      const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: folderPath }) });
+      const r = await authFetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: folderPath }) });
       if (!r.ok) {
         setWsFolderError(true);
         setPickErr((prev) => ({ ...prev, add: t("add.folderCreateFail") }));

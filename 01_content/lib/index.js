@@ -1,5 +1,6 @@
 // src/index.ts
 import { execFile } from "node:child_process";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { readdirSync, realpathSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, resolve as pathResolve, sep } from "node:path";
@@ -249,6 +250,145 @@ async function gitStatus(cwd) {
     return { isRepo: false, branch: void 0, entries: [] };
   }
 }
+var AUTH_COOKIE = "wt_auth";
+var AUTH_HEADER = "x-wt-pin";
+var AUTH_SESSION_MAX = 20;
+var AUTH_SESSION_TTL = 30 * 24 * 3600 * 1e3;
+var AUTH_FAIL_WINDOW = 60 * 1e3;
+var AUTH_FAIL_LIMIT = 5;
+var AUTH_LOCK_MS = 10 * 60 * 1e3;
+function authFilePath() {
+  const override = process.env.DSH_WORKTABLE_AUTH_FILE;
+  if (override && override.trim()) return pathResolve(override);
+  return pathResolve(resolveDshHomeSafe(), "storages", "worktable-auth.json");
+}
+var authState = { loaded: false, data: null };
+async function loadAuth(force = false) {
+  if (authState.loaded && !force) return authState.data;
+  try {
+    const raw = await readFile(authFilePath(), "utf8");
+    authState.data = JSON.parse(raw.charCodeAt(0) === 65279 ? raw.slice(1) : raw);
+  } catch {
+    authState.data = {};
+  }
+  authState.loaded = true;
+  return authState.data;
+}
+async function saveAuth(data) {
+  authState.data = data;
+  authState.loaded = true;
+  const fsx = await import("node:fs/promises");
+  const file = authFilePath();
+  try {
+    await fsx.mkdir(dirname(file), { recursive: true });
+  } catch {
+  }
+  await fsx.writeFile(file, JSON.stringify(data), "utf8");
+}
+function hashPin(pin) {
+  const salt = randomBytes(16).toString("hex");
+  return { salt, hash: scryptSync(String(pin), salt, 32, { N: 16384 }).toString("hex") };
+}
+function verifyPin(given, data) {
+  const stored = data?.pinHash;
+  if (!stored?.salt || !stored?.hash) return false;
+  try {
+    const calc = scryptSync(String(given), stored.salt, 32, { N: 16384 });
+    return timingSafeEqual(calc, Buffer.from(stored.hash, "hex"));
+  } catch {
+    return false;
+  }
+}
+function parseCookies(header) {
+  const out = {};
+  for (const part of String(header ?? "").split(";")) {
+    const eq = part.indexOf("=");
+    if (eq > 0) out[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+  }
+  return out;
+}
+function pruneSessions(data) {
+  const now = Date.now();
+  data.sessions = (data.sessions ?? []).filter((s) => now - s.lastSeen < AUTH_SESSION_TTL);
+}
+async function issueSession(data) {
+  const token = randomBytes(24).toString("hex");
+  data.sessions = data.sessions ?? [];
+  pruneSessions(data);
+  data.sessions.push({ token, lastSeen: Date.now() });
+  while (data.sessions.length > AUTH_SESSION_MAX) data.sessions.shift();
+  await saveAuth(data);
+  return token;
+}
+function hasSession(data, token) {
+  if (!token) return false;
+  const now = Date.now();
+  const hit = (data.sessions ?? []).find((s) => s.token === token);
+  if (!hit) return false;
+  if (now - hit.lastSeen >= AUTH_SESSION_TTL) return false;
+  hit.lastSeen = now;
+  return true;
+}
+var authFails = /* @__PURE__ */ new Map();
+function clientIp(req) {
+  return req?.socket?.remoteAddress || "unknown";
+}
+function rateState(ip) {
+  const now = Date.now();
+  let b = authFails.get(ip);
+  if (!b || now - b.win > AUTH_FAIL_WINDOW) {
+    b = { win: now, count: 0, lockUntil: 0 };
+    authFails.set(ip, b);
+  }
+  return b;
+}
+function rateFail(ip) {
+  const b = rateState(ip);
+  b.count += 1;
+  if (b.count >= AUTH_FAIL_LIMIT) b.lockUntil = Date.now() + AUTH_LOCK_MS;
+}
+function rateLocked(ip) {
+  return Math.max(0, rateState(ip).lockUntil - Date.now());
+}
+async function authGate(req, urlObj) {
+  const data = await loadAuth();
+  const first = !data.pinHash;
+  const cookies = parseCookies(req?.headers?.cookie);
+  if (hasSession(data, cookies[AUTH_COOKIE])) return null;
+  const urlToken = urlObj.searchParams.get("auth") || "";
+  if (urlToken && hasSession(data, urlToken)) return null;
+  const ip = clientIp(req);
+  const locked = rateLocked(ip);
+  if (locked > 0) return { status: 429, error: "\u5BC6\u7801\u9519\u8BEF\u6B21\u6570\u8FC7\u591A\uFF0C\u9501\u5B9A " + Math.ceil(locked / 1e3) + " \u79D2", firstTime: first };
+  const header = String(req?.headers?.[AUTH_HEADER] ?? "");
+  if (header && verifyPin(header, data)) return null;
+  if (header) rateFail(ip);
+  return { status: 401, error: first ? "worktable pin not set yet \u2014 \u9996\u6B21\u8BBF\u95EE\u8BF7\u8BBE\u7F6E\u8BBF\u95EE\u5BC6\u7801" : "pin required", firstTime: first };
+}
+function deny(req, res, gate) {
+  const wantsHtml = req?.method === "GET" && String(req?.headers?.accept ?? "").includes("text/html");
+  const status = gate.status === 429 ? 429 : 401;
+  const headers = { "cache-control": "no-store", "x-wt-first": gate.firstTime ? "1" : "0" };
+  if (wantsHtml) {
+    res.writeHead(status, { ...headers, "content-type": "text/html; charset=utf-8" });
+    res.end(loginPageHtml(!!gate.firstTime));
+    return;
+  }
+  res.writeHead(status, { ...headers, "content-type": "application/json; charset=utf-8" });
+  res.end(JSON.stringify({ ok: false, error: gate.error }));
+}
+async function gateReq(req, res) {
+  const gate = await authGate(req, new URL(req?.url ?? "/", "http://dsh.internal"));
+  if (!gate) return false;
+  deny(req, res, gate);
+  return true;
+}
+function loginPageHtml(firstTime) {
+  const head = firstTime ? "\u8BBE\u7F6E\u5DE5\u4F5C\u53F0\u8BBF\u95EE\u5BC6\u7801" : "\u5DE5\u4F5C\u53F0\u8BBF\u95EE\u5BC6\u7801";
+  const sub = firstTime ? "\u9996\u6B21\u4F7F\u7528\uFF1A\u7ED9\u672C\u673A\u5DE5\u4F5C\u53F0\u63A5\u53E3\u8BBE\u7F6E\u4E00\u4E2A\u8BBF\u95EE\u5BC6\u7801\uFF08\u53EA\u4FDD\u5B58\u52A0\u76D0\u54C8\u5E0C\uFF09" : "\u672C\u673A\u5DE5\u4F5C\u53F0\u63A5\u53E3\u53D7\u8BBF\u95EE\u5BC6\u7801\u4FDD\u62A4";
+  const btn = firstTime ? "\u8BBE\u7F6E\u5E76\u8FDB\u5165" : "\u8FDB\u5165";
+  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + head + '</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);font:14px/1.7 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}main{max-width:380px;padding:28px;background:var(--dsw-alias-fill-l1,#12161e);border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:14px;text-align:center}input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1,#262b36);background:rgba(255,255,255,.05);color:inherit;font:inherit;outline:none;box-sizing:border-box}button{margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#3fb950;color:#07130a;font-weight:600;cursor:pointer}p{font-size:12px;color:var(--dsw-alias-label-secondary,#9aa4b2)}#m{min-height:18px;font-size:12px;color:#f85149}</style></head><body><main><h2>' + head + "</h2><p>" + sub + '</p><input id="p" type="password" placeholder="\u8BBF\u95EE\u5BC6\u7801" autofocus><button id="b">' + btn + '</button><div id="m"></div></main><script>var i=document.getElementById("p"),b=document.getElementById("b"),m=document.getElementById("m");function go(){fetch("/api/worktable/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({pin:i.value})}).then(function(r){return r.json()}).then(function(j){if(j.ok){location.reload()}else{m.textContent=j.error||"\u5BC6\u7801\u9519\u8BEF"}}).catch(function(e){m.textContent=String(e)})}b.onclick=go;i.addEventListener("keydown",function(e){if(e.key==="Enter")go()});</script></body></html>';
+}
 function setupTerminal(webServer, ctx) {
   if (typeof webServer.registerUpgrade !== "function") return;
   const wsMod = loadPkg("ws");
@@ -267,59 +407,78 @@ function setupTerminal(webServer, ctx) {
   ctx.effect(() => webServer.registerUpgrade({
     path: "/api/worktable/term",
     handler: (req, socket, head) => {
-      wss.handleUpgrade(req, socket, head, (ws) => {
-        const u = new URL(req.url ?? "/", "http://dsh.internal");
-        const cwd = serverCwd(ctx, u.searchParams.get("sessionId") || void 0, u.searchParams.get("cwd") || void 0);
-        const cols = clampDim(Number(u.searchParams.get("cols")), 80);
-        const rows = clampDim(Number(u.searchParams.get("rows")), 24);
-        let term = null;
-        try {
-          const shell = spawnShell();
-          term = pty.spawn(shell.cmd, shell.args, { name: "xterm-256color", cols, rows, cwd, env: process.env });
-        } catch (err) {
+      const uGate = new URL(req.url ?? "/", "http://dsh.internal");
+      authGate(req, uGate).then((gate) => {
+        if (gate) {
           try {
-            ws.send("\r\n[worktable] \u7EC8\u7AEF\u542F\u52A8\u5931\u8D25\uFF1A" + String(err));
+            socket.write("HTTP/1.1 401 Unauthorized\r\ncontent-type: text/plain; charset=utf-8\r\nconnection: close\r\n\r\nworktable: " + gate.error + "\n");
           } catch {
           }
           try {
-            ws.close();
+            socket.destroy();
           } catch {
           }
           return;
         }
-        term.onData((d) => {
+        wss.handleUpgrade(req, socket, head, (ws) => {
+          const u = new URL(req.url ?? "/", "http://dsh.internal");
+          const cwd = serverCwd(ctx, u.searchParams.get("sessionId") || void 0, u.searchParams.get("cwd") || void 0);
+          const cols = clampDim(Number(u.searchParams.get("cols")), 80);
+          const rows = clampDim(Number(u.searchParams.get("rows")), 24);
+          let term = null;
           try {
-            ws.send(d);
-          } catch {
-          }
-        });
-        term.onExit(() => {
-          try {
-            ws.close();
-          } catch {
-          }
-        });
-        ws.on("message", (raw) => {
-          const text = String(raw);
-          try {
-            const msg = JSON.parse(text);
-            if (msg && msg.type === "resize" && Number.isFinite(msg.cols) && Number.isFinite(msg.rows)) {
-              term.resize(clampDim(msg.cols, cols), clampDim(msg.rows, rows));
-              return;
+            const shell = spawnShell();
+            term = pty.spawn(shell.cmd, shell.args, { name: "xterm-256color", cols, rows, cwd, env: process.env });
+          } catch (err) {
+            try {
+              ws.send("\r\n[worktable] \u7EC8\u7AEF\u542F\u52A8\u5931\u8D25\uFF1A" + String(err));
+            } catch {
             }
-          } catch {
+            try {
+              ws.close();
+            } catch {
+            }
+            return;
           }
-          try {
-            term.write(text);
-          } catch {
-          }
+          term.onData((d) => {
+            try {
+              ws.send(d);
+            } catch {
+            }
+          });
+          term.onExit(() => {
+            try {
+              ws.close();
+            } catch {
+            }
+          });
+          ws.on("message", (raw) => {
+            const text = String(raw);
+            try {
+              const msg = JSON.parse(text);
+              if (msg && msg.type === "resize" && Number.isFinite(msg.cols) && Number.isFinite(msg.rows)) {
+                term.resize(clampDim(msg.cols, cols), clampDim(msg.rows, rows));
+                return;
+              }
+            } catch {
+            }
+            try {
+              term.write(text);
+            } catch {
+            }
+          });
+          ws.on("close", () => {
+            try {
+              term.kill();
+            } catch {
+            }
+          });
         });
-        ws.on("close", () => {
-          try {
-            term.kill();
-          } catch {
-          }
-        });
+      }).catch(() => {
+        try {
+          socket.destroy();
+        } catch {
+        }
       });
     }
   }), "dsh-worktable: terminal upgrade");
@@ -339,9 +498,62 @@ function apply(ctx) {
   });
   webServer.register({
     kind: "exact",
+    path: "/api/worktable/login",
+    handler: async (req, res) => {
+      try {
+        if (req.method !== "POST") {
+          res.writeHead(405);
+          res.end();
+          return;
+        }
+        const body = await readJsonBody(req);
+        const pin = String(body.pin ?? "");
+        if (!pin) {
+          json(res, 400, { ok: false, error: "missing pin" });
+          return;
+        }
+        const data = await loadAuth();
+        if (!data.pinHash) {
+          data.pinHash = hashPin(pin);
+        } else {
+          const ip = clientIp(req);
+          const locked = rateLocked(ip);
+          if (locked > 0) {
+            json(res, 429, { ok: false, error: "\u5BC6\u7801\u9519\u8BEF\u6B21\u6570\u8FC7\u591A\uFF0C\u9501\u5B9A " + Math.ceil(locked / 1e3) + " \u79D2" });
+            return;
+          }
+          if (!verifyPin(pin, data)) {
+            rateFail(ip);
+            json(res, 401, { ok: false, error: "\u5BC6\u7801\u9519\u8BEF" });
+            return;
+          }
+        }
+        const token = await issueSession(data);
+        res.writeHead(200, {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store",
+          "set-cookie": AUTH_COOKIE + "=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + 30 * 24 * 3600
+        });
+        res.end(JSON.stringify({ ok: true, token }));
+      } catch (err) {
+        json(res, 500, { ok: false, error: String(err) });
+      }
+    }
+  });
+  webServer.register({
+    kind: "exact",
+    path: "/api/worktable/auth",
+    handler: async (req, res) => {
+      if (await gateReq(req, res)) return;
+      json(res, 200, { ok: true });
+    }
+  });
+  webServer.register({
+    kind: "exact",
     path: "/api/worktable/file",
     handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         const u = new URL(req.url ?? "/", "http://dsh.internal");
         const p = u.searchParams.get("path") || "";
         if (!p) {
@@ -414,6 +626,7 @@ function apply(ctx) {
     path: SITE_PREFIX,
     handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         if (req.method !== "GET") {
           res.writeHead(405);
           res.end();
@@ -467,6 +680,7 @@ function apply(ctx) {
     path: "/api/worktable/fs",
     handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         const body = await readJsonBody(req);
         const path = typeof body.path === "string" && body.path ? body.path : serverCwd(ctx, body.sessionId, body.cwd);
         json(res, 200, await listDirectory(path));
@@ -478,8 +692,9 @@ function apply(ctx) {
   webServer.register({
     kind: "exact",
     path: "/api/worktable/workspaces",
-    handler: async (_req, res) => {
+    handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         let registry = null;
         try {
           registry = ctx.workspaceRegistry ?? null;
@@ -529,6 +744,7 @@ function apply(ctx) {
     path: "/api/worktable/write",
     handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         if (req.method !== "POST") {
           res.writeHead(405);
           res.end();
@@ -558,6 +774,7 @@ function apply(ctx) {
     path: "/api/worktable/mkdir",
     handler: async (req, res) => {
       try {
+        if (await gateReq(req, res)) return;
         if (req.method !== "POST") {
           res.writeHead(405);
           res.end();
@@ -589,11 +806,18 @@ function apply(ctx) {
     kind: "exact",
     path: "/api/worktable/git",
     handler: async (req, res) => {
+      try {
+        if (await gateReq(req, res)) return;
+      } catch (err) {
+        json(res, 500, { error: String(err) });
+        return;
+      }
       const body = await readJsonBody(req);
       const cwd = serverCwd(ctx, body.sessionId, body.cwd);
       json(res, 200, await gitStatus(cwd));
     }
   });
+  loadAuth().then((d) => ctx.logger?.info?.("[dsh-worktable] \u8BBF\u95EE\u5BC6\u7801\uFF1A" + (d.pinHash ? "\u5DF2\u914D\u7F6E\uFF08/api/worktable/* \u5168\u90E8\u9700\u9274\u6743\uFF09" : "\u672A\u914D\u7F6E\u2014\u2014\u9996\u6B21\u8BBF\u95EE\u5DE5\u4F5C\u53F0\u63A5\u53E3\u65F6\u4F1A\u8981\u6C42\u5728\u9875\u9762\u4E0A\u8BBE\u7F6E\uFF08\u6216 POST /api/worktable/login\uFF09")));
   setupTerminal(webServer, ctx);
 }
 export {

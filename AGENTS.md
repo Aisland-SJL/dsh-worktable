@@ -55,7 +55,8 @@ node --check lib/index.js
   无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
   HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
   白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（8 场景，评估安装产物 lib/client.js；
-  测试接受包路径参数）→ **服务端数据目录回归**（3 组场景，评估安装产物 lib/index.js）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
+  测试接受包路径参数）→ **服务端数据目录回归**（3 组场景，评估安装产物 lib/index.js）→
+  **服务端访问密码门禁回归**（`04_test/server-auth.test.mjs`，32 断言，评估安装产物 lib/index.js）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
   脚本零 git/gh 动作，发布上传由 gh 手动完成。
   **发布禁止裸 npm pack 或手工 tar 生成发布包**；脚本从仓库任意目录调用均安全（以自身位置解析）。
 - **配套检查入口**：`npm run test:gate` = 工厂门禁 10 个失败/正向用例；
@@ -89,6 +90,19 @@ node --check lib/index.js
   ~ 与 ~/ 与 ~\ 展开、相对路径按 cwd、默认 ~/.dsh；trim 只用于空白判断、路径保留原字符串。
   **不把 dsh-home-paths 声明为生产依赖**（其 peer cordis ^4.0.2 不满足 0.1.1-rc.2 的 4.0.1，
   已试过并撤回）。改这块必须跑 server-home 3 组场景 + 突变体验证（恢复循环测试必须红）。
+- **访问密码门禁（服务端安全边界）**：`/api/worktable/*` 除 health 与 template 外全部要鉴权
+  （file/site/fs/workspaces/write/mkdir/git/auth/login 与终端 WebSocket）；`/api/worktable/login`
+  首次调用即设置密码（scrypt N=16384 加盐哈希，落 `<DSH_HOME>/storages/worktable-auth.json`，
+  `DSH_WORKTABLE_AUTH_FILE` 可覆盖），凭据三选一：同源会话 Cookie `wt_auth`
+  （HttpOnly + SameSite=Strict，30 天滚动）、`X-WT-Pin` 头、`?auth=<token>`（WS 无法自定义握手头）；
+  密码错误单 IP 60s 5 次锁 10 分钟；浏览器导航被拦回内置登录页（GET + Accept: text/html），
+  响应头 `x-wt-first` 供客户端区分「首次设置」文案。
+  **红线**：① 新增 `/api/worktable/*` 路由必须挂 `gateReq`（WS 走 `authGate` 后再 `handleUpgrade`），
+  否则等于开了个新的免鉴权面；② 门禁只在 `<DSH_HOME>`（resolveDshHomeSafe）下解析密码文件路径，
+  不手拼 `homedir()/.dsh`；③ 改这块必须跑 `04_test/server-auth.test.mjs`（32 断言，已并入
+  `npm run pack` 的 5e 段），它会同时锁「未授权不落盘」与「WS 未授权不升级」两条。
+  客户端调用同源接口统一用 `src/client/auth.ts` 的 `authFetch`（401 → 弹密码浮层 → 自动重试一次），
+  终端窗连接前先 `ensureAuth()`。
 - **新会话预设修复**：新建会话（createCustomSession / bindConsoleNew）创建后调用
   ensureSessionPreset——用宿主 api.agentPresets.list/select 显式应用「部署默认预设」
   （isDefault ?? 首个，失败逐个尝试其余预设；select 仅对 blank 会话生效）。

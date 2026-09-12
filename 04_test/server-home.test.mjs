@@ -12,6 +12,7 @@
  * 失败路径不调用 process.exit（避免跳过 finally），统一收口到 process.exitCode。
  */
 import { spawnSync } from 'node:child_process'
+import { randomBytes, scryptSync } from 'node:crypto'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -23,6 +24,22 @@ const BUNDLE_SRC = resolve(process.argv[2] ?? join(HERE, '..', '01_content', 'li
 
 // 探测次数上界：正常解析（祖先链 + profiles 枚举）远低于此；旧代码循环重入会达到数千次
 const PROBE_BOUND = 100
+
+// 访问密码门禁夹具：/api/worktable/* 现在全部要鉴权，本测试只关心数据目录解析，
+// 因此预置一份「已设密码」的 auth 文件并统一用 X-WT-Pin 头过门禁（门禁本身由 server-auth.test.mjs 覆盖）。
+const AUTH_PIN = 'server-home-test-pin'
+function makeAuthFixture() {
+  const dir = mkdtempSync(join(tmpdir(), 'wt-home-auth-'))
+  const salt = randomBytes(16).toString('hex')
+  const file = join(dir, 'worktable-auth.json')
+  writeFileSync(file, JSON.stringify({
+    pinHash: { salt, hash: scryptSync(AUTH_PIN, salt, 32, { N: 16384 }).toString('hex') },
+    sessions: [],
+  }), 'utf8')
+  return { dir, file }
+}
+const AUTH = makeAuthFixture()
+const AUTH_REQ = "{ headers: { 'x-wt-pin': process.env.WT_PIN }, socket: { remoteAddress: '127.0.0.1' } }"
 
 let pass = 0
 const failures = []
@@ -95,7 +112,7 @@ function runChild(envHome, name, withOfficial = false) {
       "const route = routes.find((r) => r.path === '/api/worktable/workspaces')",
       "let status = 0; let body = ''",
       "const res = { writeHead(s) { status = s }, end(b) { body = String(b) } }",
-      "await route.handler({}, res)",
+      "await route.handler(" + AUTH_REQ + ", res)",
       "const stats = mod.__wtLoadProbeStats ? mod.__wtLoadProbeStats() : null",
       "const raw = process.env.DSH_HOME || ''",
       "const BS = String.fromCharCode(92)",
@@ -105,7 +122,7 @@ function runChild(envHome, name, withOfficial = false) {
       "console.log(JSON.stringify({ status, body: body.slice(0, 500), stats, expectedFull, fullMatch: body.includes(expectedEncoded) }))",
     ].join('\n')
     const r = spawnSync(process.execPath, ['--input-type=module', '-e', script, join(isoDir, 'lib', 'index.js')], {
-      env: { ...process.env, DSH_HOME: homeVal ?? '' },
+      env: { ...process.env, DSH_HOME: homeVal ?? '', DSH_WORKTABLE_AUTH_FILE: AUTH.file, WT_PIN: AUTH_PIN },
       encoding: 'utf8',
       timeout: 15000,
     })
@@ -167,11 +184,11 @@ function runChild(envHome, name, withOfficial = false) {
         "const route = routes.find((r) => r.path === '/api/worktable/workspaces')",
         "let status = 0; let body = ''",
         "const res = { writeHead(s) { status = s }, end(b) { body = String(b) } }",
-        "await route.handler({}, res)",
+        "await route.handler(" + AUTH_REQ + ", res)",
         "console.log(JSON.stringify({ status, body: body.slice(0, 500) }))",
       ].join('\n')
       const r = spawnSync(process.execPath, ['--input-type=module', '-e', script, join(isoDir, 'lib', 'index.js')], {
-        env: { ...process.env, DSH_HOME: home },
+        env: { ...process.env, DSH_HOME: home, DSH_WORKTABLE_AUTH_FILE: AUTH.file, WT_PIN: AUTH_PIN },
         encoding: 'utf8',
         timeout: 15000,
       })
@@ -222,6 +239,8 @@ function runChild(envHome, name, withOfficial = false) {
   }
   if (!failures.some((f) => /^[DEF]\./.test(f))) ok('D+E+F. ~ 与 ~/ 与 ~\\ 前缀展开 + 相对路径按 cwd 解析（完整绝对路径断言）')
 }
+
+rmSync(AUTH.dir, { recursive: true, force: true })
 
 console.log('all server-home tests passed: ' + pass + ' scenarios, ' + failures.length + ' failures')
 process.exitCode = failures.length > 0 ? 1 : 0

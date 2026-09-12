@@ -1,5 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
 import { execFile } from 'node:child_process'
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
 import { readdirSync, realpathSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { dirname, resolve as pathResolve, sep } from 'node:path'
@@ -193,6 +194,199 @@ async function gitStatus(cwd: string) {
   }
 }
 
+// ============================ 访问密码（/api/worktable/* 门禁） ============================
+// 背景：这些路由能读任意文件、写任意文件、建目录、按任意 cwd 跑 git，终端那条 WebSocket 更是
+// 直接给出交互式 shell。服务只绑回环并不构成防护——CORS 只限制响应可读性，不阻止请求到达；
+// JSON POST 用简单请求即可免预检；WebSocket 握手本来就不受同源策略约束。也就是说，用户浏览器里
+// 打开的任意网页都能跨源打到这些端点。因此全部敏感端点统一加一道访问密码门禁：
+//   - 浏览器：POST /api/worktable/login 换 HttpOnly + SameSite=Strict 会话 Cookie，同源请求自带；
+//   - 脚本/终端：X-WT-Pin 头直接过门禁，或 ?auth=<token>（WebSocket 无法自定义握手头）；
+//   - 首次使用即设置密码（与 dsh-timetable-mobile 的 mobile-server PIN 机制同语义）；
+//   - 密码失败按 IP 限速；浏览器导航被拦时返回内置登录页，不破坏页面流。
+// 密码只存 scrypt 加盐哈希，落 <DSH_HOME>/storages/worktable-auth.json（DSH_WORKTABLE_AUTH_FILE 可覆盖）。
+const AUTH_COOKIE = 'wt_auth'
+const AUTH_HEADER = 'x-wt-pin'
+const AUTH_SESSION_MAX = 20
+const AUTH_SESSION_TTL = 30 * 24 * 3600 * 1000
+const AUTH_FAIL_WINDOW = 60 * 1000
+const AUTH_FAIL_LIMIT = 5
+const AUTH_LOCK_MS = 10 * 60 * 1000
+
+interface AuthSession { token: string; lastSeen: number }
+interface AuthData { pinHash?: { salt: string; hash: string }; sessions?: AuthSession[] }
+interface AuthGateResult { status: number; error: string; firstTime?: boolean }
+
+/** 密码状态文件路径（测试与自定义部署可用 DSH_WORKTABLE_AUTH_FILE 重定向） */
+function authFilePath(): string {
+  const override = process.env.DSH_WORKTABLE_AUTH_FILE
+  if (override && override.trim()) return pathResolve(override)
+  return pathResolve(resolveDshHomeSafe(), 'storages', 'worktable-auth.json')
+}
+
+const authState: { loaded: boolean; data: AuthData | null } = { loaded: false, data: null }
+
+async function loadAuth(force = false): Promise<AuthData> {
+  if (authState.loaded && !force) return authState.data as AuthData
+  try {
+    const raw = await readFile(authFilePath(), 'utf8')
+    // 容忍 BOM（外部编辑器保存可能带 EF BB BF，JSON.parse 会抛错）
+    authState.data = JSON.parse(raw.charCodeAt(0) === 0xFEFF ? raw.slice(1) : raw)
+  } catch {
+    authState.data = {}
+  }
+  authState.loaded = true
+  return authState.data as AuthData
+}
+
+async function saveAuth(data: AuthData): Promise<void> {
+  authState.data = data
+  authState.loaded = true
+  const fsx = await import('node:fs/promises')
+  const file = authFilePath()
+  try { await fsx.mkdir(dirname(file), { recursive: true }) } catch {}
+  await fsx.writeFile(file, JSON.stringify(data), 'utf8')
+}
+
+function hashPin(pin: string) {
+  const salt = randomBytes(16).toString('hex')
+  return { salt, hash: scryptSync(String(pin), salt, 32, { N: 16384 }).toString('hex') }
+}
+
+function verifyPin(given: string, data: AuthData): boolean {
+  const stored = data?.pinHash
+  if (!stored?.salt || !stored?.hash) return false
+  try {
+    const calc = scryptSync(String(given), stored.salt, 32, { N: 16384 })
+    return timingSafeEqual(calc, Buffer.from(stored.hash, 'hex'))
+  } catch {
+    return false
+  }
+}
+
+function parseCookies(header: unknown): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const part of String(header ?? '').split(';')) {
+    const eq = part.indexOf('=')
+    if (eq > 0) out[part.slice(0, eq).trim()] = part.slice(eq + 1).trim()
+  }
+  return out
+}
+
+function pruneSessions(data: AuthData) {
+  const now = Date.now()
+  data.sessions = (data.sessions ?? []).filter((s) => now - s.lastSeen < AUTH_SESSION_TTL)
+}
+
+async function issueSession(data: AuthData): Promise<string> {
+  const token = randomBytes(24).toString('hex')
+  data.sessions = data.sessions ?? []
+  pruneSessions(data)
+  data.sessions.push({ token, lastSeen: Date.now() })
+  while (data.sessions.length > AUTH_SESSION_MAX) data.sessions.shift()
+  await saveAuth(data)
+  return token
+}
+
+/** 会话校验（滚动续期只改内存，不逐次写盘） */
+function hasSession(data: AuthData, token: string): boolean {
+  if (!token) return false
+  const now = Date.now()
+  const hit = (data.sessions ?? []).find((s) => s.token === token)
+  if (!hit) return false
+  if (now - hit.lastSeen >= AUTH_SESSION_TTL) return false
+  hit.lastSeen = now
+  return true
+}
+
+/** 密码失败限速：单 IP 60s 窗口 5 次 → 锁 10 分钟（Cookie/token 会话不受影响） */
+const authFails = new Map<string, { win: number; count: number; lockUntil: number }>()
+function clientIp(req: any): string {
+  return req?.socket?.remoteAddress || 'unknown'
+}
+function rateState(ip: string) {
+  const now = Date.now()
+  let b = authFails.get(ip)
+  if (!b || now - b.win > AUTH_FAIL_WINDOW) {
+    b = { win: now, count: 0, lockUntil: 0 }
+    authFails.set(ip, b)
+  }
+  return b
+}
+function rateFail(ip: string) {
+  const b = rateState(ip)
+  b.count += 1
+  if (b.count >= AUTH_FAIL_LIMIT) b.lockUntil = Date.now() + AUTH_LOCK_MS
+}
+function rateLocked(ip: string): number {
+  return Math.max(0, rateState(ip).lockUntil - Date.now())
+}
+
+/** 门禁判定：通过返回 null，否则返回应回给客户端的状态 */
+async function authGate(req: any, urlObj: URL): Promise<AuthGateResult | null> {
+  const data = await loadAuth()
+  const first = !data.pinHash
+  const cookies = parseCookies(req?.headers?.cookie)
+  if (hasSession(data, cookies[AUTH_COOKIE])) return null
+  const urlToken = urlObj.searchParams.get('auth') || ''
+  if (urlToken && hasSession(data, urlToken)) return null
+  // 未设密码：放行到登录页/登录接口去设置，其余一律拦下
+  const ip = clientIp(req)
+  const locked = rateLocked(ip)
+  if (locked > 0) return { status: 429, error: '密码错误次数过多，锁定 ' + Math.ceil(locked / 1000) + ' 秒', firstTime: first }
+  const header = String(req?.headers?.[AUTH_HEADER] ?? '')
+  if (header && verifyPin(header, data)) return null
+  if (header) rateFail(ip)
+  return { status: 401, error: first ? 'worktable pin not set yet — 首次访问请设置访问密码' : 'pin required', firstTime: first }
+}
+
+/** 浏览器导航被拦 → 内置登录页（首次访问即设置密码）；其余客户端 → JSON 401 */
+function deny(req: any, res: any, gate: AuthGateResult) {
+  const wantsHtml = req?.method === 'GET' && String(req?.headers?.accept ?? '').includes('text/html')
+  const status = gate.status === 429 ? 429 : 401
+  // x-wt-first：客户端据此把浮层文案切成「首次设置密码」
+  const headers: Record<string, string> = { 'cache-control': 'no-store', 'x-wt-first': gate.firstTime ? '1' : '0' }
+  if (wantsHtml) {
+    res.writeHead(status, { ...headers, 'content-type': 'text/html; charset=utf-8' })
+    res.end(loginPageHtml(!!gate.firstTime))
+    return
+  }
+  res.writeHead(status, { ...headers, 'content-type': 'application/json; charset=utf-8' })
+  res.end(JSON.stringify({ ok: false, error: gate.error }))
+}
+
+/** 各路由处理器统一入口：被拦（或出错）时已写好响应，返回 true 表示本次请求结束 */
+async function gateReq(req: any, res: any): Promise<boolean> {
+  const gate = await authGate(req, new URL(req?.url ?? '/', 'http://dsh.internal'))
+  if (!gate) return false
+  deny(req, res, gate)
+  return true
+}
+
+/** 内置登录页（自包含，不引外链；登录成功 location.reload() 回到原页面） */
+function loginPageHtml(firstTime: boolean): string {
+  const head = firstTime ? '设置工作台访问密码' : '工作台访问密码'
+  const sub = firstTime
+    ? '首次使用：给本机工作台接口设置一个访问密码（只保存加盐哈希）'
+    : '本机工作台接口受访问密码保护'
+  const btn = firstTime ? '设置并进入' : '进入'
+  return '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width,initial-scale=1"><title>' + head + '</title><style>'
+    + 'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);font:14px/1.7 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}'
+    + 'main{max-width:380px;padding:28px;background:var(--dsw-alias-fill-l1,#12161e);border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:14px;text-align:center}'
+    + 'input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1,#262b36);background:rgba(255,255,255,.05);color:inherit;font:inherit;outline:none;box-sizing:border-box}'
+    + 'button{margin-top:10px;width:100%;padding:10px;border:none;border-radius:8px;background:#3fb950;color:#07130a;font-weight:600;cursor:pointer}'
+    + 'p{font-size:12px;color:var(--dsw-alias-label-secondary,#9aa4b2)}#m{min-height:18px;font-size:12px;color:#f85149}'
+    + '</style></head><body><main><h2>' + head + '</h2><p>' + sub + '</p>'
+    + '<input id="p" type="password" placeholder="访问密码" autofocus><button id="b">' + btn + '</button><div id="m"></div>'
+    + '</main><script>'
+    + 'var i=document.getElementById("p"),b=document.getElementById("b"),m=document.getElementById("m");'
+    + 'function go(){fetch("/api/worktable/login",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({pin:i.value})})'
+    + '.then(function(r){return r.json()}).then(function(j){if(j.ok){location.reload()}else{m.textContent=j.error||"密码错误"}})'
+    + '.catch(function(e){m.textContent=String(e)})}'
+    + 'b.onclick=go;i.addEventListener("keydown",function(e){if(e.key==="Enter")go()});'
+    + '<\/script></body></html>'
+}
+
 /** 终端 WebSocket 升级路由（同步注册 + ctx.effect，同 better-sidebar；node-pty 缺失时不注册） */
 function setupTerminal(webServer: any, ctx: any) {
   if (typeof webServer.registerUpgrade !== 'function') return
@@ -216,35 +410,46 @@ function setupTerminal(webServer: any, ctx: any) {
   ctx.effect(() => webServer.registerUpgrade({
     path: '/api/worktable/term',
     handler: (req: any, socket: any, head: any) => {
-      wss.handleUpgrade(req, socket, head, (ws: any) => {
-        const u = new URL(req.url ?? '/', 'http://dsh.internal')
-        const cwd = serverCwd(ctx, u.searchParams.get('sessionId') || undefined, u.searchParams.get('cwd') || undefined)
-        const cols = clampDim(Number(u.searchParams.get('cols')), 80)
-        const rows = clampDim(Number(u.searchParams.get('rows')), 24)
-        let term: any = null
-        try {
-          const shell = spawnShell()
-          term = pty.spawn(shell.cmd, shell.args, { name: 'xterm-256color', cols, rows, cwd, env: process.env })
-        } catch (err) {
-          try { ws.send('\r\n[worktable] 终端启动失败：' + String(err)) } catch {}
-          try { ws.close() } catch {}
+      const uGate = new URL(req.url ?? '/', 'http://dsh.internal')
+      // WebSocket 没有同源约束、也没有预检：门禁必须在握手前判掉，未授权直接回 401 并断开
+      authGate(req, uGate).then((gate) => {
+        if (gate) {
+          try {
+            socket.write('HTTP/1.1 401 Unauthorized\r\ncontent-type: text/plain; charset=utf-8\r\nconnection: close\r\n\r\nworktable: ' + gate.error + '\n')
+          } catch {}
+          try { socket.destroy() } catch {}
           return
         }
-        term.onData((d: string) => { try { ws.send(d) } catch {} })
-        term.onExit(() => { try { ws.close() } catch {} })
-        ws.on('message', (raw: any) => {
-          const text = String(raw)
+        wss.handleUpgrade(req, socket, head, (ws: any) => {
+          const u = new URL(req.url ?? '/', 'http://dsh.internal')
+          const cwd = serverCwd(ctx, u.searchParams.get('sessionId') || undefined, u.searchParams.get('cwd') || undefined)
+          const cols = clampDim(Number(u.searchParams.get('cols')), 80)
+          const rows = clampDim(Number(u.searchParams.get('rows')), 24)
+          let term: any = null
           try {
-            const msg = JSON.parse(text)
-            if (msg && msg.type === 'resize' && Number.isFinite(msg.cols) && Number.isFinite(msg.rows)) {
-              term.resize(clampDim(msg.cols, cols), clampDim(msg.rows, rows))
-              return
-            }
-          } catch {}
-          try { term.write(text) } catch {}
+            const shell = spawnShell()
+            term = pty.spawn(shell.cmd, shell.args, { name: 'xterm-256color', cols, rows, cwd, env: process.env })
+          } catch (err) {
+            try { ws.send('\r\n[worktable] 终端启动失败：' + String(err)) } catch {}
+            try { ws.close() } catch {}
+            return
+          }
+          term.onData((d: string) => { try { ws.send(d) } catch {} })
+          term.onExit(() => { try { ws.close() } catch {} })
+          ws.on('message', (raw: any) => {
+            const text = String(raw)
+            try {
+              const msg = JSON.parse(text)
+              if (msg && msg.type === 'resize' && Number.isFinite(msg.cols) && Number.isFinite(msg.rows)) {
+                term.resize(clampDim(msg.cols, cols), clampDim(msg.rows, rows))
+                return
+              }
+            } catch {}
+            try { term.write(text) } catch {}
+          })
+          ws.on('close', () => { try { term.kill() } catch {} })
         })
-        ws.on('close', () => { try { term.kill() } catch {} })
-      })
+      }).catch(() => { try { socket.destroy() } catch {} })
     },
   }), 'dsh-worktable: terminal upgrade')
 }
@@ -264,12 +469,63 @@ export function apply(ctx: Context) {
     },
   })
 
+  // 访问密码登录：首次调用即设置密码。成功返回会话 token（WebSocket 的 ?auth= 与脚本用），
+  // 同时下发 HttpOnly + SameSite=Strict 的会话 Cookie（浏览器同源请求自动携带，跨源页面带不上）。
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/login',
+    handler: async (req: any, res: any) => {
+      try {
+        if (req.method !== 'POST') { res.writeHead(405); res.end(); return }
+        const body = await readJsonBody(req)
+        const pin = String(body.pin ?? '')
+        if (!pin) { json(res, 400, { ok: false, error: 'missing pin' }); return }
+        const data = await loadAuth()
+        if (!data.pinHash) {
+          data.pinHash = hashPin(pin)
+        } else {
+          const ip = clientIp(req)
+          const locked = rateLocked(ip)
+          if (locked > 0) {
+            json(res, 429, { ok: false, error: '密码错误次数过多，锁定 ' + Math.ceil(locked / 1000) + ' 秒' })
+            return
+          }
+          if (!verifyPin(pin, data)) {
+            rateFail(ip)
+            json(res, 401, { ok: false, error: '密码错误' })
+            return
+          }
+        }
+        const token = await issueSession(data)
+        res.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+          'set-cookie': AUTH_COOKIE + '=' + token + '; HttpOnly; SameSite=Strict; Path=/; Max-Age=' + (30 * 24 * 3600),
+        })
+        res.end(JSON.stringify({ ok: true, token }))
+      } catch (err) {
+        json(res, 500, { ok: false, error: String(err) })
+      }
+    },
+  })
+
+  // 轻量鉴权探针：客户端开终端 WebSocket 前先探一次（握手失败在浏览器侧读不到 401）
+  webServer.register({
+    kind: 'exact',
+    path: '/api/worktable/auth',
+    handler: async (req: any, res: any) => {
+      if (await gateReq(req, res)) return
+      json(res, 200, { ok: true })
+    },
+  })
+
   // 本地文件读取（资源管理器点击 .html 后浏览器标签内打开）
   webServer.register({
     kind: 'exact',
     path: '/api/worktable/file',
     handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         const u = new URL(req.url ?? '/', 'http://dsh.internal')
         const p = u.searchParams.get('path') || ''
         if (!p) { json(res, 400, { error: 'missing path' }); return }
@@ -321,6 +577,7 @@ export function apply(ctx: Context) {
     path: SITE_PREFIX,
     handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         if (req.method !== 'GET') { res.writeHead(405); res.end(); return }
         const pathname = new URL(req.url ?? '/', 'http://dsh.internal').pathname
         const segs = pathname.slice(SITE_PREFIX.length).split('/').filter(Boolean)
@@ -353,6 +610,7 @@ export function apply(ctx: Context) {
     path: '/api/worktable/fs',
     handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         const body = await readJsonBody(req)
         const path = typeof body.path === 'string' && body.path
           ? body.path
@@ -371,8 +629,9 @@ export function apply(ctx: Context) {
   webServer.register({
     kind: 'exact',
     path: '/api/worktable/workspaces',
-    handler: async (_req: any, res: any) => {
+    handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         // cordis 对未 inject 服务的属性访问会直接 throw（不返回 undefined），必须 try-catch 探测
         let registry: any = null
         try { registry = (ctx as any).workspaceRegistry ?? null } catch {}
@@ -417,6 +676,7 @@ export function apply(ctx: Context) {
     path: '/api/worktable/write',
     handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         if (req.method !== 'POST') { res.writeHead(405); res.end(); return }
         const body = await readJsonBody(req)
         const p = typeof body.path === 'string' ? body.path : ''
@@ -438,6 +698,7 @@ export function apply(ctx: Context) {
     path: '/api/worktable/mkdir',
     handler: async (req: any, res: any) => {
       try {
+        if (await gateReq(req, res)) return
         if (req.method !== 'POST') { res.writeHead(405); res.end(); return }
         const body = await readJsonBody(req)
         const p = typeof body.path === 'string' ? body.path.trim() : ''
@@ -458,11 +719,22 @@ export function apply(ctx: Context) {
     kind: 'exact',
     path: '/api/worktable/git',
     handler: async (req: any, res: any) => {
+      try {
+        if (await gateReq(req, res)) return
+      } catch (err) {
+        json(res, 500, { error: String(err) })
+        return
+      }
       const body = await readJsonBody(req)
       const cwd = serverCwd(ctx, body.sessionId, body.cwd)
       json(res, 200, await gitStatus(cwd))
     },
   })
+
+  // 启动自检：门禁默认开启，未设密码时给一行明确日志（浏览器首次访问会落到设置页）
+  loadAuth().then((d) => ctx.logger?.info?.('[dsh-worktable] 访问密码：' + (d.pinHash
+    ? '已配置（/api/worktable/* 全部需鉴权）'
+    : '未配置——首次访问工作台接口时会要求在页面上设置（或 POST /api/worktable/login）')))
 
   setupTerminal(webServer, ctx)
 }

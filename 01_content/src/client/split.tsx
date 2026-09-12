@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { parentPathOf } from './pathutil'
+import { authFetch, ensureAuth } from './auth'
 import { CHANGELOG_V030 } from './changelog'
 import { LOCAL_VERSION, checkUpdate, getAutoCheck, readCache, setAutoCheck as storeAutoCheck, setSkipVersion, type UpdateInfo, type UpdateStatus } from './updateCheck'
 import { Terminal } from 'xterm'
@@ -288,7 +289,7 @@ export function setSplitEnv(env: SplitEnv | null) {
 }
 
 async function postJson(url: string, body: unknown): Promise<any> {
-  const res = await fetch(url, {
+  const res = await authFetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
@@ -2437,18 +2438,27 @@ function TerminalPane() {
     const scope = splitEnv?.getScope?.()
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
     const url = proto + '//' + location.host + '/api/worktable/term?sessionId=' + encodeURIComponent(scope?.sessionId ?? '') + '&cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
-    try {
-      ws = new WebSocket(url)
-    } catch {
-      term.dispose()
-      setFailed(T('pane.termFail'))
-      return
-    }
-    ws.onopen = () => { focusTerm(); try { term.write('\x1b[?7h') } catch {} }
-    ws.onmessage = (ev) => { try { term.write(String(ev.data)) } catch {} }
-    ws.onclose = () => { if (!disposed) { try { term.write('\r\n[连接已关闭]') } catch {} } }
-    ws.onerror = () => { if (!disposed) setFailed(T('pane.termFail')) }
-    term.onData((d: string) => { if (ws && ws.readyState === 1) ws.send(d) })
+    // 访问密码门禁：WebSocket 握手被拒时浏览器侧读不到状态码，先探一次门禁再连
+    void ensureAuth().then((authed) => {
+      if (disposed) return
+      if (!authed) {
+        try { term.dispose() } catch {}
+        setFailed(T('pane.termFail'))
+        return
+      }
+      try {
+        ws = new WebSocket(url)
+      } catch {
+        try { term.dispose() } catch {}
+        setFailed(T('pane.termFail'))
+        return
+      }
+      ws.onopen = () => { focusTerm(); try { term.write('\x1b[?7h') } catch {} }
+      ws.onmessage = (ev) => { try { term.write(String(ev.data)) } catch {} }
+      ws.onclose = () => { if (!disposed) { try { term.write('\r\n[连接已关闭]') } catch {} } }
+      ws.onerror = () => { if (!disposed) setFailed(T('pane.termFail')) }
+      term.onData((d: string) => { if (ws && ws.readyState === 1) ws.send(d) })
+    })
     const ro = new ResizeObserver(() => {
       if (typeof term.fit === 'function') {
         try { term.fit() } catch {}
@@ -2519,7 +2529,7 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
     let dead = false
     setText(null)
     setError('')
-    fetch(props.fileUrl)
+    authFetch(props.fileUrl)
       .then((r) => {
         if (!r.ok) throw new Error('HTTP ' + r.status)
         return r.text()
@@ -2533,7 +2543,7 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
     setSaving(true)
     setSaveFail(false)
     try {
-      const r = await fetch('/api/worktable/write', {
+      const r = await authFetch('/api/worktable/write', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ path: props.path, content: draft }),
