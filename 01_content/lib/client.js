@@ -8896,7 +8896,29 @@ function basenameOf(p) {
 var import_react = require("react");
 
 // src/client/changelog.ts
-var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.3
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.4
+
+\u{1F6E0}\uFE0F \u672C\u6B21\u66F4\u65B0\uFF1A\u9002\u914D DSH 0.2 \u7F51\u9875\u7AEF
+
+\u3010\u9879\u76EE\u4E0E\u4F1A\u8BDD\u8054\u52A8\u3011\u63A5\u5165\u65B0\u7248 DSH \u7684\u4F1A\u8BDD\u8BC6\u522B\u4E0E\u8DF3\u8F6C\u63A5\u53E3\uFF0C\u9002\u914D\u6253\u5F00\u7ED1\u5B9A\u9879\u76EE\u3001\u5173\u95ED\u9879\u76EE\u540E\u56DE\u5230\u539F\u4F1A\u8BDD\u3001\u63A7\u5236\u5BA4\u5361\u7247\u8DF3\u8F6C\u7B49\u5165\u53E3\uFF0C\u4E0D\u66FF\u6362\u5BBF\u4E3B\u5B98\u65B9\u7EC4\u4EF6\u3002
+
+\u3010\u65B0\u5EFA\u5BF9\u8BDD\u3011\u4FEE\u590D\u65B0\u7248 DSH \u4E2D\u53EA\u8BBE\u7F6E\u9879\u76EE\u8DEF\u5F84\u521B\u5EFA\u4F1A\u8BDD\uFF0C\u53EF\u80FD\u51FA\u73B0\u300C\u5BF9\u8BDD\u80FD\u6253\u5F00\uFF0C\u5374\u65E0\u6CD5\u8F93\u5165\u300D\u7684\u95EE\u9898\u3002\u65B0\u5EFA\u65F6\u5148\u901A\u8FC7\u5BBF\u4E3B\u767B\u8BB0\u6216\u590D\u7528\u5DE5\u4F5C\u533A\uFF0C\u518D\u521B\u5EFA\u4F1A\u8BDD\uFF1B\u9884\u8BBE\u4E0E\u6A21\u578B\u9009\u62E9\u4E5F\u63A5\u5165\u65B0\u7248\u63A5\u53E3\u3002\u6B64\u6539\u52A8\u4E0D\u81EA\u52A8\u8FC1\u79FB\u5DF2\u6709\u4F1A\u8BDD\u3002
+
+\u3010\u6807\u6CE8\u8F93\u5165\u3011\u9002\u914D\u65B0\u7248\u804A\u5929\u8F93\u5165\u6846\uFF0C\u901A\u8FC7\u5BBF\u4E3B\u63A5\u53E3\u8FFD\u52A0\u6807\u6CE8\uFF0C\u4FDD\u7559\u5DF2\u6709\u8349\u7A3F\u4E0E\u6587\u4EF6\u5F15\u7528\uFF0C\u4E0D\u81EA\u52A8\u53D1\u9001\uFF1B\u65E0\u6CD5\u5199\u5165\u65F6\u4ECD\u53EF\u590D\u5236\u5230\u526A\u8D34\u677F\u3002\u4FEE\u590D\u65E7\u7248\u5DF2\u6709\u6587\u4EF6\u5F15\u7528\u65F6\u8FFD\u52A0\u4F4D\u7F6E\u8BA1\u7B97\u9519\u8BEF\u7684\u95EE\u9898\uFF1B\u65E7\u7248\u8F93\u5165\u6846\u4FDD\u7559\u517C\u5BB9\u5206\u652F\uFF0C\u4E0D\u518D\u8BEF\u9009\u5DE5\u4F5C\u53F0\u81EA\u5DF1\u7684\u6807\u6CE8\u6846\u6216\u6587\u4EF6\u7F16\u8F91\u6846\u3002
+
+\u3010\u63A7\u5236\u5BA4\u72B6\u6001\u4E0E\u8BA1\u65F6\u3011\u9002\u914D\u65B0\u7248\u4F1A\u8BDD\u72B6\u6001\u3001\u5B50\u4EE3\u7406\u5217\u8868\u53CA\u6700\u8FD1\u6D88\u606F\u8BFB\u53D6\u3002\u652F\u6301\u8BC6\u522B\u65B0\u7684\u5F85\u786E\u8BA4\u4E8B\u9879\uFF1A\u786E\u8BA4\u8FC7\u4E0A\u4E00\u6761\u540E\uFF0C\u4E0B\u4E00\u6761\u4ECD\u4F1A\u91CD\u65B0\u4EAE\u8D77\u63D0\u9192\uFF1B\u8BA1\u65F6\u8BFB\u53D6\u5BBF\u4E3B\u5DF2\u6709\u7684\u4EFB\u52A1\u6216\u4F1A\u8BDD\u8D77\u70B9\uFF0C\u53D6\u4E0D\u5230\u6709\u6548\u8D77\u70B9\u65F6\u4E0D\u663E\u793A\uFF0C\u4E0D\u7F16\u9020\u8FD0\u884C\u65F6\u957F\u3002\u4EFB\u52A1\u505C\u6B62\u4E0D\u7B49\u4E8E\u4EFB\u52A1\u6210\u529F\u3002
+
+\u3010\u53D1\u9001\u4E0E\u6D88\u606F\u9884\u89C8\u3011\u9002\u914D\u65B0\u7248\u4F1A\u8BDD\u7684\u4E34\u65F6\u6301\u6709\u4E0E\u91CA\u653E\u673A\u5236\u3002\u53D1\u9001\u8BF7\u6C42\u5931\u8D25\u6216\u88AB\u62D2\u7EDD\u540E\uFF0C\u4E0D\u518D\u6362\u53E6\u4E00\u6761\u901A\u9053\u91CD\u590D\u53D1\u9001\uFF1B\u63A7\u5236\u5BA4\u9884\u89C8\u4ECE\u5BBF\u4E3B\u5DF2\u52A0\u8F7D\u7684\u6D88\u606F\u7A97\u53E3\u63D0\u53D6\u666E\u901A\u6587\u672C\uFF0C\u4E0D\u4EE3\u8868\u8BFB\u53D6\u4E86\u5B8C\u6574\u5386\u53F2\u3002
+
+\u3010\u6570\u636E\u4E0E\u5347\u7EA7\u3011\u672C\u6B21\u672A\u66F4\u540D\u6216\u8FC1\u79FB\u5DE5\u4F5C\u53F0\u7684\u9879\u76EE\u3001\u5E03\u5C40\u4E0E\u5A92\u4F53\u5B58\u50A8\uFF0C\u4E0D\u9700\u8981\u4E3A\u4E86\u672C\u6B21\u66F4\u65B0\u4E3B\u52A8\u6E05\u7A7A\u6D4F\u89C8\u5668\u6570\u636E\u3002\u5347\u7EA7\u524D\u8BF7\u5907\u4EFD\u914D\u7F6E\u53CA\u91CD\u8981\u6570\u636E\uFF0C\u786E\u8BA4\u5176\u4ED6\u63D2\u4EF6\u4E5F\u652F\u6301\u76EE\u6807 DSH \u7248\u672C\uFF1B\u5B89\u88C5\u540E\u5B8C\u6574\u9000\u51FA\u5E76\u91CD\u542F DSH\uFF0C\u518D\u5237\u65B0\u9875\u9762\u3002\u82E5\u4ECD\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u4FDD\u7559\u5B8C\u6574\u9519\u8BEF\u4FE1\u606F\u53CD\u9988\uFF0C\u4E0D\u8981\u628A\u5B83\u5F53\u4F5C\u6B63\u5E38\u73B0\u8C61\u3002
+
+\u3010\u9A8C\u8BC1\u8303\u56F4\u3011\u672C\u8F6E\u5728 Windows + DSH 0.2.0-rc.2 \u7F51\u9875\u7AEF\u9A8C\u8BC1\u4E86\u51B7\u542F\u52A8\u3001\u5DE5\u4F5C\u53F0/\u63A7\u5236\u5BA4\u9875\u9762\u3001\u901A\u8FC7\u5DE5\u4F5C\u53F0\u65B0\u5EFA\u5E76\u7ED1\u5B9A\u5BF9\u8BDD\u3001\u53D1\u9001\u77ED\u6587\u672C\u5E76\u6536\u5230\u6A21\u578B\u56DE\u590D\u3001\u5173\u95ED\u9879\u76EE\u540E\u56DE\u5207\u4E0E\u91CD\u65B0\u6253\u5F00\uFF1B\u540C\u65F6\u8865\u5145\u65E7\u7248\u670D\u52A1\u56DE\u9000\u4E0E\u5F15\u7528\u5750\u6807\u7B49\u5B9A\u5411\u56DE\u5F52\u3002\u517C\u5BB9\u58F0\u660E\u4EC5\u5217 0.1.1-rc.2\u30010.1.2-rc.1\u30010.2.0-rc.2\uFF1B\u524D\u4E24\u4E2A\u7248\u672C\u6CBF\u7528\u6B64\u524D\u9875\u9762\u9A8C\u6536\u57FA\u7840\u5E76\u505A\u4EE3\u7801\u56DE\u5F52\uFF0C\u672C\u8F6E\u672A\u91CD\u8DD1\u6574\u5957\u65E7\u7248 GUI\uFF0C\u4E0D\u627F\u8BFA\u5176\u4ED6\u7248\u672C\u5168\u90E8\u517C\u5BB9\u3002
+
+\u3010\u5C1A\u672A\u95ED\u73AF\u3011\u5B9E\u9645\u5BA1\u6279/\u5B50\u4EE3\u7406\u6D41\u7A0B\u53CA\u81EA\u52A8\u6302\u8F7D\u5168\u94FE\u8DEF\u5C1A\u672A\u5B8C\u6210\u4E1A\u52A1\u9A8C\u6536\u3002\u5B98\u65B9\u684C\u9762\u7AEF\u5C1A\u672A\u9002\u914D\uFF0CmacOS \u5C1A\u672A\u771F\u673A\u9A8C\u8BC1\uFF1B\u672C\u6B21\u4E5F\u4E0D\u4EE3\u8868\u6240\u6709\u7528\u6237\u7684 DSH \u542F\u52A8\u5931\u8D25\u5DF2\u89E3\u51B3\u3002\u516C\u5F00\u53D1\u5E03\u4FE1\u606F\u4EE5 GitHub Release \u4E3A\u51C6\u3002
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+\u6B64\u524D\u7248\u672C\u8BF4\u660E\uFF08v0.3.3\uFF09
 
 \u{1F6E0}\uFE0F \u672C\u7248\u672C\u66F4\u65B0
 
@@ -8948,7 +8970,7 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.3.3
 \u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
 
 // src/client/updateCheck.ts
-var LOCAL_VERSION = false ? "dev" : "0.3.3";
+var LOCAL_VERSION = false ? "dev" : "0.3.4";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
 var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
@@ -17098,24 +17120,7 @@ async function copyTextSafe(text2) {
   }
 }
 function fillHostInput(text2) {
-  try {
-    const ta = document.querySelector("textarea[data-phase]") ?? Array.from(document.querySelectorAll("textarea")).pop();
-    if (!ta) return false;
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
-    const next = ta.value && ta.value.trim() ? ta.value + "\n\n" + text2 : text2;
-    if (setter) setter.call(ta, next);
-    else ta.value = next;
-    ta.dispatchEvent(new Event("input", { bubbles: true }));
-    try {
-      ta.focus();
-      ta.dispatchEvent(new Event("change", { bubbles: true }));
-      ta.setSelectionRange(ta.value.length, ta.value.length);
-    } catch {
-    }
-    return true;
-  } catch {
-    return false;
-  }
+  return splitEnv?.fillHostInput(text2) ?? false;
 }
 function confirmAnnot() {
   const s = annotState;
@@ -19940,6 +19945,255 @@ try {
 } catch {
 }
 
+// src/client/sessionCompat.ts
+function currentSessionOf(snapshot) {
+  if (typeof snapshot?.current === "string") return snapshot.current;
+  const rows = Object.values(snapshot?.byId ?? {});
+  return rows.find((row) => (row?.retainedBy?.mainView ?? 0) > 0)?.id ?? "";
+}
+function openHostSession(ctx, sessions, id) {
+  const ui = typeof ctx?.get === "function" ? ctx.get("uiWorkspace") : ctx?.uiWorkspace;
+  if (typeof ui?.openSession === "function") return ui.openSession(id);
+  if (typeof sessions?.open === "function") return sessions.open(id);
+  throw new Error("Host session navigation unavailable");
+}
+async function sendHostSession(bridge, id, text2) {
+  const sessions = bridge?.sessions;
+  const check = (result) => {
+    if (result?.kind === "error" || result?.ok === false) {
+      throw new Error(result.text || result.error?.message || result.error?.code || "Session submission rejected");
+    }
+  };
+  const send = async (session) => {
+    if (session && typeof bridge?.conversation?.sendSession === "function") {
+      check(await bridge.conversation.sendSession(session, text2, [], "queue"));
+      return;
+    }
+    if (session && typeof session.prompt === "function") {
+      check(await session.prompt([{ type: "text", text: text2 }], "queue"));
+      return;
+    }
+    const conv = sessions?.scope?.(id)?.get?.("conversation");
+    if (typeof conv?.send === "function") {
+      check(await conv.send(text2));
+      return;
+    }
+    throw new Error("no send path: session face unavailable");
+  };
+  if (typeof sessions?.using === "function") {
+    await sessions.using(id, { source: "dshWorktable" }, async (ref) => {
+      const binding = await ref.ready;
+      await send(binding.session);
+    });
+    return;
+  }
+  let face = null;
+  for (let i = 0; i < 10; i++) {
+    face = sessions?.binding?.(id)?.session;
+    if (face) break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  await send(face);
+}
+function createSessionSnapshotAdapter() {
+  const previousRunning = /* @__PURE__ */ new Map();
+  const stopped = /* @__PURE__ */ new Set();
+  return (snapshot, statusSource) => {
+    if (!snapshot || typeof snapshot.current === "string") return snapshot;
+    const statuses = statusSource?.getSnapshot?.();
+    const byId = {};
+    const subagentsByParent = { ...snapshot.subagentsByParent };
+    for (const [id, row] of Object.entries(snapshot.byId ?? {})) {
+      const status = statuses?.get?.(id);
+      const running = status?.running ?? row.running;
+      if (running === true) stopped.delete(id);
+      else if (running === false && previousRunning.get(id) === true) stopped.add(id);
+      if (typeof running === "boolean") previousRunning.set(id, running);
+      byId[id] = {
+        ...row,
+        running,
+        pendingInteraction: status ? status.pendingInteraction : row.pendingInteraction,
+        // completionUnread clears when opening the main view. Keep a witnessed run-stop
+        // until the next run so an active project's widget-result handshake still runs.
+        completed: running !== true && (stopped.has(id) || status?.completionUnread === true || row.completed === true)
+      };
+      const children = snapshot.projectionsBySession?.[id]?.values?.subagentCatalog ?? row.projectionValues?.subagentCatalog;
+      if (Array.isArray(children)) subagentsByParent[id] = children;
+    }
+    if (snapshot.phase === "ready") {
+      for (const id of previousRunning.keys()) if (!byId[id]) {
+        previousRunning.delete(id);
+        stopped.delete(id);
+      }
+    }
+    return { ...snapshot, byId, subagentsByParent };
+  };
+}
+function childSessionIdsOf(snapshot, sid) {
+  const children = /* @__PURE__ */ new Set();
+  for (const [id, row] of Object.entries(snapshot?.byId ?? {})) {
+    if (id !== sid && row?.parentId === sid) children.add(id);
+  }
+  const catalog = snapshot?.subagentsByParent?.[sid];
+  const rows = Array.isArray(catalog) ? catalog : catalog?.entries ?? catalog?.items ?? [];
+  if (Array.isArray(rows)) for (const row of rows) {
+    const id = row?.sessionId ?? row?.id;
+    if (typeof id === "string" && id !== sid) children.add(id);
+  }
+  return children;
+}
+function pendingAckOf(snapshot, sid, legacyFace) {
+  const identities = [];
+  let identified = false;
+  const add = (id, pending) => {
+    if (pending == null) return;
+    const key = typeof pending?.key === "string" ? pending.key : "";
+    if (key) identified = true;
+    identities.push(JSON.stringify([id, String(pending?.kind ?? ""), key]));
+  };
+  const ids = [sid, ...childSessionIdsOf(snapshot, sid)];
+  for (const id of ids) add(id, snapshot?.byId?.[id]?.pendingInteraction);
+  if (snapshot?.byId?.[sid]?.pendingInteraction == null && Array.isArray(legacyFace?.pending)) {
+    for (const pending of legacyFace.pending) add(sid, pending);
+  }
+  if (!identities.length) return null;
+  return identified ? "need:" + JSON.stringify([...new Set(identities)].sort()) : "need";
+}
+function sessionRuntimeMs(snapshot, sid, sessions, uiConversation, now = Date.now()) {
+  if (snapshot?.byId?.[sid]?.running !== true) return null;
+  const validStart = (value) => typeof value === "number" && Number.isFinite(value) && value >= 0;
+  let start = null;
+  for (const job of snapshot?.jobsBySession?.[sid] ?? []) {
+    if (job?.status === "running" && validStart(job.startedAt) && (start == null || job.startedAt < start)) start = job.startedAt;
+  }
+  if (start != null) return Math.max(0, now - start);
+  let timings;
+  try {
+    timings = uiConversation?.binding?.(sid)?.target?.("chat")?.getSnapshot?.()?.legacy?.turnTimings;
+  } catch {
+  }
+  if (timings == null) {
+    try {
+      timings = sessions?.binding?.(sid)?.session?.getSnapshot?.()?.turnTimings;
+    } catch {
+    }
+  }
+  const turns = typeof timings?.values === "function" ? Array.from(timings.values()) : Object.values(timings ?? {});
+  for (const turn of turns) {
+    if (turn?.endTime == null && validStart(turn?.startTime) && (start == null || turn.startTime > start)) start = turn.startTime;
+  }
+  return start == null ? null : Math.max(0, now - start);
+}
+
+// src/client/hostInput.ts
+function appendHostInput(bridge, text2, doc = document) {
+  try {
+    const resolver = bridge?.conversation?.input;
+    if (typeof resolver?.for === "function") {
+      const snapshot = bridge.sessions?.list?.getSnapshot?.();
+      const id = currentSessionOf(snapshot);
+      const scope = id ? bridge.sessions?.scope?.(id) : null;
+      if (!scope) return false;
+      const input = resolver.for(scope);
+      const state = input?.state?.getSnapshot?.();
+      if (!state || typeof state.draft !== "string" || !Number.isInteger(state.draftRev) || !["plain", "claimed"].includes(state.phase) || !Array.isArray(state.occurrences)) return false;
+      const compactReferences = typeof snapshot?.current !== "string";
+      let end = state.draft.length;
+      let previousEnd = 0;
+      for (const item of state.occurrences) {
+        if (!Number.isInteger(item.offset) || !Number.isInteger(item.length) || item.length < 0 || item.offset < previousEnd || item.offset + item.length > state.draft.length) return false;
+        previousEnd = item.offset + item.length;
+        if (compactReferences) end += 1 - item.length;
+      }
+      const span = { start: end, end, draftRev: state.draftRev };
+      const addition = (state.draft.trim() ? "\n\n" : "") + text2;
+      const inserted = typeof input.actions?.insertText === "function" ? input.actions.insertText(addition, span) === true : scope.bail?.("slash/input-insert-text", { text: addition, span }) === true;
+      if (inserted) {
+        try {
+          input.focus?.();
+        } catch {
+        }
+      }
+      return inserted;
+    }
+    const ta = doc.querySelector("textarea[data-phase]");
+    if (!ta || ta.disabled || ta.readOnly || ta.closest(".dsh-wt_annotUi")) return false;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+    const next = ta.value && ta.value.trim() ? ta.value + "\n\n" + text2 : text2;
+    if (setter) setter.call(ta, next);
+    else ta.value = next;
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+    try {
+      ta.focus();
+      ta.dispatchEvent(new Event("change", { bubbles: true }));
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    } catch {
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// src/client/sessionDetails.ts
+function cleanPreviewText(raw) {
+  return String(raw ?? "").replace(/```[a-zA-Z0-9_+-]*[\s\S]*?```/g, " ").replace(/```[a-zA-Z0-9_+-]*[\s\S]*$/g, " ").replace(/`[^`\n]{1,200}`/g, " ").replace(/```/g, " ").replace(/\s+/g, " ").trim();
+}
+function previewFromEvents(entries) {
+  if (!Array.isArray(entries)) return "";
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const ev = entries[i]?.event;
+    if (ev?.type !== "user/message" && ev?.type !== "assistant/message") continue;
+    const data = ev.type === "assistant/message" ? ev.data?.message ?? ev.data : ev.data;
+    const blocks = data?.content ?? data?.blocks;
+    if (!Array.isArray(blocks)) continue;
+    const raw = blocks.filter((b) => b?.type === "text" && typeof b.text === "string").map((b) => b.text).join("\n");
+    const text2 = cleanPreviewText(raw);
+    if (text2.length >= 8) return text2.slice(0, 220);
+  }
+  return "";
+}
+async function readSessionPreview(sessions, id) {
+  if (typeof sessions?.using === "function") {
+    return sessions.using(id, { source: "dshWorktablePreview" }, async (ref) => {
+      const binding = await ref.ready;
+      return previewFromEvents(binding.eventSource?.getSnapshot?.()?.entries);
+    });
+  }
+  const face = sessions?.binding?.(id)?.session;
+  if (typeof face?.history !== "function") return "";
+  const result = await face.history({ maxMessages: 6 });
+  return previewFromEvents(result?.result?.value?.events);
+}
+function presetApiOf(ctx, legacy) {
+  const api = typeof ctx?.get === "function" ? ctx.get("remote.agentPresets") : ctx?.remote?.agentPresets;
+  if (typeof api?.list !== "function" || typeof api?.select !== "function") return legacy;
+  return {
+    list: async () => ({ result: await api.list() }),
+    select: async ({ sessionId, agentPreset }) => ({ result: await api.select(sessionId, agentPreset) })
+  };
+}
+function modelApiOf(ctx, sessions, legacy) {
+  if (typeof sessions?.using !== "function") return legacy;
+  const resolver = typeof ctx?.get === "function" ? ctx.get("modelDirectories") : ctx?.modelDirectories;
+  if (typeof resolver?.directoryFor !== "function") return legacy;
+  const withDirectory = (id, operation) => sessions.using(id, { source: "dshWorktableModel" }, async (ref) => {
+    await ref.ready;
+    return operation(resolver.directoryFor(id));
+  });
+  return {
+    models: async ({ sessionId }) => withDirectory(sessionId, async (directory) => ({ result: { ok: true, value: await directory.load() } })),
+    selectModel: async ({ sessionId, ...selection }) => withDirectory(sessionId, async (directory) => ({ result: await directory.select(selection) }))
+  };
+}
+async function createHostSession(sessions, workspaces, options = {}) {
+  if (options.workspaceId || typeof sessions?.using !== "function") return sessions.create(options);
+  const workspace = options.cwd ? await workspaces?.create?.({ path: options.cwd }) : await workspaces?.initializeDefault?.();
+  if (typeof workspace?.workspaceId !== "string" || !workspace.workspaceId) throw new Error("workspace unavailable for new session");
+  const { cwd: _cwd, ...rest } = options;
+  return sessions.create({ ...rest, workspaceId: workspace.workspaceId });
+}
+
 // src/client/photoStore.ts
 var DB_NAME = "dsh-worktable";
 var STORE = "photoRecords";
@@ -20104,7 +20358,7 @@ var WAVE_BG_B64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgIC
 
 // src/client/index.tsx
 var import_jsx_runtime2 = require("react/jsx-runtime");
-var LOCAL_VERSION2 = false ? "dev" : "0.3.3";
+var LOCAL_VERSION2 = false ? "dev" : "0.3.4";
 var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
 var UPGRADE_CMD2 = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"';
 var UPGRADE_AI2 = "\u5E2E\u6211\u5347\u7EA7 dsh-worktable\uFF1A\u6267\u884C " + UPGRADE_CMD2 + "\uFF0C\u5B8C\u6210\u540E\u63D0\u9192\u6211\u91CD\u542F dsh web \u5E76\u5237\u65B0\u9875\u9762";
@@ -20391,7 +20645,7 @@ var sessionBridge = null;
 var clientCtx = null;
 var hostApi = null;
 async function ensureSessionPreset(sessionId) {
-  const api = hostApi?.agentPresets;
+  const api = presetApiOf(clientCtx, hostApi?.agentPresets);
   if (!api || typeof api.list !== "function" || typeof api.select !== "function") return;
   try {
     const listRes = await api.list({});
@@ -20447,7 +20701,7 @@ function pickInheritedModel(groups, baseModel) {
   return { provider: flat[0].provider, model: flat[0].model };
 }
 async function ensureSessionModel(sessionId) {
-  const api = hostApi?.sessions;
+  const api = modelApiOf(clientCtx, sessionBridge?.sessions, hostApi?.sessions);
   if (!api || typeof api.models !== "function" || typeof api.selectModel !== "function") return;
   try {
     const mRes = await api.models({ sessionId });
@@ -20457,7 +20711,7 @@ async function ensureSessionModel(sessionId) {
     let target = null;
     let effort;
     try {
-      const cur = sessionBridge?.list?.getSnapshot?.()?.current;
+      const cur = currentSessionOf(sessionBridge?.list?.getSnapshot?.());
       if (cur && cur !== sessionId) {
         const cRes = await api.models({ sessionId: cur });
         if (cRes?.result?.ok) {
@@ -20551,51 +20805,10 @@ function listWorkspaces() {
     return [];
   }
 }
-function cleanPreviewText(raw) {
-  let s = String(raw ?? "");
-  s = s.replace(/```[a-zA-Z0-9_+-]*[\s\S]*?```/g, " ");
-  s = s.replace(/```[a-zA-Z0-9_+-]*[\s\S]*$/g, " ");
-  s = s.replace(/`[^`\n]{1,200}`/g, " ");
-  s = s.replace(/```/g, " ");
-  s = s.replace(/\s+/g, " ").trim();
-  return s;
-}
 var previewCache = /* @__PURE__ */ new Map();
 var previewFetching = /* @__PURE__ */ new Set();
 var previewSweepBusy = false;
 var previewTimer = null;
-async function coldPreviewOf(face) {
-  if (!face || typeof face.history !== "function") return "";
-  const r1 = await face.history({ maxMessages: 6 });
-  const evs = r1?.result?.value?.events;
-  if (!Array.isArray(evs)) return "";
-  const textOf = (blocks) => {
-    let fallback = "";
-    if (!Array.isArray(blocks)) return "";
-    for (const b of blocks) {
-      const s = typeof b?.text === "string" ? b.text.trim() : "";
-      if (!s) continue;
-      if (b?.type === "text") return s;
-      if (!fallback) fallback = s;
-    }
-    return fallback;
-  };
-  for (let i = evs.length - 1; i >= 0; i--) {
-    const ev = evs[i]?.event;
-    if (!ev) continue;
-    const d = ev.data ?? {};
-    let raw = "";
-    if (ev.type === "user/message") raw = textOf(d.content ?? d.blocks);
-    else if (ev.type === "assistant/message") {
-      const m = d.message ?? d;
-      raw = textOf(m.content ?? m.blocks);
-    }
-    if (!raw) continue;
-    const clean = cleanPreviewText(raw);
-    if (clean.length >= 8) return clean.slice(0, 220);
-  }
-  return "";
-}
 async function sweepPreviews() {
   if (previewSweepBusy) return;
   previewSweepBusy = true;
@@ -20605,12 +20818,9 @@ async function sweepPreviews() {
       if (previewFetching.has(sid)) continue;
       previewFetching.add(sid);
       try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session;
-        const txt = await coldPreviewOf(face);
-        if (txt) {
-          previewCache.set(sid, txt);
-          notifyConsole();
-        }
+        const txt = await readSessionPreview(sessionBridge?.sessions, sid);
+        previewCache.set(sid, txt);
+        notifyConsole();
       } catch {
       } finally {
         previewFetching.delete(sid);
@@ -20621,7 +20831,7 @@ async function sweepPreviews() {
   }
 }
 function schedulePreviewSweep() {
-  if (previewTimer != null) return;
+  if (previewSweepBusy || previewTimer != null) return;
   previewTimer = window.setTimeout(() => {
     previewTimer = null;
     sweepPreviews();
@@ -20629,7 +20839,9 @@ function schedulePreviewSweep() {
 }
 function lastTextOf(sid) {
   try {
-    const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
+    const binding = sessionBridge?.sessions?.binding?.(sid);
+    if (binding?.eventSource?.getSnapshot) return previewFromEvents(binding.eventSource.getSnapshot().entries);
+    const face = binding?.session?.getSnapshot?.();
     const nodes = face?.nodes ?? [];
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
@@ -20656,7 +20868,7 @@ async function fetchSessionGroups() {
   try {
     const snap = sessionBridge?.list?.getSnapshot?.();
     const byId = snap?.byId ?? {};
-    const current = snap?.current ?? "";
+    const current = currentSessionOf(snap);
     const subKids = /* @__PURE__ */ new Set();
     try {
       const map2 = snap?.subagentsByParent ?? {};
@@ -20723,41 +20935,7 @@ function hideBindTip() {
 async function promptIntoSession(sessionId, text2) {
   const b = sessionBridge;
   if (!b) throw new Error("bridge unavailable");
-  const sessions = b.sessions;
-  let session = null;
-  for (let i = 0; i < 10; i++) {
-    try {
-      session = sessions?.binding?.(sessionId)?.session ?? null;
-    } catch {
-      session = null;
-    }
-    if (session) break;
-    await new Promise((r) => setTimeout(r, 200));
-  }
-  if (session) {
-    if (typeof b.conversation?.sendSession === "function") {
-      try {
-        await b.conversation.sendSession(session, text2, [], "queue");
-        return;
-      } catch {
-      }
-    }
-    if (typeof session.prompt === "function") {
-      const result = await session.prompt([{ type: "text", text: text2 }], "queue");
-      if (result && result.ok) return;
-      if (result && !result.ok) throw new Error("session.prompt: " + (result.error?.code ?? "rejected") + (result.error?.message ? ": " + result.error.message : ""));
-    }
-  }
-  try {
-    const scoped = sessions?.scope?.(sessionId);
-    const conv = scoped?.get?.("conversation");
-    if (conv && typeof conv.send === "function") {
-      await conv.send(text2);
-      return;
-    }
-  } catch {
-  }
-  throw new Error("no send path: session face unavailable");
+  await sendHostSession(b, sessionId, text2);
 }
 var KNOWLEDGE_PACK = [
   "\u3010\u63D2\u4EF6\u77E5\u8BC6\u5305\xB7\u8BF7\u76F4\u63A5\u91C7\u7528\uFF0C\u4E0D\u8981\u91CD\u65B0\u4FA6\u5BDF\u63D2\u4EF6\u6E90\u7801\u3011",
@@ -20828,12 +21006,12 @@ async function createCustomSession(projectId, projectName, requirement, group, w
   let createOpts = {};
   if (workspaceId) createOpts = { workspaceId };
   else if (folder) createOpts = { cwd: folder };
-  const sessionId = await b.sessions.create(createOpts);
+  const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts);
   await ensureSessionPreset(sessionId);
   await ensureSessionModel(sessionId);
   markPluginSessionOpen(sessionId);
   try {
-    await b.sessions.open?.(sessionId);
+    await openHostSession(clientCtx, b.sessions, sessionId);
   } catch {
   }
   await promptIntoSession(sessionId, text2);
@@ -20845,7 +21023,7 @@ async function sendCustomToSession(sessionId, projectId, projectName, requiremen
   const text2 = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, "send");
   markPluginSessionOpen(sessionId);
   try {
-    await b.sessions.open?.(sessionId);
+    await openHostSession(clientCtx, b.sessions, sessionId);
   } catch {
   }
   await promptIntoSession(sessionId, text2);
@@ -20955,10 +21133,21 @@ function sessionNotifyState(entry) {
   if (entry.completed === true) return "done";
   return null;
 }
+var sessionStatusSource = null;
+var sessionConversationSource = null;
+var adaptSessionSnapshot = createSessionSnapshotAdapter();
+function pendingAckForSession(sid) {
+  let face;
+  try {
+    face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
+  } catch {
+  }
+  return pendingAckOf(sessionsSnapshotStore.snapshot, sid, face);
+}
 function syncSessionScope(list2) {
   try {
-    const snap = list2.getSnapshot();
-    const current = snap?.current ?? "";
+    const snap = adaptSessionSnapshot(list2.getSnapshot(), sessionStatusSource);
+    const current = currentSessionOf(snap);
     const entry = snap?.byId?.[current] ?? snap?.items?.find((it) => it.sessionId === current) ?? null ?? null;
     const cat = snap?.subagentsByParent?.[current];
     let subagents = [];
@@ -21190,32 +21379,13 @@ function WorktableSection(props) {
     const pr = projectsRef.current;
     const snap = sessionsSnapshotStore.snapshot;
     const byId = snap?.byId ?? {};
-    const jobsMap = snap?.jobsBySession ?? {};
     const now = Date.now();
-    const kidsSetOf = (sid) => {
-      const set = /* @__PURE__ */ new Set();
-      for (const [cid, ce] of Object.entries(byId)) if (ce?.parentId === sid) set.add(cid);
-      const v = (snap?.subagentsByParent ?? {})[sid];
-      const arr = Array.isArray(v) ? v : v?.entries ?? v?.items ?? [];
-      if (Array.isArray(arr)) arr.forEach((c) => {
-        const cid = c?.sessionId ?? c?.id;
-        if (typeof cid === "string") set.add(cid);
-      });
-      return set;
-    };
+    const kidsSetOf = (sid) => childSessionIdsOf(snap, sid);
     const statusOf = (sid) => {
       if (!sid) return "idle";
       const e = byId[sid];
       if (!e) return "idle";
-      if (sessionNotifyState(e) === "need") return "need";
-      for (const cid of kidsSetOf(sid)) {
-        if (byId[cid] && sessionNotifyState(byId[cid]) === "need") return "need";
-      }
-      try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
-        if (Array.isArray(face?.pending) && face.pending.length > 0) return "need";
-      } catch {
-      }
+      if (pendingAckForSession(sid) != null) return "need";
       if (e.completed === true) return "done";
       try {
         const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
@@ -21227,36 +21397,13 @@ function WorktableSection(props) {
     };
     const runtimeOf = (sid) => {
       if (!sid) return null;
-      const e = byId[sid];
-      if (!e || e.running !== true) return null;
-      let start = null;
-      const jobs = jobsMap[sid] ?? [];
-      for (const j of jobs) {
-        if (j?.status === "running" && typeof j.startedAt === "number" && (start == null || j.startedAt < start)) start = j.startedAt;
-      }
-      if (start != null) return Math.max(0, now - start);
-      try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
-        const timings = face?.turnTimings;
-        if (timings instanceof Map) {
-          for (const t2 of Array.from(timings.values()).reverse()) {
-            if (t2 && typeof t2.startTime === "number" && t2.endTime == null) return Math.max(0, now - t2.startTime);
-          }
-        } else if (timings && typeof timings === "object") {
-          for (const k of Object.keys(timings).reverse()) {
-            const t2 = timings[k];
-            if (t2 && typeof t2.startTime === "number" && t2.endTime == null) return Math.max(0, now - t2.startTime);
-          }
-        }
-      } catch {
-      }
-      return null;
+      return sessionRuntimeMs(snap, sid, sessionBridge?.sessions, sessionConversationSource, now);
     };
     const ackMap = loadNotifyAck();
     const make = (id, name, icon, self2) => {
       const sid = pr.projects.bindings[id];
       const status = statusOf(sid);
-      const glow = !!sid && (status === "done" && ackMap[sid] !== "done" || status === "need" && ackMap[sid] !== "need");
+      const glow = !!sid && (status === "done" && ackMap[sid] !== "done" || status === "need" && ackMap[sid] !== pendingAckForSession(sid));
       return {
         id,
         name,
@@ -21297,6 +21444,7 @@ function WorktableSection(props) {
   };
   (0, import_react2.useEffect)(() => {
     const env = {
+      fillHostInput: (text2) => appendHostInput(sessionBridge, text2),
       getScope: () => {
         const s = sessionScopeStore.snapshot;
         return s ? { sessionId: s.sessionId, cwd: s.cwd } : null;
@@ -21439,7 +21587,7 @@ function WorktableSection(props) {
             const bound = pr.bindings[id];
             if (bound) {
               try {
-                sessionBridge?.sessions?.open?.(bound);
+                openHostSession(clientCtx, sessionBridge?.sessions, bound);
               } catch {
               }
             }
@@ -21450,7 +21598,7 @@ function WorktableSection(props) {
           if (!sid) return;
           markPluginSessionOpen(sid);
           try {
-            sessionBridge?.sessions?.open?.(sid);
+            openHostSession(clientCtx, sessionBridge?.sessions, sid);
           } catch {
           }
         }
@@ -21511,7 +21659,7 @@ function WorktableSection(props) {
         const prev = projectAttachRef.sessionId;
         if (prev) {
           try {
-            sessionBridge?.sessions?.open?.(prev);
+            openHostSession(clientCtx, sessionBridge?.sessions, prev);
           } catch {
           }
         }
@@ -21670,7 +21818,7 @@ function WorktableSection(props) {
     if (splitStore.active && splitStore.spec?.id === spec.id) {
       let prev = null;
       try {
-        prev = sessionBridge?.list?.getSnapshot?.()?.current ?? null;
+        prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null;
       } catch {
       }
       projectAttachRef.sessionId = prev;
@@ -21678,7 +21826,7 @@ function WorktableSection(props) {
       const bound = projectsRef.current.projects.bindings[spec.id];
       if (bound) {
         try {
-          sessionBridge?.sessions?.open?.(bound);
+          openHostSession(clientCtx, sessionBridge?.sessions, bound);
         } catch {
         }
       }
@@ -21713,7 +21861,7 @@ function WorktableSection(props) {
     if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {
       let prev = null;
       try {
-        prev = sessionBridge?.list?.getSnapshot?.()?.current ?? null;
+        prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null;
       } catch {
       }
       projectAttachRef.sessionId = prev;
@@ -21721,7 +21869,7 @@ function WorktableSection(props) {
       projectAttachRef.attached = bound ?? prev;
       if (bound) {
         try {
-          sessionBridge?.sessions?.open?.(bound);
+          openHostSession(clientCtx, sessionBridge?.sessions, bound);
         } catch {
         }
       }
@@ -21792,7 +21940,7 @@ function WorktableSection(props) {
       let createOpts = {};
       if (workspaceId) createOpts = { workspaceId };
       else if (folder) createOpts = { cwd: folder };
-      const sessionId = await b.sessions.create(createOpts);
+      const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts);
       await ensureSessionPreset(sessionId);
       await ensureSessionModel(sessionId);
       markPluginSessionOpen(sessionId);
@@ -22060,20 +22208,7 @@ function WorktableSection(props) {
     };
   }, [projects.folders, applyWidgetManifest]);
   const collectKids = (0, import_react2.useCallback)((sid) => {
-    const kids = /* @__PURE__ */ new Set();
-    const snap = sessionsSnapshotStore.snapshot;
-    const byId = snap?.byId ?? {};
-    for (const [cid, ce] of Object.entries(byId)) {
-      if (ce?.parentId === sid) kids.add(cid);
-    }
-    const subMap = snap?.subagentsByParent ?? {};
-    const v = subMap[sid];
-    const arr = Array.isArray(v) ? v : v?.entries ?? v?.items ?? [];
-    if (Array.isArray(arr)) arr.forEach((c) => {
-      const cid = c?.sessionId ?? c?.id;
-      if (typeof cid === "string") kids.add(cid);
-    });
-    return kids;
+    return childSessionIdsOf(sessionsSnapshotStore.snapshot, sid);
   }, []);
   const bindNotifyMap = (0, import_react2.useMemo)(() => {
     const map2 = {};
@@ -22083,29 +22218,16 @@ function WorktableSection(props) {
     for (const [pid, sid] of Object.entries(projects.bindings)) {
       const e = byId[sid];
       if (!e) continue;
-      let needNow = sessionNotifyState(e) === "need";
-      if (!needNow) {
-        for (const cid of collectKids(sid)) {
-          const ce = byId[cid];
-          if (ce && sessionNotifyState(ce) === "need") {
-            needNow = true;
-            break;
-          }
+      const pendingAck = pendingAckForSession(sid);
+      if (pendingAck !== seen[sid]) {
+        if (seen[sid] !== void 0) {
+          clearNotifyAck(sid);
+          delete ack[sid];
         }
+        seen[sid] = pendingAck;
       }
-      if (!needNow) {
-        try {
-          const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
-          if (Array.isArray(face?.pending) && face.pending.length > 0) needNow = true;
-        } catch {
-        }
-      }
-      if (needNow !== seen[sid]) {
-        if (seen[sid] !== void 0) clearNotifyAck(sid);
-        seen[sid] = needNow;
-      }
-      if (needNow) {
-        if (ack[sid] !== "need") map2[pid] = "need";
+      if (pendingAck != null) {
+        if (ack[sid] !== pendingAck) map2[pid] = "need";
         continue;
       }
       if (sessionNotifyState(e) === "done" && ack[sid] !== "done") {
@@ -22120,22 +22242,20 @@ function WorktableSection(props) {
     const sid = projectsRef.current.projects.bindings[projectId];
     if (!sid) return;
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {};
-    let needNow = sessionNotifyState(byId[sid]) === "need";
+    const pendingAck = pendingAckForSession(sid);
     for (const cid of collectKids(sid)) {
       if (sessionNotifyState(byId[cid]) === "need") {
-        needNow = true;
-        saveNotifyAck(cid, "need");
+        const childAck = pendingAckForSession(cid);
+        if (childAck != null) {
+          saveNotifyAck(cid, childAck);
+          notifyStateSeenRef.current[cid] = childAck;
+        }
       }
     }
-    if (!needNow) {
-      try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
-        if (Array.isArray(face?.pending) && face.pending.length > 0) needNow = true;
-      } catch {
-      }
-    }
-    if (needNow) saveNotifyAck(sid, "need");
-    else {
+    if (pendingAck != null) {
+      saveNotifyAck(sid, pendingAck);
+      notifyStateSeenRef.current[sid] = pendingAck;
+    } else {
       const st = sessionNotifyState(byId[sid]);
       if (st === "done") saveNotifyAck(sid, "done");
     }
@@ -22479,7 +22599,7 @@ function WorktableSection(props) {
       const bound = projectsRef.current.projects.bindings[pid];
       if (bound) {
         try {
-          sessionBridge?.sessions?.open?.(bound);
+          openHostSession(clientCtx, sessionBridge?.sessions, bound);
         } catch {
         }
       }
@@ -22579,7 +22699,7 @@ function WorktableSection(props) {
       const bound = pr.bindings[id];
       if (bound) {
         try {
-          sessionBridge?.sessions?.open?.(bound);
+          openHostSession(clientCtx, sessionBridge?.sessions, bound);
         } catch {
         }
       }
@@ -23393,7 +23513,7 @@ function apply(ctx) {
   } catch {
   }
   try {
-    window.__dshOpenSession = (id) => ctx.sessions?.open?.(id);
+    window.__dshOpenSession = (id) => openHostSession(ctx, ctx.sessions, id);
     window.__dshSessions = ctx.sessions;
     window.__dshPromptIntoSession = (id, text2) => promptIntoSession(id, text2);
     window.__dshWorkspaces = ctx.workspaces;
@@ -23454,9 +23574,29 @@ function apply(ctx) {
   ctx.effect(() => disposeSubscribe, "dsh-worktable: project registry watch");
   const sessionsList = ctx.sessions?.list;
   if (sessionsList && typeof sessionsList.getSnapshot === "function") {
+    adaptSessionSnapshot = createSessionSnapshotAdapter();
     syncSessionScope(sessionsList);
     const disposeScope = sessionsList.subscribe(() => syncSessionScope(sessionsList));
     ctx.effect(() => disposeScope, "dsh-worktable: session scope watch");
+    ctx.inject(["uiSession"], (statusCtx) => {
+      const source = statusCtx.uiSession?.sessionStatus;
+      if (!source?.getSnapshot || !source?.subscribe) return;
+      sessionStatusSource = source;
+      syncSessionScope(sessionsList);
+      const disposeStatus = source.subscribe(() => syncSessionScope(sessionsList));
+      statusCtx.effect(() => () => {
+        disposeStatus();
+        if (sessionStatusSource === source) sessionStatusSource = null;
+      }, "dsh-worktable: session status watch");
+    });
+    ctx.inject(["uiConversation"], (conversationCtx) => {
+      const source = conversationCtx.uiConversation;
+      if (typeof source?.binding !== "function") return;
+      sessionConversationSource = source;
+      conversationCtx.effect(() => () => {
+        if (sessionConversationSource === source) sessionConversationSource = null;
+      }, "dsh-worktable: conversation timer source");
+    });
   }
   ctx.slots.inject("shell.overlay", () => ctx.slots.register({
     name: "shell.overlay",

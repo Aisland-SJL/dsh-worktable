@@ -32,8 +32,8 @@
 ### 🖥️ Control room (built-in default project)
 
 - A pinned, undeletable first project — bind one management conversation on first open
-- 3-column card grid mirrors **every** project: working / needs you / done with live runtime, subagent counts and a cleaned message preview
-- Event-driven host snapshot mirroring — **zero polling, zero tokens**
+- A configurable card grid mirrors visible projects: working / needs you / done with available runtime and a cleaned message preview
+- Event-driven host snapshot mirroring; status monitoring does not call a model
 - Glassmorphism cards, dark / light / system theme, neon status glows and a rotating comet on busy cards
 
 ---
@@ -44,14 +44,16 @@
 |---|------|
 | 🧩 Plugin type | Cordis plugin — host routes + web client, pure additive (no official plugin replaced) |
 | 🪟 Workspace engine | Self-built split engine rendered into the host shell overlay seat |
-| 💬 Chat pane | Reuses the host conversation — the plugin only selects sessions (`sessions.open`) |
+| 💬 Chat pane | Reuses the host conversation; navigation uses the host's new or legacy session API |
 | 📡 Status data | Mirror of the host session runtime snapshots (subscription-driven) |
-| 💾 State | localStorage only (`dsh.worktable.*`); no workspace files touched |
+| 💾 State | Projects/layouts/bindings in localStorage; media in IndexedDB; file panes access configured project directories |
 | 🎨 UI | TypeScript + React (host externals) + vanilla CSS, dark-first with light theme |
 
 ---
 
 ## Quick start
+
+v0.3.4 declares compatibility with DSH Web **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**. This round tested the listed core Windows Web flows on 0.2.0-rc.2; the two older versions use prior page validation plus targeted code regressions, not a newly repeated full GUI suite. Official Desktop support has not been verified. Back up important data and check your other plugins before upgrading the host.
 
 1. **Install** (pick one):
 
@@ -100,6 +102,7 @@ node --check lib/index.js
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
 - Regression: `04_test/functional-diag.cjs` (20 steps, strict gate) plus targeted probes (control room, bind panel, collapsed rail, model inheritance), the path matrix (`04_test/pathutil-matrix.cjs`) and update-check scenarios (`04_test/probe-update-scenarios.cjs`)
 - In the release pipeline: split-anchor DOM regression `04_test/anchor-dom.test.mjs` (8 scenarios, both host conversation-root shapes) and data-home resolution regression `04_test/server-home.test.mjs` (3 groups: no-cycle fallback, path expansion, official-branch fixture)
+- Release packaging uses `npm run pack` only. It also runs 53 input/session regressions, installation and client-factory gates; after uploading, run `npm run verify:remote -- --expect-sha <final SHA> v0.3.4` and check `latest` separately.
 
 ---
 
@@ -107,7 +110,7 @@ node --check lib/index.js
 
 **Q: After a DeepSeek Harness update, the worktable fails to open / the service fails to start?**
 
-Don't panic: your data is safe — projects, bindings and layouts live in the browser (localStorage), and project files stay in your own project folders; upgrading or repairing never touches them. Pick the case that matches:
+Projects, bindings and layouts live in browser localStorage; media lives in IndexedDB, and project files remain in your project directories. Back up important data before changing your installation, and keep the same browser origin when you want to retain its worktable state.
 
 **Case A: Harness works, only the worktable needs updating**
 
@@ -120,16 +123,10 @@ Don't panic: your data is safe — projects, bindings and layouts live in the br
 
 **Case B: Harness itself is down** (service fails to start / "Failed to load plugins")
 
-- First choice: upgrade Harness to the latest (official fixes usually ship there): run `npx @deepseek-ai/dsh web`;
-- If it still fails: copy the following to any AI assistant (Claude, Codex, GLM, … — DeepSeek Harness itself is not required):
-
-> Help me fix DeepSeek Harness custom-plugin loading (the error is usually "Failed to load plugins" or the service failing to start):
-> 1. Run npx @deepseek-ai/dsh web to upgrade to the latest and start; if it works, done.
-> 2. If it still fails: open ~/.dsh/profiles/web/package.json, find every dependency starting with link:, and compute their common parent directory (e.g. if all plugins live under D:\projects, the parent is D:\projects).
-> 3. Create a node_modules directory junction in that parent pointing to ~/.dsh/profiles/node_modules: mklink /J "<parent>\node_modules" "%USERPROFILE%\.dsh\profiles\node_modules"; if that parent already has a node_modules, retry one level up.
-> 4. Restart dsh web and open http://127.0.0.1:3080 to confirm the worktable is back.
-
-This issue has been reported to the DeepSeek Harness team and is being fixed; upgrading after the fix ships resolves it permanently.
+- Record the actual DSH version, plugin version, profile/data-home location and the first complete error. Restart the process fully before checking again.
+- Missing exports or failed imports require checking the named plugin against the installed host version. A newer host can change APIs; upgrading everything blindly is not a diagnosis.
+- An ancestor `node_modules` junction was a local workaround for a particular old `link:` loader issue. Do not create one as a general fix; remove an existing workaround only after verifying that the installed plugins no longer depend on it, preserving its target directory.
+- A model request returning HTTP 400 is a separate request problem. This plugin package does not include host-level repairs for it.
 
 ## Point-to-annotate 📌
 
@@ -142,8 +139,8 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 
 ## Known limits
 
-- **Platform**: Windows is the fully tested platform. macOS support is experimental: the core file-path code has been adapted for cross-platform use, but no end-to-end test has been completed on macOS hardware.
-- State lives in the browser (`localStorage`) — projects, bindings and views do not sync across machines
+- **Platform**: Windows Web is the tested platform within the version and flow limits above. Official Desktop remains unverified; macOS support is experimental and has not been tested end to end on real hardware.
+- State lives in the browser (localStorage and IndexedDB) — projects, bindings, views and media do not sync across machines
 - The terminal pane is a plain PowerShell host on Windows (no PTY feature parity with the native terminal app)
 - Auto-mount requires the agent to actually write `widget-result.json` in the project folder
 - The control room monitors projects that are **bound** to a conversation; unbound projects show as idle
@@ -152,7 +149,7 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 
 ## Privacy
 
-No telemetry, no network calls beyond the host APIs and the plugin routes. All user state stays in localStorage. Optional update check: a read-only GET to the GitHub Releases API (automatic at most once a day, plus a manual "Check now" button); nothing is uploaded, and it can be disabled in Settings.
+The plugin does not add an analytics service. Update checks use a read-only GitHub Releases request and can be disabled in Settings. It also communicates with host APIs/WebSockets, loads user-selected pages, and provides an interactive terminal whose commands can access files and the network. Preferences and media use browser storage. See the [permissions and external-services disclosure](01_content/README.md#权限与外部服务如实披露) for file access, inherited terminal environment and other limits.
 
 ---
 

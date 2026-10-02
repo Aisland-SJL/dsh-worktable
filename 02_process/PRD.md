@@ -176,6 +176,9 @@ ctx.slots.register({
     - views：入驻项目与「控制室」（wt-console）的视图覆盖（LayoutSpec）；
     - bindings：项目 → 绑定会话（含 wt-console 管理对话）；
     - folders：项目 → 项目文件夹（含 wt-console）；
+  - `dsh.worktable.notifyAck.v1`：会话 id → `done` / 旧版 `need` / `need:` 加排序后的待决身份集合；
+    新版身份仅含父/子会话 id、kind 与 opaque key，不含正文、答案或凭据；同一问题刷新后仍可确认，
+    替换问题必须重新点亮。旧无 key 主机保留布尔状态退路，无法区分无 key 的连续替换。
   - 卡片上报的 meta 注册表仅存内存，不持久化；
   - 更新检查：`dsh.worktable.lastUpdateCheck.v1`（上次成功检查时间戳，节流一天一次）、
     `dsh.worktable.skipVersion.v1`（忽略的版本号）、`dsh.worktable.updateCheck.v1`（自动检查开关，'0'=关）、
@@ -375,7 +378,9 @@ type SplitPane = {
 - **任务完成/待决提醒镜像**（2026-08-18）：绑定会话在宿主快照 byId 里 completed=true → 项目卡
   双圆点绿色发光（data-bound=done）；pendingInteraction != null → 黄色发光（data-bound=need），
   与原生对话小绿点/小黄点同步；点开项目即确认（ack，notifyAck.v1 按会话存状态）恢复常态实心；
-  状态切换（完成↔待决）会重新点亮。数据源 sessionsSnapshotStore（syncSessionScope 推送完整
+  状态切换（完成↔待决）会重新点亮；新版 pending key/kind 或待决子会话集合变化也重新点亮。
+  控制室计时只读后台任务或新版 chat.legacy.turnTimings / 旧会话面，未知起点不虚构时长。
+  数据源 sessionsSnapshotStore（syncSessionScope 推送完整
   快照并通知监听）。
 - **项目×对话联动**（2026-08-18）：① 打开项目时记录「打开前会话」；② 项目打开期间切到非该
   项目绑定的会话 → 自动关闭项目（保留用户新选的会话）；③ ✕/反选关闭项目 → 自动回切「打开前

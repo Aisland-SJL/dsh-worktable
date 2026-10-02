@@ -32,9 +32,9 @@
 
 - 插件包根目录 = `01_content/`；本仓库其余目录是项目文档与本地工具。
 - **不替换、不禁用任何官方插件**（ui-sidebar / ui-workspace / ui-layout）。
-- 所有状态只存 localStorage（键 `dsh.worktable.view.v1`），不读写工作区文件。
+- 项目/布局/绑定存 localStorage，媒体存 IndexedDB；文件窗、mkdir 与产物握手会读写用户配置的项目目录，权限边界见 `01_content/README.md`。
 - dsh-travelatlas 是入驻项目而非本仓库的一部分；协议见 `02_process/PRD.md` §5.3/5.4。
-- **平台边界**：Windows 是当前完整验证平台；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
+- **平台边界**：Windows 网页端已测范围见 `01_content/README.md`，不宣称全功能或桌面端验收；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
   尚未真机端到端验证）。路径拼接必须走 `pathutil.ts` helper 或 Node `path` API，不手写分隔符。
 
 ## 构建与验证
@@ -51,7 +51,7 @@ node --check lib/index.js
 - **构建必须 `cd 01_content` 后执行**：误在仓库根跑会把 lib 写到仓库根 `lib/`，宿主仍加载
   `01_content/lib` 旧 bundle，出现「改完不生效」假象（已有教训，见工作日志）。
 - **发布打包唯一入口 = `npm run pack`（01_content/release-prep.mjs）**：身份断言（package/manifest/cordis.patch.yml 严格结构）→
-  版本一致性 → 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
+  版本一致性 → **会话/输入兼容回归**（test:input / test:session / test:details 共 53 项，评估源码契约）→ 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
   无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
   HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
   白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（8 场景，评估安装产物 lib/client.js；
@@ -68,6 +68,10 @@ node --check lib/index.js
   防「双资产同错」；tag 模式断言 tag==='v'+包内版本。
 
 ## 领域约定（会话中必须遵守）
+
+- **0.3.4 网页端兼容**：声明已测版本 0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2，不外推 Desktop 或未测宿主。当前会话走 `currentSessionOf`（旧 current / 新 mainView），导航走 `openHostSession`（新 uiWorkspace / 旧 sessions.open），标注走 `appendHostInput`。Cordis 可选服务用 `ctx.get` 探测；返回 undefined 后不得再访问未 inject 的同名属性。旧 current 契约的引用坐标是显示文本位置，新 mainView 契约按单字符 chip 投影；不得因旧版也有 input.for 就误用新版坐标。`npm run test:input` 为 15 项定向回归。
+- **0.2 会话状态/发送**：可选订阅 `uiSession.sessionStatus`，只读归一化列表与 subagentCatalog；completionUnread 不是任务成功证明，打开主会话会清除。已观察到的 running→false 供原产物握手使用，下一轮 running 清除；停止不等于成功。新会话发送通过 `sessions.using` 临时持有，等待 ready 后发送并由宿主释放；业务拒绝/超时不得再换通道重发。`npm run test:session` 为 20 项回归；0.2.0-rc.2 已实测短文本发送/回复，真实待决/子代理仍未验收。
+- **0.2 新建/预览/选择接口**：`createHostSession` 在新宿主先用官方 workspaces 登记/复用项目路径（无路径则 initializeDefault），再按 workspaceId 创建；仅 cwd 会留下“可打开但不能输入”的未分组空会话。旧宿主保留原分支，不自动迁移既有会话。预览读临时持有的 eventSource，模型目录在持有期间使用，结束即释放；预设接 remote.agentPresets。`npm run test:details` 为 18 项回归，不能替代真实模型会话验收。
 
 - **窗口编号**：用户说「窗口1/2/3…」指布局里按「左栏 → 顶行 → 主行」顺序的第 N 个内容窗。
   例：田字格预设（g4）窗口1/2 = 顶行左右、窗口3/4 = 底行左右；l13 窗口1 = 顶部大窗，
@@ -141,8 +145,9 @@ node --check lib/index.js
   collectKids（byId.parentId + subagentsByParent 双通道）聚合父会话及其子代理的 pending；
   会话面 binding(id).session.getSnapshot().pending 非空也判 need（列表不映射时的兜底）；
   ackProjectNotify 同步 ack 子代理。
-  **ack 生命周期**：ack 只在「同一轮待决未解决」期间压制提醒；状态转移（needNow 真↔假）时
-  clearNotifyAck 自动清除旧 ack——原生 UI 每个新问题都重新亮黄，镜像必须同样重新点亮。
+  **ack 生命周期**：新版按父/子会话的 opaque pending key+kind 集合保存 `need:...`，不保存问题正文/答案；
+  同为 need 的问题替换也重新点亮，排序/重复目录不触发误亮。旧无 key 主机继续存 need，无法识别无 key 的直接替换。
+  状态/身份转移清旧 ack 时同步清除本次读取副本；点开确认同时记录已见身份，防下一次渲染反清刚保存的 ack。
 - **「工作台」控制室项目（默认自带）**：
   - 固定 id `wt-console`（CONSOLE_ID），卡片恒排项目列表第一位（order 0）、不可删除
     （不进设置管理列表 + removeProject 兜底拒绝）；图标 🖥️，名称走 locale console.name。
@@ -152,7 +157,8 @@ node --check lib/index.js
     建空会话 sessions.create 后自动绑定并打开控制室）。绑定也走 projects.v1.bindings。
   - 控制室面板（split.tsx ConsolePane）：卡片网格每行 3 张、超出换行；每卡 = 图标/名称/
     状态大字与三色光效（need>done>busy>idle，不过滤 ack，永远显示事实状态）/运行时长
-    （后台任务 JobView.startedAt 或会话面 turnTimings 未结束轮次）/最近消息预览。数据组装
+    （后台任务 JobView.startedAt → 新版 uiConversation 的 chat.legacy.turnTimings → 旧会话面，
+    未加载/无起点不显示时长；不为计时激活 chat 或持有冷会话）/最近消息预览。数据组装
     = index.tsx getConsoleCards（env.console 注入），刷新走 consoleListeners（项目/会话
     快照变化推送）+ 面板每秒 tick。
   - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；工作台自己的卡片
@@ -196,11 +202,11 @@ node --check lib/index.js
     同源 iframe 下钻取字（boxPayload），跨域输出「读取受限」+ src；提示词含「禁止编造，缺失时如实说明，建议截图或视觉模型」；
     知识包含标注协议行（窗口编号+处理方式）；回退锚点 tag：pre-annotate-v3 / pre-annotate-v3.1 / pre-annotate-v3.2。
   - 分隔线：DIVIDER=4（分栏可拖分隔条更细）。
-  - 冷会话消息预览（方案 A）：binding() 对冷会话不载入文本；预热走 face.history({maxMessages:6})
-    （运行期内建方法、非公开接口，只读无副作用）尾部扫 user/message 与 assistant/message 的
+  - 冷会话消息预览：0.2 用 sessions.using 临时持有后读 eventSource 的已加载事件窗口；旧版预热走 face.history({maxMessages:6})
+    （旧版运行期内建方法、非公开接口）；尾部扫 user/message 与 assistant/message 的
     text 块 → cleanPreviewText（滤除 ```围栏与行内代码、压缩空白；不足 8 字符回退更早消息）→
     previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s 触发；
-    失败静默回退内存路径 lastTextOf。拉取是带宽成本不是 Token 成本。
+    失败静默回退缓存/内存路径 lastTextOf；预热期间不因自身 retain/release 排入新一轮。拉取是带宽成本不是 Token 成本。
   - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。
 - **更新检查（v0.2.2）**：客户端直连 GitHub Releases API 比版本（只读 GET；自动每天最多
   一次，手动「立即检查」绕过节流；单次 8s 超时（AbortController）+ 最多 3 次重试，
@@ -215,11 +221,11 @@ node --check lib/index.js
   与版本化资产。版本注入：build.mjs 把 package.json version 打进 __WT_VERSION__，发版前
   改 version 再构建；升级动作（执行 add + 重启）永远留给用户或其 Agent，插件不自更新。
 
-## 宿主升级事故（0.1.1-rc.2 link 插件回归，备忘）
+## 旧版 link 加载兼容边界
 
-- rc.2 的 loader 对裸包名走原生 ESM import()，link: 插件找不到 profile 里的 peer 依赖 → 启动即崩。
-  临时修复：junction `E:\AI_Workspace\DeepseekHarness\node_modules` → `C:\Users\SJL\.dsh\profiles\node_modules`。
-  **上游 loader 修复后必须删除该 junction**（双解析叠加）。peerDependencies 全部 `"*"` + optional 已核查（干净）。
+- 特定旧版 0.1.1-rc.2 的裸包 import / link peer 解析曾使用上级 node_modules junction 兜底，不是通用修法。
+  本机 0.2.0-rc.2 经无旧链接冷启动与真实工作台/控制室检查后已移除该链接，原目标目录保留。
+  重新遇到加载失败时先查实际宿主、profile、插件及第一条完整错误；不得直接创建更高层级链接或删除它指向的依赖目录。
 
 ## 宿主 bug 跟踪（UTF-16 路径截断）
 

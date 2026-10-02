@@ -220,6 +220,7 @@ export type ConsoleCardData = {
 }
 
 type SplitEnv = {
+  fillHostInput: (text: string) => boolean
   getScope: () => SplitScope | null
   getJobs: () => SplitJob[]
   getSubagents: () => any[]
@@ -504,25 +505,7 @@ async function copyTextSafe(text: string): Promise<boolean> {
 
 /** 注入宿主对话框输入框（不发送）；失败返回 false */
 function fillHostInput(text: string): boolean {
-  try {
-    const ta = document.querySelector<HTMLTextAreaElement>('textarea[data-phase]')
-      ?? Array.from(document.querySelectorAll<HTMLTextAreaElement>('textarea')).pop()
-    if (!ta) return false
-    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
-    // 连续标注：已有内容不顶掉，换行追加（用户可以同一对话连续标注多处）
-    const next = ta.value && ta.value.trim() ? ta.value + '\n\n' + text : text
-    if (setter) setter.call(ta, next)
-    else ta.value = next
-    ta.dispatchEvent(new Event('input', { bubbles: true }))
-    try {
-      ta.focus()
-      ta.dispatchEvent(new Event('change', { bubbles: true }))
-      ta.setSelectionRange(ta.value.length, ta.value.length)
-    } catch {}
-    return true
-  } catch {
-    return false
-  }
+  return splitEnv?.fillHostInput(text) ?? false
 }
 
 /** ✓ 确认：打包并注入，不发送 */
