@@ -648,4 +648,15 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_updateSwitch::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:right .15s}',
   '.dsh-wt_updateSwitch[data-off=true]{background:var(--dsw-alias-border-l1,#333a48)}',
   '.dsh-wt_updateSwitch[data-off=true]::after{right:14px}',
+  // 访问密码浮层（服务端门禁返回 401 时弹出；挂 document.body，不受侧栏堆叠上下文限制）
+  '.dsh-wt_authMask{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}',
+  '.dsh-wt_authBox{width:280px;padding:16px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:12px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4));display:flex;flex-direction:column;gap:8px}',
+  '.dsh-wt_authTitle{font-size:12.5px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}',
+  '.dsh-wt_authHint{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-tertiary,#7d8aa5)}',
+  '.dsh-wt_authInput{padding:7px 9px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:7px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.04));color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;outline:none}',
+  '.dsh-wt_authErr{min-height:14px;font-size:11px;color:#f85149}',
+  '.dsh-wt_authRow{display:flex;gap:8px}',
+  '.dsh-wt_authBtn{flex:1;padding:7px 10px;border:none;border-radius:7px;background:#3fb950;color:#07130a;font:inherit;font-size:12px;font-weight:600;cursor:pointer}',
+  '.dsh-wt_authBtn:disabled{opacity:.6;cursor:default}',
+  '.dsh-wt_authCancel{padding:7px 10px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary,#9aa4b2);font:inherit;font-size:12px;cursor:pointer}',
 ].join('\n')
