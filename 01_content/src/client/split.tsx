@@ -2462,7 +2462,8 @@ function TerminalPane() {
   return <div ref={hostRef} className="dsh-wt_termHost" />
 }
 
-const mdRenderer = new MarkdownIt({ linkify: true })
+const mdRenderer = new MarkdownIt({ linkify: true, html: false })
+mdRenderer.validateLink = (url: string) => /^(https?:|mailto:|tel:|#|\/)/i.test(String(url).trim())
 
 const IMAGE_EXTS = /[.](png|jpe?g|gif|webp|svg|bmp|ico)$/i
 const MD_EXTS = /[.](md|markdown|mdown)$/i
