@@ -621,6 +621,7 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleSelect,.dsh-wt_consoleInput{width:100%;box-sizing:border-box;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:11.5px;line-height:16px;outline:none}',
   '.dsh-wt_consoleSelect:focus,.dsh-wt_consoleInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_consoleErr{margin:0;font-size:11px;line-height:16px;color:var(--dsw-alias-state-danger,#f85149)}',
+  '.dsh-wt_consoleHint{margin:0;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#aab6cd)}',
   '.dsh-wt_consoleCreateBtn{margin-top:2px;padding:7px 10px;border:1px solid var(--dsw-alias-state-accent-primary,#4f8ef7);border-radius:8px;background:transparent;color:var(--dsw-alias-state-accent-primary,#4f8ef7);font:inherit;font-size:12px;line-height:18px;cursor:pointer}',
   '.dsh-wt_consoleCreateBtn:hover:not(:disabled){background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}',
   '.dsh-wt_consoleCreateBtn:disabled{opacity:.55;cursor:default}',

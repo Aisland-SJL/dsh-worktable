@@ -62,8 +62,17 @@ export function modelApiOf(ctx: any, sessions: any, legacy: any): any {
   }
 }
 
-/** 0.2's blank composer requires a registered Workspace, not only a Session cwd. */
-export async function createHostSession(sessions: any, workspaces: any, options: { workspaceId?: string; cwd?: string; sessionId?: string } = {}): Promise<string> {
+/** On the retained-scope host, a blank ungrouped session has a disabled native composer. */
+export function blankSessionNeedsWorkspace(sessions: any, grouping: 'auto' | 'none'): boolean {
+  return grouping === 'none' && typeof sessions?.using === 'function'
+}
+
+/** Preserve an explicit Ungrouped choice; only implicit defaults may register a Workspace. */
+export async function createHostSession(sessions: any, workspaces: any, options: { workspaceId?: string; cwd?: string; sessionId?: string } = {}, grouping: 'auto' | 'none' = 'auto'): Promise<string> {
+  if (grouping === 'none') {
+    if (options.workspaceId) throw new Error('ungrouped session cannot specify a workspace')
+    return sessions.create(options)
+  }
   if (options.workspaceId || typeof sessions?.using !== 'function') return sessions.create(options)
   // The Host owns path canonicalization and idempotent registration. Never invent an id.
   const workspace = options.cwd

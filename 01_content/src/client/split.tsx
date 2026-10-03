@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { parentPathOf } from './pathutil'
+import { hostWebSocketUrl, worktableUpgrade } from './hostTransport'
 import { CHANGELOG_V030 } from './changelog'
 import { LOCAL_VERSION, checkUpdate, getAutoCheck, readCache, setAutoCheck as storeAutoCheck, setSkipVersion, type UpdateInfo, type UpdateStatus } from './updateCheck'
 import { Terminal } from 'xterm'
@@ -99,6 +100,8 @@ type SplitState = {
   lastMarginRight: string
   lastMarginTop: string
   onSpecMutated: ((spec: LayoutSpec) => void) | null
+  /** Manual edits revoke that pane's automatic result binding; lockPane itself does not. */
+  onPaneContentEdited: ((projectId: string, paneId: string) => void) | null
   listeners: Set<() => void>
   open(spec: LayoutSpec): boolean
   close(): void
@@ -487,8 +490,7 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
 }
 
 /** 更新方法：复制给 AI 的升级指令（插件不自更新；升级由用户或其 Agent 执行 + 重启） */
-const UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"'
-const UPGRADE_AI = '帮我升级 dsh-worktable：执行 ' + UPGRADE_CMD + '，完成后提醒我重启 dsh web 并刷新页面'
+const { prompt: UPGRADE_AI } = worktableUpgrade()
 
 async function copyTextSafe(text: string): Promise<boolean> {
   try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true } } catch {}
@@ -758,6 +760,7 @@ export const splitStore: SplitState = {
   lastMarginRight: '',
   lastMarginTop: '',
   onSpecMutated: null,
+  onPaneContentEdited: null,
   listeners: new Set(),
 
   open(spec) {
@@ -1070,7 +1073,7 @@ export const splitStore: SplitState = {
   lockPane(row, i, content) {
     const spec = this.spec
     if (!spec) return
-    const tab: PaneTab = { id: 't' + Date.now().toString(36), title: tabTitleOf(content), content, active: 0 }
+    const tab: PaneTab = { id: 't' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2), title: tabTitleOf(content), content, active: 0 }
     const mutate = (pane: SplitPane): SplitPane => ({ ...pane, content: null, tabs: [tab], active: 0 })
     if (row === 'left') {
       if (!spec.left || i !== 0) return
@@ -1095,6 +1098,8 @@ export const splitStore: SplitState = {
   setTabContent(row, index, tabId, content) {
     const spec = this.spec
     if (!spec) return
+    const edited = row === 'left' ? spec.left : row === 'top' ? spec.top?.[index] : spec.main[index]
+    if (edited?.tabs?.some((t) => t.id === tabId)) this.onPaneContentEdited?.(spec.id, edited.id)
     const mutate = (pane: SplitPane): SplitPane => {
       const tabs = (pane.tabs ?? []).map((t) => (t.id === tabId ? { ...t, content, title: tabTitleOf(content) } : t))
       return { ...pane, tabs }
@@ -1115,6 +1120,8 @@ export const splitStore: SplitState = {
   openTab(row, i, content) {
     const spec = this.spec
     if (!spec) return
+    const edited = row === 'left' ? spec.left : row === 'top' ? spec.top?.[i] : spec.main[i]
+    if (edited) this.onPaneContentEdited?.(spec.id, edited.id)
     const mutate = (pane: SplitPane): SplitPane => {
       const tabs = [...(pane.tabs ?? [])]
       // 去重：同内容已有标签 → 直接激活
@@ -1146,6 +1153,8 @@ export const splitStore: SplitState = {
   closeTab(row, i, tabId) {
     const spec = this.spec
     if (!spec) return
+    const edited = row === 'left' ? spec.left : row === 'top' ? spec.top?.[i] : spec.main[i]
+    if (edited?.tabs?.some((t) => t.id === tabId)) this.onPaneContentEdited?.(spec.id, edited.id)
     const mutate = (pane: SplitPane): SplitPane => {
       const tabs = (pane.tabs ?? []).filter((t) => t.id !== tabId)
       return { ...pane, tabs, active: 0 }
@@ -1184,6 +1193,8 @@ export const splitStore: SplitState = {
     if (!fromPane || !toPane) return
     const tab = (fromPane.tabs ?? []).find((t) => t.id === tabId)
     if (!tab) return
+    this.onPaneContentEdited?.(spec.id, fromPane.id)
+    this.onPaneContentEdited?.(spec.id, toPane.id)
     const fromTabs = (fromPane.tabs ?? []).filter((t) => t.id !== tabId)
     const toTabs = [...(toPane.tabs ?? []), tab]
     const setPane = (row: PaneRow, i: number, pane: SplitPane) => {
@@ -2418,9 +2429,8 @@ function TerminalPane() {
     focusTerm()
     el.addEventListener('pointerdown', focusTerm)
     const scope = splitEnv?.getScope?.()
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const url = proto + '//' + location.host + '/api/worktable/term?sessionId=' + encodeURIComponent(scope?.sessionId ?? '') + '&cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24'
     try {
+      const url = hostWebSocketUrl('/api/worktable/term?sessionId=' + encodeURIComponent(scope?.sessionId ?? '') + '&cwd=' + encodeURIComponent(scope?.cwd ?? '') + '&cols=80&rows=24')
       ws = new WebSocket(url)
     } catch {
       term.dispose()
@@ -2623,8 +2633,9 @@ function SelectPop(props: {
 }
 
 /** 自定义窗口：居中对话框。两种模式：新建专属会话 / 发送到已有会话（默认当前会话）。 */
-function CustomPane(props: { paneTitle?: string }) {
-  const paneTitle = props.paneTitle ?? ''
+function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }) {
+  const paneTitle = props.row === undefined ? (props.paneTitle ?? '') :
+    (windowLabelOf(props.row, props.index ?? 0).match(/^窗口\d+/)?.[0] ?? '')
   try { (window as any).__dshLastCustomPaneTitle = paneTitle } catch {}
   const custom = splitEnv?.custom
   const [requirement, setRequirement] = useState('')
@@ -2637,6 +2648,7 @@ function CustomPane(props: { paneTitle?: string }) {
   const [wsGroups, setWsGroups] = useState<{ id: string; title: string; path: string }[]>([])
   const [groupMode, setGroupMode] = useState<'none' | 'existing' | 'new'>('none')
   const [groupId, setGroupId] = useState<string | null>(null)
+  const groupTouchedRef = useRef(false)
   const [newGroupParent, setNewGroupParent] = useState('')
   const [newGroupName, setNewGroupName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -2656,7 +2668,8 @@ function CustomPane(props: { paneTitle?: string }) {
       setSessionId(flat.find((s) => s.isCurrent)?.id ?? flat[0]?.id ?? null)
       const curId = flat.find((s) => s.isCurrent)?.id
       const home = curId ? (custom?.getWorkspaces?.() ?? []).find((w) => (w.sessionIds ?? []).includes(curId)) : null
-      if (home) { setGroupMode('existing'); setGroupId(home.id) }
+      // A delayed default lookup must not overwrite the user's explicit choice.
+      if (home && !groupTouchedRef.current) { setGroupMode('existing'); setGroupId(home.id) }
     }).catch(() => { setSessionGroups([]) })
   }, [custom])
   const submit = async () => {
@@ -2757,6 +2770,7 @@ function CustomPane(props: { paneTitle?: string }) {
               }]}
               placeholder={T('custom.group')}
               onChange={(id) => {
+                groupTouchedRef.current = true
                 if (id === '__none') setGroupMode('none')
                 else if (id === '__new') setGroupMode('new')
                 else { setGroupMode('existing'); setGroupId(id) }
@@ -2814,7 +2828,7 @@ function PaneTabBody(props: { tab: PaneTab; row: PaneRow; index: number; paneTit
   if (content.type === 'scm') return <GitPane />
   if (content.type === 'tasks') return <JobsPane />
   if (content.type === 'terminal') return <TerminalPane />
-  if (content.type === 'custom') return <CustomPane paneTitle={props.paneTitle ?? ''} />
+  if (content.type === 'custom') return <CustomPane paneTitle={props.paneTitle ?? ''} row={props.row} index={props.index} />
   return (
     <div className="dsh-wt_paneWip">
       <span className="dsh-wt_paneWipIcon" aria-hidden>{BUILTIN_ICONS[content.type]}</span>

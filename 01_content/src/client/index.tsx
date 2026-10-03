@@ -4,8 +4,10 @@ import { NS, zh, en, type WorktableKey } from './locales'
 import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 import { appendHostInput } from './hostInput'
+import { worktableUpgrade } from './hostTransport'
+import { WidgetMountRegistry, newWidgetId, widgetManifestPath, type WidgetBinding } from './widgetMount'
 import { currentSessionOf, openHostSession, sendHostSession, createSessionSnapshotAdapter, childSessionIdsOf, pendingAckOf, sessionRuntimeMs } from './sessionCompat'
-import { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession } from './sessionDetails'
+import { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } from './sessionDetails'
 import { photoStore, kindOf } from './photoStore'
 import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
 import { WAVE_BG_B64 } from './waveBg'
@@ -30,8 +32,7 @@ type DockMode = 'footer' | 'float'
 declare const __WT_VERSION__: string
 const LOCAL_VERSION = typeof __WT_VERSION__ === 'undefined' ? 'dev' : __WT_VERSION__
 const UPDATE_REPO = 'Aisland-SJL/dsh-worktable'
-const UPGRADE_CMD = 'dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"'
-const UPGRADE_AI = '帮我升级 dsh-worktable：执行 ' + UPGRADE_CMD + '，完成后提醒我重启 dsh web 并刷新页面'
+const { command: UPGRADE_CMD, prompt: UPGRADE_AI, desktop: DESKTOP_HOST } = worktableUpgrade()
 // 更新提示图标（手绘 SVG，避免 emoji 跨平台渲染差异）
 const ICON_SYNC = (
   <svg viewBox="0 0 16 16" aria-hidden>
@@ -194,7 +195,7 @@ function buildLayout(presetId: string, name: string): LayoutSpec {
   const top = Array.from({ length: def.topCount }, (_, i) => mk(def.leftCount + i))
   const main = Array.from({ length: def.contentCount }, (_, i) => mk(def.leftCount + def.topCount + i))
   return {
-    id: 'layout-' + Date.now().toString(36),
+    id: newWidgetId('layout'),
     title: name,
     left: left ?? null,
     top: top.length > 0 ? top : null,
@@ -745,14 +746,14 @@ const KNOWLEDGE_PACK = [
   '  界面即可与 DSH 原生风格一致；自造样式控制在最小范围。',
   '- 服务端能力：/api/worktable/fs（列目录）、/api/worktable/write（写文件）、/api/worktable/mkdir（建目录）、',
   '  /api/worktable/git（git 状态）、/api/worktable/site（静态托管）。',
-  '- 改完插件在 01_content 目录执行 npm run build；重启 dsh web 或浏览器 F5 生效。',
+  '- 改完插件在 01_content 目录执行 npm run build；网页端重启 dsh web 并刷新，桌面端完整退出后手动重新打开。',
   '- 所有产出文件一律放进本任务标注的项目文件夹，保持用户目录干净。',
   '- 标注协议：收到「📌 标注-窗口N …（坐标/元素/框内文字…）…」= 工作台标注（窗口编号约定：左栏→顶行→主行，从 1 起）。',
   '  处理：标注已标明框选区域与「最可能目标」时直接作答、不要二次询问（仅当确实无法从标注定位时才问一次）；能查看截图或打开窗口则先核实再回答。',
 ].join('\n')
 
 /** 组装窗口任务提示词（新建/发送两模式共用；导出到 window 供自测校验） */
-function buildWindowTaskText(projectId: string, projectName: string, windowLabel: string, requirement: string, folder: string | null, mode: 'new' | 'send'): string {
+function buildWindowTaskText(projectId: string, projectName: string, windowLabel: string, requirement: string, folder: string | null, mode: 'new' | 'send', widgetBindings: WidgetBinding[] = []): string {
   const win = windowLabel || '一个内容窗'
   const folderLine = folder
     ? '项目文件夹：' + folder + '（本项目所有产出文件一律放进这个文件夹；不要写到别的默认位置）。'
@@ -768,8 +769,9 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
     '   - 文档 / 演示（PPT、报告、表格）→ 生成真实文件（.pptx / .md / .xlsx）放进项目文件夹，用户用本机软件打开编辑；',
     '   - 视频 / 动画 → 生成 .mp4 / .gif（或 Lottie JSON）文件放进项目文件夹；',
     '   - 工作台已有内置窗能力（资源管理器 / 终端 / 浏览器 / 动画站）→ 不要重复造轮子，直接建议用户改用内置窗。',
-    '5. 完成内容后，用一两句话告知用户挂载结果（不要提问、不要等待用户确认）：例如「已完成并自动挂到「' + win + '」窗口，想调整直接说，我改完会自动更新」。该窗口位于「' + projectName + '」项目内，如需要也可协助该项目后续的其他自定义工作。',
-    '6. 完成后写入「产物清单」文件：在项目文件夹里创建 widget-result.json。挂载单个窗口时写单对象 {\"window\":\"' + win + '\",\"path\":\"产物相对路径\",\"kind\":\"html\"}；一次挂载多个窗口（如窗口1 + 窗口2）时写 JSON 数组，每个元素为上述单对象（可引用多个产物文件）。kind 可选 html（本地页面，path 相对项目文件夹）/ url（外部链接，path 为完整 URL）/ file（其他文件，path 相对项目文件夹）。写完这个文件，工作台会自动把产物挂载进清单对应的各个窗口并锁定保存，用户无需手动操作；用户下次打开工作台时各窗口直接显示产物，不会丢失或重置。',
+    '5. 完成后用一两句话说明作品与目标窗口。写清单不代表界面已确认挂载成功；只有实际看到挂载结果时，才说「已挂载」。该窗口属于「' + projectName + '」项目。',
+    '6. 产物握手 v2：只使用下列本项目专属清单路径，不读写项目根目录旧的 widget-result.json，也不要复用其他项目的清单。作品仍放在项目文件夹，path 按该文件夹解析。先完成作品，再创建清单父目录并写入对应 JSON；kind 为 html / url / file，替换示例中的 path 与 kind，其他身份字段保持原样。一次生成多个窗口时分别写各窗口的清单。以后在本会话里继续修改同名作品，仍更新这个清单；不得根据清单文件名变化与否判断是否完成。',
+    widgetBindings.length ? widgetBindings.map((b) => b.window + '：' + widgetManifestPath(b) + '\n' + JSON.stringify({ version: 2, projectId: b.projectId, paneId: b.paneId, bindingId: b.bindingId, window: b.window, path: '产物相对路径', kind: 'html' })).join('\n') : '当前没有有效的自动挂载绑定，请用户从目标窗口重新发送自定义任务；不要写旧清单猜测归属。',
     KNOWLEDGE_PACK,
   ]
   return lines.join('\n')
@@ -779,7 +781,6 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
 export async function createCustomSession(projectId: string, projectName: string, requirement: string, group?: NewSessionGroup, windowLabel = '', folder: string | null = null): Promise<string> {
   const b = sessionBridge
   if (!b || typeof b.sessions?.create !== 'function') throw new Error('sessions unavailable')
-  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'new')
   // 分组解析：existing → 直接带 workspaceId 建会话；new → 先建目录并注册为工作区
   let workspaceId: string | null = null
   const g = group ?? { kind: 'none' as const }
@@ -807,11 +808,13 @@ export async function createCustomSession(projectId: string, projectName: string
   let createOpts: any = {}
   if (workspaceId) createOpts = { workspaceId }
   else if (folder) createOpts = { cwd: folder }
-  const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts)
+  const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts, g.kind === 'none' ? 'none' : 'auto')
   await ensureSessionPreset(sessionId) // 新会话应用部署默认预设
   await ensureSessionModel(sessionId) // 修复继承失效 provider（selectModel 同步存默认，顺带修复后续新会话）
   markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await openHostSession(clientCtx, b.sessions, sessionId) } catch {}
+  const widgetBindings = prepareWidgetTask(projectId, folder, sessionId, windowLabel)
+  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'new', widgetBindings)
   await promptIntoSession(sessionId, text)
   return sessionId
 }
@@ -820,7 +823,8 @@ export async function createCustomSession(projectId: string, projectName: string
 export async function sendCustomToSession(sessionId: string, projectId: string, projectName: string, requirement: string, windowLabel = '', folder: string | null = null): Promise<void> {
   const b = sessionBridge
   if (!b) throw new Error('bridge unavailable')
-  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'send')
+  const widgetBindings = prepareWidgetTask(projectId, folder, sessionId, windowLabel)
+  const text = buildWindowTaskText(projectId, projectName, windowLabel, requirement, folder, 'send', widgetBindings)
   markPluginSessionOpen(sessionId) // 插件发起的切换：不触发「切会话关项目」联动
   try { await openHostSession(clientCtx, b.sessions, sessionId) } catch {}
   await promptIntoSession(sessionId, text)
@@ -867,48 +871,40 @@ function saveNotifyAck(sid: string, state: string) {
     localStorage.setItem('dsh.worktable.notifyAck.v1', JSON.stringify(ack))
   } catch {}
 }
-/** 自动挂载：已消费过完成事件的会话集（一次完成只挂载一次） */
+/** 自动挂载：按项目与会话消费完成边沿，同一会话可服务不同项目。 */
 const mountConsumedRef: { current: Set<string> } = { current: new Set<string>() }
-/** 待挂载（项目未打开时暂存）：projectId → 挂载内容；刷新后从 localStorage 恢复 */
-const pendingMountRef: { current: Record<string, any> } = { current: (() => {
-  try { return JSON.parse(localStorage.getItem('dsh.worktable.pendingMount.v1') ?? '{}') ?? {} } catch { return {} }
+/** v1 无归属清单/pending 不执行；原有 layouts/views 仍按项目 id 恢复。 */
+const widgetRegistry = new WidgetMountRegistry((() => { try { return localStorage } catch { return null } })())
+let widgetProjectOf: (id: string) => { folder?: string; spec?: LayoutSpec } = () => ({})
+function prepareWidgetTask(projectId: string, folder: string | null, sessionId: string, windowLabel: string): WidgetBinding[] {
+  if (!folder) return []
+  const current = widgetProjectOf(projectId)
+  if (!folder || current.folder !== folder || !current.spec) throw new Error('project folder or window changed')
+  return widgetRegistry.begin(projectId, current.spec, folder, sessionId, windowLabel)
+}
+/** 待挂载保存归属，打开时重新读取文件并校验当前目录/绑定/稳定窗格 id。 */
+const pendingMountRef: { current: Record<string, { binding: WidgetBinding }> } = { current: (() => {
+  try { return JSON.parse(localStorage.getItem('dsh.worktable.pendingMount.v2') ?? '{}') ?? {} } catch { return {} }
 })() }
-/** 已挂载指纹：projectId → widget-result.json 原文。自愈扫挂据此去重：
- *  同清单不重复锁定（不覆盖用户后续对窗口的手动调整），清单变化才重新挂载。 */
+/** 启动扫挂按绑定指纹去重；新的完成边沿允许同路径、同清单作品重新加载。 */
 const mountedWidgetRef: { current: Record<string, string> } = { current: (() => {
-  try { return JSON.parse(localStorage.getItem('dsh.worktable.mountedWidget.v1') ?? '{}') ?? {} } catch { return {} }
+  try { return JSON.parse(localStorage.getItem('dsh.worktable.mountedWidget.v2') ?? '{}') ?? {} } catch { return {} }
 })() }
-function recordMountedWidget(projectId: string, raw: string) {
-  if (!projectId || !raw) return
-  mountedWidgetRef.current[projectId] = raw
-  try { localStorage.setItem('dsh.worktable.mountedWidget.v1', JSON.stringify(mountedWidgetRef.current)) } catch {}
+const widgetReadSeqRef: { current: Record<string, number> } = { current: {} }
+function recordMountedWidget(bindingId: string, raw: string) {
+  if (!bindingId || !raw) return
+  mountedWidgetRef.current[bindingId] = raw
+  try { localStorage.setItem('dsh.worktable.mountedWidget.v2', JSON.stringify(mountedWidgetRef.current)) } catch {}
 }
-
-/** 「窗口N」→ 窗格位置（左栏 → 顶行 → 主行 编号规则，与 AGENTS.md 窗口编号一致） */
-function windowLabelToPane(spec: any, label: string): { row: 'left' | 'top' | 'main'; index: number } | null {
-  const m = /^窗口(\d+)$/.exec(String(label ?? '').trim())
-  if (!m) return null
-  const n = parseInt(m[1], 10)
-  if (!Number.isFinite(n) || n < 1) return null
-  let idx = n - 1
-  if (spec?.left) {
-    if (idx === 0) return { row: 'left', index: 0 }
-    idx -= 1
+function persistPendingWidgets() {
+  try { localStorage.setItem('dsh.worktable.pendingMount.v2', JSON.stringify(pendingMountRef.current)) } catch {}
+}
+function invalidateWidgetProject(projectId: string) {
+  widgetRegistry.revokeProject(projectId)
+  for (const [id, pending] of Object.entries(pendingMountRef.current)) {
+    if (pending?.binding?.projectId === projectId) delete pendingMountRef.current[id]
   }
-  const top = spec?.top ?? []
-  if (idx < top.length) return { row: 'top', index: idx }
-  idx -= top.length
-  const main = spec?.main ?? []
-  if (idx < main.length) return { row: 'main', index: idx }
-  return null
-}
-
-/** 窗格是否存在于布局 spec（lockPane 对不存在的窗格会静默放弃；据此决定是否记录挂载指纹） */
-function paneExists(spec: any, row: 'left' | 'top' | 'main', index: number): boolean {
-  if (!spec) return false
-  if (row === 'left') return !!spec.left && index === 0
-  if (row === 'top') return !!spec.top && !!spec.top[index]
-  return !!spec.main && !!spec.main[index]
+  persistPendingWidgets()
 }
 
 /** 产物清单 → 窗口内容（html=目录级托管 iframe / url=外链 iframe / file=文件预览） */
@@ -1153,6 +1149,7 @@ function WorktableSection(props: any) {
   const [consoleName, setConsoleName] = useState('')
   const [consoleErr, setConsoleErr] = useState(false)
   const [consoleBusy, setConsoleBusy] = useState(false)
+  const consoleNeedsWorkspace = blankSessionNeedsWorkspace(sessionBridge?.sessions, consoleMode === 'none' ? 'none' : 'auto')
 
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
@@ -1462,7 +1459,14 @@ function WorktableSection(props: any) {
         return { ...prev, views: { ...prev.views, [spec.id]: spec } }
       })
     }
-    return () => { splitStore.onSpecMutated = null }
+    splitStore.onPaneContentEdited = (projectId, paneId) => {
+      widgetRegistry.revokePane(projectId, paneId)
+      for (const [id, p] of Object.entries(pendingMountRef.current)) {
+        if (p?.binding?.projectId === projectId && p.binding.paneId === paneId) delete pendingMountRef.current[id]
+      }
+      persistPendingWidgets()
+    }
+    return () => { splitStore.onSpecMutated = null; splitStore.onPaneContentEdited = null }
   }, [])
 
   // 分栏引擎 UI 文案（窗选择器等）
@@ -1634,23 +1638,10 @@ function buildCustomLayoutPrompt(req: string): string {
       const bound = projectsRef.current.projects.bindings[spec.id]
       if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
       ackProjectNotify(spec.id)
-      // 补挂：此前项目未打开时暂存的产物（entries = 多窗口挂载列表），现在自动挂进各目标窗格；
-      // 全部落位成功记录指纹（供自愈扫挂去重）
-      const pending = pendingMountRef.current[spec.id]
-      if (pending) {
-        try {
-          const entries = Array.isArray(pending.entries)
-            ? pending.entries
-            : (pending.content ? [{ content: pending.content, row: pending.row, index: pending.index ?? 0 }] : [])
-          let allOk = entries.length > 0
-          for (const e of entries) {
-            splitStore.lockPane(e.row, e.index ?? 0, e.content)
-            if (!paneExists(splitStore.spec, e.row, e.index ?? 0)) allOk = false
-          }
-          if (allOk && pending.fingerprint) recordMountedWidget(spec.id, pending.fingerprint)
-        } catch {}
-        delete pendingMountRef.current[spec.id]
-        try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
+      // 读取失败保留 pending 供下次打开重试；成功挂载后才由 loader 清除。
+      for (const pending of Object.values(pendingMountRef.current)) {
+        if (pending?.binding?.projectId !== spec.id) continue
+        void applyWidgetManifest(pending.binding, null, true)
       }
     }
   }, [projects.views])
@@ -1697,10 +1688,12 @@ function buildCustomLayoutPrompt(req: string): string {
     openConsole(sid)
   }
 
-  /** 强制绑定：新建空会话并绑定（分组同自定义窗：无 / 现有 / 新建） */
+  /** 新版空会话需显式分组才能输入；不能替用户改组或自动发送激活消息。 */
   const bindConsoleNew = async () => {
     const b = sessionBridge
     if (!b || typeof b.sessions?.create !== 'function') { setConsoleErr(true); return }
+    if (blankSessionNeedsWorkspace(b.sessions, consoleMode === 'none' ? 'none' : 'auto')) return
+    if (consoleMode === 'existing' && !consoleWsId) { setConsoleErr(true); return }
     if (consoleMode === 'new' && (!consoleParent.trim() || !consoleName.trim())) { setConsoleErr(true); return }
     setConsoleBusy(true); setConsoleErr(false)
     try {
@@ -1725,7 +1718,7 @@ function buildCustomLayoutPrompt(req: string): string {
       let createOpts: any = {}
       if (workspaceId) createOpts = { workspaceId }
       else if (folder) createOpts = { cwd: folder }
-      const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts)
+      const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts, consoleMode === 'none' ? 'none' : 'auto')
       await ensureSessionPreset(sessionId) // 管理对话同样应用部署默认预设
       await ensureSessionModel(sessionId) // 管理对话同样修复失效 provider
       markPluginSessionOpen(sessionId)
@@ -1833,7 +1826,10 @@ function buildCustomLayoutPrompt(req: string): string {
     pickBusyRef.current = false
     setPickBusy(false)
     if (target === 'add') { setWsFolderParent(p); setWsFolderError(false) }
-    else if (bindPick) { persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } })) }
+    else if (bindPick) {
+      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id)
+      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
+    }
     setManualPathFor(null)
     setManualPathText('')
     setPickErr((prev) => ({ ...prev, [target]: '' }))
@@ -1843,12 +1839,14 @@ function buildCustomLayoutPrompt(req: string): string {
   const changeBindFolder = () => {
     if (!bindPick || pickBusyRef.current) return
     pickFolder('bind', (p) => {
+      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id)
       persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
     })
   }
 
   /** 绑定 / 解绑会话（弹窗保持打开，绑定结果即时显示在「绑定对话」框里） */
   const setProjectBinding = (id: string, sessionId: string | null) => {
+    if ((projectsRef.current.projects.bindings[id] ?? null) !== sessionId) invalidateWidgetProject(id)
     persistProjects((prev) => {
       const next = { ...prev.bindings }
       if (sessionId) next[id] = sessionId
@@ -1898,106 +1896,80 @@ function buildCustomLayoutPrompt(req: string): string {
 
   // 项目表变化 → 控制室卡片刷新（打开中的面板即时更新）
   useEffect(() => { notifyConsole() }, [projects])
+  const [widgetTick, setWidgetTick] = useState(0)
+  useEffect(() => widgetRegistry.subscribe(() => setWidgetTick((n) => n + 1)), [])
 
-  /** 执行产物清单挂载：项目开着 → 锁定各「窗口N」；未开 → 待挂载（打开项目时补挂）。
-   *  清单支持单窗口对象（旧格式）与多窗口 JSON 数组（新格式，每元素 {window,path,kind}）。
-   *  rawManifest 传入时免二次读取（自愈扫挂先读原文做指纹去重）。全部落位成功后记录挂载指纹。 */
-  const applyWidgetManifest = useCallback(async (projectId: string, rawManifest: string | null): Promise<void> => {
-    const folder = projectsRef.current.projects.folders[projectId]
-    if (!folder) return
+  /** 只处理当前有效绑定。await 后与实际替换前重新查归属，窗口编号非法时不退到窗口1。 */
+  const applyWidgetManifest = useCallback(async (binding: WidgetBinding, rawManifest: string | null, force = false): Promise<void> => {
+    let current = widgetProjectOf(binding.projectId)
+    if (!mountedRef.current || !widgetRegistry.isCurrent(binding, current.spec, current.folder)) return
+    const readSeq = (widgetReadSeqRef.current[binding.bindingId] ?? 0) + 1
+    widgetReadSeqRef.current[binding.bindingId] = readSeq
     try {
       let raw = rawManifest
       if (raw == null) {
-        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
+        const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(widgetManifestPath(binding)), { cache: 'no-store' })
         if (!r.ok) return
         raw = (await r.text()).trim()
       }
-      if (!raw) return
-      let d: any = null
-      try { d = JSON.parse(raw) } catch {}
-      if (!d) return
-      const items = Array.isArray(d) ? d : [d]
-      const open = splitStore.active && splitStore.spec?.id === projectId
-      const saved = open ? splitStore.spec : (projectsRef.current.projects.views[projectId] ?? projectsRef.current.projects.layouts.find((l) => l.id === projectId))
-      // 逐项解析目标窗格；同窗格冲突时保留先出现者（防止把两个窗口压进同一个窗格互相覆盖）
-      const targets: { row: 'left' | 'top' | 'main'; index: number; content: any }[] = []
-      for (const it of items) {
-        if (!it) continue
-        const content = buildMountContent(folder, it)
-        if (!content) continue
-        const pane = windowLabelToPane(saved, it.window)
-        const row = pane?.row ?? 'main'
-        const index = pane?.index ?? 0
-        if (targets.some((t) => t.row === row && t.index === index)) continue
-        targets.push({ row, index, content })
-      }
-      if (!targets.length) return
+      current = widgetProjectOf(binding.projectId)
+      if (!mountedRef.current || !raw || widgetReadSeqRef.current[binding.bindingId] !== readSeq) return
+      const resolved = widgetRegistry.resolve(binding, raw, current.spec, current.folder)
+      if (!resolved || (!force && mountedWidgetRef.current[binding.bindingId] === raw)) return
+      const content = buildMountContent(binding.folder, resolved.item)
+      if (!content) return
+      const open = splitStore.active && splitStore.spec?.id === binding.projectId
       if (open) {
-        // 项目开着：逐窗锁定；全部落位成功才记录指纹（有失败则留待下次自愈重试）
-        let allOk = true
-        for (const t of targets) {
-          splitStore.lockPane(t.row, t.index, t.content)
-          if (!paneExists(splitStore.spec, t.row, t.index)) allOk = false
-        }
-        if (allOk) recordMountedWidget(projectId, raw)
+        // 新标签 id 使同名 HTML 在下一次完成后重新加载；不会用 raw 指纹挡住追改。
+        splitStore.lockPane(resolved.target.row, resolved.target.index, content)
+        recordMountedWidget(binding.bindingId, raw)
+        delete pendingMountRef.current[binding.bindingId]
+        persistPendingWidgets()
       } else {
-        // 项目没开：按项目已保存的 spec 解析目标窗格，暂存，打开项目时锁死补挂
-        pendingMountRef.current[projectId] = { entries: targets, fingerprint: raw }
-        try { localStorage.setItem('dsh.worktable.pendingMount.v1', JSON.stringify(pendingMountRef.current)) } catch {}
+        pendingMountRef.current[binding.bindingId] = { binding }
+        persistPendingWidgets()
       }
-    } catch { /* 无清单文件 = 不挂载 */ }
+    } catch { /* 没有可验证的结果，不挂载旧目录的其他文件。 */ }
   }, [])
 
-  /** 自动挂载：绑定会话完成 → 读项目文件夹 widget-result.json → 产物自动挂进对应窗口 */
-  const tryAutoMount = useCallback(async (projectId: string, sid: string) => {
-    void sid
-    await applyWidgetManifest(projectId, null)
-  }, [applyWidgetManifest])
-
-  // 完成事件 → 尝试自动挂载（一次完成只消费一次）
+  // 完成边沿只触发读取，不是成功证明；实际挂载仍要求有效 v2 结果。
   useEffect(() => {
     const byId = sessionsSnapshotStore.snapshot?.byId ?? {}
+    const scopePairs = new Map(widgetRegistry.entries().map((b) => [JSON.stringify([b.projectId, b.sessionId]), b]))
+    for (const key of mountConsumedRef.current) if (!scopePairs.has(key)) mountConsumedRef.current.delete(key)
     for (const [pid, sid] of Object.entries(projects.bindings)) {
       const e = byId[sid]
       if (!e) continue
       if (e.completed === true) {
-        // 新一次完成 → 清除旧 done ack，控制室绿光重新点亮（即使旧完成已被确认过）
         if (doneSeenRef.current[sid] !== true) clearNotifyAck(sid)
         doneSeenRef.current[sid] = true
-        if (!mountConsumedRef.current.has(sid)) {
-          mountConsumedRef.current.add(sid)
-          tryAutoMount(pid, sid)
-        }
       } else {
         doneSeenRef.current[sid] = false
-        mountConsumedRef.current.delete(sid)
       }
     }
-  }, [notifyTick, projects.bindings, tryAutoMount])
+    for (const [key, binding] of scopePairs) {
+      const e = byId[binding.sessionId]
+      if (!e) continue
+      if (e.completed !== true) { mountConsumedRef.current.delete(key); continue }
+      if (mountConsumedRef.current.has(key)) continue
+      mountConsumedRef.current.add(key)
+      for (const b of widgetRegistry.entries(binding.projectId)) {
+        if (b.sessionId === binding.sessionId) void applyWidgetManifest(b, null, true)
+      }
+    }
+  }, [notifyTick, projects.bindings, widgetTick, applyWidgetManifest])
 
-  // 自愈扫挂：插件加载 / 项目文件夹变化时，扫描每个项目的 widget-result.json 并落位
-  // （「完成事件」通道的兜底：事件丢失、绑定错位、完成时页面未加载等场景下仍能自动挂载；
-  //   按清单原文指纹去重——同清单不重复锁定，用户后续手动改窗口内容不会被覆盖）。
+  // 只扫描已明确登记的专属路径。新项目没有绑定，所以即使共用目录也保持空白。
   useEffect(() => {
     let cancelled = false
-    const folders = projects.folders ?? {}
     ;(async () => {
-      for (const pid of Object.keys(folders)) {
+      for (const binding of widgetRegistry.entries()) {
         if (cancelled) return
-        const folder = folders[pid]
-        if (!folder) continue
-        try {
-          const r = await fetch('/api/worktable/file?path=' + encodeURIComponent(joinPath(folder, 'widget-result.json')), { cache: 'no-store' })
-          if (!r.ok) continue
-          const raw = (await r.text()).trim()
-          if (!raw) continue
-          if (mountedWidgetRef.current[pid] === raw) continue
-          await applyWidgetManifest(pid, raw)
-        } catch { /* 单项目失败不影响其余 */ }
+        await applyWidgetManifest(binding, null)
       }
     })()
     return () => { cancelled = true }
-  }, [projects.folders, applyWidgetManifest])
+  }, [projects.folders, widgetTick, applyWidgetManifest])
 
   /** 收集某会话的子代理 id 集：byId 的 parentId 标注 + subagentsByParent 目录双通道 */
   const collectKids = useCallback((sid: string): Set<string> => {
@@ -2056,6 +2028,11 @@ function buildCustomLayoutPrompt(req: string): string {
     [registeredIds, projects.removed],
   )
   projectsRef.current = { projects, metas, aliveRegisteredIds }
+  widgetProjectOf = (id) => ({
+    folder: projectsRef.current.projects.folders[id],
+    spec: (splitStore.active && splitStore.spec?.id === id ? splitStore.spec : undefined) ??
+      projectsRef.current.projects.views[id] ?? projectsRef.current.projects.layouts.find((l) => l.id === id),
+  })
   projectBindingsRef.current = projects.bindings
   const allIds = useMemo(() => [...aliveRegisteredIds, ...layoutIds], [aliveRegisteredIds, layoutIds])
   const effectiveOrder = useMemo(() => {
@@ -2206,12 +2183,14 @@ function buildCustomLayoutPrompt(req: string): string {
   }
 
   const removeLayout = (id: string) => {
+    invalidateWidgetProject(id)
     persistProjects((prev) => ({ ...prev, layouts: prev.layouts.filter((l) => l.id !== id) }))
   }
 
   // ── 变更视图：所有项目通用。布局项目 = 重建其布局条目；入驻项目 = 建立/更新视图覆盖。
   // 现有窗内容（标签）按序迁入新拓扑，不丢失。 ──
   const applyLayoutChange = (id: string, presetId: string) => {
+    invalidateWidgetProject(id)
     const layout = projects.layouts.find((l) => l.id === id)
     const meta = metas[id]
     const current = layout ?? projects.views[id]
@@ -2267,6 +2246,7 @@ function buildCustomLayoutPrompt(req: string): string {
   // 「工作台」控制室项目不可删除（界面不提供入口，这里兜底拒绝）
   const removeProject = (id: string) => {
     if (id === CONSOLE_ID) return
+    invalidateWidgetProject(id)
     persistProjects((prev) => {
       const next = {
         ...prev,
@@ -2766,7 +2746,7 @@ function buildCustomLayoutPrompt(req: string): string {
                 </button>
                 <button type="button" className="dsh-wt_updateBtn" onClick={skipUpdate}>{t('update.skip')}</button>
               </div>
-              <div className="dsh-wt_updateHint">{t('update.upgradeHint')}</div>
+              <div className="dsh-wt_updateHint">{t(DESKTOP_HOST ? 'update.upgradeHintDesktop' : 'update.upgradeHint')}</div>
             </div>
           )}
           <div className="dsh-wt_manageHead">
@@ -3025,6 +3005,7 @@ function buildCustomLayoutPrompt(req: string): string {
               </select>
               {consoleMode === 'existing' && (
                 <select className="dsh-wt_consoleSelect" value={consoleWsId} onChange={(e) => setConsoleWsId(e.target.value)}>
+                  <option value="">{t('console.chooseGroup')}</option>
                   {listWorkspaces().map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
                 </select>
               )}
@@ -3034,8 +3015,9 @@ function buildCustomLayoutPrompt(req: string): string {
                   <input className="dsh-wt_consoleInput" placeholder={t('console.newNamePh')} value={consoleName} onChange={(e) => setConsoleName(e.target.value)} />
                 </>
               )}
-              {consoleErr && <p className="dsh-wt_consoleErr">{t('console.bindFail')}</p>}
-              <button type="button" className="dsh-wt_consoleCreateBtn" disabled={consoleBusy} onClick={bindConsoleNew}>
+              {consoleNeedsWorkspace && <p className="dsh-wt_consoleHint">{t('console.blankNeedsGroup')}</p>}
+              {consoleErr && !consoleNeedsWorkspace && <p className="dsh-wt_consoleErr">{t('console.bindFail')}</p>}
+              <button type="button" className="dsh-wt_consoleCreateBtn" disabled={consoleBusy || consoleNeedsWorkspace || (consoleMode === 'existing' && !consoleWsId)} onClick={bindConsoleNew}>
                 {consoleBusy ? '…' : t('console.createBind')}
               </button>
             </div>

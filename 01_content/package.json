@@ -1,7 +1,7 @@
 {
   "name": "dsh-worktable",
   "description": "工作台 Worktable：DeepSeek Harness 侧边栏的 agent 级项目容器（应用抽屉）",
-  "version": "0.3.4",
+  "version": "0.4.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Aisland-SJL/dsh-worktable.git",
@@ -55,6 +55,8 @@
     "test:input": "node ../04_test/host-input.test.mjs",
     "test:session": "node ../04_test/session-compat.test.mjs",
     "test:details": "node ../04_test/session-details.test.mjs",
+    "test:transport": "node ../04_test/host-transport.test.mjs",
+    "test:widget": "node ../04_test/widget-mount.test.mjs",
     "verify:remote": "node verify-remote.mjs"
   },
   "peerDependencies": {

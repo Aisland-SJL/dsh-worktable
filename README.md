@@ -53,7 +53,7 @@
 
 ## Quick start
 
-v0.3.4 declares compatibility with DSH Web **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**. This round tested the listed core Windows Web flows on 0.2.0-rc.2; the two older versions use prior page validation plus targeted code regressions, not a newly repeated full GUI suite. Official Desktop support has not been verified. Back up important data and check your other plugins before upgrading the host.
+**v0.4.0** adds Windows official Desktop support within the tested scope below. Web compatibility lists only DSH **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**; Desktop checks cover **Windows + 0.2.0-rc.2**. Desktop page checks and targeted regressions do not establish full final-package Desktop end-to-end acceptance. Older versions rely on prior page checks plus code regressions, not a newly repeated full GUI suite. Back up important data and check other plugins before upgrading; GitHub Release is the publication authority.
 
 1. **Install** (pick one):
 
@@ -76,6 +76,18 @@ v0.3.4 declares compatibility with DSH Web **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.
 3. **Open the control room**: click the pinned 🖥️ control-room card → bind one conversation (join existing or create new) → you get the live card grid
 4. **Create projects**: sidebar ＋ → pick a layout preset, set a project folder
 
+### Windows official Desktop
+
+Save your tasks, fully exit the app from its menu/tray (closing the window is not enough), replace the installation-directory placeholder, run in PowerShell, then reopen the app manually:
+
+```powershell
+& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.4.0/dsh-worktable-0.4.0.tgz"
+```
+
+Use the Desktop-bundled CLI and `desktop` profile, not an unpinned npx or Web CLI. Preserve the actual DSH_HOME. Browser-local projects/layouts/media do not automatically sync between Web and Desktop origins, even when sessions share one data home.
+
+Explicit **Ungrouped** in a custom-window task no longer silently joins a workspace. For a **blank control-room conversation**, the tested DSH 0.2 host disables the ungrouped composer: choose a group or join a usable existing conversation. The plugin explains this and blocks that blank creation, without changing your choice or sending an activation message. An empty existing-group selection cannot silently default either; legacy ungrouped creation stays unchanged.
+
 ---
 
 ## Architecture
@@ -85,7 +97,7 @@ One package ships the **host Cordis plugin** and the **web client**:
 - **host**: `/api/worktable/*` routes — health, file system, git, file read/write, site serving, mkdir, workspaces, native skin template; WebSocket `/api/worktable/term` for the terminal pane (PowerShell on Windows)
 - **client**: injected into the sidebar and the shell overlay via the slot protocol; the split engine, tab model, drag/drop and persistence are self-built
 - **control room**: reads the host session list snapshot (running / pending / completed, jobs, subagent catalogs) — an event-driven mirror, no model involvement
-- **window tasks**: the agent writes `widget-result.json` into the project folder on completion; the client mounts the artifact into the addressed window and locks it
+- **window tasks**: custom tasks register project/pane/binding ownership and write a dedicated result under `.dsh-worktable/project-<project ID>/`; sharing a folder does not make a new project inherit another project's windows
 
 ---
 
@@ -102,7 +114,7 @@ node --check lib/index.js
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
 - Regression: `04_test/functional-diag.cjs` (20 steps, strict gate) plus targeted probes (control room, bind panel, collapsed rail, model inheritance), the path matrix (`04_test/pathutil-matrix.cjs`) and update-check scenarios (`04_test/probe-update-scenarios.cjs`)
 - In the release pipeline: split-anchor DOM regression `04_test/anchor-dom.test.mjs` (8 scenarios, both host conversation-root shapes) and data-home resolution regression `04_test/server-home.test.mjs` (3 groups: no-cycle fallback, path expansion, official-branch fixture)
-- Release packaging uses `npm run pack` only. It also runs 53 input/session regressions, installation and client-factory gates; after uploading, run `npm run verify:remote -- --expect-sha <final SHA> v0.3.4` and check `latest` separately.
+- Release packaging uses `npm run pack` only. It also runs 98 input/session/details/transport/widget regressions, installation and client-factory gates. `npm run test:widget` covers 26 ownership, session-isolation, shared-folder, late-result and retry cases; after uploading, run `npm run verify:remote -- --expect-sha <final SHA> v0.4.0` and check `latest` separately.
 
 ---
 
@@ -115,7 +127,7 @@ Projects, bindings and layouts live in browser localStorage; media lives in Inde
 **Case A: Harness works, only the worktable needs updating**
 
 - Open the worktable "Settings" → click "Check now"; when the amber update badge appears next to the worktable title, click it and choose "Copy AI prompt" to hand the upgrade to your AI assistant;
-- Or simply re-run the install command (always installs the latest), then restart dsh web and refresh:
+- For Web, re-run the install command (installs the latest published release), then restart dsh web and refresh. Desktop users must follow the Desktop instructions above:
 
   ```bash
   dsh plugin --profile web add "https://github.com/Aisland-SJL/dsh-worktable/releases/latest/download/dsh-worktable.tgz"
@@ -139,10 +151,10 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 
 ## Known limits
 
-- **Platform**: Windows Web is the tested platform within the version and flow limits above. Official Desktop remains unverified; macOS support is experimental and has not been tested end to end on real hardware.
+- **Platform**: Windows Web and the official Windows Desktop have the version/flow limits above. Full final-package Desktop end-to-end acceptance is not complete; macOS is experimental and has not been tested end to end on real hardware.
 - State lives in the browser (localStorage and IndexedDB) — projects, bindings, views and media do not sync across machines
 - The terminal pane is a plain PowerShell host on Windows (no PTY feature parity with the native terminal app)
-- Auto-mount requires the agent to actually write `widget-result.json` in the project folder
+- Auto-mount requires a registered custom task and its matching v2 result file. Old saved windows remain; unowned root-level `widget-result.json` files are not imported. To re-enable an old conversation, send one task via the target window's Custom → Send to conversation action. Later edits in that conversation may reuse the binding. Manually closing/replacing content revokes it; existing mistakenly mounted tabs must be closed once. Shared-folder projects can still overwrite the same artifact if explicitly told to write the same physical file.
 - The control room monitors projects that are **bound** to a conversation; unbound projects show as idle
 
 ---

@@ -3,13 +3,14 @@ import { test } from 'node:test'
 import { createRequire } from 'node:module'
 import { runInNewContext } from 'node:vm'
 import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 
 const require = createRequire(new URL('../01_content/package.json', import.meta.url))
-const { buildSync } = require('esbuild')
+const { buildSync, transformSync } = require('esbuild')
 const code = buildSync({ entryPoints: [fileURLToPath(new URL('../01_content/src/client/sessionDetails.ts', import.meta.url))], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text
 const module = { exports: {} }
 runInNewContext(code, { module, exports: module.exports })
-const { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession } = module.exports
+const { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } = module.exports
 const msg = (text, type = 'assistant/message') => ({ type: 'event', event: { type, data: { content: [{ type: 'text', text }] } } })
 
 test('preview filters code and joins final text blocks, without mutating events', () => {
@@ -141,4 +142,182 @@ test('session creation failure is propagated without a second create attempt', a
   const sessions = { using() {}, async create() { calls++; throw new Error('workspace attach failed') } }
   await assert.rejects(createHostSession(sessions, { async create() { return { workspaceId: 'ws' } } }, { cwd: 'C:/path' }), /workspace attach failed/)
   assert.equal(calls, 1)
+})
+
+test('explicit Ungrouped preserves project cwd and does not create or reuse a workspace', async () => {
+  const options = { cwd: 'C:/fixture/Projects', sessionId: 'ungrouped' }
+  const sessions = { using() {}, async create(value) { assert.equal(value, options); return 's' } }
+  const workspaces = new Proxy({}, { get() { assert.fail('Ungrouped must not inspect workspace services') } })
+  assert.equal(await createHostSession(sessions, workspaces, options, 'none'), 's')
+  assert.deepEqual(options, { cwd: 'C:/fixture/Projects', sessionId: 'ungrouped' })
+})
+
+test('Ungrouped without a project directory does not initialize the default workspace', async () => {
+  const sessions = { using() {}, async create(options) { assert.deepEqual({ ...options }, {}); return 's' } }
+  assert.equal(await createHostSession(sessions, null, {}, 'none'), 's')
+})
+
+test('legacy Ungrouped preserves cwd and grouping is never sent as a host API parameter', async () => {
+  const sessions = { async create(options) { assert.deepEqual({ ...options }, { cwd: '/fixture/project' }); return 's' } }
+  assert.equal(await createHostSession(sessions, null, { cwd: '/fixture/project' }, 'none'), 's')
+})
+
+test('contradictory Ungrouped plus workspace and failed Ungrouped creation do not regroup or retry', async () => {
+  let calls = 0
+  const sessions = { using() {}, async create() { calls++; throw new Error('create refused') } }
+  await assert.rejects(createHostSession(sessions, null, { workspaceId: 'ws' }, 'none'), /ungrouped session cannot/)
+  assert.equal(calls, 0)
+  await assert.rejects(createHostSession(sessions, null, { cwd: '/fixture' }, 'none'), /create refused/)
+  assert.equal(calls, 1)
+})
+
+const indexSource = readFileSync(new URL('../01_content/src/client/index.tsx', import.meta.url), 'utf8')
+function sourceFunction(source, startText, endText, name, bindings) {
+  source = source.replace(/\r\n/g, '\n')
+  const start = source.indexOf(startText)
+  assert.ok(start >= 0)
+  const end = source.indexOf(endText, start)
+  assert.ok(end > start)
+  const code = transformSync(source.slice(start, endText === '\n}\n' ? end + 2 : end).replace(/^export /, '') + '\nexport { ' + name + ' }', { loader: 'tsx', format: 'cjs', jsxFactory: 'h', jsxFragment: 'Fragment' }).code
+  const module = { exports: {} }
+  runInNewContext(code, { module, exports: module.exports, ...bindings })
+  return module.exports[name]
+}
+
+test('actual custom-window creation forwards Ungrouped and project cwd through the host helper', async () => {
+  const calls = []
+  const create = sourceFunction(indexSource, 'export async function createCustomSession(', '\n/** 把自定义需求', 'createCustomSession', {
+    sessionBridge: { sessions: { using() {}, async create(opts) { calls.push({ ...opts }); return 'synthetic' } }, workspaces: new Proxy({}, { get() { assert.fail('no workspace for explicit Ungrouped') } }) },
+    createHostSession, prepareWidgetTask: () => [], buildWindowTaskText: () => 'synthetic task', ensureSessionPreset: async () => {}, ensureSessionModel: async () => {},
+    markPluginSessionOpen: () => {}, clientCtx: {}, openHostSession: async () => {}, promptIntoSession: async () => {},
+  })
+  await create('p', 'project', 'synthetic', { kind: 'none' }, '', 'C:/fixture/Projects')
+  assert.deepEqual(calls, [{ cwd: 'C:/fixture/Projects' }])
+})
+
+test('blank-session restriction only applies to explicit Ungrouped on the retained-scope host', () => {
+  assert.equal(blankSessionNeedsWorkspace({ using() {} }, 'none'), true)
+  assert.equal(blankSessionNeedsWorkspace({ using() {} }, 'auto'), false)
+  assert.equal(blankSessionNeedsWorkspace({}, 'none'), false)
+  assert.equal(blankSessionNeedsWorkspace(null, 'none'), false)
+})
+
+function controlRoomFixture({ modern = true, mode = 'none', workspaceId = '' } = {}) {
+  const calls = [], effects = [], errors = []
+  const sessions = { async create(options) { calls.push({ ...options }); return 'synthetic' } }
+  if (modern) sessions.using = () => {}
+  const create = sourceFunction(indexSource, '  const bindConsoleNew = async () => {', '\n  actionsRef.current', 'bindConsoleNew', {
+    sessionBridge: { sessions, workspaces: new Proxy({}, { get() { assert.fail('must not silently register a workspace') } }) },
+    createHostSession, blankSessionNeedsWorkspace, consoleMode: mode, consoleWsId: workspaceId, consoleParent: '', consoleName: '', CONSOLE_ID: 'wt-console',
+    projectsRef: { current: { projects: { folders: {} } } }, setConsoleBusy: (value) => effects.push(['busy', value]), setConsoleErr: (value) => errors.push(value),
+    ensureSessionPreset: async () => effects.push('preset'), ensureSessionModel: async () => effects.push('model'), markPluginSessionOpen: () => effects.push('mark'),
+    persistProjects: () => effects.push('bind'), setConsoleBind: () => effects.push('close'), openConsole: () => effects.push('open'),
+  })
+  return { create, calls, effects, errors }
+}
+
+test('actual control-room handler rejects a modern blank Ungrouped session before any side effects', async () => {
+  const f = controlRoomFixture()
+  await f.create()
+  assert.deepEqual(f.calls, [])
+  assert.deepEqual(f.effects, [])
+  assert.deepEqual(f.errors, [])
+})
+
+test('actual control-room handler preserves legacy Ungrouped creation', async () => {
+  const f = controlRoomFixture({ modern: false })
+  await f.create()
+  assert.deepEqual(f.calls, [{}])
+  assert.ok(f.effects.includes('open'))
+  assert.deepEqual(f.errors, [false])
+})
+
+test('actual control-room handler preserves the explicitly chosen modern workspace', async () => {
+  const f = controlRoomFixture({ mode: 'existing', workspaceId: 'chosen-workspace' })
+  await f.create()
+  assert.deepEqual(f.calls, [{ workspaceId: 'chosen-workspace' }])
+  assert.ok(f.effects.includes('bind'))
+  assert.ok(f.effects.includes('open'))
+  assert.deepEqual(f.errors, [false])
+})
+
+test('actual control-room handler rejects an empty existing-group selection rather than defaulting', async () => {
+  for (const modern of [true, false]) {
+    const f = controlRoomFixture({ modern, mode: 'existing' })
+    await f.create()
+    assert.deepEqual(f.calls, [])
+    assert.deepEqual(f.effects, [])
+    assert.deepEqual(f.errors, [true])
+  }
+})
+
+test('actual control-room JSX exposes the restriction, disables creation and includes an empty group option', () => {
+  const source = indexSource.replace(/\r\n/g, '\n')
+  const start = source.indexOf('<div className="dsh-wt_consoleBindCol dsh-wt_consoleBindColNew">')
+  const end = source.indexOf('\n          </div>\n        </div>\n      )}', start)
+  assert.ok(start >= 0 && end > start)
+  const code = transformSync('export const render = () => (' + source.slice(start, end) + ')', { loader: 'tsx', format: 'cjs', jsxFactory: 'h', jsxFragment: 'Fragment' }).code
+  const h = (type, props, ...children) => ({ type, props: { ...props, children } })
+  const find = (node, match) => {
+    if (!node || typeof node !== 'object') return null
+    if (match(node)) return node
+    for (const child of Array.isArray(node) ? node : node.props?.children ?? []) {
+      const found = find(child, match)
+      if (found) return found
+    }
+    return null
+  }
+  for (const [modern, mode, workspaceId, blocked] of [[true, 'none', '', true], [false, 'none', '', false], [true, 'existing', '', true], [true, 'existing', 'chosen', false]]) {
+    const sessions = modern ? { using() {} } : {}
+    const consoleNeedsWorkspace = sourceFunction(source, '  const consoleNeedsWorkspace =', '\n\n', 'consoleNeedsWorkspace', { sessionBridge: { sessions }, consoleMode: mode, blankSessionNeedsWorkspace })
+    const module = { exports: {} }
+    runInNewContext(code, { module, exports: module.exports, h, Fragment: Symbol('fragment'), t: key => key,
+      consoleMode: mode, consoleWsId: workspaceId, consoleNeedsWorkspace, consoleBusy: false, consoleErr: false,
+      consoleParent: '', consoleName: '', listWorkspaces: () => [{ id: 'chosen', title: 'fixture' }], bindConsoleNew: () => {},
+      setConsoleMode: () => {}, setConsoleWsId: () => {}, setConsoleParent: () => {}, setConsoleName: () => {},
+    })
+    const tree = module.exports.render()
+    assert.equal(find(tree, node => node.props?.className === 'dsh-wt_consoleCreateBtn').props.disabled, blocked)
+    assert.equal(Boolean(find(tree, node => node.props?.className === 'dsh-wt_consoleHint')), modern && mode === 'none')
+    if (mode === 'existing') assert.ok(find(tree, node => node.type === 'option' && node.props.value === '' && node.props.children.includes('console.chooseGroup')))
+  }
+})
+
+test('actual group picker ignores a delayed default after the user explicitly selects Ungrouped', async () => {
+  const source = readFileSync(new URL('../01_content/src/client/split.tsx', import.meta.url), 'utf8')
+  let resolveGroups
+  const groupPromise = new Promise((resolve) => { resolveGroups = resolve })
+  const states = [], refs = [], effects = []
+  let stateIndex = 0, refIndex = 0, initial = true
+  const SelectPop = () => {}
+  const h = (type, props, ...children) => ({ type, props: { ...props, children } })
+  const custom = { getProjects: () => [{ id: 'p', name: 'project' }], currentProjectId: () => 'p', getWorkspaces: () => [{ id: 'ws', title: 'Projects', sessionIds: ['current'] }], getSessions: () => groupPromise }
+  const pane = sourceFunction(source, 'function CustomPane(', '\n}\n', 'CustomPane', {
+    window: {}, splitEnv: { custom }, SelectPop, h, Fragment: Symbol('fragment'), T: (key) => key,
+    useState(value) {
+      const index = stateIndex++
+      if (!(index in states)) states[index] = typeof value === 'function' ? value() : value
+      return [states[index], (next) => { states[index] = typeof next === 'function' ? next(states[index]) : next }]
+    },
+    useRef(value) { const index = refIndex++; return refs[index] ??= { current: value } },
+    useEffect(fn) { if (initial) effects.push(fn) },
+  })
+  const render = () => { stateIndex = 0; refIndex = 0; return pane({}) }
+  const pickerIn = (node) => {
+    if (!node || typeof node !== 'object') return null
+    if (node.type === SelectPop && node.props.placeholder === 'custom.group') return node
+    for (const child of Array.isArray(node) ? node : node.props?.children ?? []) {
+      const picker = pickerIn(child)
+      if (picker) return picker
+    }
+    return null
+  }
+  render(); initial = false
+  effects.forEach((fn) => fn())
+  states[3] = 'new'
+  pickerIn(render()).props.onChange('__none')
+  resolveGroups({ groups: [{ title: 'Projects', sessions: [{ id: 'current', title: 'current', isCurrent: true }] }] })
+  await groupPromise
+  await Promise.resolve()
+  assert.equal(pickerIn(render()).props.value, '__none')
 })

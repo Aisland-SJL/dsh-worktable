@@ -3,6 +3,8 @@
 > 版本：v0.2 草案 · 日期：2026-08-16 · 状态：v2 已实现并验收；§12 多项目分栏框架（v3）与 §13 乐高式工作区框架（v4）设计定案、待实现
 > 关联项目：dsh-travelatlas（第一个入驻项目）、上游参考 dsh-reminder（文件夹结构）
 
+> 文档边界：§3/§9–§13 包含早期目标、历史验收表与设计草案，不是当前版本全部实现的规格书。当前 v0.4.0 的安装、兼容与验证状态以 README / 包内 README 为准；§6/§8 为当前架构与权限说明。
+
 ## 1. 项目定位
 
 **dsh-worktable 是 DeepSeek Harness Web GUI 的一个「工作台」容器插件**：在左侧侧边栏的「工作区」
@@ -156,10 +158,10 @@ ctx.slots.register({
 ## 6. 架构与技术方案
 
 - 插件包：`01_content/`（dsh.plugin.json + cordis.patch.yml + build.mjs，参照 dsh-travelatlas / dsh-usage）；
-- 服务端：最小 cordis 插件，注册 `GET /api/worktable/health`（`inject: ['webServer']`），无业务路由；
+- 服务端：Cordis 插件，`inject: ['webServer','sessions']`；`/api/worktable/*` 包含 health、fs、git、file、write、site、mkdir、workspaces、template 等业务路由，`/api/worktable/term` 为终端 WebSocket。数据目录由官方 home-paths（可解析时）或无循环 baseDshHome 兜底定位，不写死 ~/.dsh。
 - 客户端：单文件 CJS（`window.__ModuleLoader__.load` 握手），external react / @deepseek-ai/*；
   - 注入座位：`sidebar.footer.action`（order 20，位于 dsh-usage 之后）；
-  - 服务注入：`['slots','locale']`（locale 词典见 §5.7；宿主缺席时回退 zh 词典）；
+  - 服务注入：`['slots','locale','sessions','conversation','workspaces']`；新版可选服务经 `ctx.get` 探测，缺席时保留旧版分支；locale 缺席回退 zh。Desktop 的 platform 仍为 web，终端地址经 `hostTransport.ts` 从宿主 transport 取得。
   - 图标为 emoji 字符（🔍/☰/+/≡）；
   - 排序机制：owner props 下发 order 序列，卡片以 CSS order 参与排序（渲染器 display:contents 锚点已核实，见 §5.3）；
   - 子座位注册跟踪：apply 中 `ctx.slots.subscribe` + `entries()` 维护模块级 id 序列；
@@ -176,13 +178,15 @@ ctx.slots.register({
     - views：入驻项目与「控制室」（wt-console）的视图覆盖（LayoutSpec）；
     - bindings：项目 → 绑定会话（含 wt-console 管理对话）；
     - folders：项目 → 项目文件夹（含 wt-console）；
+  - 自动挂载 v2：`dsh.worktable.widgetBindings.v2` / `pendingMount.v2` / `mountedWidget.v2`
+    （后两者同为 dsh.worktable 前缀）；分别记录归属、待补挂与已消费结果，结构及迁移见 §14。
   - `dsh.worktable.notifyAck.v1`：会话 id → `done` / 旧版 `need` / `need:` 加排序后的待决身份集合；
     新版身份仅含父/子会话 id、kind 与 opaque key，不含正文、答案或凭据；同一问题刷新后仍可确认，
     替换问题必须重新点亮。旧无 key 主机保留布尔状态退路，无法区分无 key 的连续替换。
   - 卡片上报的 meta 注册表仅存内存，不持久化；
-  - 更新检查：`dsh.worktable.lastUpdateCheck.v1`（上次成功检查时间戳，节流一天一次）、
+  - 更新检查：`dsh.worktable.lastUpdateCheck.v1`（一天节流时间戳：控制室请求前写入，设置面板获得结果后写入）、
     `dsh.worktable.skipVersion.v1`（忽略的版本号）、`dsh.worktable.updateCheck.v1`（自动检查开关，'0'=关）、
-    `dsh.worktable.updateCache.v1`（公告页缓存 {status,info}）；控制室第 5 键「更新公告」与设置面板共用这些键；
+    `dsh.worktable.updateCache.v1`（仅控制室公告页缓存 {status,info}）；两入口共用前三键，缓存键不共用；
   - 媒体库（自定义背景）：IndexedDB `dsh-worktable/photoRecords`（id/createdAt/kind/blob/order，v2）；
     首次使用预置两张默认图（defaultBg.ts SVG 极光 + waveBg.ts JPEG），标记 `dsh.worktable.defaultBgSeeded.v1`；
 - 样式：暗色优先，跟随 `--dsw-alias-*` 设计变量（与 dsh-usage / dsh-travelatlas 一致）。
@@ -198,10 +202,11 @@ ctx.slots.register({
 
 ## 8. 隐私与安全
 
-- 无个人数据采集；所有状态仅存 localStorage；
-- 搜索仅在本机过滤项目名；
-- 不读写任何工作区文件、不请求任何网络资源（除插件自身静态资源）。
-- 更新检查为可关闭的只读 GET（GitHub Releases API，自动每天最多一次 + 手动「立即检查」），不上传任何数据。
+- 不新增分析上报服务；项目/布局/绑定存 localStorage，媒体存 IndexedDB，网页与桌面来源各自独立。搜索在本机过滤项目名。
+- 文件窗、编辑保存、mkdir、站点与 widget 产物握手会读写配置的项目目录；workspaces 路由读取宿主工作区数据，部分读取由加载/项目变化/会话完成自动触发。
+- 更新检查为可关闭的 GitHub Releases 只读 GET，不携带会话内容；其余通信包括宿主 API/WebSocket 与网页窗加载内容自身的请求。不能概括为「不联网」。
+- git 状态与交互式终端具有命令执行能力；终端继承宿主完整环境变量，用户命令可以读写文件、联网。插件不专门提取/存储/上传凭据，但不能保证终端绝不接触敏感信息。完整权限与失败边界见 `01_content/README.md`，不作安全保证。
+- 新版控制室不创建未分组空会话（宿主原生输入区禁用）；由用户明确选分组/现有对话，不代替选择、不自动发送激活消息。自定义窗口的显式未分组只传 cwd，不自动登记工作区；已有会话不迁移。
 
 ## 9. 验收清单（v1）
 
@@ -445,4 +450,151 @@ type SplitPane = {
 - §12 的 openSplit 声明式多栏并入本框架：项目预设布局 = 一份固定 LayoutSpec，
   用户自建布局 = 同一引擎的运行时产物，共用 tiling 引擎与持久化；
 - 本地快捷方式、接入指引保留于「+」面板第二入口。
+
+## 14. 当前实现参考（由规则手册迁入，v0.4.0）
+
+以下为界面、状态与产物协议的实现细节，供改动对应组件时对照源码；约束与验证入口见 AGENTS.md，发布状态见 README。0.2 导航使用 openHostSession，新旧 API 桥接见 sessionCompat.ts/sessionDetails.ts；不要将旧接口示例当作通用公开 API。
+
+- **新会话预设修复**：新建会话（createCustomSession / bindConsoleNew）创建后调用
+  ensureSessionPreset——用宿主 api.agentPresets.list/select 显式应用「部署默认预设」
+  （isDefault ?? 首个，失败逐个尝试其余预设；select 仅对 blank 会话生效）。
+- **新会话模型修复（真根因）**：会话级模型选择独立于预设、随默认选择持久化——用户删掉
+  provider 后新会话继承失效选择，prompt 报 model-unavailable。ensureSessionModel：
+  ① 无条件继承「当前会话」正在用的模型（用户控制用哪个就用哪个，相同则跳过）；
+  ② 无当前会话且新会话不可用时 → 最近会话众数 → 失效选择的家族词匹配 → 目录首个。
+  session.selectModel 同时把新选择存为默认（继承的 Pro 会写回默认）。失败静默、缺 API 跳过。
+- **对话绑定**：projects.v1.bindings = { 项目id → 会话id }；打开项目时经 openHostSession
+  切到绑定会话（openSplit / DOM 桥两处入口；新 uiWorkspace、旧 sessions.open）；未绑定/解绑 = 不切换。
+- **项目×对话联动**：打开项目记录「打开前会话」（projectAttachRef.sessionId）；项目打开期间切到
+  非绑定会话 = 自动关项目（suppressRestoreRef 跳过回切）；✕/反选关项目 = 回切「打开前会话」。
+  未绑定项目的归属会话 = 打开前会话。
+  **例外**：插件自身经 openHostSession 发起的会话切换（新建对话、发送到会话）不得触发
+  自动关项目——createCustomSession/sendCustomToSession 用 markPluginSessionOpen 豁免
+  （pluginOpenedSessionsRef），用户要继续在项目里跟新对话沟通；同时 CustomPane 在发送成功后
+  调用 autoBind：项目未绑定则自动绑定到新建/选中的会话。
+
+- **项目文件夹**：projects.v1.folders = { 项目id → 绝对路径 }；新建项目强制填写（父目录必填，
+  文件夹名留空 = 用项目名），保存时走 /api/worktable/mkdir 建目录；绑定面板可改。自定义窗口
+  新建会话（未选分组时）用 sessions.create({cwd: 项目文件夹})，提示词携带文件夹与「所有产出
+  放进该文件夹」指令——用户要求项目产出文件不得落到默认位置。
+
+- **窗口任务提示词**：buildWindowTaskText 统一组装（窗口身份「项目+窗口N」+ 项目文件夹 +
+  插件知识包）；知识包注明「不要重新侦察插件源码」，改提示词时保持这个原则。
+
+- **自动挂载 v2（0.4.0 的项目归属协议）**：项目名称和文件夹均不是身份，布局用独立 projectId；
+  「自定义」任务发送前由 WidgetMountRegistry 登记 projectId/paneId/bindingId/sessionId/folder。
+  提示词为每个可参与窗口给出专属结果路径：
+  `.dsh-worktable/project-<encodeURIComponent(projectId)>/pane-<encodeURIComponent(paneId)>-<bindingId>.json`，
+  路径相对项目目录；单文件只接受 `{version:2,projectId,paneId,bindingId,window,path,kind}`，
+  kind 为 html/url/file，产物相对路径仍按项目目录解析。多窗分别写各自结果文件，不接收旧数组或无归属对象。
+  登记必须成功持久化才发送；选中的窗格更新 bindingId，未登记窗格可参与同一批任务，
+  已手动撤销的其他窗格不自动复活；提示词仅提供本次 sessionId 的有效绑定，不携带其他会话的清单。
+  窗口编号用于提示词，实际挂载按稳定 paneId 查当前位置，
+  无效窗口/身份不回退窗口1；不同项目即使名称/目录相同，也不共用结果入口。
+  启动仅扫描仍有效的已登记结果；会话完成边沿只读取相同 projectId 且相同 sessionId 的绑定（不证明任务成功），
+  同一会话后续修改继续更新同一结果文件。新完成强制刷新同名作品，普通启动跳过已消费的相同结果。
+  读取后必须复验组件存活、最新读取序号、当前项目目录/布局/关联；目录变更、项目重绑、
+  布局修改、项目删除及手动关闭/替换/移动标签会撤销相应关联，迟到旧结果不得改回窗口。
+  **持久化**：项目/视图原有键保留；新增 `dsh.worktable.widgetBindings.v2` 登记关联、
+  `dsh.worktable.pendingMount.v2` 保存待补挂的 binding、`dsh.worktable.mountedWidget.v2` 保存已消费结果。
+  项目关闭时只存 binding；重新打开须重读专属文件并复验身份，不使用缓存内容或旧 row/index。
+  HTTP/读取失败保留待补挂记录，下次打开可重试；仅成功挂载后清除。
+  挂载经 splitStore.lockPane 清空该窗格标签、设唯一产物并通过 onSpecMutated 保存；旧已保存窗口仍恢复。
+  **旧协议与限制**：不执行 v1 待挂载索引、不扫描根目录旧 widget-result.json；不删除旧文件或误挂标签。
+  旧会话可从目标窗口「自定义 → 发送到会话」发一次任务建立新关联。`.dsh-worktable/` 仅存握手元数据，
+  不复制 DSH 数据；项目隔离不是文件系统沙箱，多项目主动写同一实际文件仍可冲突。
+  2026-08-18 的旧握手记录属于历史实现，当前协议以本节为准。提示词不得仅凭写文件就宣称页面已挂载。
+
+- **原生皮肤模板**：01_content/template/dshell.css + dshell.html（esbuild text loader 嵌入服务端
+  bundle，/api/worktable/template 路由下发）；知识包要求产出 HTML 一律引用该样式表，组件类
+  参考模板。新增组件样式只加到 dshell.css，保持单一来源。
+
+- **任务完成/待决提醒镜像**：绑定会话在宿主快照 byId 里 completed=true → 项目卡双圆点变
+  绿色发光（data-bound=done）；pendingInteraction != null → 黄色发光（data-bound=need）；
+  点开项目 = ack（notifyAck.v1 按会话存状态）恢复常态实心。数据源 = sessionsSnapshotStore
+  （syncSessionScope 写入完整快照并通知监听者）；跨状态（done↔need）会重新点亮。
+  **工作中（busy）**：byId[sid].running === true → data-bound=busy，蓝色 #4f8ef7 发光 +
+  dsh-wt-busyA/B 关键帧两圆交替亮灭（对应 DSH 转圈标记）；优先级 need > done > busy——等待判断时 pendingInteraction 与 running 同时为真，
+  原生 UI 以黄点优先，镜像必须一致；busy 无需 ack，running 变 false 自动切换。
+  **子代理聚合**：待决状态常挂在子代理会话上（父会话只有 running）——bindNotifyMap 用
+  collectKids（byId.parentId + subagentsByParent 双通道）聚合父会话及其子代理的 pending；
+  会话面 binding(id).session.getSnapshot().pending 非空也判 need（列表不映射时的兜底）；
+  ackProjectNotify 同步 ack 子代理。
+  **ack 生命周期**：新版按父/子会话的 opaque pending key+kind 集合保存 `need:...`，不保存问题正文/答案；
+  同为 need 的问题替换也重新点亮，排序/重复目录不触发误亮。旧无 key 主机继续存 need，无法识别无 key 的直接替换。
+  状态/身份转移清旧 ack 时同步清除本次读取副本；点开确认同时记录已见身份，防下一次渲染反清刚保存的 ack。
+
+- **「工作台」控制室项目（默认自带）**：
+  - 固定 id `wt-console`（CONSOLE_ID），卡片恒排项目列表第一位（order 0）、不可删除
+    （不进设置管理列表 + removeProject 兜底拒绝）；图标 🖥️，名称走 locale console.name。
+  - 点开：已绑定 → openConsole（默认布局 buildConsoleSpec：单一大窗格 content
+    {kind:'builtin',type:'console'} + 右侧对话，spec 持久化在 views['wt-console']）；
+    未绑定 → 强制绑定弹窗（左「加入现有对话」列表 / 右「新建对话」：分组 无/现有/新建，
+    仅在宿主允许且用户分组选择有效时创建空会话并绑定；DSH 0.2 未分组空会话提示并禁用创建，不改组、不发激活消息）。绑定也走 projects.v1.bindings。
+  - 控制室面板（split.tsx ConsolePane）：卡片网格每行 3 张、超出换行；每卡 = 图标/名称/
+    状态大字与三色光效（need>done>busy>idle，不过滤 ack，永远显示事实状态）/运行时长
+    （后台任务 JobView.startedAt → 新版 uiConversation 的 chat.legacy.turnTimings → 旧会话面，
+    未加载/无起点不显示时长；不为计时激活 chat 或持有冷会话）/最近消息预览。数据组装
+    = index.tsx getConsoleCards（env.console 注入），刷新走 consoleListeners（项目/会话
+    快照变化推送）+ 面板每秒 tick。
+  - 卡片动作：点卡片 = 打开该项目（openSplit 或入驻项目切绑定对话）；工作台自己的卡片
+    点击无操作。💬 跳转按钮已删除（用户定案无意义）。
+  - 主题：面板三选一开关（图标按钮 🌙/☀️/🖥️，title/aria 保留文字；存 view.v1 consoleTheme）；
+    system 读宿主 html 的 color-scheme（DSH 深色/白色/跟随系统设置都会反映到它）+
+    prefers-color-scheme 兜底；落成 .dsh-wt_console[data-wt-theme=dark|light] 作用域变量
+    --wt-*（宿主不发布 --dsw-alias-*，工作台全站一直靠回退色渲染——控制室自带主题作用域，
+    不受其影响）。
+  - 状态光效（整卡霓虹描边，参考侧栏双圆点发光质感）：工作=蓝色彗星式光点顺时针绕卡旋转
+    （.dsh-wt_consoleCard-busy ::before conic-gradient + @property --consoleAngle +
+    consoleAngleSpin；环 inset -4/padding 4、高亮段 #dcebff→#9cc6ff、filter drop-shadow
+    rgba(140,190,255,.85) 光点自带辉光、外发光双层 10px+34px）；完成=绿光、待决=黄光
+    （-glowDone/-glowNeed：亮色描边 + 双层外发光 + 微弱内辉光；glow 字段 = done/need 且
+    本轮未 ack，点卡片先 onAck 熄光再进入，与提醒 ack 生命周期一致）。
+  - 命名：侧栏区块标题 = 「工作台」（title locale，整个插件）；默认项目卡名与面板标题 =
+    「控制室」（console.name/console.title locale，工作台的控制室）。
+  - 控制室标签不可关：PaneBody 对 content.type==='console' 的标签 locked（不渲染 ✕、
+    禁拖拽）——关掉会退化成窗格选择器，不可逆。
+  - 布局尺度：网格 gap 64px（4 倍间距）不变、max-width 856px 左右居中；卡片 1:1（面积
+    2×边长 1.4，实测 236px：名字 20/状态 22/预览 8.5 四行截断）；标题下横向分隔线；无子代理
+    徽章、无 💬 跳转按钮；网格最后一位恒为「创建卡片」（虚线＋）→ openAddPanel；入口卡无描边。
+  - 背景三选一（data-wt-bg）：纯色/流光/自定义，各自独立记忆——色相/饱和度/明度（-180..180/0..200，纯色随主题默认：深 #0a0d13、浅 #eef1f5）、
+    贴片模糊 B（0-20；预设 纯色0/流光8/自定义8）、网格线不透明度 T（0-30；纯色/流光各自）、
+    流光速度 S（0-100，0=完全不动，默认50=原速，consoleGlowSpeed；--wt-glowScale=50/速度；恢复初始一并复位）、
+    照片网格开关（consoleBgPhotoGrid）+ 网格透明度（consoleBgGridOpacity）；卡片 glass 底含 backdrop-filter blur(var(--wt-cardBlur))。
+  - 自定义背景 = 媒体库（照片+视频）：IndexedDB photoRecords（id/createdAt/kind/blob/order）；
+    首用预置两张默认图（defaultBg.ts SVG 极光 + waveBg.ts JPEG 181KB，标记 defaultBgSeeded.v1）；
+    缩略图类型角标/全行删除/抓手拖拽（槽位制+FLIP，photoStore.reorder）；视频背景双轨首尾帧交叉渐融（ConsoleVideo ≥1.2s 最长2s、备轨就绪才淡入）。
+  - 底部操作台：5 个 ghost 按钮玻璃 dock（主题/形状/背景/每行数量/更新公告）；菜单点选保持打开、点空白关闭；
+    下拉宽度 = dock 总宽 186px（媒体宽版 264px）。
+  - 顶部标题克制：控制室页只保留侧栏入口卡一个「控制室」——分栏标题栏对 wt-console
+    不渲染 title（保留 ⇄/✕）、PaneBody singleConsole 不渲染标签栏；控制项集中在底部操作台 5 键。
+  - 更新公告（第 5 键，反选切换大磁片替代网格视图）：顶部=当前版本/检查更新/自动检查开关；
+    新版本横幅=复制升级指令（点击变绿并提示「请在任意对话中发送」）/查看发布页（蓝 hover）/忽略此版本（红 hover）+
+    CHANGELOG_V030 正文（changelog.ts 纯文本，不做 md 渲染）；
+    检查核心 = updateCheck.ts（updateCache.v1 缓存，与设置面板旧更新卡共用 lastUpdateCheck/skipVersion/updateCheck 键，
+    旧卡暂保留未去重）；铃铛按钮发现新版本时右上角琥珀呼吸灯（dockBadge）。
+  - 指哪打哪标注：窗格折叠键旁 annotBtn——蓝泡光标→点选/拖框（小拖=点）→输入→✓ 注入宿主 textarea（不发送，失败回退剪贴板）。
+    payload v3.2：窗口身份（编号+窗格标题+内容类型/URL）+ 主目标（caretPositionFromPoint 取字 + computed style 字号）+ 整行 + 候选；
+    同源 iframe 下钻取字（boxPayload），跨域输出「读取受限」+ src；提示词含「禁止编造，缺失时如实说明，建议截图或视觉模型」；
+    知识包含标注协议行（窗口编号+处理方式）；回退锚点 tag：pre-annotate-v3 / pre-annotate-v3.1 / pre-annotate-v3.2。
+  - 分隔线：DIVIDER=4（分栏可拖分隔条更细）。
+  - 冷会话消息预览：0.2 用 sessions.using 临时持有后读 eventSource 的已加载事件窗口；旧版预热走 face.history({maxMessages:6})
+    （旧版运行期内建方法、非公开接口）；尾部扫 user/message 与 assistant/message 的
+    text 块 → cleanPreviewText（滤除 ```围栏与行内代码、压缩空白；不足 8 字符回退更早消息）→
+    previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s 触发；
+    失败静默回退缓存/内存路径 lastTextOf；预热期间不因自身 retain/release 排入新一轮。拉取是带宽成本不是 Token 成本。
+  - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。
+
+- **更新检查（v0.2.2）**：客户端直连 GitHub Releases API 比版本（只读 GET；自动每天最多
+  一次，手动「立即检查」绕过节流；单次 8s 超时（AbortController）+ 最多 3 次尝试，
+  in-flight 防重入、检查中按钮禁用、设置面板组件卸载后停止重试与状态更新（控制室另见 updateCheck.ts，不外推该守卫）；失败后状态行显示「上次检查未成功」）。
+  状态四态 idle/checking/uptodate/failed；徽标 = 「工作台」标题右侧琥珀呼吸小圆（SVG 同步
+  图标、不显示版本号），仅发现更新时出现；更新卡在设置面板顶部（复制 AI 提示词 + 忽略此
+  版本 + 命令框供终端用户手抄），版本号与自动检查开关在面板底部；设置弹窗右上角 ✕ 关闭、
+  底部防溢出钳制（POP_BOTTOM_MARGIN=12，贴底后向上生长；按钮与开关必须平级防冒泡）。
+  localStorage 键 lastUpdateCheck.v1 / skipVersion.v1 / updateCheck.v1（控制室第 5 键公告页共用，另缓存 updateCache.v1）。
+  **发布纪律**：改动≠发布，只有 tag+Release 才触发提醒；新版本 = 新 tag + 新 Release，每个
+  Release 必须同时附固定名资产 `dsh-worktable.tgz`（供 releases/latest/download 永久链接）
+  与版本化资产。版本注入：build.mjs 把 package.json version 打进 __WT_VERSION__，发版前
+  改 version 再构建；升级动作（执行 add + 重启）永远留给用户或其 Agent，插件不自更新。
 

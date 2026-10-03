@@ -172,6 +172,8 @@ export const zh = {
   'console.groupNone': '无分组（用项目文件夹）',
   'console.groupExisting': '加入现有分组',
   'console.groupNew': '新建分组',
+  'console.chooseGroup': '选择分组…',
+  'console.blankNeedsGroup': '当前 DSH 的未分组空对话无法输入，请选择分组或加入现有对话。',
   'console.newParentPh': '分组父目录，例如 E:\\AI_Workspace',
   'console.newNamePh': '分组文件夹名（将创建并注册）',
   'console.createBind': '新建并绑定',
@@ -234,6 +236,7 @@ export const zh = {
   'update.copyFail': '复制失败，请手动选择文本',
   'update.skipDone': '已忽略此版本（下一版发布时再提醒）',
   'update.upgradeHint': '执行命令后需重启 dsh web 并刷新页面',
+  'update.upgradeHintDesktop': '请使用桌面端自带 CLI；安装前完整退出，完成后手动重新打开桌面端',
 } satisfies Record<string, string>
 
 /** The worktable namespace key union. */
@@ -407,6 +410,8 @@ export const en = {
   'console.groupNone': 'No group (use project folder)',
   'console.groupExisting': 'Join existing group',
   'console.groupNew': 'New group',
+  'console.chooseGroup': 'Choose a group…',
+  'console.blankNeedsGroup': 'Blank ungrouped chats cannot accept input in this DSH. Choose a group or join an existing chat.',
   'console.newParentPh': 'Group parent folder, e.g. E:\\AI_Workspace',
   'console.newNamePh': 'Group folder name (created & registered)',
   'console.createBind': 'Create & bind',
@@ -469,6 +474,7 @@ export const en = {
   'update.copyFail': 'Copy failed — select the text manually',
   'update.skipDone': 'Skipped (will remind on the next release)',
   'update.upgradeHint': 'Run the command, then restart dsh web and refresh',
+  'update.upgradeHintDesktop': 'Use the Desktop bundled CLI; fully quit before installing, then reopen Desktop manually',
 } satisfies Record<WorktableKey, string>
 
 /** Locale namespace id registered under ctx.locale. */

@@ -115,7 +115,7 @@ function resolveDshHomeSafe() {
   cachedDshHome = baseDshHome();
   return cachedDshHome;
 }
-var PLUGIN_VERSION = false ? "dev" : "0.3.4";
+var PLUGIN_VERSION = false ? "dev" : "0.4.0";
 var name = "dsh-worktable";
 var inject = ["webServer", "sessions"];
 var HEALTH_PATH = "/api/worktable/health";
