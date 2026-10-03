@@ -19265,7 +19265,8 @@ function TerminalPane() {
   }
   return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { ref: hostRef, className: "dsh-wt_termHost" });
 }
-var mdRenderer = new MarkdownItCallable({ linkify: true });
+var mdRenderer = new MarkdownItCallable({ linkify: true, html: false });
+mdRenderer.validateLink = (url) => /^(https?:|mailto:|tel:|#|\/)/i.test(String(url).trim());
 var IMAGE_EXTS = /[.](png|jpe?g|gif|webp|svg|bmp|ico)$/i;
 var MD_EXTS = /[.](md|markdown|mdown)$/i;
 function FileViewer(props) {
