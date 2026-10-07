@@ -7919,7 +7919,12 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_annotOk:hover{background:#1d9a55;color:#fff}",
   ".dsh-wt_annotNo:hover{background:#c0392b;color:#fff}",
   ".dsh-wt_collapseBtnCollapsed{color:var(--dsw-alias-label-secondary,#9aa4b2)}",
-  ".dsh-wt_paneFrame{flex:1;width:100%;border:0;background:#010409;min-height:0}",
+  // iframe 画布底色 = 白色（等同普通浏览器标签页的画布）。
+  // 原值 #010409 会在「页面自身不设背景」时透出来把整页染黑——Swagger UI（FastAPI /docs 等）
+  // 恰好不给 html/body 设背景（其 CSS 里 prefers-color-scheme 出现 0 次），子文档画布全透明，
+  // 于是透出这里的底色，表现为「同样网址在独立标签页是白的、在工作台里是黑的」。
+  // 与 color-scheme 无关（实测 iframe/宿主均为 light 时照样黑）。
+  ".dsh-wt_paneFrame{flex:1;width:100%;border:0;background:#fff;min-height:0}",
   // iframe 内容标签：容器 + 右上角常驻刷新按钮
   ".dsh-wt_tabRefresh{flex:none;width:14px;height:14px;padding:0;border:none;border-radius:3px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:10px;line-height:1;cursor:pointer}",
   ".dsh-wt_tabRefresh:hover{color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.08))}",
@@ -17596,6 +17601,8 @@ var splitStore = {
     }
     this.observer?.disconnect();
     this.observer.observe(next);
+    this.yieldObserver?.disconnect();
+    this.yieldObserver.observe(viewArea, { attributes: true, attributeFilter: ["style"] });
     this.refreshGeom();
     this.applyMargin();
     this.notify();
@@ -17627,12 +17634,12 @@ var splitStore = {
     const gap = Math.max(0, colW - chatW) + "px";
     const mt = BAR_H + (hasTop && !chatFull ? topH : 0) + "px";
     const chatLeft = !hasLeft && spec.chatSide === "left";
-    this.lastMarginLeft = hasLeft ? leftW + "px" : chatLeft ? "" : gap;
-    this.lastMarginRight = hasLeft ? "" : chatLeft ? gap : "";
-    this.lastMarginTop = mt;
-    viewArea.style.marginLeft = this.lastMarginLeft;
-    viewArea.style.marginRight = this.lastMarginRight;
+    viewArea.style.marginLeft = hasLeft ? leftW + "px" : chatLeft ? "" : gap;
+    viewArea.style.marginRight = hasLeft ? "" : chatLeft ? gap : "";
     viewArea.style.marginTop = mt;
+    this.lastMarginLeft = viewArea.style.marginLeft;
+    this.lastMarginRight = viewArea.style.marginRight;
+    this.lastMarginTop = viewArea.style.marginTop;
   },
   setChatW(w) {
     const g = this.geom;

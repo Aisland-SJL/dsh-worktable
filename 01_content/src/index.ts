@@ -92,6 +92,22 @@ const TEMPLATE_PREFIX = '/api/worktable/template'
  * 本包经 junction 链接进 profile，普通 import 可能解析不到 profile 级依赖；
  * 同时尝试 junction 路径与 realpath 两条祖先链。
  */
+/**
+ * 宿主运行时自带的 node_modules（Electron 桌面端把 ws / node-pty 随宿主分发）。
+ * link: 安装时插件实体在源码目录（如 F:/Project/...），祖先链上没有任何 profile
+ * 或宿主依赖；此时必须显式探测宿主 app 的 node_modules，否则终端路由拿不到 node-pty
+ * 而静默降级（日志：term deps: ws=ok node-pty=MISSING）。
+ * 返回的目录只做「就地探测」，不再向上走（避免探测次数膨胀）。
+ */
+function hostRuntimeModuleDirs(): string[] {
+  const out: string[] = []
+  try {
+    const rp = (process as any).resourcesPath
+    if (typeof rp === 'string' && rp) out.push(pathResolve(rp, 'app', 'node_modules'))
+  } catch {}
+  return out
+}
+
 /** 依赖探测尝试计数（供测试断言「有界探测、无循环重入」） */
 let loadProbeAttempts = 0
 function loadPkg(pkg: string): any | null {
@@ -109,6 +125,14 @@ function loadPkg(pkg: string): any | null {
       dir = pathResolve(dir, '..')
     }
   }
+  // 宿主运行时目录：只就地探测（桌面端 ws/node-pty 随宿主分发，源码目录祖先链上找不到）
+  for (const nm of hostRuntimeModuleDirs()) {
+    loadProbeAttempts++
+    try {
+      const req = createRequire(pathToFileURL(pathResolve(nm, '__wt_probe__.js')).href)
+      return req(pkg)
+    } catch {}
+  }
   // 兜底：DSH profiles/*/node_modules（按 baseDshHome 解析根目录——不能用 resolveDshHomeSafe，否则与本函数成环）
   try {
     const profilesDir = pathResolve(baseDshHome(), 'profiles')
@@ -121,6 +145,14 @@ function loadPkg(pkg: string): any | null {
         return req(pkg)
       } catch {}
     }
+    // profiles 共享层：profiles/node_modules 本身（上面只扫了 profiles/<名字>/node_modules，
+    // 漏掉了这一层；node-pty 这类宿主级依赖常只在这里）
+    const shared = pathResolve(profilesDir, 'node_modules')
+    loadProbeAttempts++
+    try {
+      const req = createRequire(pathToFileURL(pathResolve(shared, '__wt_probe__.js')).href)
+      return req(pkg)
+    } catch {}
   } catch {}
   return null
 }
