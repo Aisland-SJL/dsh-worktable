@@ -942,6 +942,11 @@ export const splitStore: SplitState = {
     }
     this.observer?.disconnect()
     this.observer.observe(next)
+    // 让位观察器必须跟着换到新锚点：它原先观察的是旧 viewArea（此刻正被恢复成原值），
+    // 不重绑就会盯着一个已经不属于本布局的元素，既漏判新元素的外部改写，
+    // 又可能在旧元素被再次写入时误关。
+    this.yieldObserver?.disconnect()
+    this.yieldObserver.observe(viewArea, { attributes: true, attributeFilter: ['style'] })
     this.refreshGeom()
     this.applyMargin()
     this.notify()
@@ -982,12 +987,16 @@ export const splitStore: SplitState = {
     const gap = Math.max(0, colW - chatW) + 'px'
     const mt = (BAR_H + (hasTop && !chatFull ? topH : 0)) + 'px'
     const chatLeft = !hasLeft && spec.chatSide === 'left'
-    this.lastMarginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
-    this.lastMarginRight = hasLeft ? '' : (chatLeft ? gap : '')
-    this.lastMarginTop = mt
-    viewArea.style.marginLeft = this.lastMarginLeft
-    viewArea.style.marginRight = this.lastMarginRight
+    viewArea.style.marginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
+    viewArea.style.marginRight = hasLeft ? '' : (chatLeft ? gap : '')
     viewArea.style.marginTop = mt
+    // 基线取自 CSSOM 读回值，而不是写入的原始字符串：浏览器会把小数序列化到
+    // 3 位（854.666748046875px → 854.667px）。yieldObserver 用严格相等判断 margin 是否被
+    // 外部改写，若基线存原串，applyMargin 自己写一次就会被误判成他人接管 → 立即 close()
+    // （表现为拖动分隔线时布局自动关闭、调不了大小）。读回值即观察器将看到的值。
+    this.lastMarginLeft = viewArea.style.marginLeft
+    this.lastMarginRight = viewArea.style.marginRight
+    this.lastMarginTop = viewArea.style.marginTop
   },
 
   setChatW(w) {

@@ -193,6 +193,21 @@ if (anchorRun.status !== 0) {
 }
 console.log('[release-prep] split anchor dom tests passed (8 scenarios, on installed artifact)')
 
+// ---------- 5c-2. 分栏 margin 基线回归（拖动分隔线不得自动关闭；分数列宽 / 重锚 / 让位） ----------
+// 评估同一个「安装目录中的最终产物」lib/client.js
+const marginTest = join(HERE, '..', '04_test', 'split-margin.test.mjs')
+if (!existsSync(marginTest)) {
+  console.error('[release-prep] FAIL: split-margin.test.mjs missing')
+  process.exit(1)
+}
+const marginRun = spawnSync(process.execPath, [marginTest, join(inst, 'node_modules', 'dsh-worktable', 'lib', 'client.js')], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (marginRun.status !== 0) {
+  console.error('[release-prep] FAIL: split-margin.test.mjs')
+  console.error(marginRun.stderr || marginRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] split margin baseline tests passed (5 scenarios, on installed artifact)')
+
 // ---------- 5d. 服务端数据目录解析回归（loadPkg ↔ resolveDshHomeSafe 循环调用修复） ----------
 // 评估「安装目录中的最终产物」lib/index.js；官方路径 / 包不可解析兜底 / ~ 与相对路径展开
 const serverHomeTest = join(HERE, '..', '04_test', 'server-home.test.mjs')
@@ -208,6 +223,21 @@ if (serverRun.status !== 0) {
   process.exit(1)
 }
 console.log('[release-prep] server home resolution tests passed (3 scenarios, on installed artifact)')
+
+// ---------- 5e. 终端依赖解析回归（link: 安装下 node-pty/ws 必须在位） ----------
+// 评估同一个「安装目录中的最终产物」lib/index.js；子进程内模拟 Electron 宿主 resourcesPath
+const termDepsTest = join(HERE, '..', '04_test', 'terminal-deps.test.mjs')
+if (!existsSync(termDepsTest)) {
+  console.error('[release-prep] FAIL: terminal-deps.test.mjs missing')
+  process.exit(1)
+}
+const termRun = spawnSync(process.execPath, [termDepsTest, serverSrc], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (termRun.status !== 0) {
+  console.error('[release-prep] FAIL: terminal-deps.test.mjs')
+  console.error(termRun.stderr || termRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] terminal dependency resolution tests passed (2 scenarios, on installed artifact)')
 
 // ---------- 6. 双资产从同一已验证包复制 + SHA-256 ----------
 const outDir = join(HERE, 'dist', 'v' + VERSION)

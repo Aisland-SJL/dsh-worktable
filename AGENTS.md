@@ -59,6 +59,11 @@ node --check lib/index.js
 - **配套检查入口**：`npm run test:gate` = 工厂门禁 10 个失败/正向用例；
   `npm run test:widget` = 项目/会话归属、共目录、延迟结果与补挂重试 26 项回归（执行实际函数，不等于模型生成端到端验收）；
   `node 04_test/anchor-dom.test.mjs [lib/client.js 路径]` = 分栏锚点 8 场景（缺省用工作目录构建产物）；
+  `node 04_test/split-margin.test.mjs [lib/client.js 路径]` = 分栏 margin 基线 5 场景
+  （分数列宽拖动分隔线不得自动关闭 / 顶行高与左列宽 / 外部改写仍须让位 / 换锚点后观察器跟随 / 整数列宽不回归）。
+  **假 DOM 必须模拟 CSSOM 的 3 位小数归一化 + MutationObserver 异步派发**，否则抓不到该类缺陷；
+  **突变体验证法**：把 `applyMargin` 基线改回「写入原串」→ A 必须红；删掉 `syncAnchor` 里的
+  `yieldObserver.observe(viewArea…)` 重绑 → D 必须红；
   `node 04_test/server-home.test.mjs [lib/index.js 路径]` = 数据目录解析 3 组场景（子进程隔离夹具；
   **突变体验证法**：把 loadPkg 兜底的 baseDshHome() 故意改回 resolveDshHomeSafe() 恢复循环，测试必须红）。
   `npm run verify:remote -- --expect-sha <release-prep 输出的 SHA> [tag]` = 发布后只读核对
@@ -91,6 +96,18 @@ node --check lib/index.js
   更换时才更新 saved 原值**，否则关闭时泄漏已应用的 margin/宽度变量。改锚点必须跑
   anchor-dom 8 场景（含 H：0.1.2 零高包装+内部头部）。0.1.2 的 children[0] 是 display:contents
   式零高包装、真实标题栏在内部——不要凭 0.1.1 的结构想当然。
+- **分栏 margin 基线（v0.4.1 红线）**：`applyMargin()` 的 `lastMargin*` 必须取自 **CSSOM 读回值**
+  （`viewArea.style.margin*`），不能存写入前的原始字符串。CSSOM 把小数序列化到 3 位
+  （836.666748046875px → 836.667px），而 `yieldObserver` 用严格相等判断「margin 是否被外部改写」——
+  存原串会让它把自己的写入误判成他人接管并立即 `close()`（症状：拖动聊天/左列/顶行分隔线时工作区自动关闭）。
+  桌面端以 `--force-device-scale-factor=1.5` 运行，`getBoundingClientRect()` 常返回分数量，故几乎必现。
+  另：`syncAnchor()` 换锚点时必须同步重绑 `yieldObserver`（只重绑 ResizeObserver 会漏判新元素）。
+  改动必须跑 `04_test/split-margin.test.mjs` 5 场景 + 两处突变体验证（见上）。
+- **iframe 画布底色（v0.4.1 红线）**：`.dsh-wt_paneFrame` 的 `background` 必须是**白色**（等同普通浏览器标签页画布）。
+  原因：网页自身不设 `html/body` 背景时（如 Swagger UI / FastAPI `/docs`，其 CSS 里 `prefers-color-scheme` 出现 0 次），
+  子文档画布全透明，会**透出 iframe 元素自己的底色**——原值 `#010409`（近黑）把整页染黑，
+  表现为「同一网址独立标签页是白的、工作台里是黑的」。**与 `color-scheme` 无关**：
+  实测 `iframeCS=light` + 宿主 `light` 时照样黑，别再往主题继承方向查（2026-10-07 已证伪并纠正）。
 - **数据目录解析无循环（v0.3.3 红线）**：resolveDshHomeSafe = 官方 @deepseek-ai/dsh-home-paths
   （可用时）→ baseDshHome 兜底；**loadPkg 的 profiles 兜底只能用 baseDshHome，禁止回调
   resolveDshHomeSafe（会成环）**。baseDshHome 规则对齐官方：DSH_HOME 优先、空/纯空白视为未设、
@@ -113,6 +130,16 @@ node --check lib/index.js
 
 ## 旧版 link 加载兼容边界
 
+- **link: 安装下终端依赖必须能解析（v0.4.1 红线）**：`loadPkg` 从「插件自身模块位置」向祖先找 `ws`/`node-pty`。
+  `file:` 模式时插件实体在 profile 的 pnpm 结构内，祖先链能撞到依赖；**`link:` 模式时 realpath 指向源码目录
+  （如 `F:/Project/...`），祖先链上没有任何 profile 或宿主依赖**，于是 `node-pty` 解析失败、终端路由不注册、
+  客户端显示「终端不可用（宿主缺少 node-pty/ws 或连接失败）」。
+  **桌面端宿主依赖的真实位置 = `<安装目录>/resources/app/node_modules`**（Electron 的 `process.resourcesPath`）。
+  因此 `loadPkg` 必须探测①宿主运行时目录 ②`profiles/node_modules` 共享层（原兜底只枚举
+  `profiles/<名字>/node_modules`，恰好漏掉这一层）。改动必须跑 `04_test/terminal-deps.test.mjs` 2 场景；
+  **突变体验证法**：删掉 `hostRuntimeModuleDirs()` 那段 → A 必须红。
+  **排查入口**：宿主日志 `%APPDATA%/DSH Desktop/logs/dsh-*.log` 里插件自报的
+  `term deps: ws=? node-pty=?` 是 ground truth（比 UI 提示更早、更准）。
 - 特定旧版 0.1.1-rc.2 的裸包 import / link peer 解析曾使用上级 node_modules junction 兜底，不是通用修法。
   本机 0.2.0-rc.2 经无旧链接冷启动与真实工作台/控制室检查后已移除该链接，原目标目录保留。
   重新遇到加载失败时先查实际宿主、profile、插件及第一条完整错误；不得直接创建更高层级链接或删除它指向的依赖目录。

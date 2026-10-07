@@ -8,84 +8,84 @@ import { homedir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 // template/dshell.css
-var dshell_default = `/* dsh-worktable \u539F\u751F\u76AE\u80A4 \xB7 DSH \u8BBE\u8BA1\u7CFB\u7EDF\u7EC4\u4EF6\u5E93
-   \u7528\u6CD5\uFF1A<link rel="stylesheet" href="/api/worktable/template/dshell.css">
-   \u6240\u6709\u989C\u8272\u8D70 DSH \u4E3B\u9898\u53D8\u91CF\uFF08--dsw-alias-*\uFF09\uFF0C\u81EA\u52A8\u9002\u914D\u660E\u6697\u4E3B\u9898\u3002 */
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
-body {
-  background: var(--dsw-alias-bg-base, #0b0e14);
-  color: var(--dsw-alias-label-primary, #e6e8eb);
-  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.dshell { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; min-height: 100%; }
-/* \u6587\u5B57\u5C42\u7EA7 */
-.dshell-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--dsw-alias-label-primary, #e6e8eb); }
-.dshell-sub { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary, #9aa4b2); }
-.dshell-muted { color: var(--dsw-alias-label-tertiary, #6b7280); font-size: 11.5px; }
-/* \u5361\u7247 */
-.dshell-card { border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 10px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); padding: 12px 14px; }
-.dshell-card + .dshell-card { margin-top: 10px; }
-/* \u6309\u94AE\uFF08\u7EFF\u8272\u4E3B\u6309\u94AE / \u5E7D\u7075\u6309\u94AE / \u5371\u9669\uFF09 */
-.dshell-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid transparent; background: #3fb950; color: #0b0e14; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.dshell-btn:hover { filter: brightness(1.08); }
-.dshell-btnGhost { background: transparent; border-color: var(--dsw-alias-border-l1, #262b36); color: var(--dsw-alias-label-secondary, #9aa4b2); }
-.dshell-btnGhost:hover { color: var(--dsw-alias-label-primary, #e6e8eb); border-color: var(--dsw-alias-border-l2, #3a4150); }
-.dshell-btnDanger { background: transparent; border-color: #f85149; color: #f85149; }
-/* \u72B6\u6001\u5FBD\u6807\uFF08\u5706\u70B9 + \u6587\u5B57\uFF1B\u7EFF=\u5DF2\u5B8C\u6210 \u9EC4=\u5F85\u529E/\u5F85\u53D1\u5E03 \u7070=\u672A\u5F00\u59CB\uFF09 */
-.dshell-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l1, #262b36); font-size: 11.5px; color: var(--dsw-alias-label-secondary, #9aa4b2); background: var(--dsw-alias-fill-l1, rgba(255,255,255,.03)); }
-.dshell-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--dsw-alias-label-tertiary, #6b7280); }
-.dshell-badgeDone { color: #3fb950; border-color: rgba(63,185,80,.4); }
-.dshell-badgeDone::before { background: #3fb950; box-shadow: 0 0 5px #3fb950; }
-.dshell-badgeWait { color: #d29922; border-color: rgba(210,153,34,.4); }
-.dshell-badgeWait::before { background: #d29922; box-shadow: 0 0 5px #d29922; }
-.dshell-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-label-tertiary, #6b7280); }
-.dshell-dotDone { background: #3fb950; box-shadow: 0 0 5px #3fb950; }
-.dshell-dotWait { background: #d29922; box-shadow: 0 0 5px #d29922; }
-/* \u6807\u7B7E\u9875 */
-.dshell-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dsw-alias-border-l1, #262b36); }
-.dshell-tab { padding: 7px 12px; font-size: 12.5px; color: var(--dsw-alias-label-secondary, #9aa4b2); cursor: pointer; border: none; background: none; font: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-.dshell-tabOn { color: var(--dsw-alias-label-primary, #e6e8eb); border-bottom-color: var(--dsw-alias-state-accent-primary, #4f8ef7); }
-/* \u5217\u8868 */
-.dshell-list { display: flex; flex-direction: column; gap: 6px; }
-.dshell-listItem { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 8px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); cursor: pointer; }
-.dshell-listItem:hover { border-color: var(--dsw-alias-border-l2, #3a4150); background: var(--dsw-alias-fill-l1, rgba(255,255,255,.05)); }
-.dshell-listItemTitle { font-size: 12.5px; color: var(--dsw-alias-label-primary, #e6e8eb); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dshell-listItemMeta { flex: none; font-size: 11px; color: var(--dsw-alias-label-tertiary, #6b7280); }
-/* \u7F51\u683C / \u7EDF\u8BA1 */
-.dshell-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.dshell-stat { padding: 10px 12px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 10px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); }
-.dshell-statLabel { font-size: 11px; color: var(--dsw-alias-label-secondary, #9aa4b2); }
-.dshell-statValue { font-size: 20px; font-weight: 600; color: var(--dsw-alias-label-primary, #e6e8eb); }
-.dshell-statDelta { font-size: 11px; color: #3fb950; }
-/* \u8FDB\u5EA6\u6761 */
-.dshell-progress { height: 6px; border-radius: 3px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.06)); overflow: hidden; }
-.dshell-progressBar { height: 100%; border-radius: 3px; background: #3fb950; }
-/* \u8F93\u5165 */
-.dshell-input, .dshell-textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 8px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.03)); color: var(--dsw-alias-label-primary, #e6e8eb); font: inherit; font-size: 12.5px; outline: none; }
-.dshell-input:focus, .dshell-textarea:focus { border-color: var(--dsw-alias-state-accent-primary, #4f8ef7); }
-/* \u8868\u683C */
-.dshell-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.dshell-table th, .dshell-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--dsw-alias-border-l1, #262b36); }
-.dshell-table th { color: var(--dsw-alias-label-secondary, #9aa4b2); font-weight: 500; }
-/* \u952E\u503C\u5BF9 */
-.dshell-kv { display: flex; flex-direction: column; gap: 6px; }
-.dshell-kvRow { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
-.dshell-kvKey { color: var(--dsw-alias-label-secondary, #9aa4b2); }
-.dshell-kvValue { color: var(--dsw-alias-label-primary, #e6e8eb); text-align: right; }
-/* \u5206\u5272\u7EBF */
-.dshell-divider { height: 1px; background: var(--dsw-alias-border-l1, #262b36); margin: 6px 0; }
-/* \u6EDA\u52A8\u6761 */
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
+var dshell_default = `/* dsh-worktable \u539F\u751F\u76AE\u80A4 \xB7 DSH \u8BBE\u8BA1\u7CFB\u7EDF\u7EC4\u4EF6\u5E93\r
+   \u7528\u6CD5\uFF1A<link rel="stylesheet" href="/api/worktable/template/dshell.css">\r
+   \u6240\u6709\u989C\u8272\u8D70 DSH \u4E3B\u9898\u53D8\u91CF\uFF08--dsw-alias-*\uFF09\uFF0C\u81EA\u52A8\u9002\u914D\u660E\u6697\u4E3B\u9898\u3002 */\r
+:root { color-scheme: dark; }\r
+* { box-sizing: border-box; }\r
+html, body { margin: 0; padding: 0; }\r
+body {\r
+  background: var(--dsw-alias-bg-base, #0b0e14);\r
+  color: var(--dsw-alias-label-primary, #e6e8eb);\r
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;\r
+  font-size: 13px;\r
+  line-height: 1.6;\r
+}\r
+.dshell { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; min-height: 100%; }\r
+/* \u6587\u5B57\u5C42\u7EA7 */\r
+.dshell-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--dsw-alias-label-primary, #e6e8eb); }\r
+.dshell-sub { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary, #9aa4b2); }\r
+.dshell-muted { color: var(--dsw-alias-label-tertiary, #6b7280); font-size: 11.5px; }\r
+/* \u5361\u7247 */\r
+.dshell-card { border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 10px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); padding: 12px 14px; }\r
+.dshell-card + .dshell-card { margin-top: 10px; }\r
+/* \u6309\u94AE\uFF08\u7EFF\u8272\u4E3B\u6309\u94AE / \u5E7D\u7075\u6309\u94AE / \u5371\u9669\uFF09 */\r
+.dshell-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid transparent; background: #3fb950; color: #0b0e14; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }\r
+.dshell-btn:hover { filter: brightness(1.08); }\r
+.dshell-btnGhost { background: transparent; border-color: var(--dsw-alias-border-l1, #262b36); color: var(--dsw-alias-label-secondary, #9aa4b2); }\r
+.dshell-btnGhost:hover { color: var(--dsw-alias-label-primary, #e6e8eb); border-color: var(--dsw-alias-border-l2, #3a4150); }\r
+.dshell-btnDanger { background: transparent; border-color: #f85149; color: #f85149; }\r
+/* \u72B6\u6001\u5FBD\u6807\uFF08\u5706\u70B9 + \u6587\u5B57\uFF1B\u7EFF=\u5DF2\u5B8C\u6210 \u9EC4=\u5F85\u529E/\u5F85\u53D1\u5E03 \u7070=\u672A\u5F00\u59CB\uFF09 */\r
+.dshell-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--dsw-alias-border-l1, #262b36); font-size: 11.5px; color: var(--dsw-alias-label-secondary, #9aa4b2); background: var(--dsw-alias-fill-l1, rgba(255,255,255,.03)); }\r
+.dshell-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--dsw-alias-label-tertiary, #6b7280); }\r
+.dshell-badgeDone { color: #3fb950; border-color: rgba(63,185,80,.4); }\r
+.dshell-badgeDone::before { background: #3fb950; box-shadow: 0 0 5px #3fb950; }\r
+.dshell-badgeWait { color: #d29922; border-color: rgba(210,153,34,.4); }\r
+.dshell-badgeWait::before { background: #d29922; box-shadow: 0 0 5px #d29922; }\r
+.dshell-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dsw-alias-label-tertiary, #6b7280); }\r
+.dshell-dotDone { background: #3fb950; box-shadow: 0 0 5px #3fb950; }\r
+.dshell-dotWait { background: #d29922; box-shadow: 0 0 5px #d29922; }\r
+/* \u6807\u7B7E\u9875 */\r
+.dshell-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--dsw-alias-border-l1, #262b36); }\r
+.dshell-tab { padding: 7px 12px; font-size: 12.5px; color: var(--dsw-alias-label-secondary, #9aa4b2); cursor: pointer; border: none; background: none; font: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; }\r
+.dshell-tabOn { color: var(--dsw-alias-label-primary, #e6e8eb); border-bottom-color: var(--dsw-alias-state-accent-primary, #4f8ef7); }\r
+/* \u5217\u8868 */\r
+.dshell-list { display: flex; flex-direction: column; gap: 6px; }\r
+.dshell-listItem { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 8px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); cursor: pointer; }\r
+.dshell-listItem:hover { border-color: var(--dsw-alias-border-l2, #3a4150); background: var(--dsw-alias-fill-l1, rgba(255,255,255,.05)); }\r
+.dshell-listItemTitle { font-size: 12.5px; color: var(--dsw-alias-label-primary, #e6e8eb); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\r
+.dshell-listItemMeta { flex: none; font-size: 11px; color: var(--dsw-alias-label-tertiary, #6b7280); }\r
+/* \u7F51\u683C / \u7EDF\u8BA1 */\r
+.dshell-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }\r
+.dshell-stat { padding: 10px 12px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 10px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.02)); }\r
+.dshell-statLabel { font-size: 11px; color: var(--dsw-alias-label-secondary, #9aa4b2); }\r
+.dshell-statValue { font-size: 20px; font-weight: 600; color: var(--dsw-alias-label-primary, #e6e8eb); }\r
+.dshell-statDelta { font-size: 11px; color: #3fb950; }\r
+/* \u8FDB\u5EA6\u6761 */\r
+.dshell-progress { height: 6px; border-radius: 3px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.06)); overflow: hidden; }\r
+.dshell-progressBar { height: 100%; border-radius: 3px; background: #3fb950; }\r
+/* \u8F93\u5165 */\r
+.dshell-input, .dshell-textarea { width: 100%; padding: 7px 10px; border: 1px solid var(--dsw-alias-border-l1, #262b36); border-radius: 8px; background: var(--dsw-alias-fill-l1, rgba(255,255,255,.03)); color: var(--dsw-alias-label-primary, #e6e8eb); font: inherit; font-size: 12.5px; outline: none; }\r
+.dshell-input:focus, .dshell-textarea:focus { border-color: var(--dsw-alias-state-accent-primary, #4f8ef7); }\r
+/* \u8868\u683C */\r
+.dshell-table { width: 100%; border-collapse: collapse; font-size: 12px; }\r
+.dshell-table th, .dshell-table td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--dsw-alias-border-l1, #262b36); }\r
+.dshell-table th { color: var(--dsw-alias-label-secondary, #9aa4b2); font-weight: 500; }\r
+/* \u952E\u503C\u5BF9 */\r
+.dshell-kv { display: flex; flex-direction: column; gap: 6px; }\r
+.dshell-kvRow { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }\r
+.dshell-kvKey { color: var(--dsw-alias-label-secondary, #9aa4b2); }\r
+.dshell-kvValue { color: var(--dsw-alias-label-primary, #e6e8eb); text-align: right; }\r
+/* \u5206\u5272\u7EBF */\r
+.dshell-divider { height: 1px; background: var(--dsw-alias-border-l1, #262b36); margin: 6px 0; }\r
+/* \u6EDA\u52A8\u6761 */\r
+::-webkit-scrollbar { width: 10px; height: 10px; }\r
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 5px; }\r
+::-webkit-scrollbar-track { background: transparent; }\r
 `;
 
 // template/dshell.html
-var dshell_default2 = '<!doctype html>\n<!-- dsh-worktable \u539F\u751F\u76AE\u80A4\u6A21\u677F\uFF1A\u65B0\u9875\u9762\u4EE5\u6B64\u4E3A\u57FA\u7840\uFF0C\u66FF\u6362\u4E0B\u9762\u793A\u4F8B\u5185\u5BB9\u5373\u53EF\u3002\n     \u6837\u5F0F\u8868\u7531\u63D2\u4EF6\u63D0\u4F9B\uFF08\u968F\u4E3B\u9898\u81EA\u52A8\u9002\u914D\uFF09\uFF0C\u4E0D\u8981\u590D\u5236\u6216\u6539\u5199\u5B83\u3002 -->\n<html lang="zh-CN">\n<head>\n  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1" />\n  <title>\u6211\u7684\u7A97\u53E3</title>\n  <link rel="stylesheet" href="/api/worktable/template/dshell.css" />\n</head>\n<body>\n  <div class="dshell">\n    <!-- \u6807\u9898\u533A -->\n    <h1 class="dshell-title">\u7A97\u53E3\u6807\u9898</h1>\n    <p class="dshell-sub">\u4E00\u53E5\u8BDD\u8BF4\u660E\u8FD9\u4E2A\u7A97\u53E3\u505A\u4EC0\u4E48\u3002</p>\n\n    <!-- \u72B6\u6001\u5FBD\u6807\uFF1A\u5DF2\u5B8C\u6210 dshell-badgeDone / \u8FDB\u884C\u4E2D dshell-badgeWait / \u9ED8\u8BA4 -->\n    <div>\n      <span class="dshell-badge dshell-badgeDone">\u5DF2\u5B8C\u6210</span>\n      <span class="dshell-badge dshell-badgeWait">\u8FDB\u884C\u4E2D</span>\n      <span class="dshell-badge">\u672A\u5F00\u59CB</span>\n    </div>\n\n    <!-- \u6807\u7B7E\u9875 -->\n    <div class="dshell-tabs">\n      <button class="dshell-tab dshell-tabOn">\u6982\u89C8</button>\n      <button class="dshell-tab">\u8BE6\u60C5</button>\n      <button class="dshell-tab">\u8BBE\u7F6E</button>\n    </div>\n\n    <!-- \u7EDF\u8BA1\u5361\u7247\u7F51\u683C -->\n    <div class="dshell-grid">\n      <div class="dshell-stat">\n        <div class="dshell-statLabel">\u603B\u6570</div>\n        <div class="dshell-statValue">128</div>\n        <div class="dshell-statDelta">+12.4%</div>\n      </div>\n      <div class="dshell-stat">\n        <div class="dshell-statLabel">\u8FDB\u884C\u4E2D</div>\n        <div class="dshell-statValue">7</div>\n      </div>\n      <div class="dshell-stat">\n        <div class="dshell-statLabel">\u5DF2\u5B8C\u6210</div>\n        <div class="dshell-statValue">121</div>\n      </div>\n    </div>\n\n    <!-- \u5217\u8868 -->\n    <div class="dshell-list">\n      <div class="dshell-listItem">\n        <span class="dshell-listItemTitle">\u6761\u76EE\u4E00\uFF1A\u793A\u4F8B\u5185\u5BB9\u6807\u9898</span>\n        <span class="dshell-listItemMeta">\u6628\u5929</span>\n      </div>\n      <div class="dshell-listItem">\n        <span class="dshell-listItemTitle">\u6761\u76EE\u4E8C\uFF1A\u793A\u4F8B\u5185\u5BB9\u6807\u9898</span>\n        <span class="dshell-badge dshell-badgeDone">\u5DF2\u53D1\u5E03</span>\n      </div>\n    </div>\n\n    <!-- \u5361\u7247 + \u952E\u503C\u5BF9 -->\n    <div class="dshell-card">\n      <h2 class="dshell-sub" style="margin:0 0 8px">\u8BE6\u60C5</h2>\n      <div class="dshell-kv">\n        <div class="dshell-kvRow"><span class="dshell-kvKey">\u5B57\u6BB5 A</span><span class="dshell-kvValue">\u503C A</span></div>\n        <div class="dshell-kvRow"><span class="dshell-kvKey">\u5B57\u6BB5 B</span><span class="dshell-kvValue">\u503C B</span></div>\n      </div>\n      <div class="dshell-divider"></div>\n      <div class="dshell-progress"><div class="dshell-progressBar" style="width:72%"></div></div>\n    </div>\n\n    <!-- \u64CD\u4F5C\u533A -->\n    <div style="display:flex;gap:8px">\n      <button class="dshell-btn">\u4E3B\u8981\u64CD\u4F5C</button>\n      <button class="dshell-btn dshell-btnGhost">\u6B21\u8981\u64CD\u4F5C</button>\n    </div>\n  </div>\n</body>\n</html>\n';
+var dshell_default2 = '<!doctype html>\r\n<!-- dsh-worktable \u539F\u751F\u76AE\u80A4\u6A21\u677F\uFF1A\u65B0\u9875\u9762\u4EE5\u6B64\u4E3A\u57FA\u7840\uFF0C\u66FF\u6362\u4E0B\u9762\u793A\u4F8B\u5185\u5BB9\u5373\u53EF\u3002\r\n     \u6837\u5F0F\u8868\u7531\u63D2\u4EF6\u63D0\u4F9B\uFF08\u968F\u4E3B\u9898\u81EA\u52A8\u9002\u914D\uFF09\uFF0C\u4E0D\u8981\u590D\u5236\u6216\u6539\u5199\u5B83\u3002 -->\r\n<html lang="zh-CN">\r\n<head>\r\n  <meta charset="utf-8" />\r\n  <meta name="viewport" content="width=device-width, initial-scale=1" />\r\n  <title>\u6211\u7684\u7A97\u53E3</title>\r\n  <link rel="stylesheet" href="/api/worktable/template/dshell.css" />\r\n</head>\r\n<body>\r\n  <div class="dshell">\r\n    <!-- \u6807\u9898\u533A -->\r\n    <h1 class="dshell-title">\u7A97\u53E3\u6807\u9898</h1>\r\n    <p class="dshell-sub">\u4E00\u53E5\u8BDD\u8BF4\u660E\u8FD9\u4E2A\u7A97\u53E3\u505A\u4EC0\u4E48\u3002</p>\r\n\r\n    <!-- \u72B6\u6001\u5FBD\u6807\uFF1A\u5DF2\u5B8C\u6210 dshell-badgeDone / \u8FDB\u884C\u4E2D dshell-badgeWait / \u9ED8\u8BA4 -->\r\n    <div>\r\n      <span class="dshell-badge dshell-badgeDone">\u5DF2\u5B8C\u6210</span>\r\n      <span class="dshell-badge dshell-badgeWait">\u8FDB\u884C\u4E2D</span>\r\n      <span class="dshell-badge">\u672A\u5F00\u59CB</span>\r\n    </div>\r\n\r\n    <!-- \u6807\u7B7E\u9875 -->\r\n    <div class="dshell-tabs">\r\n      <button class="dshell-tab dshell-tabOn">\u6982\u89C8</button>\r\n      <button class="dshell-tab">\u8BE6\u60C5</button>\r\n      <button class="dshell-tab">\u8BBE\u7F6E</button>\r\n    </div>\r\n\r\n    <!-- \u7EDF\u8BA1\u5361\u7247\u7F51\u683C -->\r\n    <div class="dshell-grid">\r\n      <div class="dshell-stat">\r\n        <div class="dshell-statLabel">\u603B\u6570</div>\r\n        <div class="dshell-statValue">128</div>\r\n        <div class="dshell-statDelta">+12.4%</div>\r\n      </div>\r\n      <div class="dshell-stat">\r\n        <div class="dshell-statLabel">\u8FDB\u884C\u4E2D</div>\r\n        <div class="dshell-statValue">7</div>\r\n      </div>\r\n      <div class="dshell-stat">\r\n        <div class="dshell-statLabel">\u5DF2\u5B8C\u6210</div>\r\n        <div class="dshell-statValue">121</div>\r\n      </div>\r\n    </div>\r\n\r\n    <!-- \u5217\u8868 -->\r\n    <div class="dshell-list">\r\n      <div class="dshell-listItem">\r\n        <span class="dshell-listItemTitle">\u6761\u76EE\u4E00\uFF1A\u793A\u4F8B\u5185\u5BB9\u6807\u9898</span>\r\n        <span class="dshell-listItemMeta">\u6628\u5929</span>\r\n      </div>\r\n      <div class="dshell-listItem">\r\n        <span class="dshell-listItemTitle">\u6761\u76EE\u4E8C\uFF1A\u793A\u4F8B\u5185\u5BB9\u6807\u9898</span>\r\n        <span class="dshell-badge dshell-badgeDone">\u5DF2\u53D1\u5E03</span>\r\n      </div>\r\n    </div>\r\n\r\n    <!-- \u5361\u7247 + \u952E\u503C\u5BF9 -->\r\n    <div class="dshell-card">\r\n      <h2 class="dshell-sub" style="margin:0 0 8px">\u8BE6\u60C5</h2>\r\n      <div class="dshell-kv">\r\n        <div class="dshell-kvRow"><span class="dshell-kvKey">\u5B57\u6BB5 A</span><span class="dshell-kvValue">\u503C A</span></div>\r\n        <div class="dshell-kvRow"><span class="dshell-kvKey">\u5B57\u6BB5 B</span><span class="dshell-kvValue">\u503C B</span></div>\r\n      </div>\r\n      <div class="dshell-divider"></div>\r\n      <div class="dshell-progress"><div class="dshell-progressBar" style="width:72%"></div></div>\r\n    </div>\r\n\r\n    <!-- \u64CD\u4F5C\u533A -->\r\n    <div style="display:flex;gap:8px">\r\n      <button class="dshell-btn">\u4E3B\u8981\u64CD\u4F5C</button>\r\n      <button class="dshell-btn dshell-btnGhost">\u6B21\u8981\u64CD\u4F5C</button>\r\n    </div>\r\n  </div>\r\n</body>\r\n</html>\r\n';
 
 // src/index.ts
 function baseDshHome() {
@@ -153,6 +153,15 @@ var FILE_TYPES = {
 };
 var SITE_PREFIX = "/api/worktable/site";
 var TEMPLATE_PREFIX = "/api/worktable/template";
+function hostRuntimeModuleDirs() {
+  const out = [];
+  try {
+    const rp = process.resourcesPath;
+    if (typeof rp === "string" && rp) out.push(pathResolve(rp, "app", "node_modules"));
+  } catch {
+  }
+  return out;
+}
 var loadProbeAttempts = 0;
 function loadPkg(pkg) {
   const starts = /* @__PURE__ */ new Set();
@@ -176,6 +185,14 @@ function loadPkg(pkg) {
       dir = pathResolve(dir, "..");
     }
   }
+  for (const nm of hostRuntimeModuleDirs()) {
+    loadProbeAttempts++;
+    try {
+      const req = createRequire(pathToFileURL(pathResolve(nm, "__wt_probe__.js")).href);
+      return req(pkg);
+    } catch {
+    }
+  }
   try {
     const profilesDir = pathResolve(baseDshHome(), "profiles");
     for (const profile of readdirSync(profilesDir, { withFileTypes: true })) {
@@ -187,6 +204,13 @@ function loadPkg(pkg) {
         return req(pkg);
       } catch {
       }
+    }
+    const shared = pathResolve(profilesDir, "node_modules");
+    loadProbeAttempts++;
+    try {
+      const req = createRequire(pathToFileURL(pathResolve(shared, "__wt_probe__.js")).href);
+      return req(pkg);
+    } catch {
     }
   } catch {
   }
