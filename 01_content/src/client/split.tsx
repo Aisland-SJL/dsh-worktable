@@ -982,12 +982,14 @@ export const splitStore: SplitState = {
     const gap = Math.max(0, colW - chatW) + 'px'
     const mt = (BAR_H + (hasTop && !chatFull ? topH : 0)) + 'px'
     const chatLeft = !hasLeft && spec.chatSide === 'left'
-    this.lastMarginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
-    this.lastMarginRight = hasLeft ? '' : (chatLeft ? gap : '')
-    this.lastMarginTop = mt
-    viewArea.style.marginLeft = this.lastMarginLeft
-    viewArea.style.marginRight = this.lastMarginRight
+    viewArea.style.marginLeft = hasLeft ? leftW + 'px' : (chatLeft ? '' : gap)
+    viewArea.style.marginRight = hasLeft ? '' : (chatLeft ? gap : '')
     viewArea.style.marginTop = mt
+    // CSSOM may serialize fractional pixels differently at non-default zoom.
+    // Compare the observer against our actual writes, not their raw inputs.
+    this.lastMarginLeft = viewArea.style.marginLeft
+    this.lastMarginRight = viewArea.style.marginRight
+    this.lastMarginTop = viewArea.style.marginTop
   },
 
   setChatW(w) {
