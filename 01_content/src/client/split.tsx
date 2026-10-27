@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { parentPathOf } from './pathutil'
 import { hostWebSocketUrl, worktableUpgrade } from './hostTransport'
+import { SandboxedFrame } from './SandboxedFrame'
 import { CHANGELOG_V030 } from './changelog'
 import { LOCAL_VERSION, checkUpdate, getAutoCheck, readCache, setAutoCheck as storeAutoCheck, setSkipVersion, type UpdateInfo, type UpdateStatus } from './updateCheck'
 import { Terminal } from 'xterm'
@@ -476,7 +477,7 @@ function boxPayload(x0: number, y0: number, x1: number, y1: number): { primary: 
           const r = iframe.getBoundingClientRect()
           if (r.width <= 0 || r.height <= 0) continue
           if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) continue
-          src = iframe.getAttribute('src') ?? ''
+          src = iframe.getAttribute('data-source-url') ?? iframe.getAttribute('src') ?? ''
           let inner: Document | null = null
           try { inner = iframe.contentDocument } catch { inner = null }
           if (inner) readDoc(inner, r.left, r.top)
@@ -939,6 +940,8 @@ export const splitStore: SplitState = {
       this.savedMarginLeft = viewArea.style.marginLeft
       this.savedMarginRight = viewArea.style.marginRight
       this.savedMarginTop = viewArea.style.marginTop
+      this.yieldObserver?.disconnect()
+      this.yieldObserver?.observe(viewArea, { attributes: true, attributeFilter: ['style'] })
     }
     this.observer?.disconnect()
     this.observer.observe(next)
@@ -988,6 +991,9 @@ export const splitStore: SplitState = {
     viewArea.style.marginLeft = this.lastMarginLeft
     viewArea.style.marginRight = this.lastMarginRight
     viewArea.style.marginTop = mt
+    this.lastMarginLeft = viewArea.style.marginLeft
+    this.lastMarginRight = viewArea.style.marginRight
+    this.lastMarginTop = viewArea.style.marginTop
   },
 
   setChatW(w) {
@@ -1429,14 +1435,14 @@ function BrowserPane(props: { row: PaneRow; index: number; tabId: string; conten
         />
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={src} title="browser" />
+      <SandboxedFrame url={src} title="browser" reloadKey={props.reloadKey} />
     </>
   )
 }
 
 /** iframe 内容标签（网页/站点产物）：刷新统一在标签栏最左（重挂载整页刷新，跨域可靠） */
 function IframePane(props: { url: string; title?: string; reloadKey: number }) {
-  return <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={props.url} title={props.title ?? ''} />
+  return <SandboxedFrame {...props} />
 }
 
 /** 动画播放窗：iframe 壳 + 地址栏（站内自带项目/场景列表、播放、画幅切换、导出等全部控件） */
@@ -1464,7 +1470,7 @@ function AnimPane(props: { row: PaneRow; index: number; tabId: string; content: 
         />
         <button type="button" className="dsh-wt_browserGo" onClick={go}>↗</button>
       </div>
-      <iframe key={props.reloadKey} className="dsh-wt_paneFrame" src={src} title="anim" />
+      <SandboxedFrame url={src} title="anim" reloadKey={props.reloadKey} />
     </>
   )
 }

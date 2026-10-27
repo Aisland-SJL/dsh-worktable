@@ -9,7 +9,17 @@ const { buildSync } = require('esbuild')
 const source = buildSync({ entryPoints: [fileURLToPath(new URL('../01_content/src/client/hostTransport.ts', import.meta.url))], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text
 const module = { exports: {} }
 runInNewContext(source, { module, exports: module.exports, URL })
-const { hostWebSocketUrl, worktableUpgrade } = module.exports
+const { hostWebSocketUrl, hostPreviewUrl, worktableUpgrade } = module.exports
+
+test('Desktop sandbox assets use the owned Host URL without a login token', () => {
+  assert.equal(hostPreviewUrl('/api/worktable/preview-static/cap/app.js', {protocol:'dsh-app:',streamBaseUrl:'http://127.0.0.1:19499'}), 'http://127.0.0.1:19499/api/worktable/preview-static/cap/app.js')
+})
+test('Web sandbox assets retain a relative URL; missing Desktop carrier fails closed', () => {
+  assert.equal(hostPreviewUrl('/api/worktable/preview-static/cap/index.html', {protocol:'https:'}), '/api/worktable/preview-static/cap/index.html')
+  assert.throws(() => hostPreviewUrl('/api/worktable/preview-static/cap/index.html',{protocol:'dsh-app:'}), /unavailable/)
+  assert.throws(() => hostPreviewUrl('/api/worktable/preview-static/cap/index.html',{protocol:'dsh-app:',streamBaseUrl:'file:///fixture'}), /Unsupported/)
+  assert.throws(() => hostPreviewUrl('//other.example/api',{protocol:'https:'}), /Invalid/)
+})
 
 test('Web HTTP uses its current authority and preserves encoded query', () => {
   assert.equal(hostWebSocketUrl('/api/worktable/term?cwd=C%3A%2Ftest&cols=80', { href: 'http://127.0.0.1:3080/', protocol: 'http:' }), 'ws://127.0.0.1:3080/api/worktable/term?cwd=C%3A%2Ftest&cols=80')

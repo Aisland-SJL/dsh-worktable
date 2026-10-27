@@ -4,8 +4,6 @@
 
 ## 协作方式（用户定案，最高优先级）
 
-> 与全局 `~/.dsh/AGENTS.md` 同步；外部 Agent（如 Codex）不加载全局文件，故此处保留全文。
-
 - **设计先给最小版**：任何 UI/文案/方案先交「最少元素」版本给用户拍板，确认后再增量；
   默认克制——没有存在理由的元素不放；不一次搭「完整版」再返工。
 - **长任务拆 checkpoint**：每个可验收阶段完成后停下汇报，等用户确认再进下一段；
@@ -13,15 +11,14 @@
 - **对外动作永远先审**：发布、评论、给观众的内容、任何公开操作，一律先给用户过目，
   用户不点头不执行。
 - **改完必读回**：每次编辑后读回改动处的完整行/段落，确认无残留、无断尾
-  （教训：改一半的 URL 留下旧尾巴，被复审抓为发布阻断）。
+  （包含命令与 URL）。
 - **验收用最终产物，不用中间信号**：任何交付物（tgz、命令、文档、UI）的验收动作必须是
   「解包 / 复制 / 实跑用户路径」；「构建成功」「bundle 里有字符串」「退出码 0」不算验收。
 - **发布前自跑最终产物清单**：干净目录安装、最终包逐文件核对、双资产哈希、关键行逐字
   grep —— 先自查再报告，不等外部复审来抓。
 - **发布包验收=结构检查 + 真实安装**：标准 package/ 前缀、白名单精确 7 文件（无 src/、.map），
   再独立目录 npm install + import() 断言；仅核对文件存在不能证明包可安装。
-- **声明可证伪，不许写满**：验收结论只写已验证范围。「通知全覆盖」「等价端到端」这类表述会被
-  反向检查打脸——只写「版本比较逻辑上重新激活」「验证了安装与服务端模块导入」。
+- **声明可证伪**：只写已验证范围；安装/导入不是端到端验收，版本比较正常不等于通知覆盖所有用户。
 - **同 tag 资产不可覆盖（用户已拍板）**：坏包处理 = 发新版本号 + 旧 Release 正文标注问题，
   默认不替换旧资产；仅经用户明确批准的紧急补救例外，且须：不改名（保持原 URL 名）、
   用已验证包、不删不盖现有资产、上传后从完整 URL 下载核对、旧 Release 注明补救经过。
@@ -32,8 +29,16 @@
 - **不替换、不禁用任何官方插件**（ui-sidebar / ui-workspace / ui-layout）。
 - 项目/布局/绑定存 localStorage，媒体存 IndexedDB；文件窗、mkdir 与产物握手会读写用户配置的项目目录，权限边界见 `01_content/README.md`。
 - dsh-travelatlas 是入驻项目而非本仓库的一部分；协议见 `02_process/PRD.md` §5.3/5.4。
-- **平台边界**：Windows 网页端已测范围见 `01_content/README.md`，不宣称全功能验收；桌面仅列已测 Windows 0.2.0-rc.2 范围；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
+- **平台边界**：Windows 网页端已测范围见 `01_content/README.md`，不宣称全功能验收；桌面已测版本与候选边界同包内 README；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
   尚未真机端到端验证）。路径拼接必须走 `pathutil.ts` helper 或 Node `path` API，不手写分隔符。
+
+## 当前 0.5.0 安全与兼容范围
+
+- 私有 HTTP/终端握手统一调用 `requestAuth.ts`：新宿主要求 owner，0.2.0 仅放行同一 operator 对象；未知/不可用服务关闭访问，不用 requestRejection-only 回退。health 与随机只读预览地址是明确例外。
+- `SandboxedFrame` 禁止 `allow-same-origin`；本地目录先鉴权创建临时只读挂载，Desktop 资源走 Host HTTP 地址。不得为恢复页面存储/自动取字而取消隔离。影响、保活与过期语义必须见包内 README。
+- 预览读取必须绑定同一文件句柄、限量并复核文件身份/路径及撤销状态；保留目录替换/检查后增长等回归。该机制不等于恶意本地进程的 OS 文件沙箱，文档不得作绝对防护承诺。
+- 当前版本只声明 DSH 0.2.0-rc.2 / 0.2.1-rc.3；网页隔离实测与 Desktop 传输单测不能冒充真实 Desktop 全功能验收。下文旧版本兼容条目是历史依据。
+- `npm run test:security` = 22 项源码/夹具回归；流水线源码回归合计 122 项。安装产物另跑 `node 04_test/split-margin.test.mjs [client.js 路径]` 的 5 项真实 Chromium 回归（Edge/Chrome 或 `DSH_TEST_CHROMIUM`），改 margin/换根观察器必须保留旧产物变红的回归证据。
 
 ## 构建与验证
 
@@ -49,16 +54,17 @@ node --check lib/index.js
 - **构建必须 `cd 01_content` 后执行**：误在仓库根跑会把 lib 写到仓库根 `lib/`，宿主仍加载
   `01_content/lib` 旧 bundle，出现「改完不生效」假象（已有教训，见工作日志）。
 - **发布打包唯一入口 = `npm run pack`（01_content/release-prep.mjs）**：身份断言（package/manifest/cordis.patch.yml 严格结构）→
-  版本一致性 → **会话/输入/传输/挂载回归**（test:input / test:session / test:details / test:transport / test:widget 共 98 项，评估源码契约）→ 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
+  版本一致性 → **会话/输入/传输/挂载/安全回归**（当前 122 项，评估源码契约及夹具）→ 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
   无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
   HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
-  白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（8 场景，评估安装产物 lib/client.js；
-  测试接受包路径参数）→ **服务端数据目录回归**（3 组场景，评估安装产物 lib/index.js）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
+  白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（14 场景，评估安装产物 lib/client.js；
+  测试接受包路径参数）→ **侧栏弹窗回归**（安装产物，展开/收起共用层）→ **真实 Chromium 分栏 margin 回归**（5 场景，评估安装产物）→ **服务端数据目录回归**（3 组场景，评估安装产物 lib/index.js）→ dist/v版本号/ 双资产（终态恰好 2 文件 + 双 SHA 同源）。
   脚本零 git/gh 动作，发布上传由 gh 手动完成。
   **发布禁止裸 npm pack 或手工 tar 生成发布包**；脚本从仓库任意目录调用均安全（以自身位置解析）。
+- 弹窗必须由展开/收起两种侧栏共用一份 JSX 层；保留路径选择失效/卸载守卫，禁止再复制弹窗。`npm run test:sidebar` 评估实际构建组件，旧缺失/重复渲染应变红。
 - **配套检查入口**：`npm run test:gate` = 工厂门禁 10 个失败/正向用例；
   `npm run test:widget` = 项目/会话归属、共目录、延迟结果与补挂重试 26 项回归（执行实际函数，不等于模型生成端到端验收）；
-  `node 04_test/anchor-dom.test.mjs [lib/client.js 路径]` = 分栏锚点 8 场景（缺省用工作目录构建产物）；
+  `node 04_test/anchor-dom.test.mjs [lib/client.js 路径]` = 分栏锚点 14 场景（缺省用工作目录构建产物）；
   `node 04_test/server-home.test.mjs [lib/index.js 路径]` = 数据目录解析 3 组场景（子进程隔离夹具；
   **突变体验证法**：把 loadPkg 兜底的 baseDshHome() 故意改回 resolveDshHomeSafe() 恢复循环，测试必须红）。
   `npm run verify:remote -- --expect-sha <release-prep 输出的 SHA> [tag]` = 发布后只读核对
@@ -70,6 +76,7 @@ node --check lib/index.js
 
 | 实现参考 | 对应材料 |
 | --- | --- |
+| 接口鉴权、预览能力、隔离限制与验收边界 | `docs/compatibility-and-security.md` |
 | 控制室 UI、预设/模型、提醒、产物握手、更新状态 | `02_process/PRD.md` §14（修改对应组件时对照源码，不以历史 API 示例替代新旧桥接） |
 
 - **Desktop 兼容边界**：0.4.0 保留客户端 platform=web（Desktop 0.2.0-rc.2 也按此契约加载）。终端 WebSocket 经 `hostTransport.ts` 使用宿主 `__DSH_TRANSPORT__.streamBaseUrl`，不能由 dsh-app://app 拼 ws://app；更新提示须指向 desktop profile 与桌面端自带 CLI，不能修改 web profile。页面点测与源码回归不能替代完整桌面端业务验收，不宣称桌面全功能兼容。
@@ -83,20 +90,8 @@ node --check lib/index.js
 - **预设追加规则**：新布局预设只允许追加到 `PRESET_DEFS` 末尾（选择器里的「＋自定义」磁贴
   永远是最后一个）；字段 leftCount/topCount/contentCount/chatFull/topHeightDefault/topHeightRatio，
   聊天窗恒在右侧；缩略图在 presetThumb() 加分支。
-- **分栏引擎双版本锚点（v0.3.3 兼容契约，0.1.1-rc.2 与 0.1.2-rc.1）**：会话根三种结构——
-  0.1.1 active = [头部, 滚动区]；空会话 hero = [隐藏头部(headerHidden), 内容区]；0.1.2 无会话
-  hero = [内容区]（单子元素）。resolveAnchor：仅「存在第二个子元素」且第一个可见（自身有高度，
-  或零高槽位包装内第一个可见后代——visibleHeaderIn）才作头部；否则顶部取根顶部。phase 排序
-  active > hero > settling，settling 等待不关闭。**同根重锚（hero↔active）只在锚点元素真正
-  更换时才更新 saved 原值**，否则关闭时泄漏已应用的 margin/宽度变量。改锚点必须跑
-  anchor-dom 8 场景（含 H：0.1.2 零高包装+内部头部）。0.1.2 的 children[0] 是 display:contents
-  式零高包装、真实标题栏在内部——不要凭 0.1.1 的结构想当然。
-- **数据目录解析无循环（v0.3.3 红线）**：resolveDshHomeSafe = 官方 @deepseek-ai/dsh-home-paths
-  （可用时）→ baseDshHome 兜底；**loadPkg 的 profiles 兜底只能用 baseDshHome，禁止回调
-  resolveDshHomeSafe（会成环）**。baseDshHome 规则对齐官方：DSH_HOME 优先、空/纯空白视为未设、
-  ~ 与 ~/ 与 ~\ 展开、相对路径按 cwd、默认 ~/.dsh；trim 只用于空白判断、路径保留原字符串。
-  **不把 dsh-home-paths 声明为生产依赖**（其 peer cordis ^4.0.2 不满足 0.1.1-rc.2 的 4.0.1，
-  已试过并撤回）。改这块必须跑 server-home 3 组场景 + 突变体验证（恢复循环测试必须红）。
+- **分栏锚点与还原**：历史宿主三种根结构、零高包装取可见头部的规则见 PRD §12.4；同根重锚仅在锚点更换时保存原值，避免关闭时泄漏 margin/宽度。写入 margin 后须从 CSSOM 读回基线；换 viewArea 同步重绑让位观察器。改动必须跑锚点与真实 Chromium 回归，保留旧产物变红证据。
+- **数据目录解析无循环**：resolveDshHomeSafe 优先官方 home-paths，再 baseDshHome；loadPkg 兜底只能调 baseDshHome，不得反调 resolveDshHomeSafe。DSH_HOME 空白视未设；实际路径保留两端空格，支持 ~、~/、~\\ 与相对 cwd，默认 ~/.dsh。不得新增 dsh-home-paths 生产依赖（旧宿主 peer cordis 不兼容）。修改须跑 server-home 三组与循环突变体检查。
 - **新会话策略**：创建后应用默认预设与有效模型；桥接保持原选择策略，持有结束即释放。失败不重复发送；插件导航须 markPluginSessionOpen，未绑定项目成功任务会 autoBind。
 - **项目文件夹**：保存要求绝对路径，mkdir 非 2xx 必须中止；自定义任务带项目 cwd，产出落该目录。
 - **窗口任务**：buildWindowTaskText 统一携带窗口身份/项目目录/通用知识；不重复侦察插件源码。
@@ -111,17 +106,13 @@ node --check lib/index.js
 - **控制室红线**：wt-console 固定首位、不可删除、唯一 console 标签不可关；隐藏项目不入网格。状态/计时/预览只镜像宿主，不为计时激活冷会话，不把完成标记当成功证明；业务临时持有结束释放。
 - **更新检查/发布**：设置与控制室检查暂未去重，共用 updateCheck/lastUpdateCheck/skipVersion.v1，updateCache.v1 仅控制室。单次 8s、最多 3 次尝试；失败不可报最新。版本从 package.json 构建注入；新版本需 tag+Release，双资产固定名 dsh-worktable.tgz + 版本化名同 SHA。插件仅提示不自升级，安装/重启留给用户。
 
-## 旧版 link 加载兼容边界
+## link 加载兼容边界
 
-- 特定旧版 0.1.1-rc.2 的裸包 import / link peer 解析曾使用上级 node_modules junction 兜底，不是通用修法。
-  本机 0.2.0-rc.2 经无旧链接冷启动与真实工作台/控制室检查后已移除该链接，原目标目录保留。
-  重新遇到加载失败时先查实际宿主、profile、插件及第一条完整错误；不得直接创建更高层级链接或删除它指向的依赖目录。
+- 不把旧宿主的祖先 node_modules junction 当通用修法。加载失败先核对宿主/profile/插件版本与第一条完整错误；不得直接创建更高层级链接、删除其目标目录或把社区桌面 resources/app 路径视为官方桌面的固定契约。
 
-## 宿主 bug 跟踪（UTF-16 路径截断）
+## 宿主历史补丁
 
-- 官方 native picker 的 readUtf16 只看 UTF-16LE 低字节，含 U+XX00 字符（开/一/言/Ā/🀀 等）的路径被截断。非我们插件问题。
-  修复与回归测试存档：`02_process/upstream/utf16-picker-fix.patch`；官方 Discussions #580 已接单。
-  待办：官方修 master 后核验对应 npm 版本是否含修复，随后可清理 patch 存档。
+- `02_process/upstream/utf16-picker-fix.patch` 是旧 picker 路径问题的存档，不代表当前宿主仍有此缺陷。先核对目标版本源码与复现，不自动套用或清理旧补丁。
 
 ## 安装 / 重启
 

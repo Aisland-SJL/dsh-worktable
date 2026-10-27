@@ -2516,128 +2516,8 @@ function buildCustomLayoutPrompt(req: string): string {
     }
   }
 
-  if (!wide) {
-    // 收起态 = 等行高的正方形圆角按钮，中间只留 emoji；点击 = 进入对应项目
-    const railItems: { icon: string; name: string; onClick: (e: any) => void }[] = [
-      { icon: CONSOLE_ICON, name: t('console.name'), onClick: (e) => clickConsoleCard(e.currentTarget as HTMLElement) },
-      ...aliveRegisteredIds.map((id) => ({
-        icon: projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦',
-        name: projects.nameOverrides[id] ?? metas[id]?.name ?? id,
-        onClick: () => openRailProject(id),
-      })),
-      ...projects.shortcuts.map((s) => ({
-        icon: s.icon,
-        name: s.name,
-        onClick: () => { try { window.open(s.href, '_blank', 'noopener') } catch {} },
-      })),
-      ...projects.layouts.map((l) => ({
-        icon: l.icon ?? '🧱',
-        name: projects.nameOverrides[l.id] ?? l.title,
-        onClick: () => openSplit(l),
-      })),
-    ]
-    // 浮动态：fixed 定位到拖前高度（左/宽取折叠列实测几何）；停靠态：文档流原位
-    const railStyle = isFloat && railRect
-      ? { position: 'fixed' as const, top: float.top, left: railRect.left, width: railRect.width, zIndex: 70 }
-      : bottomInset > 0 ? { marginBottom: bottomInset } : undefined
-    return (
-      <div ref={rootRef} className="dsh-wt_section dsh-wt_rail" style={railStyle}>
-        <div className="dsh-wt_divider" />
-        <div className="dsh-wt_railBox">
-          {railItems.length > 0
-            ? railItems.map((it, i) => (
-                <button key={i} type="button" className="dsh-wt_railBtn" title={it.name} aria-label={it.name} onClick={it.onClick}>
-                  <span aria-hidden>{it.icon}</span>
-                </button>
-              ))
-            : <span className="dsh-wt_railIcon">≡</span>}
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div ref={rootRef} className={'dsh-wt_section' + (isFloat ? ' dsh-wt_float' : '')} style={isFloat ? floatStyle : dockedStyle}>
-      <div className="dsh-wt_divider" />
-      <div className="dsh-wt_header">
-        <button
-          type="button"
-          className="dsh-wt_handle"
-          data-float={isFloat ? 'true' : 'false'}
-          title={t('handle.title')}
-          aria-label={t('handle.aria')}
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
-          onDoubleClick={resetDock}
-        >≡</button>
-        <span
-          className="dsh-wt_title"
-          title={t('handle.title')}
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          onPointerCancel={onHandlePointerUp}
-          onDoubleClick={resetDock}
-        >{t('title')}</span>
-        {updateInfo && (
-          <button
-            type="button"
-            className="dsh-wt_updateBadge"
-            title={t('update.badgeTitle') + ' · v' + updateInfo.latest}
-            aria-label={t('update.badgeTitle')}
-            onClick={() => setViewOptionsOpen(true)}
-          >{ICON_SYNC}</button>
-        )}
-        <div className="dsh-wt_actions">
-          <button
-            type="button"
-            className="dsh-wt_iconBtn"
-            aria-label={t('menu.search')}
-            title={t('menu.search')}
-            onClick={() => persistView({ searchOpen: !view.searchOpen, query: view.searchOpen ? '' : view.query })}
-          >{ICON_SEARCH}</button>
-          <button
-            type="button"
-            className="dsh-wt_iconBtn"
-            aria-label={t('menu.viewOptions')}
-            title={t('menu.viewOptions')}
-            onClick={() => { invalidatePickState(); setViewOptionsOpen((v) => !v); setAddOpen(false) }}
-          >{ICON_VIEW_OPTIONS}</button>
-          <button
-            type="button"
-            className="dsh-wt_iconBtn"
-            aria-label={t('menu.add')}
-            title={t('menu.add')}
-            onClick={() => {
-              invalidatePickState()
-              setAddOpen((v) => !v); setViewOptionsOpen(false)
-              // 父目录默认 = 当前会话工作目录（不落 C 盘默认位置）
-              if (!wsFolderParent) {
-                const cwd = sessionScopeStore.snapshot?.cwd ?? ''
-                if (cwd) setWsFolderParent(cwd)
-              }
-            }}
-          >{ICON_ADD}</button>
-        </div>
-      </div>
-
-      {view.searchOpen && (
-        <div className="dsh-wt_search">
-          <input
-            autoFocus
-            type="text"
-            placeholder={t('search.placeholder')}
-            value={view.query}
-            onChange={(e) => persistView({ query: e.target.value })}
-            onKeyDown={onSearchKeyDown}
-          />
-          <button type="button" className="dsh-wt_searchClear" aria-label={t('search.close')}
-            onClick={() => persistView({ searchOpen: false, query: '' })}>✕</button>
-        </div>
-      )}
-
+  const popupLayer = (
+    <>
       {addOpen && <div className="dsh-wt_popBackdrop" onClick={() => { invalidatePickState(); setAddOpen(false) }} />}
       {addOpen && (
         <div className="dsh-wt_menu dsh-wt_add dsh-wt_pop" style={{ position: 'fixed', left: popLeft, top: popTop, width: 360, zIndex: 80 }}>
@@ -3064,6 +2944,135 @@ function buildCustomLayoutPrompt(req: string): string {
         </div>
       )}
 
+    </>
+  )
+
+  if (!wide) {
+    // 收起态 = 等行高的正方形圆角按钮，中间只留 emoji；点击 = 进入对应项目
+    const railItems: { icon: string; name: string; onClick: (e: any) => void }[] = [
+      { icon: CONSOLE_ICON, name: t('console.name'), onClick: (e) => clickConsoleCard(e.currentTarget as HTMLElement) },
+      ...aliveRegisteredIds.map((id) => ({
+        icon: projects.iconOverrides[id] ?? metas[id]?.icon ?? '📦',
+        name: projects.nameOverrides[id] ?? metas[id]?.name ?? id,
+        onClick: () => openRailProject(id),
+      })),
+      ...projects.shortcuts.map((s) => ({
+        icon: s.icon,
+        name: s.name,
+        onClick: () => { try { window.open(s.href, '_blank', 'noopener') } catch {} },
+      })),
+      ...projects.layouts.map((l) => ({
+        icon: l.icon ?? '🧱',
+        name: projects.nameOverrides[l.id] ?? l.title,
+        onClick: () => openSplit(l),
+      })),
+    ]
+    // 浮动态：fixed 定位到拖前高度（左/宽取折叠列实测几何）；停靠态：文档流原位
+    const railStyle = isFloat && railRect
+      ? { position: 'fixed' as const, top: float.top, left: railRect.left, width: railRect.width, zIndex: 70 }
+      : bottomInset > 0 ? { marginBottom: bottomInset } : undefined
+    return (
+      <>
+      <div ref={rootRef} className="dsh-wt_section dsh-wt_rail" style={railStyle}>
+        <div className="dsh-wt_divider" />
+        <div className="dsh-wt_railBox">
+          {railItems.length > 0
+            ? railItems.map((it, i) => (
+                <button key={i} type="button" className="dsh-wt_railBtn" title={it.name} aria-label={it.name} onClick={it.onClick}>
+                  <span aria-hidden>{it.icon}</span>
+                </button>
+              ))
+            : <span className="dsh-wt_railIcon">≡</span>}
+        </div>
+      </div>
+      {popupLayer}
+      </>
+    )
+  }
+
+  return (
+    <div ref={rootRef} className={'dsh-wt_section' + (isFloat ? ' dsh-wt_float' : '')} style={isFloat ? floatStyle : dockedStyle}>
+      <div className="dsh-wt_divider" />
+      <div className="dsh-wt_header">
+        <button
+          type="button"
+          className="dsh-wt_handle"
+          data-float={isFloat ? 'true' : 'false'}
+          title={t('handle.title')}
+          aria-label={t('handle.aria')}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+          onDoubleClick={resetDock}
+        >≡</button>
+        <span
+          className="dsh-wt_title"
+          title={t('handle.title')}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerUp}
+          onDoubleClick={resetDock}
+        >{t('title')}</span>
+        {updateInfo && (
+          <button
+            type="button"
+            className="dsh-wt_updateBadge"
+            title={t('update.badgeTitle') + ' · v' + updateInfo.latest}
+            aria-label={t('update.badgeTitle')}
+            onClick={() => setViewOptionsOpen(true)}
+          >{ICON_SYNC}</button>
+        )}
+        <div className="dsh-wt_actions">
+          <button
+            type="button"
+            className="dsh-wt_iconBtn"
+            aria-label={t('menu.search')}
+            title={t('menu.search')}
+            onClick={() => persistView({ searchOpen: !view.searchOpen, query: view.searchOpen ? '' : view.query })}
+          >{ICON_SEARCH}</button>
+          <button
+            type="button"
+            className="dsh-wt_iconBtn"
+            aria-label={t('menu.viewOptions')}
+            title={t('menu.viewOptions')}
+            onClick={() => { invalidatePickState(); setViewOptionsOpen((v) => !v); setAddOpen(false) }}
+          >{ICON_VIEW_OPTIONS}</button>
+          <button
+            type="button"
+            className="dsh-wt_iconBtn"
+            aria-label={t('menu.add')}
+            title={t('menu.add')}
+            onClick={() => {
+              invalidatePickState()
+              setAddOpen((v) => !v); setViewOptionsOpen(false)
+              // 父目录默认 = 当前会话工作目录（不落 C 盘默认位置）
+              if (!wsFolderParent) {
+                const cwd = sessionScopeStore.snapshot?.cwd ?? ''
+                if (cwd) setWsFolderParent(cwd)
+              }
+            }}
+          >{ICON_ADD}</button>
+        </div>
+      </div>
+
+      {view.searchOpen && (
+        <div className="dsh-wt_search">
+          <input
+            autoFocus
+            type="text"
+            placeholder={t('search.placeholder')}
+            value={view.query}
+            onChange={(e) => persistView({ query: e.target.value })}
+            onKeyDown={onSearchKeyDown}
+          />
+          <button type="button" className="dsh-wt_searchClear" aria-label={t('search.close')}
+            onClick={() => persistView({ searchOpen: false, query: '' })}>✕</button>
+        </div>
+      )}
+
+      {popupLayer}
       <div className="dsh-wt_projects" data-managing={viewOptionsOpen ? 'true' : undefined}>
         {/* 「工作台」控制室项目：固定首位、不可删除；未绑定点开 = 强制绑定弹窗 */}
         <button

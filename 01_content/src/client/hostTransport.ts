@@ -17,6 +17,24 @@ export function hostWebSocketUrl(
   return url.href
 }
 
+/** Desktop preview assets use the Host HTTP origin with a read-only capability. */
+export function hostPreviewUrl(
+  path: string,
+  surface: { protocol: string; streamBaseUrl?: string } = {
+    protocol: location.protocol,
+    streamBaseUrl: (globalThis as any).__DSH_TRANSPORT__?.streamBaseUrl,
+  },
+): string {
+  if (!path.startsWith('/api/worktable/preview-static/')) throw new Error('Invalid preview path')
+  if (surface.protocol !== 'dsh-app:') return path
+  if (!surface.streamBaseUrl) throw new Error('Desktop Host preview URL unavailable')
+  const url = new URL(path, surface.streamBaseUrl)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new Error('Unsupported Host preview protocol')
+  // Opaque sandbox requests cannot pass Desktop's dsh-app Origin fence. This
+  // read-only capability needs no Host cookie, so its assets use the Host origin.
+  return url.href
+}
+
 /** Keep update instructions on the active profile; Desktop must use its bundled CLI. */
 export function worktableUpgrade(protocol = typeof location === 'undefined' ? 'http:' : location.protocol) {
   const desktop = protocol === 'dsh-app:'

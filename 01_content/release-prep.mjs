@@ -83,7 +83,7 @@ if (!patchOk) process.exit(1)
 console.log('[release-prep] identity check passed (' + IDENTITY + ', cordis.patch.yml strict)')
 
 // ---------- 2. 会话/输入兼容回归 + 构建 + 语法检查 ----------
-const compatTests = ['host-input.test.mjs', 'session-compat.test.mjs', 'session-details.test.mjs', 'host-transport.test.mjs', 'widget-mount.test.mjs']
+const compatTests = ['host-input.test.mjs', 'session-compat.test.mjs', 'session-details.test.mjs', 'host-transport.test.mjs', 'widget-mount.test.mjs', 'request-auth.test.mjs', 'preview-files.test.mjs', 'sandboxed-frame.test.mjs']
   .map((file) => join(HERE, '..', '04_test', file))
 const compatRun = spawnSync(process.execPath, ['--test', ...compatTests], { cwd: HERE, stdio: 'inherit' })
 if (compatRun.status !== 0) { console.error('[release-prep] FAIL: session/input compatibility tests'); process.exit(1) }
@@ -191,7 +191,28 @@ if (anchorRun.status !== 0) {
   console.error(anchorRun.stderr || anchorRun.stdout)
   process.exit(1)
 }
-console.log('[release-prep] split anchor dom tests passed (8 scenarios, on installed artifact)')
+console.log('[release-prep] split anchor dom tests passed (14 scenarios, on installed artifact)')
+
+// Sidebar popup regression evaluates the same installed client, including rail/wide branches.
+const sidebarTest = join(HERE, '..', '04_test', 'sidebar-popup.test.mjs')
+if (!existsSync(sidebarTest)) { console.error('[release-prep] FAIL: sidebar-popup.test.mjs missing'); process.exit(1) }
+const sidebarRun = spawnSync(process.execPath, [sidebarTest, join(inst, 'node_modules', 'dsh-worktable', 'lib', 'client.js')], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (sidebarRun.status !== 0) {
+  console.error('[release-prep] FAIL: sidebar-popup.test.mjs')
+  console.error(sidebarRun.stderr || sidebarRun.stdout)
+  process.exit(1)
+}
+console.log(sidebarRun.stdout.trim())
+console.log('[release-prep] sidebar popup tests passed (installed artifact)')
+
+// CSSOM serializes fractional margins; a string-only fake DOM cannot cover this.
+const marginRun = spawnSync(process.execPath, [join(HERE, '..', '04_test', 'split-margin.test.mjs'), join(inst, 'node_modules', 'dsh-worktable', 'lib', 'client.js')], { cwd: HERE, stdio: 'pipe', encoding: 'utf8' })
+if (marginRun.status !== 0) {
+  console.error('[release-prep] FAIL: real Chromium split margin regression')
+  console.error(marginRun.stderr || marginRun.stdout)
+  process.exit(1)
+}
+console.log('[release-prep] real Chromium split margin tests passed (5 scenarios, on installed artifact)')
 
 // ---------- 5d. 服务端数据目录解析回归（loadPkg ↔ resolveDshHomeSafe 循环调用修复） ----------
 // 评估「安装目录中的最终产物」lib/index.js；官方路径 / 包不可解析兜底 / ~ 与相对路径展开

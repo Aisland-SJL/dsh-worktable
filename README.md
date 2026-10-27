@@ -4,6 +4,8 @@
 
 **An agent-project workbench for DeepSeek Harness** — a sidebar app drawer that turns every project into dockable windows, plus a built-in control room that watches them all in real time.
 
+> Current source is **0.5.0**; publication is determined by GitHub Release. It adds host identity checks, sandboxed project pages, preview read limits, fractional-margin split fixes and collapsed-sidebar popups. Windows Web checks cover DSH 0.2.0-rc.2 / 0.2.1-rc.3; the user tested project opening, split resizing and sidebar settings in dev.2 on official Windows Desktop 0.2.1-rc.3. Formal-package installation/regressions are separate from candidate GUI evidence. DSH 0.1.x is outside this release’s support range. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md); v0.4.0 sections below are historical release records.
+
 ## 📸 Screenshots
 
 | | |
@@ -51,7 +53,7 @@
 
 ---
 
-## Quick start
+## Quick start (published v0.4.0)
 
 **v0.4.0** adds Windows official Desktop support within the tested scope below. Web compatibility lists only DSH **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**; Desktop checks cover **Windows + 0.2.0-rc.2**. Desktop page checks and targeted regressions do not establish full final-package Desktop end-to-end acceptance. Older versions rely on prior page checks plus code regressions, not a newly repeated full GUI suite. Back up important data and check other plugins before upgrading; GitHub Release is the publication authority.
 
@@ -81,7 +83,7 @@
 Save your tasks, fully exit the app from its menu/tray (closing the window is not enough), replace the installation-directory placeholder, run in PowerShell, then reopen the app manually:
 
 ```powershell
-& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.4.0/dsh-worktable-0.4.0.tgz"
+& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.0/dsh-worktable-0.5.0.tgz"
 ```
 
 Use the Desktop-bundled CLI and `desktop` profile, not an unpinned npx or Web CLI. Preserve the actual DSH_HOME. Browser-local projects/layouts/media do not automatically sync between Web and Desktop origins, even when sessions share one data home.
@@ -94,7 +96,7 @@ Explicit **Ungrouped** in a custom-window task no longer silently joins a worksp
 
 One package ships the **host Cordis plugin** and the **web client**:
 
-- **host**: `/api/worktable/*` routes — health, file system, git, file read/write, site serving, mkdir, workspaces, native skin template; WebSocket `/api/worktable/term` for the terminal pane (PowerShell on Windows)
+- **host**: owner-checked file/Git/write/workspace routes and terminal WebSocket; public health and random read-only preview capabilities are explicit exceptions. See the [route and lifecycle reference](docs/compatibility-and-security.md).
 - **client**: injected into the sidebar and the shell overlay via the slot protocol; the split engine, tab model, drag/drop and persistence are self-built
 - **control room**: reads the host session list snapshot (running / pending / completed, jobs, subagent catalogs) — an event-driven mirror, no model involvement
 - **window tasks**: custom tasks register project/pane/binding ownership and write a dedicated result under `.dsh-worktable/project-<project ID>/`; sharing a folder does not make a new project inherit another project's windows
@@ -112,9 +114,9 @@ node --check lib/index.js
 
 - **Build must run inside `01_content`** — building from the repo root writes `lib/` to the wrong place while the host keeps loading the old bundle
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
-- Regression: `04_test/functional-diag.cjs` (20 steps, strict gate) plus targeted probes (control room, bind panel, collapsed rail, model inheritance), the path matrix (`04_test/pathutil-matrix.cjs`) and update-check scenarios (`04_test/probe-update-scenarios.cjs`)
-- In the release pipeline: split-anchor DOM regression `04_test/anchor-dom.test.mjs` (8 scenarios, both host conversation-root shapes) and data-home resolution regression `04_test/server-home.test.mjs` (3 groups: no-cycle fallback, path expansion, official-branch fixture)
-- Release packaging uses `npm run pack` only. It also runs 98 input/session/details/transport/widget regressions, installation and client-factory gates. `npm run test:widget` covers 26 ownership, session-isolation, shared-folder, late-result and retry cases; after uploading, run `npm run verify:remote -- --expect-sha <final SHA> v0.4.0` and check `latest` separately.
+- Historical diagnostic scripts such as `04_test/functional-diag.cjs` and browser probes contain local assumptions; inspect their paths/ports before running and use an isolated profile.
+- Installed-artifact checks: `04_test/anchor-dom.test.mjs` (14 DOM scenarios, including fractional geometry), `04_test/sidebar-popup.test.mjs` (expanded/collapsed sidebar popups), `04_test/split-margin.test.mjs` (5 real Chromium cases), and `04_test/server-home.test.mjs` (3 groups). Use Edge/Chrome or `DSH_TEST_CHROMIUM` for the browser check.
+- Release packaging uses `npm run pack` only. It also runs 122 source regressions, independent installation and client-factory checks. `npm run test:sidebar` runs the popup checks alone; `npm run test:widget` covers 26 ownership/session/late-result cases. After an approved release, run `npm run verify:remote -- --expect-sha <final SHA> <release tag>` and check `latest` separately.
 
 ---
 
@@ -146,12 +148,14 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 
 - Point and speak — no verbal location description needed.
 - The payload is self-explaining: any agent, in any conversation, can pick it up.
-- Same behavior for every user — no local setup, no special tools.
+- Window-level annotation remains available; sandboxed pages cannot expose their internal text/DOM to the host. Describe the target or provide a screenshot when extraction is unavailable.
 - Same family of polish: the console gains a 5th dock button **Changelog** (version notes / check for updates / copy-upgrade command) and ships **two default background presets** (aurora gradient + coastal view) in the custom background library.
 
 ## Known limits
 
-- **Platform**: Windows Web and the official Windows Desktop have the version/flow limits above. Full final-package Desktop end-to-end acceptance is not complete; macOS is experimental and has not been tested end to end on real hardware.
+- Sandboxing can break embedded storage, login and WebGL/Cesium textures. StarMap’s moon-texture issue was fixed separately in that project; the worktable package does not contain this project-specific fix. A working new project does not establish compatibility for every existing page.
+
+- **Platform**: see the release scope above and [compatibility guide](docs/compatibility-and-security.md). Dev.2 passed the specified user Desktop checks; this does not establish complete formal-package Desktop acceptance; macOS has not been tested on real hardware.
 - State lives in the browser (localStorage and IndexedDB) — projects, bindings, views and media do not sync across machines
 - The terminal pane is a plain PowerShell host on Windows (no PTY feature parity with the native terminal app)
 - Auto-mount requires a registered custom task and its matching v2 result file. Old saved windows remain; unowned root-level `widget-result.json` files are not imported. To re-enable an old conversation, send one task via the target window's Custom → Send to conversation action. Later edits in that conversation may reuse the binding. Manually closing/replacing content revokes it; existing mistakenly mounted tabs must be closed once. Shared-folder projects can still overwrite the same artifact if explicitly told to write the same physical file.

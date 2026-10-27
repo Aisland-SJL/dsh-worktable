@@ -6,6 +6,8 @@ import { dirname, resolve as pathResolve, sep } from 'node:path'
 import { createRequire } from 'node:module'
 import { homedir } from 'node:os'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { requestRejection, rejectionText } from './requestAuth'
+import { createPreviewFiles, PREVIEW_PREFIX, PREVIEW_CSP } from './previewFiles'
 
 /**
  * 基础数据目录解析：不加载任何官方包（loadPkg 的兜底只能用它，禁止反向调用包加载函数——否则成环）。
@@ -149,7 +151,13 @@ function json(res: any, status: number, body: unknown) {
 
 async function readJsonBody(req: any): Promise<any> {
   const chunks: Buffer[] = []
-  for await (const chunk of req) chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+  let bytes = 0
+  for await (const chunk of req) {
+    const data = typeof chunk === 'string' ? Buffer.from(chunk) : chunk
+    bytes += data.length
+    if (bytes > 22 * 1024 * 1024) throw Object.assign(new Error('request too large'), { status: 413 })
+    chunks.push(data)
+  }
   const text = Buffer.concat(chunks).toString('utf8')
   if (!text) return {}
   try { return JSON.parse(text) } catch { return {} }
@@ -207,6 +215,15 @@ function setupTerminal(webServer: any, ctx: any) {
   if (!WebSocketServer) return
   const pty = ptyMod.default ?? ptyMod
   const wss = new WebSocketServer({ noServer: true })
+  let disposed = false
+  const terminals = new Set<any>()
+  ctx.effect(() => () => {
+    disposed = true
+    for (const ws of wss.clients ?? []) { try { ws.terminate() } catch {} }
+    for (const term of terminals) { try { term.kill() } catch {} }
+    terminals.clear()
+    try { wss.close() } catch {}
+  }, 'dsh-worktable: terminal sessions')
   const spawnShell = (): { cmd: string; args: string[] } =>
     process.platform === 'win32'
       ? { cmd: 'powershell.exe', args: ['-NoLogo', '-NoProfile'] } // -NoProfile：跳过用户配置（oh-my-posh 花哨提示符在 xterm 里是乱码，PSReadLine 长输入行不换行被截断）
@@ -215,7 +232,13 @@ function setupTerminal(webServer: any, ctx: any) {
 
   ctx.effect(() => webServer.registerUpgrade({
     path: '/api/worktable/term',
-    handler: (req: any, socket: any, head: any) => {
+    handler: async (req: any, socket: any, head: any) => {
+      let rejected = await requestRejection(ctx, req)
+      if (disposed) rejected = 503
+      if (rejected !== undefined) {
+        socket.end(`HTTP/1.1 ${rejected} ${rejectionText(rejected)}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n`)
+        return
+      }
       wss.handleUpgrade(req, socket, head, (ws: any) => {
         const u = new URL(req.url ?? '/', 'http://dsh.internal')
         const cwd = serverCwd(ctx, u.searchParams.get('sessionId') || undefined, u.searchParams.get('cwd') || undefined)
@@ -225,13 +248,14 @@ function setupTerminal(webServer: any, ctx: any) {
         try {
           const shell = spawnShell()
           term = pty.spawn(shell.cmd, shell.args, { name: 'xterm-256color', cols, rows, cwd, env: process.env })
+          terminals.add(term)
         } catch (err) {
           try { ws.send('\r\n[worktable] 终端启动失败：' + String(err)) } catch {}
           try { ws.close() } catch {}
           return
         }
         term.onData((d: string) => { try { ws.send(d) } catch {} })
-        term.onExit(() => { try { ws.close() } catch {} })
+        term.onExit(() => { terminals.delete(term); try { ws.close() } catch {} })
         ws.on('message', (raw: any) => {
           const text = String(raw)
           try {
@@ -243,7 +267,7 @@ function setupTerminal(webServer: any, ctx: any) {
           } catch {}
           try { term.write(text) } catch {}
         })
-        ws.on('close', () => { try { term.kill() } catch {} })
+        ws.on('close', () => { terminals.delete(term); try { term.kill() } catch {} })
       })
     },
   }), 'dsh-worktable: terminal upgrade')
@@ -256,7 +280,57 @@ export function apply(ctx: Context) {
     return
   }
 
-  webServer.register({
+  const previews = createPreviewFiles()
+  ctx.effect(() => () => previews.clear(), 'dsh-worktable: preview capabilities')
+  // Direct WebServer routes do NOT inherit the host's /api authentication route.
+  const register = (route: any, publicAsset = false) => ctx.effect(() => webServer.register({
+    ...route,
+    handler: async (req: any, res: any) => {
+      if (!publicAsset && route.path !== HEALTH_PATH) {
+        const rejected = await requestRejection(ctx, req)
+        if (rejected !== undefined) { json(res, rejected, { error: rejectionText(rejected) }); return }
+      }
+      return route.handler(req, res)
+    },
+  }), 'dsh-worktable: ' + route.path)
+
+  register({
+    kind: 'exact', path: '/api/worktable/preview',
+    handler: async (req: any, res: any) => {
+      if (req.method !== 'POST') { json(res, 405, { error: 'method not allowed' }); return }
+      try {
+        const body = await readJsonBody(req)
+        if (typeof body.revoke === 'string') { previews.revoke(body.revoke); json(res, 200, { ok: true }); return }
+        if (typeof body.root !== 'string') { json(res, 400, { error: 'missing root' }); return }
+        const token = await previews.mount(body.root)
+        json(res, 200, { token, base: PREVIEW_PREFIX + '/' + token + '/' })
+      } catch (err: any) { json(res, err.status ?? 400, { error: String(err) }) }
+    },
+  })
+
+  register({
+    kind: 'prefix', path: PREVIEW_PREFIX,
+    handler: async (req: any, res: any) => {
+      // A sandboxed document has an opaque origin. It can read only this capability's
+      // static directory, without credentials; it cannot pass the host API admission.
+      if (req.method !== 'GET' && req.method !== 'HEAD') { json(res, 405, { error: 'method not allowed' }); return }
+      try {
+        const parts = new URL(req.url ?? '/', 'http://dsh.internal').pathname.slice(PREVIEW_PREFIX.length + 1).split('/').map(decodeURIComponent)
+        const file = await previews.file(parts.shift() ?? '', parts.filter(Boolean), req.method === 'HEAD')
+        if (!file) { json(res, 404, { error: 'preview unavailable; refresh to reopen' }); return }
+        const ext = (file.path.split('.').pop() || '').toLowerCase()
+        res.writeHead(200, {
+          'content-type': FILE_TYPES[ext] ?? 'application/octet-stream',
+          'cache-control': 'no-store', 'referrer-policy': 'no-referrer',
+          'content-security-policy': PREVIEW_CSP, 'x-content-type-options': 'nosniff',
+          'access-control-allow-origin': '*',
+        })
+        res.end(file.data)
+      } catch (err: any) { json(res, err?.status === 413 ? 413 : 404, { error: err?.status === 413 ? 'file too large' : 'preview unavailable' }) }
+    },
+  }, true)
+
+  register({
     kind: 'exact',
     path: HEALTH_PATH,
     handler: (_req: any, res: any) => {
@@ -265,7 +339,7 @@ export function apply(ctx: Context) {
   })
 
   // 本地文件读取（资源管理器点击 .html 后浏览器标签内打开）
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/file',
     handler: async (req: any, res: any) => {
@@ -284,7 +358,10 @@ export function apply(ctx: Context) {
           json: 'application/json; charset=utf-8', md: 'text/markdown; charset=utf-8', markdown: 'text/markdown; charset=utf-8', txt: 'text/plain; charset=utf-8', log: 'text/plain; charset=utf-8',
           pdf: 'application/pdf', svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', ico: 'image/x-icon',
         }
-        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
+        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store',
+          'x-content-type-options': 'nosniff',
+          ...(/^(html?|svg)$/.test(ext) ? { 'content-security-policy': PREVIEW_CSP, 'referrer-policy': 'no-referrer' } : {}),
+        })
         res.end(data)
       } catch (err) {
         json(res, 404, { error: String(err) })
@@ -295,7 +372,7 @@ export function apply(ctx: Context) {
   // 本地站点（目录级静态托管）：点开 index.html 时挂载整个所在目录，
   // 让 ./assets/... 等相对引用正常解析（前缀路由，余下路径 = <rootToken>/<相对路径>）。
   // 原生皮肤模板：HTML 骨架 + 设计系统样式表（随插件分发，主题自动适配）
-  webServer.register({
+  register({
     kind: 'prefix',
     path: TEMPLATE_PREFIX,
     handler: (req: any, res: any) => {
@@ -316,7 +393,7 @@ export function apply(ctx: Context) {
     },
   })
 
-  webServer.register({
+  register({
     kind: 'prefix',
     path: SITE_PREFIX,
     handler: async (req: any, res: any) => {
@@ -340,7 +417,8 @@ export function apply(ctx: Context) {
         if (info.size > 40 * 1024 * 1024) { json(res, 413, { error: 'file too large' }); return }
         const data = await readFile(abs)
         const ext = (abs.split('.').pop() || '').toLowerCase()
-        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store' })
+        res.writeHead(200, { 'content-type': FILE_TYPES[ext] ?? 'application/octet-stream', 'cache-control': 'no-store',
+          'content-security-policy': PREVIEW_CSP, 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff' })
         res.end(data)
       } catch (err) {
         json(res, 404, { error: String(err) })
@@ -348,7 +426,7 @@ export function apply(ctx: Context) {
     },
   })
 
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/fs',
     handler: async (req: any, res: any) => {
@@ -359,7 +437,7 @@ export function apply(ctx: Context) {
           : serverCwd(ctx, body.sessionId, body.cwd)
         json(res, 200, await listDirectory(path))
       } catch (err) {
-        json(res, 500, { path: '', entries: [], truncated: false, error: String(err) })
+        json(res, (err as any).status ?? 500, { path: '', entries: [], truncated: false, error: String(err) })
       }
     },
   })
@@ -368,7 +446,7 @@ export function apply(ctx: Context) {
   // 优先走宿主正式服务 ctx.workspaceRegistry（0.1.1/0.1.2 均有，正确感知 DSH_HOME 与存储后端）；
   // 不可用时回退按 resolveDshHomeSafe() 读 storages/workspace.json（只读）。
   // 返回结构是客户端契约，两种来源都映射成同一 shape。
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/workspaces',
     handler: async (_req: any, res: any) => {
@@ -412,7 +490,7 @@ export function apply(ctx: Context) {
   })
 
   // 本地文件写入（MD 编辑模式保存回磁盘）
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/write',
     handler: async (req: any, res: any) => {
@@ -427,13 +505,13 @@ export function apply(ctx: Context) {
         await import('node:fs/promises').then((m) => m.writeFile(abs, content, 'utf8'))
         json(res, 200, { ok: true })
       } catch (err) {
-        json(res, 500, { error: String(err) })
+        json(res, (err as any).status ?? 500, { error: String(err) })
       }
     },
   })
 
   // 新建分组：创建目录（仅当父目录已存在，避免递归误建深层垃圾目录）
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/mkdir',
     handler: async (req: any, res: any) => {
@@ -449,18 +527,20 @@ export function apply(ctx: Context) {
         await fsx.mkdir(abs)
         json(res, 200, { ok: true, path: abs })
       } catch (err: any) {
-        json(res, err?.code === 'EEXIST' ? 200 : 500, err?.code === 'EEXIST' ? { ok: true, exists: true } : { error: String(err) })
+        json(res, err?.code === 'EEXIST' ? 200 : err.status ?? 500, err?.code === 'EEXIST' ? { ok: true, exists: true } : { error: String(err) })
       }
     },
   })
 
-  webServer.register({
+  register({
     kind: 'exact',
     path: '/api/worktable/git',
     handler: async (req: any, res: any) => {
-      const body = await readJsonBody(req)
-      const cwd = serverCwd(ctx, body.sessionId, body.cwd)
-      json(res, 200, await gitStatus(cwd))
+      try {
+        const body = await readJsonBody(req)
+        const cwd = serverCwd(ctx, body.sessionId, body.cwd)
+        json(res, 200, await gitStatus(cwd))
+      } catch (err: any) { json(res, err.status ?? 500, { error: String(err) }) }
     },
   })
 

@@ -2,10 +2,120 @@
 import { execFile } from "node:child_process";
 import { readdirSync, realpathSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { dirname, resolve as pathResolve, sep } from "node:path";
+import { dirname, resolve as pathResolve, sep as sep2 } from "node:path";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+// src/requestAuth.ts
+async function requestRejection(ctx, req) {
+  try {
+    const connection = typeof ctx.get === "function" ? ctx.get("connection") : void 0;
+    if (!connection) return 503;
+    if (typeof connection.admit === "function") {
+      const admission = await connection.admit(req);
+      if (!admission || typeof admission !== "object") return 503;
+      if ("rejection" in admission) return admission.rejection === 401 ? 401 : 403;
+      const peer = admission.peer;
+      if (peer?.principal?.kind === "owner") return void 0;
+      if (peer && peer === connection.operator && peer.principal === void 0) return void 0;
+      return 403;
+    }
+  } catch {
+  }
+  return 503;
+}
+function rejectionText(status) {
+  return status === 401 ? "unauthorized" : status === 403 ? "forbidden" : "Host authentication unavailable";
+}
+
+// src/previewFiles.ts
+import { randomBytes } from "node:crypto";
+import { open, realpath, stat } from "node:fs/promises";
+import { isAbsolute, relative, resolve, sep } from "node:path";
+var PREVIEW_PREFIX = "/api/worktable/preview-static";
+var PREVIEW_SANDBOX = "allow-scripts allow-forms allow-downloads";
+var PREVIEW_CSP = `sandbox ${PREVIEW_SANDBOX}; base-uri 'none'; object-src 'none'; frame-src 'none'`;
+var PREVIEW_MAX_BYTES = 40 * 1024 * 1024;
+var IDLE_MS = 30 * 60 * 1e3;
+var MAX_MOUNTS = 128;
+function inside(root, file) {
+  const rel = relative(root, file);
+  return rel === "" || !isAbsolute(rel) && rel !== ".." && !rel.startsWith(".." + sep);
+}
+function createPreviewFiles(now = () => Date.now()) {
+  const mounts = /* @__PURE__ */ new Map();
+  const prune = () => {
+    for (const [key, item] of mounts) if (now() - item.touched >= IDLE_MS) mounts.delete(key);
+  };
+  return {
+    async mount(root) {
+      if (!isAbsolute(root)) throw new Error("Preview root must be absolute");
+      const canonical = await realpath(root);
+      if (!(await stat(canonical)).isDirectory()) throw new Error("Preview root is not a directory");
+      prune();
+      if (mounts.size >= MAX_MOUNTS) throw new Error("Too many open previews; close an unused preview first");
+      const token = randomBytes(24).toString("base64url");
+      mounts.set(token, { root: canonical, touched: now() });
+      return token;
+    },
+    revoke(token) {
+      mounts.delete(token);
+    },
+    clear() {
+      mounts.clear();
+    },
+    async file(token, segments, headOnly = false) {
+      prune();
+      const mount = mounts.get(token);
+      if (!mount) return null;
+      if (segments.some((s) => s === ".." || s.includes("/") || s.includes("\\") || s.includes("\0"))) return null;
+      let target = resolve(mount.root, ...segments);
+      if (!inside(mount.root, target)) return null;
+      let info = await stat(target).catch(() => null);
+      if (info?.isDirectory()) target = resolve(target, "index.html");
+      const canonical = await realpath(target).catch(() => null);
+      if (!canonical || !inside(mount.root, canonical)) return null;
+      const handle = await open(canonical, "r").catch(() => null);
+      if (!handle) return null;
+      try {
+        const before = await handle.stat({ bigint: true });
+        if (!before.isFile()) return null;
+        const sameFile = (other) => other.isFile() && other.dev === before.dev && other.ino === before.ino && other.size === before.size && other.mtimeNs === before.mtimeNs && other.ctimeNs === before.ctimeNs;
+        const stillValid = async () => {
+          const current = await realpath(canonical);
+          if (current !== canonical || !inside(mount.root, current)) return false;
+          const named = await stat(current, { bigint: true });
+          const opened = await handle.stat({ bigint: true });
+          return sameFile(named) && sameFile(opened) && mounts.get(token) === mount && now() - mount.touched < IDLE_MS;
+        };
+        const tooLarge = () => Object.assign(new Error("file too large"), { status: 413 });
+        if (before.size > BigInt(PREVIEW_MAX_BYTES)) throw tooLarge();
+        if (!await stillValid()) return null;
+        const chunks = [];
+        let total = 0;
+        if (!headOnly) {
+          while (total <= PREVIEW_MAX_BYTES) {
+            const chunk = Buffer.alloc(Math.min(64 * 1024, PREVIEW_MAX_BYTES + 1 - total));
+            const { bytesRead } = await handle.read(chunk, 0, chunk.length, total);
+            if (!bytesRead) break;
+            total += bytesRead;
+            if (total > PREVIEW_MAX_BYTES) throw tooLarge();
+            chunks.push(chunk.subarray(0, bytesRead));
+          }
+        }
+        if (!await stillValid() || !headOnly && BigInt(total) !== before.size) return null;
+        mount.touched = now();
+        return { path: canonical, size: Number(before.size), data: headOnly ? void 0 : Buffer.concat(chunks, total) };
+      } catch (error) {
+        if (error?.status === 413) throw error;
+        return null;
+      } finally {
+        await handle.close();
+      }
+    }
+  };
+}
 
 // template/dshell.css
 var dshell_default = `/* dsh-worktable \u539F\u751F\u76AE\u80A4 \xB7 DSH \u8BBE\u8BA1\u7CFB\u7EDF\u7EC4\u4EF6\u5E93
@@ -115,7 +225,7 @@ function resolveDshHomeSafe() {
   cachedDshHome = baseDshHome();
   return cachedDshHome;
 }
-var PLUGIN_VERSION = false ? "dev" : "0.4.0";
+var PLUGIN_VERSION = false ? "dev" : "0.5.0";
 var name = "dsh-worktable";
 var inject = ["webServer", "sessions"];
 var HEALTH_PATH = "/api/worktable/health";
@@ -212,7 +322,13 @@ function json(res, status, body) {
 }
 async function readJsonBody(req) {
   const chunks = [];
-  for await (const chunk of req) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  let bytes = 0;
+  for await (const chunk of req) {
+    const data = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+    bytes += data.length;
+    if (bytes > 22 * 1024 * 1024) throw Object.assign(new Error("request too large"), { status: 413 });
+    chunks.push(data);
+  }
   const text = Buffer.concat(chunks).toString("utf8");
   if (!text) return {};
   try {
@@ -224,7 +340,7 @@ async function readJsonBody(req) {
 async function listDirectory(path) {
   const abs = pathResolve(path);
   const dirents = await readdir(abs, { withFileTypes: true });
-  const entries = dirents.map((d) => ({ name: d.name, path: abs + sep + d.name, isDir: d.isDirectory(), hidden: d.name.startsWith(".") })).sort((a, b) => {
+  const entries = dirents.map((d) => ({ name: d.name, path: abs + sep2 + d.name, isDir: d.isDirectory(), hidden: d.name.startsWith(".") })).sort((a, b) => {
     if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
     return a.name.localeCompare(b.name, void 0, { sensitivity: "base" });
   });
@@ -262,11 +378,43 @@ function setupTerminal(webServer, ctx) {
   if (!WebSocketServer) return;
   const pty = ptyMod.default ?? ptyMod;
   const wss = new WebSocketServer({ noServer: true });
+  let disposed = false;
+  const terminals = /* @__PURE__ */ new Set();
+  ctx.effect(() => () => {
+    disposed = true;
+    for (const ws of wss.clients ?? []) {
+      try {
+        ws.terminate();
+      } catch {
+      }
+    }
+    for (const term of terminals) {
+      try {
+        term.kill();
+      } catch {
+      }
+    }
+    terminals.clear();
+    try {
+      wss.close();
+    } catch {
+    }
+  }, "dsh-worktable: terminal sessions");
   const spawnShell = () => process.platform === "win32" ? { cmd: "powershell.exe", args: ["-NoLogo", "-NoProfile"] } : { cmd: process.env.SHELL || "/bin/bash", args: [] };
   const clampDim = (v, fallback) => Math.min(1024, Math.max(2, Number.isFinite(v) ? v : fallback));
   ctx.effect(() => webServer.registerUpgrade({
     path: "/api/worktable/term",
-    handler: (req, socket, head) => {
+    handler: async (req, socket, head) => {
+      let rejected = await requestRejection(ctx, req);
+      if (disposed) rejected = 503;
+      if (rejected !== void 0) {
+        socket.end(`HTTP/1.1 ${rejected} ${rejectionText(rejected)}\r
+Connection: close\r
+Content-Length: 0\r
+\r
+`);
+        return;
+      }
       wss.handleUpgrade(req, socket, head, (ws) => {
         const u = new URL(req.url ?? "/", "http://dsh.internal");
         const cwd = serverCwd(ctx, u.searchParams.get("sessionId") || void 0, u.searchParams.get("cwd") || void 0);
@@ -276,6 +424,7 @@ function setupTerminal(webServer, ctx) {
         try {
           const shell = spawnShell();
           term = pty.spawn(shell.cmd, shell.args, { name: "xterm-256color", cols, rows, cwd, env: process.env });
+          terminals.add(term);
         } catch (err) {
           try {
             ws.send("\r\n[worktable] \u7EC8\u7AEF\u542F\u52A8\u5931\u8D25\uFF1A" + String(err));
@@ -294,6 +443,7 @@ function setupTerminal(webServer, ctx) {
           }
         });
         term.onExit(() => {
+          terminals.delete(term);
           try {
             ws.close();
           } catch {
@@ -315,6 +465,7 @@ function setupTerminal(webServer, ctx) {
           }
         });
         ws.on("close", () => {
+          terminals.delete(term);
           try {
             term.kill();
           } catch {
@@ -330,14 +481,85 @@ function apply(ctx) {
     ctx.logger?.warn("[dsh-worktable] ctx.webServer \u4E0D\u53EF\u7528\uFF08headless profile\uFF1F\uFF09\uFF0C\u8DF3\u8FC7\u670D\u52A1\u7AEF\u8DEF\u7531");
     return;
   }
-  webServer.register({
+  const previews = createPreviewFiles();
+  ctx.effect(() => () => previews.clear(), "dsh-worktable: preview capabilities");
+  const register = (route, publicAsset = false) => ctx.effect(() => webServer.register({
+    ...route,
+    handler: async (req, res) => {
+      if (!publicAsset && route.path !== HEALTH_PATH) {
+        const rejected = await requestRejection(ctx, req);
+        if (rejected !== void 0) {
+          json(res, rejected, { error: rejectionText(rejected) });
+          return;
+        }
+      }
+      return route.handler(req, res);
+    }
+  }), "dsh-worktable: " + route.path);
+  register({
+    kind: "exact",
+    path: "/api/worktable/preview",
+    handler: async (req, res) => {
+      if (req.method !== "POST") {
+        json(res, 405, { error: "method not allowed" });
+        return;
+      }
+      try {
+        const body = await readJsonBody(req);
+        if (typeof body.revoke === "string") {
+          previews.revoke(body.revoke);
+          json(res, 200, { ok: true });
+          return;
+        }
+        if (typeof body.root !== "string") {
+          json(res, 400, { error: "missing root" });
+          return;
+        }
+        const token = await previews.mount(body.root);
+        json(res, 200, { token, base: PREVIEW_PREFIX + "/" + token + "/" });
+      } catch (err) {
+        json(res, err.status ?? 400, { error: String(err) });
+      }
+    }
+  });
+  register({
+    kind: "prefix",
+    path: PREVIEW_PREFIX,
+    handler: async (req, res) => {
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        json(res, 405, { error: "method not allowed" });
+        return;
+      }
+      try {
+        const parts = new URL(req.url ?? "/", "http://dsh.internal").pathname.slice(PREVIEW_PREFIX.length + 1).split("/").map(decodeURIComponent);
+        const file = await previews.file(parts.shift() ?? "", parts.filter(Boolean), req.method === "HEAD");
+        if (!file) {
+          json(res, 404, { error: "preview unavailable; refresh to reopen" });
+          return;
+        }
+        const ext = (file.path.split(".").pop() || "").toLowerCase();
+        res.writeHead(200, {
+          "content-type": FILE_TYPES[ext] ?? "application/octet-stream",
+          "cache-control": "no-store",
+          "referrer-policy": "no-referrer",
+          "content-security-policy": PREVIEW_CSP,
+          "x-content-type-options": "nosniff",
+          "access-control-allow-origin": "*"
+        });
+        res.end(file.data);
+      } catch (err) {
+        json(res, err?.status === 413 ? 413 : 404, { error: err?.status === 413 ? "file too large" : "preview unavailable" });
+      }
+    }
+  }, true);
+  register({
     kind: "exact",
     path: HEALTH_PATH,
     handler: (_req, res) => {
       json(res, 200, { plugin: "dsh-worktable", version: PLUGIN_VERSION, ok: true });
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/file",
     handler: async (req, res) => {
@@ -349,8 +571,8 @@ function apply(ctx) {
           return;
         }
         const abs = pathResolve(p);
-        const stat = await import("node:fs/promises").then((m) => m.stat(abs));
-        if (stat.size > 20 * 1024 * 1024) {
+        const stat2 = await import("node:fs/promises").then((m) => m.stat(abs));
+        if (stat2.size > 20 * 1024 * 1024) {
           json(res, 413, { error: "file too large" });
           return;
         }
@@ -377,14 +599,19 @@ function apply(ctx) {
           bmp: "image/bmp",
           ico: "image/x-icon"
         };
-        res.writeHead(200, { "content-type": FILE_TYPES[ext] ?? "application/octet-stream", "cache-control": "no-store" });
+        res.writeHead(200, {
+          "content-type": FILE_TYPES[ext] ?? "application/octet-stream",
+          "cache-control": "no-store",
+          "x-content-type-options": "nosniff",
+          .../^(html?|svg)$/.test(ext) ? { "content-security-policy": PREVIEW_CSP, "referrer-policy": "no-referrer" } : {}
+        });
         res.end(data);
       } catch (err) {
         json(res, 404, { error: String(err) });
       }
     }
   });
-  webServer.register({
+  register({
     kind: "prefix",
     path: TEMPLATE_PREFIX,
     handler: (req, res) => {
@@ -409,7 +636,7 @@ function apply(ctx) {
       }
     }
   });
-  webServer.register({
+  register({
     kind: "prefix",
     path: SITE_PREFIX,
     handler: async (req, res) => {
@@ -435,7 +662,7 @@ function apply(ctx) {
         }
         const root = pathResolve(rootToken);
         let abs = pathResolve(root, rel);
-        if (abs !== root && !abs.startsWith(root + sep)) {
+        if (abs !== root && !abs.startsWith(root + sep2)) {
           json(res, 403, { error: "outside root" });
           return;
         }
@@ -455,14 +682,20 @@ function apply(ctx) {
         }
         const data = await readFile(abs);
         const ext = (abs.split(".").pop() || "").toLowerCase();
-        res.writeHead(200, { "content-type": FILE_TYPES[ext] ?? "application/octet-stream", "cache-control": "no-store" });
+        res.writeHead(200, {
+          "content-type": FILE_TYPES[ext] ?? "application/octet-stream",
+          "cache-control": "no-store",
+          "content-security-policy": PREVIEW_CSP,
+          "referrer-policy": "no-referrer",
+          "x-content-type-options": "nosniff"
+        });
         res.end(data);
       } catch (err) {
         json(res, 404, { error: String(err) });
       }
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/fs",
     handler: async (req, res) => {
@@ -471,11 +704,11 @@ function apply(ctx) {
         const path = typeof body.path === "string" && body.path ? body.path : serverCwd(ctx, body.sessionId, body.cwd);
         json(res, 200, await listDirectory(path));
       } catch (err) {
-        json(res, 500, { path: "", entries: [], truncated: false, error: String(err) });
+        json(res, err.status ?? 500, { path: "", entries: [], truncated: false, error: String(err) });
       }
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/workspaces",
     handler: async (_req, res) => {
@@ -524,7 +757,7 @@ function apply(ctx) {
       }
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/write",
     handler: async (req, res) => {
@@ -549,11 +782,11 @@ function apply(ctx) {
         await import("node:fs/promises").then((m) => m.writeFile(abs, content, "utf8"));
         json(res, 200, { ok: true });
       } catch (err) {
-        json(res, 500, { error: String(err) });
+        json(res, err.status ?? 500, { error: String(err) });
       }
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/mkdir",
     handler: async (req, res) => {
@@ -581,17 +814,21 @@ function apply(ctx) {
         await fsx.mkdir(abs);
         json(res, 200, { ok: true, path: abs });
       } catch (err) {
-        json(res, err?.code === "EEXIST" ? 200 : 500, err?.code === "EEXIST" ? { ok: true, exists: true } : { error: String(err) });
+        json(res, err?.code === "EEXIST" ? 200 : err.status ?? 500, err?.code === "EEXIST" ? { ok: true, exists: true } : { error: String(err) });
       }
     }
   });
-  webServer.register({
+  register({
     kind: "exact",
     path: "/api/worktable/git",
     handler: async (req, res) => {
-      const body = await readJsonBody(req);
-      const cwd = serverCwd(ctx, body.sessionId, body.cwd);
-      json(res, 200, await gitStatus(cwd));
+      try {
+        const body = await readJsonBody(req);
+        const cwd = serverCwd(ctx, body.sessionId, body.cwd);
+        json(res, 200, await gitStatus(cwd));
+      } catch (err) {
+        json(res, err.status ?? 500, { error: String(err) });
+      }
     }
   });
   setupTerminal(webServer, ctx);

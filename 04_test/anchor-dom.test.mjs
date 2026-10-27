@@ -326,4 +326,40 @@ function fresh() {
   ok('G. settling 过渡态保持等待')
 }
 
+// 来源：Aisland-SJL/dsh-worktable PR #16（xpeter80），head 0e35aa14636a4433c261bbac4fe818d8ab533ded。
+// 模拟浏览器缩放下 CSSOM 对 px 的小数序列化，并通过真实 splitStore yield observer 验证边界。
+for (const chatSide of ['left', 'right']) {
+  for (const externalMargin of ['marginLeft', 'marginRight', 'marginTop']) {
+    const { sandbox, splitStore, allEls, moInstances } = fresh()
+    const root = new FakeEl('DIV', 'wSkVaW_root', { phase: 'hero' }).setRect({ left: 0, top: 0, right: 969.0908203125, bottom: 800 })
+    const body = new FakeEl('DIV', 'wSkVaW_body')
+    body.style = new Proxy(new StyleProxy(), {
+      set(target, key, value) {
+        // Chromium serializes 649.0908203125px as 649.091px.
+        target[key] = typeof value === 'string' && /^-?[\d.]+px$/.test(value)
+          ? Number(Number.parseFloat(value).toPrecision(6)) + 'px' : value
+        return true
+      },
+    })
+    root.appendChild(body)
+    allEls.push(root); sandbox.document.body.appendChild(root)
+    if (!splitStore.open({ ...makeSpec('zoom'), chatSide })) fail('zoom.open', 'open failed')
+    splitStore.setChatW(320)
+    const observer = moInstances.find((m) => m._target === body)
+    if (!observer) fail('zoom.observer', 'yield observer not installed')
+    const ownedMargin = chatSide === 'left' ? 'marginRight' : 'marginLeft'
+    if (body.style[ownedMargin] !== '649.091px') fail('zoom.fixture', body.style[ownedMargin])
+    observer.cb()
+    if (!splitStore.active) fail('zoom.self', 'own serialized write closed split')
+    splitStore.applyMargin()
+    observer.cb()
+    if (!splitStore.active) fail('zoom.refresh', 'repeated layout closed split')
+    body.style[externalMargin] = '17px'
+    observer.cb()
+    if (splitStore.active) fail('zoom.takeover', externalMargin + ' did not yield')
+    if (body.style.marginLeft !== '' || body.style.marginRight !== '' || body.style.marginTop !== '') fail('zoom.restore', 'original margins not restored')
+    ok('zoom ' + chatSide + ': self-write retained; external ' + externalMargin + ' yields')
+  }
+}
+
 console.log('all anchor-dom tests passed: ' + pass + '/' + pass)

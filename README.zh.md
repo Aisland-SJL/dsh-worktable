@@ -4,6 +4,8 @@
 
 **DeepSeek Harness 的 agent 项目工作台**——侧边栏「应用抽屉」把每个项目变成可停靠的窗口，再加一个实时监控所有项目的内置「控制室」。
 
+> 当前源码为 **0.5.0**，公开状态以 GitHub Release 为准：接口身份校验、项目网页隔离、预览读取限制、小数分栏修复及折叠侧栏弹窗补全。Windows 隔离网页端已测 DSH 0.2.0-rc.2 / 0.2.1-rc.3；用户已在官方 Windows Desktop 0.2.1-rc.3 验证 dev.2 的项目打开、分栏缩放和侧栏设置弹窗。正式包安装/回归与候选 GUI 证据分开记录，不宣称全功能验收。0.1.x 不在本版支持范围。浏览器存储、登录、WebGL 贴图及标注自动取字可能受隔离影响，详见 [兼容与安全说明](docs/compatibility-and-security.md)。下方 v0.4.0 内容为历史发布记录。
+
 ## 📸 截图
 
 | | |
@@ -51,7 +53,7 @@
 
 ---
 
-## 快速开始
+## 快速开始（已发布 v0.4.0）
 
 **v0.4.0** 在下述已测范围内增加 Windows 官方桌面端支持。网页端兼容声明仅列 **DSH 0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**；桌面已测范围为 **Windows 官方桌面端 + 0.2.0-rc.2**。桌面页面点测与定向回归不等于最终包完整桌面端业务验收；旧版沿用此前页面验收并补代码回归，未重跑整套旧版 GUI。升级前备份重要数据并核对其他插件，公开发布状态以 GitHub Release 为准。
 
@@ -81,7 +83,7 @@
 先保存任务，从应用菜单/托盘完整退出（只关窗口不够）；将安装目录占位符替换为实际位置，在 PowerShell 执行，再手动重新打开：
 
 ```powershell
-& "<桌面端安装目录>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.4.0/dsh-worktable-0.4.0.tgz"
+& "<桌面端安装目录>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.0/dsh-worktable-0.5.0.tgz"
 ```
 
 必须使用桌面端自带 CLI 与 `desktop` profile，不用不固定版本的 npx 或网页 CLI 代替。保留实际 DSH_HOME；即便共用会话数据目录，网页与桌面来源的项目/布局/媒体也不会自动同步。
@@ -112,10 +114,10 @@ node --check lib/index.js
 
 - **构建必须在 01_content 内执行**——在仓库根构建会把 lib 写到错误位置，宿主仍加载旧 bundle
 - 客户端 bundle 保持 `window.__ModuleLoader__.load` 握手；react 与 @deepseek-ai/* 全部 external
-- 回归：`04_test/functional-diag.cjs`（20 步）+ 专项探测（控制室、绑定弹窗、收起态贴片、模型继承）；
-  发布流水线内嵌：分栏锚点 DOM 回归 `04_test/anchor-dom.test.mjs`（8 场景，双宿主会话结构）与
+- 历史诊断 `04_test/functional-diag.cjs` 与专项探针有本机路径/端口假设，运行前先核对，限定隔离 profile；
+  发布流水线内嵌：分栏锚点 DOM 回归 `04_test/anchor-dom.test.mjs`（14 场景，含小数几何）与
   数据目录解析回归 `04_test/server-home.test.mjs`（3 组场景，无循环/路径展开/官方分支夹具）
-- 发布打包唯一入口为 `npm run pack`，另含 98 项输入/会话/详情/传输/挂载回归、独立安装与客户端工厂门禁；`npm run test:widget` 单独运行 26 项归属、会话隔离、共目录、延迟结果与重试回归。上传后用 `npm run verify:remote -- --expect-sha <最终 SHA> v0.4.0` 核对，并另查 latest。
+- 发布打包唯一入口为 `npm run pack`，含 122 项源码回归、独立安装与客户端工厂门禁；安装产物另跑侧栏弹窗、14 项锚点、5 项真实 Chromium 与数据目录回归。`npm run test:sidebar` 可单跑弹窗；`npm run test:widget` 为 26 项归属/会话隔离/补挂回归。批准发布后，用 `npm run verify:remote -- --expect-sha <最终 SHA> <发布 tag>` 核对，并另查 latest。
 
 ---
 
@@ -147,12 +149,14 @@ node --check lib/index.js
 
 - 指一下 + 说一句话，不用口头描述位置。
 - 载荷自带说明：任何会话、任何 AI 收到都能按协议配合。
-- 对所有用户行为一致——无需本地配置、无需额外工具。
+- 窗口级标注可用；隔离网页内部文字/DOM 读取受限，缺失时应描述目标或提供截图。
 - 同批打磨：控制台新增第 5 键「更新公告」（版本说明/检查更新/复制升级命令）；自定义背景媒体库开箱自带两张默认预设图（极光渐变 + 海岸风景）。
 
 ## 已知限制
 
-- **平台**：Windows 网页端与官方桌面端的已测版本/流程见上方说明，最终包完整桌面端业务验收仍未完成；macOS 为实验性支持且尚未真机端到端验证。
+- 网页隔离可能影响存储、登录及 WebGL/Cesium 贴图。StarMap 月球纹理已在独立项目中修复，不包含在工作台包中；新项目成功不能证明所有旧网页都兼容。
+
+- **平台**：本版范围见页首与[兼容说明](docs/compatibility-and-security.md)。dev.2 已通过用户指定的桌面交互检查，不能外推正式包全部业务；macOS 尚未真机验证。
 - 状态在浏览器本地（localStorage 与 IndexedDB）——项目、绑定、视图与媒体不跨设备同步
 - 终端窗格在 Windows 上是朴素的 PowerShell 宿主（与原生终端应用无 PTY 对等）
 - 自动挂载要求已登记「自定义」任务且写出身份匹配的 v2 结果文件。旧已保存窗口保留，根目录旧 `widget-result.json` 不再导入；旧对话可从目标窗口「自定义 → 发送到会话」发一次任务建立新关联，随后在同一对话直接继续修改。手动关闭/替换内容会撤销关联，此前误挂的标签需关闭一次。同目录项目若主动写同一个实际文件，文件内容仍可能互相影响。
