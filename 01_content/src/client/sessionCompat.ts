@@ -86,6 +86,17 @@ export function createSessionSnapshotAdapter() {
   }
 }
 
+/** Display only: done means the run ended, never that the task succeeded.
+ * Keep the adapter's completion edge unchanged for widget-result/ack handling.
+ */
+export function consoleStatusOf(entry: any, pending: string | null, legacyFace?: any): 'idle' | 'busy' | 'need' | 'done' {
+  if (!entry) return 'idle'
+  if (pending != null) return 'need'
+  if (entry.running === true) return 'busy'
+  if (entry.completed === true || legacyFace?.completed === true) return 'done'
+  return 'idle'
+}
+
 /** Parent links and the host's child catalog can each contain otherwise missing children. */
 export function childSessionIdsOf(snapshot: any, sid: string): Set<string> {
   const children = new Set<string>()

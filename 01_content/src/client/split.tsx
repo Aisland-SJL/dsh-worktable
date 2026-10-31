@@ -3,7 +3,7 @@ import { parentPathOf } from './pathutil'
 import { hostWebSocketUrl, worktableUpgrade } from './hostTransport'
 import { SandboxedFrame } from './SandboxedFrame'
 import { CHANGELOG_V030 } from './changelog'
-import { LOCAL_VERSION, checkUpdate, getAutoCheck, readCache, setAutoCheck as storeAutoCheck, setSkipVersion, type UpdateInfo, type UpdateStatus } from './updateCheck'
+import { LOCAL_VERSION, checkUpdate, getAutoCheck, readCache, newerUpdateInfo, setAutoCheck as storeAutoCheck, setSkipVersion, type UpdateInfo, type UpdateStatus } from './updateCheck'
 import { Terminal } from 'xterm'
 
 import MarkdownIt from 'markdown-it'
@@ -207,19 +207,19 @@ export type ConsoleCardData = {
   id: string
   name: string
   icon: string
-  /** 三态 + 空闲：need(待决黄) > done(完成绿) > busy(工作中蓝) > idle */
+  /** 展示待决/运行/本轮结束/空闲；结束为中性提醒，不判定任务成功。 */
   status: 'idle' | 'busy' | 'need' | 'done'
   /** 正在运行时的本轮已用毫秒；非运行态 null */
   runtimeMs: number | null
   /** 子代理数量 */
   kids: number
-  /** 最近一条消息预览（单行文本，可能为空） */
+  /** 最近可读的助手答复（单行文本，可能为空） */
   preview: string
   /** 是否绑定对话 */
   bound: boolean
   /** 是否为「工作台」自己（卡片点击无操作） */
   self: boolean
-  /** 完成/待决且未被确认：卡片发对应色光（点击确认后熄灭） */
+  /** 本轮结束/待决且未被确认：卡片发提醒光（点击确认后熄灭） */
   glow: boolean
 }
 
@@ -1629,7 +1629,8 @@ function ConsolePane() {
   const [glowSpeed, setGlowSpeedState] = useState<number>(() => splitEnv?.console?.getGlowSpeed?.() ?? 50)
   const [annOpen, setAnnOpen] = useState(false)
   const [updStatus, setUpdStatus] = useState<UpdateStatus>(() => readCache().status)
-  const [updInfo, setUpdInfo] = useState<UpdateInfo | null>(() => readCache().info)
+  const [rawUpdInfo, setUpdInfo] = useState<UpdateInfo | null>(() => readCache().info)
+  const updInfo = newerUpdateInfo(rawUpdInfo)
   const [autoCheckOn, setAutoCheckOn] = useState<boolean>(() => getAutoCheck())
   const updBusyRef = useRef(false)
   const photoUrlRef = useRef<string>('')

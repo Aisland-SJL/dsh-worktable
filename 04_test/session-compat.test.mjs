@@ -9,7 +9,7 @@ const { buildSync } = require('esbuild')
 const code = buildSync({ entryPoints: [fileURLToPath(new URL('../01_content/src/client/sessionCompat.ts', import.meta.url))], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text
 const module = { exports: {} }
 runInNewContext(code, { module, exports: module.exports, setTimeout })
-const { createSessionSnapshotAdapter, sendHostSession, childSessionIdsOf, pendingAckOf, sessionRuntimeMs } = module.exports
+const { createSessionSnapshotAdapter, sendHostSession, childSessionIdsOf, pendingAckOf, sessionRuntimeMs, consoleStatusOf } = module.exports
 const list = (running = false) => ({ phase: 'ready', ids: ['a'], byId: { a: { id: 'a', running, retainedBy: { mainView: 1 } } }, projectionsBySession: {} })
 const source = (patch = {}) => ({ getSnapshot: () => new Map([['a', { running: false, pendingInteraction: undefined, completionUnread: false, ...patch }]]) })
 
@@ -57,6 +57,17 @@ test('ready removal clears run memory; transient pending list does not', () => {
   assert.equal(adapt(list()).byId.a.completed, true)
   adapt({ phase: 'ready', byId: {} })
   assert.equal(adapt(list()).byId.a.completed, false)
+})
+test('console run-stop is neutral ended status even when the host reports an error', () => {
+  assert.equal(consoleStatusOf({ completed: true, running: false, error: { code: 'INVALID_REQUEST' } }, null), 'done')
+  assert.equal(consoleStatusOf({ running: false }, null, { completed: true }), 'done')
+  assert.equal(consoleStatusOf({ running: false }, null), 'idle')
+  assert.equal(consoleStatusOf(undefined, null), 'idle')
+})
+test('console running overrides a stale completion, while pending stays first', () => {
+  assert.equal(consoleStatusOf({ completed: true, running: true }, null), 'busy')
+  assert.equal(consoleStatusOf({ running: true }, null, { completed: true }), 'busy')
+  assert.equal(consoleStatusOf({ completed: true, running: true }, 'need:fixture'), 'need')
 })
 function sendFixture(outcome = { kind: 'success' }) {
   const calls = []

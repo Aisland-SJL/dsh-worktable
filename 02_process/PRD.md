@@ -3,7 +3,7 @@
 > 版本：v0.2 草案 · 日期：2026-08-16 · 状态：v2 已实现并验收；§12 多项目分栏框架（v3）与 §13 乐高式工作区框架（v4）设计定案、待实现
 > 关联项目：dsh-travelatlas（第一个入驻项目）、上游参考 dsh-reminder（文件夹结构）
 
-> 文档边界：§3/§9–§13 包含早期目标、历史验收表与设计草案，不是当前版本全部实现的规格书。当前 0.5.0的安装、兼容与验证状态以 README / 包内 README 为准；§6/§8 为当前架构与权限说明。
+> 文档边界：§3/§9–§13 包含早期目标、历史验收表与设计草案，不是当前版本全部实现的规格书。当前 0.5.1的安装、兼容与验证状态以 README / 包内 README 为准；§6/§8 为当前架构与权限说明。
 
 ## 1. 项目定位
 
@@ -384,8 +384,8 @@ type SplitPane = {
   分组、与发送到会话同源），绑定后打开该项目时右侧对话窗自动切换（sessions.open）；解绑即
   不再切换；绑定关系存 projects.v1.bindings（项目 id → 会话 id）。
 - **任务完成/待决提醒镜像**（2026-08-18）：绑定会话在宿主快照 byId 里 completed=true → 项目卡
-  双圆点绿色发光（data-bound=done）；pendingInteraction != null → 黄色发光（data-bound=need），
-  与原生对话小绿点/小黄点同步；点开项目即确认（ack，notifyAck.v1 按会话存状态）恢复常态实心；
+  双圆点中性发光（data-bound=done，仅表示本轮结束）；pendingInteraction != null → 黄色发光（data-bound=need），
+  仅同步宿主结束/待决提醒，不把结束视为成功；点开项目即确认（ack，notifyAck.v1 按会话存状态）恢复常态实心；
   状态切换（完成↔待决）会重新点亮；新版 pending key/kind 或待决子会话集合变化也重新点亮。
   控制室计时只读后台任务或新版 chat.legacy.turnTimings / 旧会话面，未知起点不虚构时长。
   数据源 sessionsSnapshotStore（syncSessionScope 推送完整
@@ -454,7 +454,7 @@ type SplitPane = {
   用户自建布局 = 同一引擎的运行时产物，共用 tiling 引擎与持久化；
 - 本地快捷方式、接入指引保留于「+」面板第二入口。
 
-## 14. 当前实现参考（0.5.0）
+## 14. 当前实现参考（0.5.1）
 
 以下为界面、状态与产物协议的实现细节，供改动对应组件时对照源码；约束与验证入口见 AGENTS.md，发布状态见 README。0.2 导航使用 openHostSession，新旧 API 桥接见 sessionCompat.ts/sessionDetails.ts；不要将旧接口示例当作通用公开 API。
 
@@ -513,7 +513,7 @@ type SplitPane = {
   参考模板。新增组件样式只加到 dshell.css，保持单一来源。
 
 - **任务完成/待决提醒镜像**：绑定会话在宿主快照 byId 里 completed=true → 项目卡双圆点变
-  绿色发光（data-bound=done）；pendingInteraction != null → 黄色发光（data-bound=need）；
+  中性发光（data-bound=done，仅表示本轮结束）；pendingInteraction != null → 黄色发光（data-bound=need）；
   点开项目 = ack（notifyAck.v1 按会话存状态）恢复常态实心。数据源 = sessionsSnapshotStore
   （syncSessionScope 写入完整快照并通知监听者）；跨状态（done↔need）会重新点亮。
   **工作中（busy）**：byId[sid].running === true → data-bound=busy，蓝色 #4f8ef7 发光 +
@@ -535,7 +535,7 @@ type SplitPane = {
     未绑定 → 强制绑定弹窗（左「加入现有对话」列表 / 右「新建对话」：分组 无/现有/新建，
     仅在宿主允许且用户分组选择有效时创建空会话并绑定；DSH 0.2 未分组空会话提示并禁用创建，不改组、不发激活消息）。绑定也走 projects.v1.bindings。
   - 控制室面板（split.tsx ConsolePane）：卡片网格每行 3 张、超出换行；每卡 = 图标/名称/
-    状态大字与三色光效（need>done>busy>idle，不过滤 ack，永远显示事实状态）/运行时长
+    状态大字与提醒光效（need>busy>done>idle，不过滤 ack；done 只表示本轮结束，不表示成功）/运行时长
     （后台任务 JobView.startedAt → 新版 uiConversation 的 chat.legacy.turnTimings → 旧会话面，
     未加载/无起点不显示时长；不为计时激活 chat 或持有冷会话）/最近消息预览。数据组装
     = index.tsx getConsoleCards（env.console 注入），刷新走 consoleListeners（项目/会话
@@ -550,7 +550,7 @@ type SplitPane = {
   - 状态光效（整卡霓虹描边，参考侧栏双圆点发光质感）：工作=蓝色彗星式光点顺时针绕卡旋转
     （.dsh-wt_consoleCard-busy ::before conic-gradient + @property --consoleAngle +
     consoleAngleSpin；环 inset -4/padding 4、高亮段 #dcebff→#9cc6ff、filter drop-shadow
-    rgba(140,190,255,.85) 光点自带辉光、外发光双层 10px+34px）；完成=绿光、待决=黄光
+    rgba(140,190,255,.85) 光点自带辉光、外发光双层 10px+34px）；本轮结束=中性光、待决=黄光
     （-glowDone/-glowNeed：亮色描边 + 双层外发光 + 微弱内辉光；glow 字段 = done/need 且
     本轮未 ack，点卡片先 onAck 熄光再进入，与提醒 ack 生命周期一致）。
   - 命名：侧栏区块标题 = 「工作台」（title locale，整个插件）；默认项目卡名与面板标题 =
@@ -575,15 +575,14 @@ type SplitPane = {
     新版本横幅=复制升级指令（点击变绿并提示「请在任意对话中发送」）/查看发布页（蓝 hover）/忽略此版本（红 hover）+
     CHANGELOG_V030 正文（changelog.ts 纯文本，不做 md 渲染）；
     检查核心 = updateCheck.ts（updateCache.v1 缓存，与设置面板旧更新卡共用 lastUpdateCheck/skipVersion/updateCheck 键，
-    旧卡暂保留未去重）；铃铛按钮发现新版本时右上角琥珀呼吸灯（dockBadge）。
+    两处请求循环暂保留，版本排序/候选过滤统一用 updateCheck.ts；缓存重验 latest>本机且未忽略，非新版/失败清旧提示，避免降级提醒）；铃铛按钮确有更高版本时右上角琥珀呼吸灯（dockBadge）。
   - 指哪打哪标注：窗格折叠键旁 annotBtn——蓝泡光标→点选/拖框（小拖=点）→输入→✓ 注入宿主 textarea（不发送，失败回退剪贴板）。
     payload v3.2：窗口身份（编号+窗格标题+内容类型/URL）+ 主目标（caretPositionFromPoint 取字 + computed style 字号）+ 整行 + 候选；
     隔离 iframe 下钻取字被浏览器拒绝时输出「读取受限」+ src，保留窗口级信息；不能取消 sandbox 恢复取字。提示词含「禁止编造，缺失时如实说明，建议截图或视觉模型」；
     知识包含标注协议行（窗口编号+处理方式）；回退锚点 tag：pre-annotate-v3 / pre-annotate-v3.1 / pre-annotate-v3.2。
   - 分隔线：DIVIDER=4（分栏可拖分隔条更细）。
   - 冷会话消息预览：0.2 用 sessions.using 临时持有后读 eventSource 的已加载事件窗口；旧版预热走 face.history({maxMessages:6})
-    （旧版运行期内建方法、非公开接口）；尾部扫 user/message 与 assistant/message 的
-    text 块 → cleanPreviewText（滤除 ```围栏与行内代码、压缩空白；不足 8 字符回退更早消息）→
+    （旧版运行期内建方法、非公开接口）；尾部仅扫 assistant/message 的 text 块，排除事件根 surfaceOp 明确非 append 的模型替换副本 → cleanPreviewText（滤除 ```围栏与行内代码、压缩空白；短答复保留，纯代码回退更早助手文本，无答复留空）→
     previewCache；sweepPreviews 在打开控制室时 + 控制室开着且会话快照变化防抖 6s 触发；
     失败静默回退缓存/内存路径 lastTextOf；预热期间不因自身 retain/release 排入新一轮。拉取是带宽成本不是 Token 成本。
   - 状态指示：卡片右上角小圆点已删（整卡光效表达状态）；状态计算不变。

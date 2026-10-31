@@ -10,7 +10,7 @@ const { buildSync, transformSync } = require('esbuild')
 const code = buildSync({ entryPoints: [fileURLToPath(new URL('../01_content/src/client/sessionDetails.ts', import.meta.url))], bundle: true, write: false, platform: 'node', format: 'cjs' }).outputFiles[0].text
 const module = { exports: {} }
 runInNewContext(code, { module, exports: module.exports })
-const { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } = module.exports
+const { cleanPreviewText, previewFromEvents, previewFromNodes, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } = module.exports
 const msg = (text, type = 'assistant/message') => ({ type: 'event', event: { type, data: { content: [{ type: 'text', text }] } } })
 
 test('preview filters code and joins final text blocks, without mutating events', () => {
@@ -24,12 +24,47 @@ test('reasoning, tools and transient chunks never become a preview', () => {
   const entries = [msg('A readable earlier message'), { event: { type: 'assistant/message', data: { content: [{ type: 'reasoning', text: 'private reasoning' }] } } }, msg('tool argument', 'tool/call'), msg('stream token', 'assistant/live-chunk')]
   assert.equal(previewFromEvents(entries), 'A readable earlier message')
 })
-test('short/code-only latest message falls back, malformed input stays empty, length bounded', () => {
+test('code-only latest message falls back, malformed input stays empty, length bounded', () => {
   assert.equal(previewFromEvents([msg('Earlier readable message'), msg('```js\ncode\n```')]), 'Earlier readable message')
   assert.equal(previewFromEvents(null), '')
   assert.equal(previewFromEvents([{ event: { type: 'user/message', data: { content: 'not blocks' } } }]), '')
   assert.equal(previewFromEvents([msg('x'.repeat(300))]).length, 220)
 })
+test('preview uses assistant replies instead of later user or injected context', () => {
+  const entries = [msg('Actual assistant answer'), msg('A real new question', 'user/message'),
+    { event: { type: 'user/message', data: { source: { kind: 'runtime-context' }, content: [{ type: 'text', text: 'Time sampled while preparing turn: injected context' }] } } }]
+  const before = JSON.stringify(entries)
+  assert.equal(previewFromEvents(entries), 'Actual assistant answer')
+  assert.equal(previewFromEvents(entries.slice(1)), '')
+  assert.equal(JSON.stringify(entries), before)
+})
+test('short assistant replies are retained, not replaced by earlier text', () => {
+  assert.equal(previewFromEvents([msg('An earlier long answer'), msg('好了')]), '好了')
+})
+test('model-only replacement messages never replace the visible assistant preview', () => {
+  const replacement = msg('Internal rewritten model-only text')
+  replacement.event.surfaceOp = { op: 'replace', startSeq: 1, endSeq: 2 }
+  assert.equal(previewFromEvents([msg('Visible answer'), replacement]), 'Visible answer')
+  assert.equal(previewFromEvents([replacement]), '')
+  const appended = msg('Visible appended reply')
+  appended.event.surfaceOp = 'append'
+  assert.equal(previewFromEvents([appended]), 'Visible appended reply')
+})
+
+test('legacy nodes include only assistant text blocks, never context or reasoning', () => {
+  const nodes = [{ kind: 'assistant', blocks: [{ kind: 'text', text: 'Earlier reply' }] },
+    { kind: 'assistant', blocks: [{ kind: 'reasoning', text: 'private reasoning' }, { kind: 'text', text: '好了' }] },
+    { kind: 'context', blocks: [{ kind: 'text', text: 'Injected auxiliary context' }] },
+    { kind: 'user', blocks: [{ kind: 'text', text: 'Latest question' }] },
+    { blocks: [{ type: 'text', text: 'Unknown node, must not guess' }] },
+    { kind: 'assistant', interrupted: true, blocks: [{ kind: 'text', text: 'Interrupted unfinished reply' }] }]
+  const before = JSON.stringify(nodes)
+  assert.equal(previewFromNodes(nodes), '好了')
+  assert.equal(previewFromNodes(nodes.slice(2)), '')
+  assert.equal(previewFromNodes(null), '')
+  assert.equal(JSON.stringify(nodes), before)
+})
+
 function held(binding, action) {
   const calls = []
   let active = false

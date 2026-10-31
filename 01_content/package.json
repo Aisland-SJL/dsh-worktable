@@ -1,7 +1,7 @@
 {
   "name": "dsh-worktable",
   "description": "工作台 Worktable：DeepSeek Harness 侧边栏的 agent 级项目容器（应用抽屉）",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Aisland-SJL/dsh-worktable.git",
@@ -9,7 +9,7 @@
   },
   "engines": {
     "node": ">=22",
-    "dsh": "0.2.0-rc.2 || 0.2.1-rc.3"
+    "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5"
   },
   "license": "MIT",
   "type": "module",
@@ -40,10 +40,11 @@
       ]
     },
     "compatibility": {
-      "dsh": "0.2.0-rc.2 || 0.2.1-rc.3",
+      "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5",
       "dshReleases": {
         "0.2.0-rc.2": "compatible",
-        "0.2.1-rc.3": "compatible"
+        "0.2.1-rc.3": "compatible",
+        "0.2.1-rc.5": "compatible"
       }
     }
   },
@@ -56,6 +57,7 @@
     "test:input": "node ../04_test/host-input.test.mjs",
     "test:session": "node ../04_test/session-compat.test.mjs",
     "test:details": "node ../04_test/session-details.test.mjs",
+    "test:update": "node ../04_test/update-check.test.mjs",
     "test:transport": "node ../04_test/host-transport.test.mjs",
     "test:widget": "node ../04_test/widget-mount.test.mjs",
     "test:security": "node --test ../04_test/request-auth.test.mjs ../04_test/preview-files.test.mjs ../04_test/sandboxed-frame.test.mjs",

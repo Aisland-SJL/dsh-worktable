@@ -12,13 +12,31 @@ export function previewFromEvents(entries: any): string {
   if (!Array.isArray(entries)) return ''
   for (let i = entries.length - 1; i >= 0; i--) {
     const ev = entries[i]?.event
-    if (ev?.type !== 'user/message' && ev?.type !== 'assistant/message') continue
-    const data = ev.type === 'assistant/message' ? ev.data?.message ?? ev.data : ev.data
+    // user/message also carries injected runtime context. Preview assistant replies only.
+    if (ev?.type !== 'assistant/message') continue
+    // New hosts keep model-only replacement copies out of the visible conversation.
+    if (ev.surfaceOp != null && ev.surfaceOp !== 'append') continue
+    const data = ev.data?.message ?? ev.data
     const blocks = data?.content ?? data?.blocks
     if (!Array.isArray(blocks)) continue
     const raw = blocks.filter((b: any) => b?.type === 'text' && typeof b.text === 'string').map((b: any) => b.text).join('\n')
     const text = cleanPreviewText(raw)
-    if (text.length >= 8) return text.slice(0, 220)
+    if (text) return text.slice(0, 220)
+  }
+  return ''
+}
+
+/** Legacy in-memory nodes have kind-discriminated blocks, not event content blocks. */
+export function previewFromNodes(nodes: any): string {
+  if (!Array.isArray(nodes)) return ''
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i]
+    if (node?.kind !== 'assistant' || node.interrupted === true) continue
+    const blocks = node.blocks
+    if (!Array.isArray(blocks)) continue
+    const raw = blocks.filter((b: any) => b?.kind === 'text' && typeof b.text === 'string').map((b: any) => b.text).join('\n')
+    const text = cleanPreviewText(raw)
+    if (text) return text.slice(0, 220)
   }
   return ''
 }

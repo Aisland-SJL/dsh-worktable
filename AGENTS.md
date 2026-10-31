@@ -32,13 +32,23 @@
 - **平台边界**：Windows 网页端已测范围见 `01_content/README.md`，不宣称全功能验收；桌面已测版本与候选边界同包内 README；macOS 为实验性支持（核心文件路径代码已做跨平台适配，
   尚未真机端到端验证）。路径拼接必须走 `pathutil.ts` helper 或 Node `path` API，不手写分隔符。
 
-## 当前 0.5.0 安全与兼容范围
+## 当前 0.5.1 发布批次
+
+- 用户于2026-10-31明确授权：统一0.5.1版本/公告/安装链接，重新打包验收，通过后提交、推送并发布；不覆盖旧Release资产。公开状态以GitHub Release为准。
+- rc.5 的dev.1隔离GUI 15项通过；dev.2修正中性结束提醒与助手摘要，dev.3修复更新误报。用户已在本机官方Desktop确认dev.3误报消失、看起来正常；正式0.5.1另按最终包验收，不称正式包全功能GUI验证。本机仍装dev.3（SHA 620b3bc8b798…），发布不自动替换或重启正式宿主。临时测试环境已清理。
+- rc.5 claimed command 是单字符 chip，但 0.2.0 mainView 仍是显示文本，不能只据 mainView 判断命令坐标；本轮保持既有安全剪贴板降级，后续需明确能力契约再适配。
+- 兼容目标精确增加 DSH 0.2.1-rc.5；不得以通配或真实环境豁免代替隔离验证。
+- rc.5 适配日志位于 E:/AI_Workspace/DeepseekHarness/log/2026-10-30_worktable-rc5兼容适配；dev.2 显示修正与最终包检查见 log/2026-10-31_worktable控制室显示修正/2026-10-31_控制室显示修正与候选检查报告.md（相对 DeepseekHarness 根）。更新误报修正与dev.3安装见同目录2026-10-31_更新误报修复与dev3安装报告.md。先看实测记录再描述完成范围。
+- 保留任务开始前 index.tsx 的一行任务标题文案修改，不能将其说成本轮接口修复；旧 0.5.0 发布资产不覆盖。
+- 以下 0.5.0 条目是既有安全边界与历史证据，rc.5 以本轮候选验收记录为准。
+
+## 0.5.0安全基础（0.5.1继续保留）
 
 - 私有 HTTP/终端握手统一调用 `requestAuth.ts`：新宿主要求 owner，0.2.0 仅放行同一 operator 对象；未知/不可用服务关闭访问，不用 requestRejection-only 回退。health 与随机只读预览地址是明确例外。
 - `SandboxedFrame` 禁止 `allow-same-origin`；本地目录先鉴权创建临时只读挂载，Desktop 资源走 Host HTTP 地址。不得为恢复页面存储/自动取字而取消隔离。影响、保活与过期语义必须见包内 README。
 - 预览读取必须绑定同一文件句柄、限量并复核文件身份/路径及撤销状态；保留目录替换/检查后增长等回归。该机制不等于恶意本地进程的 OS 文件沙箱，文档不得作绝对防护承诺。
-- 当前版本只声明 DSH 0.2.0-rc.2 / 0.2.1-rc.3；网页隔离实测与 Desktop 传输单测不能冒充真实 Desktop 全功能验收。下文旧版本兼容条目是历史依据。
-- `npm run test:security` = 22 项源码/夹具回归；流水线源码回归合计 122 项。安装产物另跑 `node 04_test/split-margin.test.mjs [client.js 路径]` 的 5 项真实 Chromium 回归（Edge/Chrome 或 `DSH_TEST_CHROMIUM`），改 margin/换根观察器必须保留旧产物变红的回归证据。
+- 0.5.0当时只声明 DSH 0.2.0-rc.2 / 0.2.1-rc.3；0.5.1增加已测rc.5。网页隔离实测与Desktop传输单测不能冒充真实Desktop全功能验收，下文旧版本条目只作历史依据。
+- `npm run test:security` = 22 项源码/夹具回归；流水线源码回归合计 139 项。安装产物另跑 `node 04_test/split-margin.test.mjs [client.js 路径]` 的 5 项真实 Chromium 回归（Edge/Chrome 或 `DSH_TEST_CHROMIUM`），改 margin/换根观察器必须保留旧产物变红的回归证据。
 
 ## 构建与验证
 
@@ -54,7 +64,7 @@ node --check lib/index.js
 - **构建必须 `cd 01_content` 后执行**：误在仓库根跑会把 lib 写到仓库根 `lib/`，宿主仍加载
   `01_content/lib` 旧 bundle，出现「改完不生效」假象（已有教训，见工作日志）。
 - **发布打包唯一入口 = `npm run pack`（01_content/release-prep.mjs）**：身份断言（package/manifest/cordis.patch.yml 严格结构）→
-  版本一致性 → **会话/输入/传输/挂载/安全回归**（当前 122 项，评估源码契约及夹具）→ 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
+  版本一致性 → **会话/输入/传输/挂载/安全回归**（当前 139 项，评估源码契约及夹具）→ 构建（cwd 固定 01_content）→ node --check → npm pack → 结构清单断言（package/ 前缀 + 精确 7 文件，
   无 src/、无 .map）→ 独立临时目录 npm install + import() 断言（apply 函数/inject 含 webServer+sessions/name/
   HEALTH_PATH/包内双 bundle 版本）→ **客户端工厂求值门禁**（ModuleLoader 恰好注册一次 + ID 校验 + 精确外部依赖
   白名单 react/react/jsx-runtime + apply/inject 断言）→ **分栏锚点 DOM 回归**（14 场景，评估安装产物 lib/client.js；
@@ -81,8 +91,8 @@ node --check lib/index.js
 
 - **Desktop 兼容边界**：0.4.0 保留客户端 platform=web（Desktop 0.2.0-rc.2 也按此契约加载）。终端 WebSocket 经 `hostTransport.ts` 使用宿主 `__DSH_TRANSPORT__.streamBaseUrl`，不能由 dsh-app://app 拼 ws://app；更新提示须指向 desktop profile 与桌面端自带 CLI，不能修改 web profile。页面点测与源码回归不能替代完整桌面端业务验收，不宣称桌面全功能兼容。
 - **0.3.4 网页端兼容**：声明已测版本 0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2，不外推 Desktop 或未测宿主。当前会话走 `currentSessionOf`（旧 current / 新 mainView），导航走 `openHostSession`（新 uiWorkspace / 旧 sessions.open），标注走 `appendHostInput`。Cordis 可选服务用 `ctx.get` 探测；返回 undefined 后不得再访问未 inject 的同名属性。旧 current 契约的引用坐标是显示文本位置，新 mainView 契约按单字符 chip 投影；不得因旧版也有 input.for 就误用新版坐标。`npm run test:input` 为 15 项定向回归。
-- **0.2 会话状态/发送**：可选订阅 `uiSession.sessionStatus`，只读归一化列表与 subagentCatalog；completionUnread 不是任务成功证明，打开主会话会清除。已观察到的 running→false 供原产物握手使用，下一轮 running 清除；停止不等于成功。新会话发送通过 `sessions.using` 临时持有，等待 ready 后发送并由宿主释放；业务拒绝/超时不得再换通道重发。`npm run test:session` 为 20 项回归；0.2.0-rc.2 已实测短文本发送/回复，真实待决/子代理仍未验收。
-- **0.2 新建/预览/选择接口**：`createHostSession` 必须区分显式未分组（第四参数 `none`）与隐式默认（`auto`）。自定义窗口显式未分组仅传 cwd（无目录则空选项），禁止注册/复用工作区或 initializeDefault；新版控制室空未分组会话输入区禁用，必须提示并阻止创建，由用户选组/加入可用现有会话，不偷偷改组、不发激活消息。现有分组未选 ID 同样拒绝；显式现有/新建组才传 workspaceId。分组列表晚返回不得覆盖用户已选分组。隐式默认保留此前工作区兜底，旧宿主保留原分支，不移动既有会话。预览读临时持有的 eventSource，模型目录在持有期间使用，结束即释放；预设接 remote.agentPresets。`npm run test:details` 为 30 项回归，含两处真实调用接线与延迟默认分组；不能替代真实输入区/模型会话验收。
+- **0.2 会话状态/发送**：可选订阅 `uiSession.sessionStatus`，只读归一化列表与 subagentCatalog；completionUnread 不是任务成功证明，打开主会话会清除。已观察到的 running→false 供原产物握手使用，下一轮 running 清除；停止不等于成功。新会话发送通过 `sessions.using` 临时持有，等待 ready 后发送并由宿主释放；业务拒绝/超时不得再换通道重发。`npm run test:session` 为 22 项回归；0.2.0-rc.2 已实测短文本发送/回复，真实待决/子代理仍未验收。
+- **0.2 新建/预览/选择接口**：`createHostSession` 必须区分显式未分组（第四参数 `none`）与隐式默认（`auto`）。自定义窗口显式未分组仅传 cwd（无目录则空选项），禁止注册/复用工作区或 initializeDefault；新版控制室空未分组会话输入区禁用，必须提示并阻止创建，由用户选组/加入可用现有会话，不偷偷改组、不发激活消息。现有分组未选 ID 同样拒绝；显式现有/新建组才传 workspaceId。分组列表晚返回不得覆盖用户已选分组。隐式默认保留此前工作区兜底，旧宿主保留原分支，不移动既有会话。预览读临时持有的 eventSource，模型目录在持有期间使用，结束即释放；预设接 remote.agentPresets。`npm run test:details` 为 34 项回归，含两处真实调用接线与延迟默认分组；不能替代真实输入区/模型会话验收。
 
 - **窗口编号**：用户说「窗口1/2/3…」指布局里按「左栏 → 顶行 → 主行」顺序的第 N 个内容窗。
   例：田字格预设（g4）窗口1/2 = 顶行左右、窗口3/4 = 底行左右；l13 窗口1 = 顶部大窗，
@@ -103,8 +113,8 @@ node --check lib/index.js
   插件通用知识；窗口任务提示词只发用户自己的会话，允许携带该项目自己的文件夹路径。
   分组下拉只是会话创建工作区的选择，绝不进入任何提示词文本。
 - **提醒红线**：need > done > busy，聚合父/子会话。ack 只存 opaque key/kind，不存正文；身份更换重新亮，读取副本与持久化同步清理，确认先记已见身份；旧无 key 退路无法识别直接替换。
-- **控制室红线**：wt-console 固定首位、不可删除、唯一 console 标签不可关；隐藏项目不入网格。状态/计时/预览只镜像宿主，不为计时激活冷会话，不把完成标记当成功证明；业务临时持有结束释放。
-- **更新检查/发布**：设置与控制室检查暂未去重，共用 updateCheck/lastUpdateCheck/skipVersion.v1，updateCache.v1 仅控制室。单次 8s、最多 3 次尝试；失败不可报最新。版本从 package.json 构建注入；新版本需 tag+Release，双资产固定名 dsh-worktable.tgz + 版本化名同 SHA。插件仅提示不自升级，安装/重启留给用户。
+- **控制室红线**：wt-console 固定首位、不可删除、唯一 console 标签不可关；隐藏项目不入网格。状态/计时/预览只镜像宿主，不为计时激活冷会话；done 仅为中性“本轮已结束”，不能用成功绿或宣称成功，running 优先于旧 completed。摘要仅取助手 text，排除事件根 surfaceOp 的非 append 副本；旧 nodes 只取 assistant/text 且非 interrupted。内部 completed 与产物握手保持独立；业务临时持有结束释放。
+- **更新检查/发布**：设置与控制室请求循环暂未去重，但必须共用 updateCheck.ts 的 cmpVer/newerUpdateInfo；仅有效且更高、未忽略的版本能进入更新卡/徽标/复制入口。排序支持正式/预发布、数字标识与构建元数据；缓存读取重验当前版本及skip，不信旧info，失败/无更新清旧卡。`npm run test:update` 为11组纯夹具回归，并入打包门禁；安装产物另测两处UI入口。共用 updateCheck/lastUpdateCheck/skipVersion.v1，updateCache.v1 仅控制室。单次 8s、最多 3 次尝试；失败不可报最新。版本从 package.json 构建注入；新版本需 tag+Release，双资产固定名 dsh-worktable.tgz + 版本化名同 SHA。插件仅提示不自升级，安装/重启留给用户。
 
 ## link 加载兼容边界
 

@@ -1,5 +1,5 @@
 /**
- * WorktableSection popup regression against the actual client bundle.
+ * Sidebar popup and control-room presentation regressions against the actual client bundle.
  * Usage: node 04_test/sidebar-popup.test.mjs [lib/client.js]
  * The small React hook/JSX harness runs the exported component and its event handlers;
  * it does not claim browser layout or desktop GUI coverage.
@@ -77,7 +77,7 @@ function fakeElement(tagName = 'div') {
   }
 }
 
-function loadComponent() {
+function loadComponent({ stored = {}, fetch: fetchFixture } = {}) {
   const values = new Map([
     ['dsh.worktable.updateCheck.v1', '0'],
     ['dsh.worktable.projects.v1', JSON.stringify({
@@ -90,6 +90,7 @@ function loadComponent() {
       }],
     })],
   ])
+  for (const [key, value] of Object.entries(stored)) values.set(key, String(value))
   const localStorage = {
     getItem: (key) => values.has(key) ? values.get(key) : null,
     setItem: (key, value) => values.set(key, String(value)),
@@ -132,7 +133,7 @@ function loadComponent() {
     console,
     atob,
     btoa,
-    fetch: async () => ({ ok: false, status: 404, json: async () => ({}) }),
+    fetch: fetchFixture ?? (async () => ({ ok: false, status: 404, json: async () => ({}) })),
     setTimeout: window.setTimeout,
     clearTimeout: window.clearTimeout,
     setInterval: window.setInterval,
@@ -147,7 +148,12 @@ function loadComponent() {
     indexedDB: undefined,
   }
   createContext(sandbox)
-  runInNewContext(source, sandbox, { filename: BUNDLE, timeout: 20000 })
+  // Expose existing bundle locals in memory only; the delivered module stays unchanged.
+  const footer = 'return module.exports; } });'
+  assert(source.split(footer).length === 2, 'client bundle footer must be unique')
+  const instrumented = source.replace(footer,
+    'Object.defineProperty(module.exports, "__consoleTest", { value: Object.freeze({ ConsolePane, setSplitEnv, setSplitT, zh, en, css, sessionNotifyState, LOCAL_VERSION, cmpVer, readCache }) });\n' + footer)
+  runInNewContext(instrumented, sandbox, { filename: BUNDLE, timeout: 20000 })
   assert(typeof window.captured?.factory === 'function', 'client bundle did not register a factory')
   const requireExternal = (id) => {
     if (id === 'react') return hooks.React
@@ -158,7 +164,7 @@ function loadComponent() {
   }
   const exports = window.captured.factory(requireExternal)
   assert(typeof exports.WorktableSection === 'function', 'bundle did not export WorktableSection')
-  return { component: exports.WorktableSection, hooks, window, values }
+  return { component: exports.WorktableSection, hooks, window, values, consoleTest: exports.__consoleTest }
 }
 
 function walk(node, predicate, out = []) {
@@ -241,4 +247,149 @@ async function main() {
   console.log('all sidebar-popup tests passed: add, icon, binding, delete confirmation, wide/collapsed switching')
 }
 
+function testConsolePresentation() {
+  for (const [language, ended] of [['zh', '本轮已结束'], ['en', 'Run ended']]) {
+    const { hooks, consoleTest: api } = loadComponent()
+    const dictionary = api[language]
+    const actions = []
+    const cards = ['done', 'need', 'busy'].map((status) => ({
+      id: status, name: status, icon: '•', status, runtimeMs: null, kids: 0,
+      preview: 'Actual assistant reply', bound: true, self: false, glow: status !== 'busy',
+    }))
+    api.setSplitT((key) => dictionary[key] ?? key)
+    api.setSplitEnv({ console: {
+      getCards: () => cards, getTheme: () => 'dark', getBg: () => 'plain',
+      subscribe: () => () => {}, getPhotoLib: async () => ({ list: [], activeId: null }),
+      onAck: (id) => actions.push('ack:' + id), onOpen: (id) => actions.push('open:' + id),
+    } })
+    let tree = hooks.render(api.ConsolePane, {})
+    for (const status of ['done', 'need', 'busy']) {
+      const labels = byClass(tree, 'dsh-wt_consoleStatus-' + status)
+      const expected = status === 'done' ? ended : dictionary['console.' + status]
+      assert(labels.length === 1 && labels[0].props.children === expected, language + ' incorrect ' + status + ' label')
+    }
+    const tip = dictionary['bind.tipDone']
+    assert(tip.includes(language === 'zh' ? ended : 'run ended'), language + ' sidebar tip does not describe a run ending')
+    assert(!/已完成|成功|completed|success/i.test(tip), language + ' sidebar tip still claims success')
+    assert(byClass(tree, 'dsh-wt_consoleCard-glowDone').length === 1, 'unread end reminder was lost')
+    assert(byClass(tree, 'dsh-wt_consoleCard-glowNeed').length === 1, 'pending reminder was lost')
+    assert(byClass(tree, 'dsh-wt_consoleCard-busy').length === 1, 'working indicator was lost')
+    assert(byClass(tree, 'dsh-wt_consoleSweep').length === 1, 'working animation was lost')
+    const previews = byClass(tree, 'dsh-wt_consolePreview')
+    assert(previews.length === 3 && previews.every((node) => node.props.children === 'Actual assistant reply'), 'card preview was missing or replaced')
+    click(byClass(tree, 'dsh-wt_consoleCard-glowDone')[0])
+    assert(actions.join(',') === 'ack:done,open:done', 'ended card must acknowledge before opening')
+    cards[0].glow = false
+    tree = hooks.render(api.ConsolePane, {})
+    assert(byClass(tree, 'dsh-wt_consoleCard-glowDone').length === 0, 'acknowledged end still glows')
+    assert(byClass(tree, 'dsh-wt_consoleStatus-done')[0].props.children === ended, 'acknowledgement erased ended status')
+
+    const rule = (selector) => {
+      const start = api.css.indexOf(selector + '{')
+      assert(start >= 0, 'missing bundled CSS rule: ' + selector)
+      return api.css.slice(start + selector.length + 1, api.css.indexOf('}', start))
+    }
+    for (const selector of ['.dsh-wt_bindBtn[data-bound=done]', '.dsh-wt_consoleStatus-done', '.dsh-wt_consoleCard-glowDone']) {
+      assert(!/state-success|#3fb950|rgba?\(63,\s*185,\s*80/i.test(rule(selector)), 'ended reminder still uses success green: ' + selector)
+    }
+    assert(rule('.dsh-wt_bindBtn[data-bound=need]').includes('#d29922'), 'sidebar pending color changed')
+    assert(rule('.dsh-wt_bindBtn[data-bound=busy]').includes('#4f8ef7'), 'sidebar working color changed')
+    assert(rule('.dsh-wt_consoleStatus-need').includes('state-warning'), 'control-room pending color changed')
+    assert(rule('.dsh-wt_consoleStatus-busy').includes('state-accent-primary'), 'control-room working color changed')
+    assert(api.sessionNotifyState({ running: true, completed: true }) === null, 'stale end must not hide a running sidebar session')
+    assert(api.sessionNotifyState({ running: true, completed: true, pendingInteraction: { key: 'fixture' } }) === 'need', 'pending must remain first')
+    assert(api.sessionNotifyState({ running: false, completed: true }) === 'done', 'run ending lost its existing ack kind')
+  }
+  console.log('all control-room presentation tests passed: zh/en, neutral end, need/busy, preview, acknowledgement')
+}
+
+async function testUpdatePresentation() {
+  const releaseUrl = 'https://api.github.com/repos/Aisland-SJL/dsh-worktable/releases/latest'
+  for (const outcome of ['older', 'same', 'forbidden', 'invalid', 'invalid-prefix', 'skip']) {
+    let response = { status: 200, tag: 'v9.0.0' }
+    let requests = 0
+    const { component, hooks, values, consoleTest: api } = loadComponent({ fetch: async (url) => {
+      assert(url === releaseUrl, 'unexpected request in update fixture: ' + url)
+      requests++
+      return { ok: response.status === 200, status: response.status,
+        json: async () => ({ tag_name: response.tag, body: 'Fixture release', html_url: 'https://example.invalid/release' }) }
+    } })
+    assert(api.cmpVer('0.5.0', api.LOCAL_VERSION) < 0, 'bundled comparator does not reject the old release')
+    const render = () => hooks.render(component, { wide: true, t: (key) => key })
+    let tree = render()
+    click(walk(tree, (node) => node.type === 'button' && node.props?.['aria-label'] === 'menu.viewOptions')[0])
+    tree = render()
+    const check = async () => {
+      click(byClass(byClass(tree, 'dsh-wt_versionRow')[0], 'dsh-wt_updateBtn')[0])
+      tree = render()
+      assert(byClass(byClass(tree, 'dsh-wt_versionRow')[0], 'dsh-wt_updateBtn')[0].props.disabled, 'check button did not enter checking state')
+      await new Promise(setImmediate)
+      tree = render()
+    }
+    await check()
+    assert(requests === 1, 'manual check did not issue one fixture request')
+    assert(byClass(tree, 'dsh-wt_updateCard').length === 1 && byClass(tree, 'dsh-wt_updateBadge').length === 1, 'genuine newer release did not show card and badge')
+    assert(JSON.stringify(byClass(tree, 'dsh-wt_updateVers')[0].props.children).includes('9.0.0'), 'newer release label missing')
+    if (outcome === 'skip') {
+      click(walk(tree, (node) => node.type === 'button' && node.props?.children === 'update.skip')[0])
+      tree = render()
+      assert(values.get('dsh.worktable.skipVersion.v1') === '9.0.0', 'skip button did not persist the shown release')
+      assert(byClass(tree, 'dsh-wt_updateCard').length === 0 && byClass(tree, 'dsh-wt_updateBadge').length === 0, 'skip button left visible update UI')
+    } else {
+      response = outcome === 'forbidden' ? { status: 403 } : { status: 200,
+        tag: outcome === 'older' ? 'v0.5.0' : outcome === 'same' ? 'v' + api.LOCAL_VERSION : outcome === 'invalid-prefix' ? 'vv9.0.0' : 'not-a-version' }
+    }
+    await check()
+    assert(requests === 2, outcome + ': unexpected retries or skipped manual request')
+    for (const name of ['dsh-wt_updateCard', 'dsh-wt_updateBadge', 'dsh-wt_updateBtnCopy']) {
+      assert(byClass(tree, name).length === 0, outcome + ': stale update UI survived: ' + name)
+    }
+    if (['forbidden', 'invalid', 'invalid-prefix'].includes(outcome)) {
+      assert(JSON.stringify(byClass(tree, 'dsh-wt_versionRow')[0].props.children).includes('update.checkFail'), 'failed check was hidden by old update info')
+    }
+  }
+
+  const localVersion = loadComponent().consoleTest.LOCAL_VERSION
+  for (const [label, latest, skipped, shown] of [
+    ['older', '0.5.0', '', false], ['same', localVersion, '', false],
+    ['invalid', 'not-a-version', '', false], ['skipped', '9.0.0', '9.0.0', false],
+    ['newer', '9.0.0', '', true],
+  ]) {
+    let requests = 0
+    const { hooks, values, consoleTest: api } = loadComponent({
+      stored: {
+        'dsh.worktable.updateCheck.v1': '0',
+        'dsh.worktable.lastUpdateCheck.v1': String(Date.now()),
+        'dsh.worktable.skipVersion.v1': skipped,
+        'dsh.worktable.updateCache.v1': JSON.stringify({ status: 'uptodate', info: { latest, notes: 'Fixture cache', url: 'https://example.invalid/release' } }),
+      },
+      fetch: async () => { requests++; return { ok: false, status: 404 } },
+    })
+    api.setSplitT((key) => key)
+    api.setSplitEnv({ console: {
+      getCards: () => [], getTheme: () => 'dark', getBg: () => 'plain',
+      subscribe: () => () => {}, getPhotoLib: async () => ({ list: [], activeId: null }),
+    } })
+    const render = () => hooks.render(api.ConsolePane, {})
+    let tree = render()
+    assert(byClass(tree, 'dsh-wt_dockBadge').length === Number(shown), label + ': wrong cached dock badge')
+    click(walk(tree, (node) => node.type === 'button' && node.props?.['aria-label'] === 'annot.updateTitle')[0])
+    tree = render()
+    for (const name of ['dsh-wt_announceUpdate', 'dsh-wt_announceUpg']) {
+      assert(byClass(tree, name).length === Number(shown), label + ': wrong cached announcement: ' + name)
+    }
+    assert((api.readCache().info != null) === shown, label + ': cache reader still exposes an ineligible release')
+    if (shown) {
+      values.set('dsh.worktable.skipVersion.v1', latest)
+      tree = render()
+      assert(byClass(tree, 'dsh-wt_announceUpdate').length === 0 && byClass(tree, 'dsh-wt_dockBadge').length === 0, 'already-mounted control room retained ignored update info')
+    }
+    await new Promise(setImmediate)
+    assert(requests === 0, label + ': disabled automatic update check made a request')
+  }
+  console.log('all update presentation tests passed: settings transitions and control-room cache, no network')
+}
+
 await main()
+testConsolePresentation()
+await testUpdatePresentation()

@@ -198,9 +198,9 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:22px;height:22px;margin:0;display:block;border-radius:6px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}',
   '.dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}',
   '.dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}',
-  // 任务完成提醒镜像：绿色发光 / 待决提醒：黄色发光（点击项目即 ack 恢复常态实心）；
+  // 本轮结束提醒：中性发光 / 待决提醒：黄色发光（点击项目即 ack 恢复常态实心）；
   // 工作中：蓝色发光 + 两圆交替亮灭（对应 DSH 对话的转圈标记，无需 ack，running 变 false 自动停）
-  '.dsh-wt_bindBtn[data-bound=done]{color:#3fb950}',
+  '.dsh-wt_bindBtn[data-bound=done]{color:#94a3b8}',
   '.dsh-wt_bindBtn[data-bound=need]{color:#d29922}',
   '.dsh-wt_bindBtn[data-bound=busy]{color:#4f8ef7}',
   '@keyframes dsh-wt-busyA{0%,44%{opacity:1}50%,94%{opacity:.12}100%{opacity:1}}',
@@ -581,12 +581,12 @@ export const css = xtermCss + '\n' + [
   '.dsh-wt_consoleStatus{flex:none;font-size:22px;font-weight:700;line-height:30px;color:var(--wt-text2)}',
   '.dsh-wt_consoleStatus-busy{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
   '.dsh-wt_consoleStatus-need{color:var(--dsw-alias-state-warning,#d29922)}',
-  '.dsh-wt_consoleStatus-done{color:var(--dsw-alias-state-success,#3fb950)}',
+  '.dsh-wt_consoleStatus-done{color:var(--wt-text2)}',
   '.dsh-wt_consoleRuntime{flex:none;font-size:17px;font-weight:600;line-height:24px;color:var(--wt-text2);font-variant-numeric:tabular-nums}',
   '.dsh-wt_consolePreview{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:8.5px;line-height:13px;color:var(--wt-text2);word-break:break-word}',
   '.dsh-wt_consolePreviewNone{color:var(--wt-text3);font-style:italic;-webkit-line-clamp:1}',
-  // 三色光效：整卡霓虹描边光晕（像侧栏双圆点的发光质感）——完成=绿、待决=黄；工作=蓝色描边顺时针旋转
-  '.dsh-wt_consoleCard-glowDone{border-color:rgba(63,185,80,.9);box-shadow:0 0 8px rgba(63,185,80,.5),0 0 26px rgba(63,185,80,.3),inset 0 0 16px rgba(63,185,80,.07)}',
+  // 结束只用中性提醒光，不作为成功证明；待决=黄，工作=蓝色描边顺时针旋转
+  '.dsh-wt_consoleCard-glowDone{border-color:rgba(148,163,184,.8);box-shadow:0 0 8px rgba(148,163,184,.35),0 0 26px rgba(148,163,184,.2),inset 0 0 16px rgba(148,163,184,.05)}',
   '.dsh-wt_consoleCard-glowNeed{border-color:rgba(210,153,34,.95);box-shadow:0 0 8px rgba(210,153,34,.5),0 0 26px rgba(210,153,34,.3),inset 0 0 16px rgba(210,153,34,.08)}',
   '@property --consoleAngle{syntax:"<angle>";initial-value:0deg;inherits:false}',
   '.dsh-wt_consoleCard-busy{box-shadow:0 0 10px rgba(94,160,255,.55),0 0 34px rgba(79,142,247,.4)}',

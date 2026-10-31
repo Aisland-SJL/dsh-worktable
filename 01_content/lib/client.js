@@ -7951,9 +7951,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:22px;height:22px;margin:0;display:block;border-radius:6px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}",
   ".dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}",
   ".dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  // 任务完成提醒镜像：绿色发光 / 待决提醒：黄色发光（点击项目即 ack 恢复常态实心）；
+  // 本轮结束提醒：中性发光 / 待决提醒：黄色发光（点击项目即 ack 恢复常态实心）；
   // 工作中：蓝色发光 + 两圆交替亮灭（对应 DSH 对话的转圈标记，无需 ack，running 变 false 自动停）
-  ".dsh-wt_bindBtn[data-bound=done]{color:#3fb950}",
+  ".dsh-wt_bindBtn[data-bound=done]{color:#94a3b8}",
   ".dsh-wt_bindBtn[data-bound=need]{color:#d29922}",
   ".dsh-wt_bindBtn[data-bound=busy]{color:#4f8ef7}",
   "@keyframes dsh-wt-busyA{0%,44%{opacity:1}50%,94%{opacity:.12}100%{opacity:1}}",
@@ -8332,12 +8332,12 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleStatus{flex:none;font-size:22px;font-weight:700;line-height:30px;color:var(--wt-text2)}",
   ".dsh-wt_consoleStatus-busy{color:var(--dsw-alias-state-accent-primary,#4f8ef7)}",
   ".dsh-wt_consoleStatus-need{color:var(--dsw-alias-state-warning,#d29922)}",
-  ".dsh-wt_consoleStatus-done{color:var(--dsw-alias-state-success,#3fb950)}",
+  ".dsh-wt_consoleStatus-done{color:var(--wt-text2)}",
   ".dsh-wt_consoleRuntime{flex:none;font-size:17px;font-weight:600;line-height:24px;color:var(--wt-text2);font-variant-numeric:tabular-nums}",
   ".dsh-wt_consolePreview{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:8.5px;line-height:13px;color:var(--wt-text2);word-break:break-word}",
   ".dsh-wt_consolePreviewNone{color:var(--wt-text3);font-style:italic;-webkit-line-clamp:1}",
-  // 三色光效：整卡霓虹描边光晕（像侧栏双圆点的发光质感）——完成=绿、待决=黄；工作=蓝色描边顺时针旋转
-  ".dsh-wt_consoleCard-glowDone{border-color:rgba(63,185,80,.9);box-shadow:0 0 8px rgba(63,185,80,.5),0 0 26px rgba(63,185,80,.3),inset 0 0 16px rgba(63,185,80,.07)}",
+  // 结束只用中性提醒光，不作为成功证明；待决=黄，工作=蓝色描边顺时针旋转
+  ".dsh-wt_consoleCard-glowDone{border-color:rgba(148,163,184,.8);box-shadow:0 0 8px rgba(148,163,184,.35),0 0 26px rgba(148,163,184,.2),inset 0 0 16px rgba(148,163,184,.05)}",
   ".dsh-wt_consoleCard-glowNeed{border-color:rgba(210,153,34,.95);box-shadow:0 0 8px rgba(210,153,34,.5),0 0 26px rgba(210,153,34,.3),inset 0 0 16px rgba(210,153,34,.08)}",
   '@property --consoleAngle{syntax:"<angle>";initial-value:0deg;inherits:false}',
   ".dsh-wt_consoleCard-busy{box-shadow:0 0 10px rgba(94,160,255,.55),0 0 34px rgba(79,142,247,.4)}",
@@ -8503,7 +8503,7 @@ var zh = {
   "bind.titleUnbound": "\u7ED1\u5B9A\u5BF9\u8BDD\uFF08\u672A\u7ED1\u5B9A \u25CB\u25CB\uFF09\uFF1A\u70B9\u51FB\u9009\u62E9\u8981\u8DDF\u968F\u7684\u5BF9\u8BDD",
   "bind.titleBound": "\u5DF2\u7ED1\u5B9A\u5BF9\u8BDD\uFF08\u25CF\u25CF\uFF09\uFF1A\u70B9\u51FB\u66F4\u6362\u6216\u89E3\u7ED1",
   "bind.tipUnbound": "\u672A\u7ED1\u5B9A\u5BF9\u8BDD\uFF1A\u70B9\u51FB\u9009\u62E9\u8981\u8DDF\u968F\u7684\u5BF9\u8BDD",
-  "bind.tipDone": "\uFF08\u4EFB\u52A1\u5DF2\u5B8C\u6210\uFF0C\u70B9\u51FB\u9879\u76EE\u67E5\u770B\uFF09",
+  "bind.tipDone": "\uFF08\u672C\u8F6E\u5DF2\u7ED3\u675F\uFF0C\u70B9\u51FB\u9879\u76EE\u67E5\u770B\uFF09",
   "bind.tipBusy": "\uFF08\u5BF9\u8BDD\u6B63\u5728\u5904\u7406\u4EFB\u52A1\u2026\uFF09",
   "bind.tipNeed": "\uFF08\u9700\u8981\u4F60\u7684\u51B3\u5B9A\uFF0C\u70B9\u51FB\u9879\u76EE\u5904\u7406\uFF09",
   "bind.folder": "\u9879\u76EE\u6587\u4EF6\u5939",
@@ -8559,9 +8559,9 @@ var zh = {
   "console.idle": "\u7A7A\u95F2",
   "console.busy": "\u5DE5\u4F5C\u4E2D",
   "console.need": "\u5F85\u4F60\u51B3\u5B9A",
-  "console.done": "\u5DF2\u5B8C\u6210",
+  "console.done": "\u672C\u8F6E\u5DF2\u7ED3\u675F",
   "console.kids": "\u5B50\u4EE3\u7406",
-  "console.noPreview": "\u6682\u65E0\u6D88\u606F",
+  "console.noPreview": "\u6682\u65E0\u52A9\u624B\u56DE\u590D",
   "console.unboundShort": "\u672A\u7ED1\u5B9A\u5BF9\u8BDD",
   "console.jump": "\u8DF3\u8F6C\u5230\u7ED1\u5B9A\u5BF9\u8BDD",
   "console.empty": "\u8FD8\u6CA1\u6709\u9879\u76EE",
@@ -8736,7 +8736,7 @@ var en = {
   "bind.titleUnbound": "Bind conversation (unbound \u25CB\u25CB): pick the conversation to follow",
   "bind.titleBound": "Conversation bound (\u25CF\u25CF): click to change or unbind",
   "bind.tipUnbound": "No conversation bound \u2014 click to pick one",
-  "bind.tipDone": " (task completed \u2014 click the project to view)",
+  "bind.tipDone": " (run ended \u2014 click the project to view)",
   "bind.tipBusy": " (conversation is working on the task\u2026)",
   "bind.tipNeed": " (needs your decision \u2014 click the project to handle)",
   "bind.folder": "Project folder",
@@ -8792,9 +8792,9 @@ var en = {
   "console.idle": "Idle",
   "console.busy": "Working",
   "console.need": "Needs you",
-  "console.done": "Done",
+  "console.done": "Run ended",
   "console.kids": "subagents",
-  "console.noPreview": "No messages yet",
+  "console.noPreview": "No assistant reply yet",
   "console.unboundShort": "No conversation bound",
   "console.jump": "Jump to bound conversation",
   "console.empty": "No projects yet",
@@ -9020,7 +9020,23 @@ function SandboxedFrame(props) {
 }
 
 // src/client/changelog.ts
-var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.5.0
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.5.1
+
+\u{1F527} DSH 0.2.1-rc.5 \u517C\u5BB9\u4E0E\u66F4\u65B0\u63D0\u9192\u4FEE\u590D
+
+\u3010\u52A0\u8F7D\u4FEE\u590D\u3011\u5C06 rc.5 \u517C\u5BB9\u76EE\u6807\u52A0\u5165\u7CBE\u786E\u7248\u672C\u58F0\u660E\uFF0C\u5904\u7406\u5BBF\u4E3B\u56E0\u7248\u672C\u58F0\u660E\u4E0D\u5339\u914D\u800C\u8DF3\u8FC7\u5DE5\u4F5C\u53F0\u52A0\u8F7D\u7684\u95EE\u9898\uFF1B\u4E0D\u901A\u914D\u653E\u5F00\u672A\u6765\u7248\u672C\u3002
+
+\u3010\u66F4\u65B0\u63D0\u9192\u3011\u4FEE\u590D\u6D4B\u8BD5\u7248\u7248\u672C\u53F7\u6BD4\u8F83\u51FA\u9519\u3001\u628A\u65E7\u6B63\u5F0F\u7248\u5F53\u6210\u65B0\u7248\u672C\u7684\u95EE\u9898\u3002\u8BBE\u7F6E\u4E0E\u63A7\u5236\u5BA4\u5171\u7528\u7248\u672C\u6392\u5E8F\u89C4\u5219\uFF0C\u8BFB\u53D6\u7F13\u5B58\u548C\u663E\u793A\u5361\u7247\u65F6\u91CD\u65B0\u786E\u8BA4\u76EE\u6807\u66F4\u9AD8\u4E14\u672A\u5FFD\u7565\uFF1B\u68C0\u67E5\u5931\u8D25\u6216\u65E0\u66F4\u65B0\u65F6\u6E05\u6389\u65E7\u63D0\u793A\uFF0C\u4E0D\u5F15\u5BFC\u964D\u7EA7\u3002
+
+\u3010\u63A7\u5236\u5BA4\u663E\u793A\u3011\u4F1A\u8BDD\u505C\u6B62\u7EDF\u4E00\u663E\u793A\u4E2D\u6027\u7684\u201C\u672C\u8F6E\u5DF2\u7ED3\u675F\u201D\uFF0C\u4E0D\u518D\u628A\u5931\u8D25\u6216\u505C\u6B62\u5F53\u4F5C\u6210\u529F\uFF1B\u6B63\u5728\u8FD0\u884C\u4F18\u5148\u4E8E\u65E7\u7ED3\u675F\u6807\u8BB0\u3002\u5361\u7247\u6458\u8981\u53EA\u663E\u793A\u53EF\u8BFB\u7684\u52A9\u624B\u7B54\u590D\uFF0C\u8FC7\u6EE4\u6CE8\u5165\u4E0A\u4E0B\u6587\u4E0E\u4EC5\u4F9B\u6A21\u578B\u7684\u66FF\u6362\u526F\u672C\uFF1B\u65E0\u7B54\u590D\u65F6\u7559\u7A7A\u3002
+
+\u3010\u517C\u5BB9\u4E0E\u9A8C\u6536\u3011\u4EC5\u5217\u5DF2\u6D4B DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5\u3002rc.5 \u5DF2\u6709\u9694\u79BB\u7F51\u9875\u68C0\u67E5\uFF1B\u7528\u6237\u5728\u5B98\u65B9 Windows Desktop \u5B89\u88C5\u5019\u9009\u540E\u786E\u8BA4\u5DE5\u4F5C\u53F0\u6062\u590D\u3001\u66F4\u65B0\u8BEF\u62A5\u6D88\u5931\u3002\u6B63\u5F0F\u5305\u53E6\u505A\u72EC\u7ACB\u5B89\u88C5\u4E0E\u81EA\u52A8\u56DE\u5F52\uFF0C\u4E0D\u5C06\u5019\u9009\u9875\u9762\u8BC1\u636E\u6269\u5927\u4E3A\u6B63\u5F0F\u5305\u5168\u529F\u80FD\u9A8C\u6536\uFF1B\u65E7 0.1.x\u3001\u672A\u6D4B\u5BBF\u4E3B\u53CA macOS \u4E0D\u4F5C\u517C\u5BB9\u4FDD\u8BC1\u3002
+
+\u3010\u4FDD\u7559\u8FB9\u754C\u3011\u6CBF\u7528 0.5.0 \u7684\u7F51\u9875\u5B89\u5168\u9694\u79BB\u3001\u63A5\u53E3\u8EAB\u4EFD\u6821\u9A8C\u4E0E\u9879\u76EE\u5B58\u50A8\u65B9\u5F0F\u3002\u65B0\u7248\u8F93\u5165\u6846\u5DF2\u6709 /\u547D\u4EE4\u6807\u7B7E\u65F6\uFF0C\u6807\u6CE8\u8FFD\u52A0\u53EF\u80FD\u9000\u56DE\u526A\u8D34\u677F\uFF1B\u6B64\u9879\u8DE8\u7248\u672C\u5750\u6807\u9002\u914D\u5F85\u540E\u7EED\u5904\u7406\u3002\u672C\u7248\u4E0D\u5305\u542B\u65E7\u4F1A\u8BDD\u6A21\u578B\u8BF7\u6C42 HTTP 400 \u7684\u4FEE\u590D\u3002
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+\u6B64\u524D\u7248\u672C\u8BF4\u660E\uFF08v0.5.0\uFF09
 
 \u{1F6E1}\uFE0F \u65B0\u7248\u5BBF\u4E3B\u517C\u5BB9\u3001\u5B89\u5168\u9694\u79BB\u4E0E\u4FA7\u680F\u4FEE\u590D
 
@@ -9144,20 +9160,48 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.5.0
 \u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
 
 // src/client/updateCheck.ts
-var LOCAL_VERSION = false ? "dev" : "0.5.0";
+var LOCAL_VERSION = false ? "dev" : "0.5.1";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
 var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
 var K_SKIP = "dsh.worktable.skipVersion.v1";
 var K_CACHE = "dsh.worktable.updateCache.v1";
+function versionParts(value) {
+  if (typeof value !== "string") return null;
+  const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value.trim());
+  if (!match) return null;
+  const pre = match[4]?.split(".") ?? [];
+  if (pre.some((part) => /^\d+$/.test(part) && part.length > 1 && part[0] === "0")) return null;
+  return { core: match.slice(1, 4), pre };
+}
+function numericOrder(a, b) {
+  if (a.length !== b.length) return a.length > b.length ? 1 : -1;
+  return a === b ? 0 : a > b ? 1 : -1;
+}
 function cmpVer(a, b) {
-  const pa = String(a).split(".").map((x) => parseInt(x, 10) || 0);
-  const pb = String(b).split(".").map((x) => parseInt(x, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const d = (pa[i] || 0) - (pb[i] || 0);
-    if (d !== 0) return d > 0 ? 1 : -1;
+  const pa = versionParts(a), pb = versionParts(b);
+  if (!pa || !pb) return null;
+  for (let i = 0; i < 3; i++) {
+    const order = numericOrder(pa.core[i], pb.core[i]);
+    if (order !== 0) return order;
+  }
+  if (!pa.pre.length || !pb.pre.length) return pa.pre.length ? -1 : pb.pre.length ? 1 : 0;
+  for (let i = 0; i < Math.max(pa.pre.length, pb.pre.length); i++) {
+    const x = pa.pre[i], y = pb.pre[i];
+    if (x === void 0 || y === void 0) return x === void 0 ? -1 : 1;
+    if (x === y) continue;
+    const nx = /^\d+$/.test(x), ny = /^\d+$/.test(y);
+    if (nx && ny) return numericOrder(x, y);
+    if (nx !== ny) return nx ? -1 : 1;
+    return x > y ? 1 : -1;
   }
   return 0;
+}
+function newerUpdateInfo(value) {
+  const info = value;
+  if (!info || typeof info.latest !== "string" || typeof info.notes !== "string" || typeof info.url !== "string") return null;
+  if (cmpVer(info.latest, LOCAL_VERSION) !== 1 || cmpVer(info.latest, getSkipVersion()) === 0) return null;
+  return info;
 }
 function getSkipVersion() {
   try {
@@ -9190,8 +9234,8 @@ function readCache() {
     const raw = localStorage.getItem(K_CACHE);
     if (raw) {
       const c = JSON.parse(raw);
-      if (c && typeof c.status === "string") {
-        return { status: c.status === "checking" ? "idle" : c.status, info: c.info ?? null };
+      if (c?.status === "uptodate" || c?.status === "failed" || c?.status === "idle") {
+        return { status: c.status, info: c.status === "uptodate" ? newerUpdateInfo(c.info) : null };
       }
     }
   } catch {
@@ -9200,13 +9244,18 @@ function readCache() {
 }
 function writeCache(status, info) {
   try {
-    localStorage.setItem(K_CACHE, JSON.stringify({ status, info }));
+    localStorage.setItem(K_CACHE, JSON.stringify({ status, info: status === "uptodate" ? newerUpdateInfo(info) : null }));
   } catch {
   }
 }
 async function checkUpdate(force = false) {
-  const last = Number(localStorage.getItem(K_LAST_CHECK) ?? "0");
-  if (!force && Date.now() - last < 24 * 3600 * 1e3) return readCache();
+  let last = 0;
+  try {
+    last = Number(localStorage.getItem(K_LAST_CHECK) ?? "0");
+  } catch {
+  }
+  const age = Date.now() - last;
+  if (!force && Number.isFinite(last) && last > 0 && age >= 0 && age < 24 * 3600 * 1e3) return readCache();
   try {
     localStorage.setItem(K_LAST_CHECK, String(Date.now()));
   } catch {
@@ -9228,16 +9277,17 @@ async function checkUpdate(force = false) {
     writeCache("failed", null);
     return { status: "failed", info: null };
   }
-  const tag = (d.tag_name ?? "").replace(/^v/, "");
-  if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) {
+  const tag = typeof d.tag_name === "string" ? d.tag_name.trim() : "";
+  const order = cmpVer(tag, LOCAL_VERSION);
+  if (order == null) {
+    writeCache("failed", null);
+    return { status: "failed", info: null };
+  }
+  if (order <= 0) {
     writeCache("uptodate", null);
     return { status: "uptodate", info: null };
   }
-  if (getSkipVersion() === tag) {
-    writeCache("uptodate", null);
-    return { status: "uptodate", info: null };
-  }
-  const info = { latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" };
+  const info = newerUpdateInfo({ latest: tag.replace(/^v/, ""), notes: typeof d.body === "string" ? d.body.slice(0, 800) : "", url: typeof d.html_url === "string" ? d.html_url : "" });
   writeCache("uptodate", info);
   return { status: "uptodate", info };
 }
@@ -18394,7 +18444,8 @@ function ConsolePane() {
   const [glowSpeed, setGlowSpeedState] = (0, import_react2.useState)(() => splitEnv?.console?.getGlowSpeed?.() ?? 50);
   const [annOpen, setAnnOpen] = (0, import_react2.useState)(false);
   const [updStatus, setUpdStatus] = (0, import_react2.useState)(() => readCache().status);
-  const [updInfo, setUpdInfo] = (0, import_react2.useState)(() => readCache().info);
+  const [rawUpdInfo, setUpdInfo] = (0, import_react2.useState)(() => readCache().info);
+  const updInfo = newerUpdateInfo(rawUpdInfo);
   const [autoCheckOn, setAutoCheckOn] = (0, import_react2.useState)(() => getAutoCheck());
   const updBusyRef = (0, import_react2.useRef)(false);
   const photoUrlRef = (0, import_react2.useRef)("");
@@ -20217,6 +20268,13 @@ function createSessionSnapshotAdapter() {
     return { ...snapshot, byId, subagentsByParent };
   };
 }
+function consoleStatusOf(entry, pending, legacyFace) {
+  if (!entry) return "idle";
+  if (pending != null) return "need";
+  if (entry.running === true) return "busy";
+  if (entry.completed === true || legacyFace?.completed === true) return "done";
+  return "idle";
+}
 function childSessionIdsOf(snapshot, sid) {
   const children = /* @__PURE__ */ new Set();
   for (const [id, row] of Object.entries(snapshot?.byId ?? {})) {
@@ -20441,13 +20499,27 @@ function previewFromEvents(entries) {
   if (!Array.isArray(entries)) return "";
   for (let i = entries.length - 1; i >= 0; i--) {
     const ev = entries[i]?.event;
-    if (ev?.type !== "user/message" && ev?.type !== "assistant/message") continue;
-    const data = ev.type === "assistant/message" ? ev.data?.message ?? ev.data : ev.data;
+    if (ev?.type !== "assistant/message") continue;
+    if (ev.surfaceOp != null && ev.surfaceOp !== "append") continue;
+    const data = ev.data?.message ?? ev.data;
     const blocks = data?.content ?? data?.blocks;
     if (!Array.isArray(blocks)) continue;
     const raw = blocks.filter((b) => b?.type === "text" && typeof b.text === "string").map((b) => b.text).join("\n");
     const text2 = cleanPreviewText(raw);
-    if (text2.length >= 8) return text2.slice(0, 220);
+    if (text2) return text2.slice(0, 220);
+  }
+  return "";
+}
+function previewFromNodes(nodes) {
+  if (!Array.isArray(nodes)) return "";
+  for (let i = nodes.length - 1; i >= 0; i--) {
+    const node = nodes[i];
+    if (node?.kind !== "assistant" || node.interrupted === true) continue;
+    const blocks = node.blocks;
+    if (!Array.isArray(blocks)) continue;
+    const raw = blocks.filter((b) => b?.kind === "text" && typeof b.text === "string").map((b) => b.text).join("\n");
+    const text2 = cleanPreviewText(raw);
+    if (text2) return text2.slice(0, 220);
   }
   return "";
 }
@@ -20663,7 +20735,6 @@ var WAVE_BG_B64 = "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHBgYHCQ8KCQgIC
 
 // src/client/index.tsx
 var import_jsx_runtime3 = require("react/jsx-runtime");
-var LOCAL_VERSION2 = false ? "dev" : "0.5.0";
 var UPDATE_REPO2 = "Aisland-SJL/dsh-worktable";
 var { command: UPGRADE_CMD, prompt: UPGRADE_AI2, desktop: DESKTOP_HOST } = worktableUpgrade();
 var ICON_SYNC = /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { viewBox: "0 0 16 16", "aria-hidden": true, children: [
@@ -20676,16 +20747,6 @@ var ICON_SPARK = /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { viewBox:
   /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8 1.6l1.5 3.9 3.9 1.5-3.9 1.5L8 12.4 6.5 8.5 2.6 7l3.9-1.5z", fill: "none", stroke: "currentColor", strokeWidth: "1.3", strokeLinejoin: "round" }),
   /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12.6 11.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z", fill: "currentColor" })
 ] });
-function cmpVer2(a, b) {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] ?? 0;
-    const y = pb[i] ?? 0;
-    if (x !== y) return x - y;
-  }
-  return 0;
-}
 async function copyText(text2) {
   try {
     if (navigator.clipboard?.writeText) {
@@ -21146,24 +21207,7 @@ function lastTextOf(sid) {
     const binding = sessionBridge?.sessions?.binding?.(sid);
     if (binding?.eventSource?.getSnapshot) return previewFromEvents(binding.eventSource.getSnapshot().entries);
     const face = binding?.session?.getSnapshot?.();
-    const nodes = face?.nodes ?? [];
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      const blocks = Array.isArray(n?.blocks) ? n.blocks : Array.isArray(n?.content) ? n.content : [];
-      let raw = "";
-      for (const b of blocks) {
-        const s = typeof b?.text === "string" ? b.text.trim() : "";
-        if (!s) continue;
-        if (b?.type === "text") {
-          raw = s;
-          break;
-        }
-        if (!raw) raw = s;
-      }
-      if (!raw) continue;
-      const clean = cleanPreviewText(raw);
-      if (clean.length >= 8) return clean.slice(0, 220);
-    }
+    return previewFromNodes(face?.nodes);
   } catch {
   }
   return "";
@@ -21262,7 +21306,7 @@ function buildWindowTaskText(projectId, projectName, windowLabel, requirement, f
   const win = windowLabel || "\u4E00\u4E2A\u5185\u5BB9\u7A97";
   const folderLine = folder ? "\u9879\u76EE\u6587\u4EF6\u5939\uFF1A" + folder + "\uFF08\u672C\u9879\u76EE\u6240\u6709\u4EA7\u51FA\u6587\u4EF6\u4E00\u5F8B\u653E\u8FDB\u8FD9\u4E2A\u6587\u4EF6\u5939\uFF1B\u4E0D\u8981\u5199\u5230\u522B\u7684\u9ED8\u8BA4\u4F4D\u7F6E\uFF09\u3002" : "\u672C\u9879\u76EE\u6682\u672A\u8BBE\u7F6E\u4E13\u5C5E\u6587\u4EF6\u5939\uFF1A\u4EA7\u51FA\u6587\u4EF6\u5148\u5411\u7528\u6237\u786E\u8BA4\u5B58\u653E\u4F4D\u7F6E\uFF0C\u4E0D\u8981\u968F\u4FBF\u5199\u3002";
   const lines = [
-    "\u3010\u5DE5\u4F5C\u53F0\u81EA\u5B9A\u4E49\u7A97\u53E3\u4EFB\u52A1\u3011",
+    "\u3010\u5DE5\u4F5C\u53F0\u3011",
     "\u4EE5\u4E0B\u5185\u5BB9\u7531 dsh-worktable\uFF08\u5DE5\u4F5C\u53F0\uFF09\u63D2\u4EF6" + (mode === "new" ? "\u81EA\u52A8\u53D1\u9001" : "\u53D1\u9001") + "\uFF1A\u7528\u6237\u60F3\u628A\u300C" + projectName + "\u300D\u9879\u76EE\u4E2D\u7684\u300C" + win + "\u300D\u7A97\u53E3\u6253\u9020\u6210\u4ED6\u60F3\u8981\u7684\u5185\u5BB9\u3002",
     "1. dsh-worktable \u662F\u4FA7\u8FB9\u680F\u5E95\u90E8\u7684\u81EA\u5EFA\u300C\u5DE5\u4F5C\u53F0\u300D\u63D2\u4EF6\uFF08\u5B98\u65B9\u6587\u6863\u6CA1\u6709\u5B83\u7684\u8BF4\u660E\uFF0C\u4E0D\u4E86\u89E3\u4E4B\u5904\u53EF\u76F4\u63A5\u5411\u7528\u6237\u63D0\u95EE\uFF09\u3002",
     "2. \u7528\u6237\u9700\u6C42\uFF1A" + requirement,
@@ -21442,6 +21486,7 @@ function clearNotifyAck(sid) {
 function sessionNotifyState(entry) {
   if (!entry) return null;
   if (entry.pendingInteraction != null) return "need";
+  if (entry.running === true) return null;
   if (entry.completed === true) return "done";
   return null;
 }
@@ -21561,7 +21606,8 @@ function WorktableSection(props) {
   const [registeredIds, setRegisteredIds] = (0, import_react3.useState)(() => [...registryStore.ids]);
   const [addOpen, setAddOpen] = (0, import_react3.useState)(false);
   const [viewOptionsOpen, setViewOptionsOpen] = (0, import_react3.useState)(false);
-  const [updateInfo, setUpdateInfo] = (0, import_react3.useState)(null);
+  const [rawUpdateInfo, setUpdateInfo] = (0, import_react3.useState)(null);
+  const updateInfo = newerUpdateInfo(rawUpdateInfo);
   const [updateCheckOn, setUpdateCheckOn] = (0, import_react3.useState)(() => localStorage.getItem("dsh.worktable.updateCheck.v1") !== "0");
   const [updateCopied, setUpdateCopied] = (0, import_react3.useState)(false);
   const [updateStatus, setUpdateStatus] = (0, import_react3.useState)("idle");
@@ -21572,9 +21618,15 @@ function WorktableSection(props) {
   }, []);
   const checkUpdates = (0, import_react3.useCallback)(async (force = false) => {
     if (updateCheckingRef.current) return;
-    const last = Number(localStorage.getItem("dsh.worktable.lastUpdateCheck.v1") ?? "0");
-    if (!force && Date.now() - last < 24 * 3600 * 1e3) return;
+    let last = 0;
+    try {
+      last = Number(localStorage.getItem("dsh.worktable.lastUpdateCheck.v1") ?? "0");
+    } catch {
+    }
+    const age = Date.now() - last;
+    if (!force && Number.isFinite(last) && last > 0 && age >= 0 && age < 24 * 3600 * 1e3) return;
     updateCheckingRef.current = true;
+    setUpdateInfo(null);
     setUpdateStatus("checking");
     try {
       let d = null;
@@ -21595,17 +21647,21 @@ function WorktableSection(props) {
         setUpdateStatus("failed");
         return;
       }
-      localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
-      const tag = (d.tag_name ?? "").replace(/^v/, "");
-      if (!tag || cmpVer2(tag, LOCAL_VERSION2) <= 0) {
+      try {
+        localStorage.setItem("dsh.worktable.lastUpdateCheck.v1", String(Date.now()));
+      } catch {
+      }
+      const tag = typeof d.tag_name === "string" ? d.tag_name.trim() : "";
+      const order = cmpVer(tag, LOCAL_VERSION);
+      if (order == null) {
+        setUpdateStatus("failed");
+        return;
+      }
+      if (order <= 0) {
         setUpdateStatus("uptodate");
         return;
       }
-      if ((localStorage.getItem("dsh.worktable.skipVersion.v1") ?? "") === tag) {
-        setUpdateStatus("uptodate");
-        return;
-      }
-      setUpdateInfo({ latest: tag, notes: (d.body ?? "").slice(0, 800), url: d.html_url ?? "" });
+      setUpdateInfo(newerUpdateInfo({ latest: tag.replace(/^v/, ""), notes: typeof d.body === "string" ? d.body.slice(0, 800) : "", url: typeof d.html_url === "string" ? d.html_url : "" }));
       setUpdateStatus("uptodate");
     } finally {
       updateCheckingRef.current = false;
@@ -21698,15 +21754,12 @@ function WorktableSection(props) {
       if (!sid) return "idle";
       const e = byId[sid];
       if (!e) return "idle";
-      if (pendingAckForSession(sid) != null) return "need";
-      if (e.completed === true) return "done";
+      let face;
       try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
-        if (face && face.completed === true) return "done";
+        face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.();
       } catch {
       }
-      if (e.running === true) return "busy";
-      return "idle";
+      return consoleStatusOf(e, pendingAckForSession(sid), face);
     };
     const runtimeOf = (sid) => {
       if (!sid) return null;
@@ -23163,7 +23216,7 @@ function WorktableSection(props) {
         /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_updateVers", children: [
           t("update.current"),
           " v",
-          LOCAL_VERSION2,
+          LOCAL_VERSION,
           " \u2192 v",
           updateInfo.latest
         ] }),
@@ -23299,7 +23352,7 @@ function WorktableSection(props) {
       /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_versionRow", children: [
         /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
           "v",
-          LOCAL_VERSION2,
+          LOCAL_VERSION,
           updateStatus === "uptodate" && !updateInfo ? " \xB7 " + t("update.upToDate") : "",
           updateStatus === "failed" && !updateInfo ? " \xB7 " + t("update.checkFail") : ""
         ] }),

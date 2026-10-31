@@ -4,13 +4,15 @@
 
 **An agent-project workbench for DeepSeek Harness** — a sidebar app drawer that turns every project into dockable windows, plus a built-in control room that watches them all in real time.
 
-> Current source is **0.5.0**; publication is determined by GitHub Release. It adds host identity checks, sandboxed project pages, preview read limits, fractional-margin split fixes and collapsed-sidebar popups. Windows Web checks cover DSH 0.2.0-rc.2 / 0.2.1-rc.3; the user tested project opening, split resizing and sidebar settings in dev.2 on official Windows Desktop 0.2.1-rc.3. Formal-package installation/regressions are separate from candidate GUI evidence. DSH 0.1.x is outside this release’s support range. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md); v0.4.0 sections below are historical release records.
+> Source version **0.5.1** adds exact DSH **0.2.1-rc.5** compatibility, neutral run-ended status and assistant-only previews, and fixes downgrade alerts caused by prerelease comparison and stale update caches. Publication status follows [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases). Existing sandbox/authentication boundaries remain; this is not a fix for the separate old-session HTTP 400 issue.
+
+> Compatibility is limited to the tested DSH versions **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5** on Windows; coverage varies by environment. The user confirmed that the downgrade alert disappeared and the page looked normal after installing 0.5.1-dev.3. This confirmation and earlier candidate GUI checks do not establish full final-package Desktop acceptance. DSH 0.1.x is outside this release’s support range. Version 0.5.1 retains the identity checks, page isolation, preview limits and layout fixes introduced in 0.5.0. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md) for evidence and limits.
 
 ## 📸 Screenshots
 
 | | |
 |---|---|
-| <img src="docs/assets/shot-2-console.png" width="1080" alt="Control room"> | **🖥️ Control room** — the built-in default project: a live card grid watching every project (working / needs you / done) with glassmorphism cards on a blueprint grid |
+| <img src="docs/assets/shot-2-console.png" width="1080" alt="Control room"> | **🖥️ Control room** — the built-in default project: a live card grid watching every project (working / needs you / run ended) with glassmorphism cards on a blueprint grid |
 | <img src="docs/assets/shot-1-sidebar.png" alt="Worktable sidebar" width="1080"> | **🧩 Worktable sidebar** — the app drawer: projects, shortcuts and the pinned control-room entry |
 | <img src="docs/assets/shot-3-workspace.png" alt="Split workspace" width="1080"> | **🪟 Our projects** — every project opens as a dockable split workspace (resident apps like Travel Atlas included) |
 
@@ -34,7 +36,7 @@
 ### 🖥️ Control room (built-in default project)
 
 - A pinned, undeletable first project — bind one management conversation on first open
-- A configurable card grid mirrors visible projects: working / needs you / done with available runtime and a cleaned message preview
+- A configurable card grid mirrors visible projects: working / needs you / run ended, with available runtime and the latest readable assistant reply. Run ended does not indicate task success.
 - Event-driven host snapshot mirroring; status monitoring does not call a model
 - Glassmorphism cards, dark / light / system theme, neon status glows and a rotating comet on busy cards
 
@@ -53,9 +55,9 @@
 
 ---
 
-## Quick start (published v0.4.0)
+## Quick start (v0.5.1)
 
-**v0.4.0** adds Windows official Desktop support within the tested scope below. Web compatibility lists only DSH **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**; Desktop checks cover **Windows + 0.2.0-rc.2**. Desktop page checks and targeted regressions do not establish full final-package Desktop end-to-end acceptance. Older versions rely on prior page checks plus code regressions, not a newly repeated full GUI suite. Back up important data and check other plugins before upgrading; GitHub Release is the publication authority.
+The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5**; DSH 0.1.x is not supported. The [compatibility guide](docs/compatibility-and-security.md) separates Windows Web checks from Desktop evidence. Back up important data and check other plugins before upgrading; use GitHub Releases to confirm that the requested version is published.
 
 1. **Install** (pick one):
 
@@ -83,12 +85,16 @@
 Save your tasks, fully exit the app from its menu/tray (closing the window is not enough), replace the installation-directory placeholder, run in PowerShell, then reopen the app manually:
 
 ```powershell
-& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.0/dsh-worktable-0.5.0.tgz"
+& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.1/dsh-worktable-0.5.1.tgz"
 ```
 
 Use the Desktop-bundled CLI and `desktop` profile, not an unpinned npx or Web CLI. Preserve the actual DSH_HOME. Browser-local projects/layouts/media do not automatically sync between Web and Desktop origins, even when sessions share one data home.
 
 Explicit **Ungrouped** in a custom-window task no longer silently joins a workspace. For a **blank control-room conversation**, the tested DSH 0.2 host disables the ungrouped composer: choose a group or join a usable existing conversation. The plugin explains this and blocks that blank creation, without changing your choice or sending an activation message. An empty existing-group selection cannot silently default either; legacy ungrouped creation stays unchanged.
+
+### v0.4.0 compatibility history
+
+**v0.4.0** adds Windows official Desktop support within the tested scope below. Web compatibility lists only DSH **0.1.1-rc.2 / 0.1.2-rc.1 / 0.2.0-rc.2**; Desktop checks cover **Windows + 0.2.0-rc.2**. Desktop page checks and targeted regressions do not establish full final-package Desktop end-to-end acceptance. Older versions rely on prior page checks plus code regressions, not a newly repeated full GUI suite. Back up important data and check other plugins before upgrading; GitHub Release is the publication authority.
 
 ---
 
@@ -116,7 +122,7 @@ node --check lib/index.js
 - The client bundle keeps the `window.__ModuleLoader__.load` handshake; `react` and `@deepseek-ai/*` stay external
 - Historical diagnostic scripts such as `04_test/functional-diag.cjs` and browser probes contain local assumptions; inspect their paths/ports before running and use an isolated profile.
 - Installed-artifact checks: `04_test/anchor-dom.test.mjs` (14 DOM scenarios, including fractional geometry), `04_test/sidebar-popup.test.mjs` (expanded/collapsed sidebar popups), `04_test/split-margin.test.mjs` (5 real Chromium cases), and `04_test/server-home.test.mjs` (3 groups). Use Edge/Chrome or `DSH_TEST_CHROMIUM` for the browser check.
-- Release packaging uses `npm run pack` only. It also runs 122 source regressions, independent installation and client-factory checks. `npm run test:sidebar` runs the popup checks alone; `npm run test:widget` covers 26 ownership/session/late-result cases. After an approved release, run `npm run verify:remote -- --expect-sha <final SHA> <release tag>` and check `latest` separately.
+- Release packaging uses `npm run pack` only. It also runs 139 source regressions, independent installation and client-factory checks. `npm run test:sidebar` runs the popup checks alone; `npm run test:widget` covers 26 ownership/session/late-result cases. After an approved release, run `npm run verify:remote -- --expect-sha <final SHA> <release tag>` and check `latest` separately.
 
 ---
 
@@ -155,7 +161,7 @@ Every window title bar has a small **annotate button** (chat-bubble with a plus)
 
 - Sandboxing can break embedded storage, login and WebGL/Cesium textures. StarMap’s moon-texture issue was fixed separately in that project; the worktable package does not contain this project-specific fix. A working new project does not establish compatibility for every existing page.
 
-- **Platform**: see the release scope above and [compatibility guide](docs/compatibility-and-security.md). Dev.2 passed the specified user Desktop checks; this does not establish complete formal-package Desktop acceptance; macOS has not been tested on real hardware.
+- **Platform**: see the release scope above and [compatibility guide](docs/compatibility-and-security.md). Earlier candidate Desktop checks and the user's 0.5.1-dev.3 confirmation cover the recorded interactions only; they do not establish complete formal-package Desktop acceptance. macOS has not been tested on real hardware.
 - State lives in the browser (localStorage and IndexedDB) — projects, bindings, views and media do not sync across machines
 - The terminal pane is a plain PowerShell host on Windows (no PTY feature parity with the native terminal app)
 - Auto-mount requires a registered custom task and its matching v2 result file. Old saved windows remain; unowned root-level `widget-result.json` files are not imported. To re-enable an old conversation, send one task via the target window's Custom → Send to conversation action. Later edits in that conversation may reuse the binding. Manually closing/replacing content revokes it; existing mistakenly mounted tabs must be closed once. Shared-folder projects can still overwrite the same artifact if explicitly told to write the same physical file.

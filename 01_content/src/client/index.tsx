@@ -5,9 +5,10 @@ import { isAbs, joinPath, parentPathOf, basenameOf } from './pathutil'
 import { splitStore, SplitWorkspace, setSplitT, setSplitEnv, type LayoutSpec, type SplitPane, type ConsoleCardData } from './split'
 import { appendHostInput } from './hostInput'
 import { worktableUpgrade } from './hostTransport'
+import { LOCAL_VERSION, cmpVer, newerUpdateInfo, type UpdateInfo } from './updateCheck'
 import { WidgetMountRegistry, newWidgetId, widgetManifestPath, type WidgetBinding } from './widgetMount'
-import { currentSessionOf, openHostSession, sendHostSession, createSessionSnapshotAdapter, childSessionIdsOf, pendingAckOf, sessionRuntimeMs } from './sessionCompat'
-import { cleanPreviewText, previewFromEvents, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } from './sessionDetails'
+import { currentSessionOf, openHostSession, sendHostSession, createSessionSnapshotAdapter, childSessionIdsOf, pendingAckOf, sessionRuntimeMs, consoleStatusOf } from './sessionCompat'
+import { previewFromEvents, previewFromNodes, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } from './sessionDetails'
 import { photoStore, kindOf } from './photoStore'
 import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
 import { WAVE_BG_B64 } from './waveBg'
@@ -29,8 +30,6 @@ type OrderBy = 'manual' | 'recent'
 type DockMode = 'footer' | 'float'
 
 // ── 更新检查（客户端直连 GitHub Releases API，只读 GET；失败静默）──
-declare const __WT_VERSION__: string
-const LOCAL_VERSION = typeof __WT_VERSION__ === 'undefined' ? 'dev' : __WT_VERSION__
 const UPDATE_REPO = 'Aisland-SJL/dsh-worktable'
 const { command: UPGRADE_CMD, prompt: UPGRADE_AI, desktop: DESKTOP_HOST } = worktableUpgrade()
 // 更新提示图标（手绘 SVG，避免 emoji 跨平台渲染差异）
@@ -48,17 +47,6 @@ const ICON_SPARK = (
     <path d="M12.6 11.2l.5 1.3 1.3.5-1.3.5-.5 1.3-.5-1.3-1.3-.5 1.3-.5z" fill="currentColor" />
   </svg>
 )
-type UpdateInfo = { latest: string; notes: string; url: string }
-function cmpVer(a: string, b: string): number {
-  const pa = a.split('.').map(Number)
-  const pb = b.split('.').map(Number)
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const x = pa[i] ?? 0
-    const y = pb[i] ?? 0
-    if (x !== y) return x - y
-  }
-  return 0
-}
 async function copyText(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); return true }
@@ -618,27 +606,13 @@ function schedulePreviewSweep() {
   previewTimer = window.setTimeout(() => { previewTimer = null; sweepPreviews() }, 6000)
 }
 
-/** 从会话快照节点里提取最近一条文本（纯读内存镜像，零 Token；代码清洗后无则 ''） */
+/** 从宿主内存镜像提取最近助手文本；无可读答复则留空，不回退注入/推理/工具内容。 */
 function lastTextOf(sid: string): string {
   try {
     const binding = sessionBridge?.sessions?.binding?.(sid)
     if (binding?.eventSource?.getSnapshot) return previewFromEvents(binding.eventSource.getSnapshot().entries)
     const face = binding?.session?.getSnapshot?.()
-    const nodes: any[] = face?.nodes ?? []
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i]
-      const blocks = Array.isArray(n?.blocks) ? n.blocks : (Array.isArray(n?.content) ? n.content : [])
-      let raw = ''
-      for (const b of blocks) {
-        const s = typeof b?.text === 'string' ? b.text.trim() : ''
-        if (!s) continue
-        if (b?.type === 'text') { raw = s; break }
-        if (!raw) raw = s
-      }
-      if (!raw) continue
-      const clean = cleanPreviewText(raw)
-      if (clean.length >= 8) return clean.slice(0, 220)
-    }
+    return previewFromNodes(face?.nodes)
   } catch {}
   return ''
 }
@@ -759,7 +733,7 @@ function buildWindowTaskText(projectId: string, projectName: string, windowLabel
     ? '项目文件夹：' + folder + '（本项目所有产出文件一律放进这个文件夹；不要写到别的默认位置）。'
     : '本项目暂未设置专属文件夹：产出文件先向用户确认存放位置，不要随便写。'
   const lines = [
-    '【工作台自定义窗口任务】',
+    '【工作台】',
     '以下内容由 dsh-worktable（工作台）插件' + (mode === 'new' ? '自动发送' : '发送') + '：用户想把「' + projectName + '」项目中的「' + win + '」窗口打造成他想要的内容。',
     '1. dsh-worktable 是侧边栏底部的自建「工作台」插件（官方文档没有它的说明，不了解之处可直接向用户提问）。',
     '2. 用户需求：' + requirement,
@@ -921,7 +895,7 @@ function buildMountContent(folder: string, d: any): any {
 
 /** 每会话最近观察到的待决身份；同为 need 的问题替换也必须重新点亮。 */
 const notifyStateSeenRef: { current: Record<string, string | null> } = { current: {} }
-/** 每会话最近观察到的「已完成」布尔值：新一次完成时清除旧 done ack（控制室绿光重新点亮） */
+/** 每会话最近观察到的结束边沿：新一轮结束清除旧 done ack；结束不表示成功。 */
 const doneSeenRef: { current: Record<string, boolean> } = { current: {} }
 /** 清除某会话的 ack 记录（状态转移时调用，保证新问题不会被旧确认压住） */
 function clearNotifyAck(sid: string) {
@@ -934,11 +908,12 @@ function clearNotifyAck(sid: string) {
   } catch {}
 }
 
-/** 会话状态 → 提醒类型：待决(黄) 优先于 完成(绿)——等待用户判断时 pendingInteraction 与
+/** 会话状态 → 提醒类型：待决(黄) 优先于 本轮结束(中性)——等待用户判断时 pendingInteraction 与
  *  running 会同时为真，原生 UI 以黄点优先，镜像必须一致 */
 function sessionNotifyState(entry: any): 'done' | 'need' | null {
   if (!entry) return null
   if (entry.pendingInteraction != null) return 'need'
+  if (entry.running === true) return null
   if (entry.completed === true) return 'done'
   return null
 }
@@ -1062,7 +1037,8 @@ function WorktableSection(props: any) {
   const [addOpen, setAddOpen] = useState(false)
   const [viewOptionsOpen, setViewOptionsOpen] = useState(false)
   // 更新检查：徽标 / 更新卡 / 版本行共用；节流一天一次，忽略按版本号存 localStorage
-  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const [rawUpdateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null)
+  const updateInfo = newerUpdateInfo(rawUpdateInfo)
   const [updateCheckOn, setUpdateCheckOn] = useState<boolean>(() => localStorage.getItem('dsh.worktable.updateCheck.v1') !== '0')
   const [updateCopied, setUpdateCopied] = useState(false)
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'uptodate' | 'failed'>('idle')
@@ -1071,9 +1047,12 @@ function WorktableSection(props: any) {
   useEffect(() => () => { updateAliveRef.current = false }, [])
   const checkUpdates = useCallback(async (force = false) => {
     if (updateCheckingRef.current) return // 防重入：并发点击只保留一个 in-flight
-    const last = Number(localStorage.getItem('dsh.worktable.lastUpdateCheck.v1') ?? '0')
-    if (!force && Date.now() - last < 24 * 3600 * 1000) return // 自动检查节流；手动「立即检查」绕过节流
+    let last = 0
+    try { last = Number(localStorage.getItem('dsh.worktable.lastUpdateCheck.v1') ?? '0') } catch {}
+    const age = Date.now() - last
+    if (!force && Number.isFinite(last) && last > 0 && age >= 0 && age < 24 * 3600 * 1000) return // 自动检查节流；手动「立即检查」绕过节流
     updateCheckingRef.current = true
+    setUpdateInfo(null) // Every new result replaces the old card, including failure/no update.
     setUpdateStatus('checking')
     try {
       let d: { tag_name?: string; body?: string; html_url?: string } | null = null
@@ -1089,11 +1068,12 @@ function WorktableSection(props: any) {
       }
       if (!updateAliveRef.current) return // 组件已卸载：不再更新状态
       if (!d) { setUpdateStatus('failed'); return }
-      localStorage.setItem('dsh.worktable.lastUpdateCheck.v1', String(Date.now()))
-      const tag = (d.tag_name ?? '').replace(/^v/, '')
-      if (!tag || cmpVer(tag, LOCAL_VERSION) <= 0) { setUpdateStatus('uptodate'); return }
-      if ((localStorage.getItem('dsh.worktable.skipVersion.v1') ?? '') === tag) { setUpdateStatus('uptodate'); return }
-      setUpdateInfo({ latest: tag, notes: (d.body ?? '').slice(0, 800), url: d.html_url ?? '' })
+      try { localStorage.setItem('dsh.worktable.lastUpdateCheck.v1', String(Date.now())) } catch {}
+      const tag = typeof d.tag_name === 'string' ? d.tag_name.trim() : ''
+      const order = cmpVer(tag, LOCAL_VERSION)
+      if (order == null) { setUpdateStatus('failed'); return }
+      if (order <= 0) { setUpdateStatus('uptodate'); return }
+      setUpdateInfo(newerUpdateInfo({ latest: tag.replace(/^v/, ''), notes: typeof d.body === 'string' ? d.body.slice(0, 800) : '', url: typeof d.html_url === 'string' ? d.html_url : '' }))
       setUpdateStatus('uptodate')
     } finally {
       updateCheckingRef.current = false
@@ -1198,15 +1178,10 @@ function WorktableSection(props: any) {
       if (!sid) return 'idle'
       const e = byId[sid]
       if (!e) return 'idle'
-      if (pendingAckForSession(sid) != null) return 'need'
-      if (e.completed === true) return 'done'
-      // 会话面兜底：宿主快照可能滞后或缺少完成字段
-      try {
-        const face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.()
-        if (face && face.completed === true) return 'done'
-      } catch {}
-      if (e.running === true) return 'busy'
-      return 'idle'
+      // Read an existing binding only; never activate a cold session to classify status.
+      let face: any
+      try { face = sessionBridge?.sessions?.binding?.(sid)?.session?.getSnapshot?.() } catch {}
+      return consoleStatusOf(e, pendingAckForSession(sid), face)
     }
     // 运行时长：任务 startedAt → 新版 chat legacy.turnTimings → 旧会话面；未知不虚构。
     const runtimeOf = (sid: string | undefined): number | null => {
@@ -1217,7 +1192,7 @@ function WorktableSection(props: any) {
     const make = (id: string, name: string, icon: string, self: boolean): ConsoleCardData => {
       const sid = pr.projects.bindings[id]
       const status = statusOf(sid)
-      // 发光 = 完成/待决且本轮未被确认；点卡片确认后熄灭
+      // 发光 = 本轮结束/待决且未被确认；结束不承诺任务成功。
       const glow = !!sid && ((status === 'done' && ackMap[sid] !== 'done') || (status === 'need' && ackMap[sid] !== pendingAckForSession(sid)))
       return {
         id, name, icon,
@@ -1976,7 +1951,7 @@ function buildCustomLayoutPrompt(req: string): string {
     return childSessionIdsOf(sessionsSnapshotStore.snapshot, sid)
   }, [])
 
-  /** 项目 → 提醒态：绑定会话（含其子代理）待决(黄) > 完成(绿) > 工作中(蓝)；
+  /** 项目 → 提醒态：绑定会话（含其子代理）待决(黄) > 本轮结束(中性) > 工作中(蓝)；
    *  状态转移自动清除旧 ack——原生 UI 每个新问题都会重新亮黄，镜像不得被旧确认压住 */
   const bindNotifyMap: Record<string, 'done' | 'need' | 'busy'> = useMemo(() => {
     const map: Record<string, 'done' | 'need' | 'busy'> = {}
