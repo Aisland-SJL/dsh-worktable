@@ -4,9 +4,9 @@
 
 **An agent-project workbench for DeepSeek Harness** — a sidebar app drawer that turns every project into dockable windows, plus a built-in control room that watches them all in real time.
 
-> Source version **0.5.1** adds exact DSH **0.2.1-rc.5** compatibility, neutral run-ended status and assistant-only previews, and fixes downgrade alerts caused by prerelease comparison and stale update caches. Publication status follows [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases). Existing sandbox/authentication boundaries remain; this is not a fix for the separate old-session HTTP 400 issue.
+> Source version **0.5.1**: the exact compatibility declaration now includes DSH **0.2.2-rc.1** (that host verifies `engines.dsh` and otherwise skips the whole worktable). Runtime code is unchanged and the addition ships with the next release; the isolation, authentication and console behaviour of 0.5.1 still apply. Publication status follows [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases).
 
-> Compatibility is limited to the tested DSH versions **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5** on Windows; coverage varies by environment. The user confirmed that the downgrade alert disappeared and the page looked normal after installing 0.5.1-dev.3. This confirmation and earlier candidate GUI checks do not establish full final-package Desktop acceptance. DSH 0.1.x is outside this release’s support range. Version 0.5.1 retains the identity checks, page isolation, preview limits and layout fixes introduced in 0.5.0. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md) for evidence and limits.
+> Compatibility is limited to the tested DSH versions **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1** on Windows; coverage varies by environment. For 0.2.2-rc.1 only the isolated web-profile install, cold start, health route, boot manifest and client factory gate were checked; the post-login GUI flow was not. Evidence from the other versions does not establish full final-package Desktop acceptance. DSH 0.1.x is outside this release’s support range. Version 0.5.1 retains the identity checks, page isolation, preview limits and layout fixes introduced in 0.5.0. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md) for evidence and limits.
 
 ## 📸 Screenshots
 
@@ -57,7 +57,7 @@
 
 ## Quick start (v0.5.1)
 
-The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5**; DSH 0.1.x is not supported. The [compatibility guide](docs/compatibility-and-security.md) separates Windows Web checks from Desktop evidence. Back up important data and check other plugins before upgrading; use GitHub Releases to confirm that the requested version is published.
+The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1**; DSH 0.1.x is not supported. The [compatibility guide](docs/compatibility-and-security.md) separates Windows Web checks from Desktop evidence. Back up important data and check other plugins before upgrading; use GitHub Releases to confirm that the requested version is published.
 
 1. **Install** (pick one):
 
