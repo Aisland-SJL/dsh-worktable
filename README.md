@@ -4,9 +4,9 @@
 
 **An agent-project workbench for DeepSeek Harness** — a sidebar app drawer that turns every project into dockable windows, plus a built-in control room that watches them all in real time.
 
-> Source version **0.5.1**: the exact compatibility declaration now includes DSH **0.2.2-rc.1** (that host verifies `engines.dsh` and otherwise skips the whole worktable). Runtime code is unchanged and the addition ships with the next release; the isolation, authentication and console behaviour of 0.5.1 still apply. Publication status follows [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases).
+> Version **0.6.0**: a first-run setup for the control room (create a dedicated conversation or use an existing one; defaults to a `Worktable` folder), project folders that follow the bound conversation, custom windows that default to a new conversation and label which project owns each conversation, and redesigned sidebar status dots (blue breathing / green run ended / yellow needs you). Adds exact compatibility with DSH **0.2.2-rc.1 / 0.2.2-rc.5**. Publication status follows [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases).
 
-> Compatibility is limited to the tested DSH versions **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1** on Windows; coverage varies by environment. For 0.2.2-rc.1 only the isolated web-profile install, cold start, health route, boot manifest and client factory gate were checked; the post-login GUI flow was not. Evidence from the other versions does not establish full final-package Desktop acceptance. DSH 0.1.x is outside this release’s support range. Version 0.5.1 retains the identity checks, page isolation, preview limits and layout fixes introduced in 0.5.0. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md) for evidence and limits.
+> Compatibility is limited to the tested DSH versions **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1 / 0.2.2-rc.5** on Windows; coverage varies by environment. 0.2.2-rc.5 was confirmed by the user on the official Windows Desktop for the main screens and interactions; for 0.2.2-rc.1 only the isolated web-profile install, cold start, health route, boot manifest and client factory gate were checked. The Web build and full model-task flows were not re-accepted in this release. DSH 0.1.x is outside this release’s support range. Version 0.6.0 retains the identity checks, page isolation, preview limits and layout fixes introduced in 0.5.0. Embedded storage, login, WebGL textures and automatic annotation text extraction can be affected. See [compatibility and security](docs/compatibility-and-security.md) for evidence and limits.
 
 ## 📸 Screenshots
 
@@ -55,9 +55,9 @@
 
 ---
 
-## Quick start (v0.5.1)
+## Quick start (v0.6.0)
 
-The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1**; DSH 0.1.x is not supported. The [compatibility guide](docs/compatibility-and-security.md) separates Windows Web checks from Desktop evidence. Back up important data and check other plugins before upgrading; use GitHub Releases to confirm that the requested version is published.
+The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1 / 0.2.2-rc.5**; DSH 0.1.x is not supported. The [compatibility guide](docs/compatibility-and-security.md) separates Windows Web checks from Desktop evidence. Back up important data and check other plugins before upgrading; use GitHub Releases to confirm that the requested version is published.
 
 1. **Install** (pick one):
 
@@ -77,7 +77,7 @@ The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 /
 
    Either way the `add` command registers `dsh-worktable` in the profile bundle list (writes to `~/.dsh`, may ask for authorization). If the `dsh` command is missing, use `npx @deepseek-ai/dsh` instead.
 2. **Restart** the DSH web process, refresh the GUI
-3. **Open the control room**: click the pinned 🖥️ control-room card → bind one conversation (join existing or create new) → you get the live card grid
+3. **Open the control room**: click the pinned 🖥️ control-room card → follow the first-run setup to create a dedicated conversation (recommended; defaults to a `Worktable` folder in your home directory) or use an existing one → you get the live card grid
 4. **Create projects**: sidebar ＋ → pick a layout preset, set a project folder
 
 ### Windows official Desktop
@@ -85,12 +85,12 @@ The current compatibility declaration lists only DSH **0.2.0-rc.2 / 0.2.1-rc.3 /
 Save your tasks, fully exit the app from its menu/tray (closing the window is not enough), replace the installation-directory placeholder, run in PowerShell, then reopen the app manually:
 
 ```powershell
-& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.1/dsh-worktable-0.5.1.tgz"
+& "<Desktop installation directory>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.6.0/dsh-worktable-0.6.0.tgz"
 ```
 
 Use the Desktop-bundled CLI and `desktop` profile, not an unpinned npx or Web CLI. Preserve the actual DSH_HOME. Browser-local projects/layouts/media do not automatically sync between Web and Desktop origins, even when sessions share one data home.
 
-Explicit **Ungrouped** in a custom-window task no longer silently joins a workspace. For a **blank control-room conversation**, the tested DSH 0.2 host disables the ungrouped composer: choose a group or join a usable existing conversation. The plugin explains this and blocks that blank creation, without changing your choice or sending an activation message. An empty existing-group selection cannot silently default either; legacy ungrouped creation stays unchanged.
+Explicit **Ungrouped** in a custom-window task no longer silently joins a workspace. A conversation created by the control-room setup uses the folder you chose as its group; no blank ungrouped conversation or activation message is created. In a custom window, sending to a conversation that another project already owns only sends the content and never auto-binds it, so two projects don't end up sharing one conversation.
 
 ### v0.4.0 compatibility history
 

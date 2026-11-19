@@ -4,9 +4,9 @@
 
 **DeepSeek Harness 的 agent 项目工作台**——侧边栏「应用抽屉」把每个项目变成可停靠的窗口，再加一个实时监控所有项目的内置「控制室」。
 
-> 当前源码版本 **0.5.1**：兼容声明已精确补上 DSH **0.2.2-rc.1**（该宿主按 `engines.dsh` 校验，旧声明会整体拒绝加载工作台），运行时代码未改，随下一次发版生效；0.5.1 的隔离、鉴权与控制室行为保持不变。公开发布状态以 [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases) 为准。
+> 当前版本 **0.6.0**：控制室首次引导（新建专属对话或用已有对话，默认 Worktable 文件夹）、项目文件夹跟随绑定对话、自定义窗口默认新建对话并标出对话归属、侧栏状态小灯改为圆圈（蓝色呼吸 / 绿色本轮结束 / 黄色需要判断），并精确兼容 DSH **0.2.2-rc.1 / 0.2.2-rc.5**。公开发布状态以 [GitHub Releases](https://github.com/Aisland-SJL/dsh-worktable/releases) 为准。
 
-> 兼容声明仅覆盖 Windows 下已测的 **DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1**，各环境的验证范围不同。0.2.2-rc.1 只做了隔离 web profile 的安装、冷启动、health 路由、启动清单与工厂门禁检查，登录后的 GUI 全流程未验收。其余版本的既有页面证据不能外推为正式包全功能桌面验收。0.1.x 不在本版支持范围。0.5.1 保留 0.5.0 引入的接口身份校验、网页隔离、预览读取限制和布局修复。浏览器存储、登录、WebGL 贴图及标注自动取字可能受隔离影响，证据与边界见 [兼容与安全说明](docs/compatibility-and-security.md)。
+> 兼容声明仅覆盖 Windows 下已测的 **DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1 / 0.2.2-rc.5**，各环境的验证范围不同。0.2.2-rc.5 由用户在官方 Windows Desktop 上确认主要界面与交互；0.2.2-rc.1 只做了隔离 web profile 的安装、冷启动、health 路由、启动清单与工厂门禁检查。网页端与模型任务全链路未在本版重新验收。0.1.x 不在本版支持范围。0.6.0 保留 0.5.0 引入的接口身份校验、网页隔离、预览读取限制和布局修复。浏览器存储、登录、WebGL 贴图及标注自动取字可能受隔离影响，证据与边界见 [兼容与安全说明](docs/compatibility-and-security.md)。
 
 ## 📸 截图
 
@@ -55,9 +55,9 @@
 
 ---
 
-## 快速开始（v0.5.1）
+## 快速开始（v0.6.0）
 
-当前兼容声明仅列 **DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1**，不支持旧 0.1.x。Windows 网页端与桌面端的具体证据分别见[兼容说明](docs/compatibility-and-security.md)。升级前备份重要数据并核对其他插件；目标版本是否已发布，以 GitHub Releases 为准。
+当前兼容声明仅列 **DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1 / 0.2.2-rc.5**，不支持旧 0.1.x。Windows 网页端与桌面端的具体证据分别见[兼容说明](docs/compatibility-and-security.md)。升级前备份重要数据并核对其他插件；目标版本是否已发布，以 GitHub Releases 为准。
 
 1. **安装**（二选一）：
 
@@ -77,7 +77,7 @@
 
    两种方式 `add` 都会把 `dsh-worktable` 注册进 profile 的 bundle 列表（写入 `~/.dsh`，可能需要授权确认）；若提示找不到 `dsh` 命令，用 `npx @deepseek-ai/dsh` 代替。
 2. **重启** DSH web 进程并刷新界面
-3. **打开控制室**：点击固定首位的 🖥️ 控制室卡片 → 绑定一条对话（加入现有或新建）→ 得到实时卡片网格
+3. **打开控制室**：点击固定首位的 🖥️ 控制室卡片 → 按首次引导新建专属对话（推荐，默认放在用户目录下的 Worktable 文件夹）或选用已有对话 → 得到实时卡片网格
 4. **创建项目**：侧边栏 ＋ → 选布局预设、填项目文件夹
 
 ### Windows 官方桌面端
@@ -85,12 +85,12 @@
 先保存任务，从应用菜单/托盘完整退出（只关窗口不够）；将安装目录占位符替换为实际位置，在 PowerShell 执行，再手动重新打开：
 
 ```powershell
-& "<桌面端安装目录>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.5.1/dsh-worktable-0.5.1.tgz"
+& "<桌面端安装目录>\resources\runtime\cli\bin\dsh.cmd" plugin --profile desktop add "https://github.com/Aisland-SJL/dsh-worktable/releases/download/v0.6.0/dsh-worktable-0.6.0.tgz"
 ```
 
 必须使用桌面端自带 CLI 与 `desktop` profile，不用不固定版本的 npx 或网页 CLI 代替。保留实际 DSH_HOME；即便共用会话数据目录，网页与桌面来源的项目/布局/媒体也不会自动同步。
 
-自定义窗口明确选「未分组」时不再偷偷加入宿主分组。控制室新建的是**空对话**：已测 DSH 0.2 的未分组空对话不能使用原生输入框，因此插件提示并禁用这一创建，请自行选分组或加入可用的现有对话；不自动改组、不发送激活消息。现有分组未选具体项时也不退回默认分组，旧宿主未分组创建行为保持。
+自定义窗口明确选「未分组」时不再偷偷加入宿主分组。控制室引导新建的对话以你选的文件夹作为分组，不创建未分组空对话、不发送激活消息。自定义窗口「发送到已有对话」选中已绑定其他项目的对话时只发送、不自动绑定，避免两个项目共用一个对话。
 
 ### v0.4.0 兼容历史
 

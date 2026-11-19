@@ -289,11 +289,14 @@ function testConsolePresentation() {
       assert(start >= 0, 'missing bundled CSS rule: ' + selector)
       return api.css.slice(start + selector.length + 1, api.css.indexOf('}', start))
     }
-    for (const selector of ['.dsh-wt_bindBtn[data-bound=done]', '.dsh-wt_consoleStatus-done', '.dsh-wt_consoleCard-glowDone']) {
+    // 控制室卡片：本轮结束仍为中性，不用成功绿
+    for (const selector of ['.dsh-wt_consoleStatus-done', '.dsh-wt_consoleCard-glowDone']) {
       assert(!/state-success|#3fb950|rgba?\(63,\s*185,\s*80/i.test(rule(selector)), 'ended reminder still uses success green: ' + selector)
     }
-    assert(rule('.dsh-wt_bindBtn[data-bound=need]').includes('#d29922'), 'sidebar pending color changed')
-    assert(rule('.dsh-wt_bindBtn[data-bound=busy]').includes('#4f8ef7'), 'sidebar working color changed')
+    // 侧栏状态小灯（用户 2026-11-19 定案）：运行蓝 / 完成绿 / 需要判断黄
+    assert(rule('.dsh-wt_bindBtn[data-bound=need]').includes('#e0a100'), 'sidebar pending color changed')
+    assert(rule('.dsh-wt_bindBtn[data-bound=busy]').includes('#3b82f6'), 'sidebar working color changed')
+    assert(rule('.dsh-wt_bindBtn[data-bound=done]').includes('#22a35a'), 'sidebar done color changed')
     assert(rule('.dsh-wt_consoleStatus-need').includes('state-warning'), 'control-room pending color changed')
     assert(rule('.dsh-wt_consoleStatus-busy').includes('state-accent-primary'), 'control-room working color changed')
     assert(api.sessionNotifyState({ running: true, completed: true }) === null, 'stale end must not hide a running sidebar session')

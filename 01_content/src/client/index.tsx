@@ -8,7 +8,7 @@ import { worktableUpgrade } from './hostTransport'
 import { LOCAL_VERSION, cmpVer, newerUpdateInfo, type UpdateInfo } from './updateCheck'
 import { WidgetMountRegistry, newWidgetId, widgetManifestPath, type WidgetBinding } from './widgetMount'
 import { currentSessionOf, openHostSession, sendHostSession, createSessionSnapshotAdapter, childSessionIdsOf, pendingAckOf, sessionRuntimeMs, consoleStatusOf } from './sessionCompat'
-import { previewFromEvents, previewFromNodes, readSessionPreview, presetApiOf, modelApiOf, createHostSession, blankSessionNeedsWorkspace } from './sessionDetails'
+import { previewFromEvents, previewFromNodes, readSessionPreview, presetApiOf, modelApiOf, createHostSession } from './sessionDetails'
 import { photoStore, kindOf } from './photoStore'
 import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
 import { WAVE_BG_B64 } from './waveBg'
@@ -120,6 +120,9 @@ type ProjectsState = {
   bindings: Record<string, string>
   /** 项目 → 工作文件夹（绝对路径）：该项目所有产出文件都放这里；新建项目时强制填写。 */
   folders: Record<string, string>
+  /** 项目文件夹是否「跟随绑定对话」：引导或绑定时自动取对话所在文件夹 = true；用户手动改过 = 缺省/false。
+   *  跟随时换绑对话会同步文件夹；不跟随时只提示，由用户决定是否同步。 */
+  folderFollows: Record<string, boolean>
 }
 
 const PERSIST_KEY = 'dsh.worktable.view.v1'
@@ -295,6 +298,7 @@ const DEFAULT_PROJECTS: ProjectsState = {
   layouts: [],
   bindings: {},
   folders: {},
+  folderFollows: {},
 }
 
 /** HSL 归一化：色相映射到 -180..180（0 = 中性/中间），饱和/明度只接受 0..200 数值；非法返回 undefined */
@@ -377,6 +381,7 @@ function loadProjects(): ProjectsState {
         : [],
       bindings: p.bindings && typeof p.bindings === 'object' ? p.bindings : {},
       folders: p.folders && typeof p.folders === 'object' ? p.folders : {},
+      folderFollows: p.folderFollows && typeof p.folderFollows === 'object' ? p.folderFollows : {},
     }
   } catch {
     return { ...DEFAULT_PROJECTS }
@@ -653,6 +658,7 @@ async function fetchSessionGroups(): Promise<{ groups: { title: string; sessions
           sessIds.forEach((sid) => accounted.add(sid))
           return {
             title: (table[wid]?.title ?? wid) as string,
+            path: (typeof table[wid]?.path === 'string' ? table[wid].path : '') as string,
             sessions: sessIds
               .filter((sid) => !archived.includes(sid) && !subKids.has(sid))
               .map(mk),
@@ -705,7 +711,7 @@ async function promptIntoSession(sessionId: string, text: string): Promise<void>
 }
 
 /** 新建会话的分组选择：未分组 / 加入现有分组 / 新建一个分组（父目录 + 名称） */
-export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId: string } | { kind: 'new'; parent: string; name: string }
+export type NewSessionGroup = { kind: 'none' } | { kind: 'existing'; workspaceId: string } | { kind: 'new'; path: string }
 
 /** 插件知识包：附在窗口任务提示词里，让接收方跳过对插件源码的重新侦察，直接干活 */
 const KNOWLEDGE_PACK = [
@@ -763,18 +769,15 @@ export async function createCustomSession(projectId: string, projectName: string
   } else if (g.kind === 'new') {
     const ws = b.workspaces as any
     if (!ws || typeof ws.create !== 'function') throw new Error('workspaces unavailable')
-    const parent = g.parent.replace(/[\\/]+$/, '')
-    const name = g.name.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
-    if (!parent || !name) throw new Error('invalid group path')
-    const full = joinPath(parent, name)
-    try { await ws.createDirectory?.(parent, name) } catch { /* 宿主 browse 能力本机为 native 时不可用 */ }
-    try {
-      // 兜底：插件服务端 mkdir（父目录必须已存在，避免误建深层目录）
-      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
-      const d = await r.json()
-      if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
-    } catch { /* 目录建不出来的错误最终由 workspace.create 暴露 */ }
-    const view = await ws.create({ path: full })
+    const full = g.path.trim()
+    // 错误用 wt: 前缀码抛出，由自定义窗口翻译成中/英文提示
+    if (!full) throw new Error('wt:folderEmpty')
+    if (!isAbs(full)) throw new Error('wt:folderRelative')
+    // 宿主 workspace.create 要求目录已存在：先建（已存在视为成功；上一级不存在则明确报错，不递归乱建）
+    const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || !d?.ok) throw new Error(d?.error === 'parent not found' ? 'wt:parentMissing' : 'wt:folderCreate:' + String(d?.error ?? 'HTTP ' + r.status))
+    const view = await ws.create({ path: typeof d.path === 'string' && d.path ? d.path : full })
     workspaceId = view?.workspaceId ?? view?.id ?? null
     if (!workspaceId) throw new Error('workspace create failed')
   }
@@ -1104,7 +1107,7 @@ function WorktableSection(props: any) {
   const [wsFolderError, setWsFolderError] = useState(false)
   /** 文件夹选择器状态：busy=等待系统选择器；err=按入口分开的失败原因（用户取消不报错）；manual=手工输入展开目标 */
   const [pickBusy, setPickBusy] = useState(false)
-  const [pickErr, setPickErr] = useState<{ add: string; bind: string }>({ add: '', bind: '' })
+  const [pickErr, setPickErr] = useState<{ add: string; bind: string; console?: string; custom?: string }>({ add: '', bind: '' })
   const [manualPathFor, setManualPathFor] = useState<'add' | 'bind' | null>(null)
   const [manualPathText, setManualPathText] = useState('')
   /** 文件夹选择在途锁 + 请求序号（useRef：跨渲染稳定；弹窗关闭/切换目标/手工确认时自增使旧请求失效） */
@@ -1117,19 +1120,19 @@ function WorktableSection(props: any) {
   const [iconPick, setIconPick] = useState<{ kind: 'layout' | 'shortcut' | 'project'; id: string; x: number; y: number } | null>(null)
   /** 对话绑定弹窗：项目 id + 锚点坐标；bindGroups = 打开时抓取的会话分组；
    *  bindListOpen = 右侧对话列表弹层（点「绑定对话」行弹出） */
-  const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number } | null>(null)
+  /** y = 顶边对齐锚点；bottom 有值 = 下方放不下，改为底边对齐锚点、向上展开（贴着按钮，不被整体推远） */
+  const [bindPick, setBindPick] = useState<{ id: string; x: number; y: number; bottom?: number } | null>(null)
   const [bindGroups, setBindGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
   const [bindListOpen, setBindListOpen] = useState(false)
   /** 控制室强制绑定弹窗：未绑定点开「工作台」时弹出（左加入现有对话 / 右新建对话） */
   const [consoleBind, setConsoleBind] = useState<{ x: number; y: number } | null>(null)
   const [consoleGroups, setConsoleGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
-  const [consoleMode, setConsoleMode] = useState<'none' | 'existing' | 'new'>('none')
-  const [consoleWsId, setConsoleWsId] = useState('')
-  const [consoleParent, setConsoleParent] = useState('')
-  const [consoleName, setConsoleName] = useState('')
-  const [consoleErr, setConsoleErr] = useState(false)
+  /** 首次引导：二选一（新建专属对话 / 用已有对话），默认推荐新建 */
+  const [consoleChoice, setConsoleChoice] = useState<'new' | 'existing'>('new')
+  const [consoleFolder, setConsoleFolder] = useState('')
+  const [consolePick, setConsolePick] = useState('')
+  const [consoleErr, setConsoleErr] = useState('')
   const [consoleBusy, setConsoleBusy] = useState(false)
-  const consoleNeedsWorkspace = blankSessionNeedsWorkspace(sessionBridge?.sessions, consoleMode === 'none' ? 'none' : 'auto')
 
   /** 自定义布局弹窗（预设网格末尾的 ＋ 磁贴）：描述 → 复制提示词到剪贴板 */
   const [customOpen, setCustomOpen] = useState(false)
@@ -1273,6 +1276,17 @@ function WorktableSection(props: any) {
         },
         createWorkspace: (path: string) => sessionBridge?.workspaces?.create?.({ path }),
         createWorkspaceDir: (parent: string, name: string) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
+        // 绑定关系（项目 → 对话），含控制室；供自定义窗口标出「本项目 / 已被其他项目绑定」的对话
+        getBindings: () => {
+          const p = projectsRef.current
+          const nameOf = (id: string) => id === CONSOLE_ID ? t('console.name')
+            : (p.projects.nameOverrides[id] ?? p.metas[id]?.name ?? p.projects.layouts.find((l) => l.id === id)?.title ?? id)
+          return Object.entries(p.projects.bindings)
+            .filter(([, sid]) => typeof sid === 'string' && !!sid)
+            .map(([projectId, sessionId]) => ({ projectId, sessionId: sessionId as string, name: nameOf(projectId) }))
+        },
+        // 系统文件夹选择（与「添加项目」/控制室引导同一套探测与降级）；错误经 onError 回传到窗口内显示
+        pickFolder: (apply: (p: string) => void, onError?: (msg: string) => void) => pickFolder('custom', apply, onError),
         // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
         autoBind: (sessionId: string): 'auto' | 'kept' | 'none' => {
           const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null
@@ -1562,12 +1576,25 @@ function boundSessionTitle(sid: string): string {
 }
 
 /** 绑定会话信息：文件夹（工作区）+ 会话标题（供绑定弹窗状态行展示） */
-function bindInfoOf(groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[], sid: string): { folder: string; title: string } {
+function bindInfoOf(groups: { title: string; path?: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[], sid: string): { folder: string; title: string; path: string } {
   for (const g of groups) {
     const s = g.sessions.find((x) => x.id === sid)
-    if (s) return { folder: g.title || '未分组', title: s.title }
+    if (s) return { folder: g.title || '未分组', title: s.title, path: g.path ?? '' }
   }
-  return { folder: '', title: sid }
+  return { folder: '', title: sid, path: '' }
+}
+
+/** 路径比较：Windows 不区分大小写、分隔符统一、去尾部分隔符 */
+function samePath(a: string, b: string): boolean {
+  const norm = (p: string) => p.trim().replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+  return norm(a) === norm(b)
+}
+
+/** 绑定的对话是否已不存在（被删除）。只在宿主会话目录已就绪时判定，加载中一律视为仍有效，避免误清绑定。 */
+function isStaleBinding(snapshot: any, sid: string | undefined | null): boolean {
+  if (!sid) return false
+  if (!snapshot || snapshot.phase !== 'ready' || !snapshot.byId) return false
+  return !Object.prototype.hasOwnProperty.call(snapshot.byId, sid)
 }
 
 /** 自定义布局提示词模板（复制到剪贴板，可发给任意 dsh 会话让 agent 实现）。
@@ -1644,63 +1671,101 @@ function buildCustomLayoutPrompt(req: string): string {
     }
   }, [projects.views, t])
 
-  /** 控制室卡片点击：已绑定 → 打开控制室；未绑定 → 强制绑定弹窗 */
-  const clickConsoleCard = (anchor: HTMLElement) => {
-    if (projectsRef.current.projects.bindings[CONSOLE_ID]) { openConsole(); return }
-    const r = anchor.getBoundingClientRect()
-    setConsoleBind({
-      x: clamp(Math.round(r.right + 8), 8, window.innerWidth - 640),
-      y: clamp(Math.round(r.top), 8, window.innerHeight - 460),
-    })
-    setConsoleGroups([])
-    fetchSessionGroups().then((res) => setConsoleGroups(res.groups)).catch(() => setConsoleGroups([]))
+  /** 控制室是否已设置好：有绑定且绑定的对话仍存在。对话已被删除 → 清掉失效绑定，回到「未设置」。 */
+  const consoleReady = (): boolean => {
+    const sid = projectsRef.current.projects.bindings[CONSOLE_ID]
+    if (!sid) return false
+    let snap: any = null
+    try { snap = sessionBridge?.list?.getSnapshot?.() } catch {}
+    if (isStaleBinding(snap, sid)) { setProjectBinding(CONSOLE_ID, null); return false }
+    return true
   }
 
-  /** 强制绑定：加入现有对话（绑定后直接打开控制室） */
+  /** 控制室卡片点击：已设置 → 打开控制室；未设置 → 首次引导 */
+  const clickConsoleCard = (anchor: HTMLElement) => {
+    void anchor
+    if (consoleReady()) { openConsole(); return }
+    openConsoleSetup()
+  }
+
+  /** 控制室两个小点：未设置时与卡片同一入口（首次引导），已设置后才是「修改设置」弹窗 */
+  const clickConsoleDots = (anchor: HTMLElement) => {
+    if (consoleReady()) { openBindPick(CONSOLE_ID, anchor); return }
+    openConsoleSetup()
+  }
+
+  /** 打开首次引导弹窗（居中，不依赖锚点） */
+  const openConsoleSetup = () => {
+    setConsoleBind({ x: 0, y: 0 })
+    setConsoleChoice('new')
+    setConsolePick('')
+    setConsoleErr('')
+    setConsoleGroups([])
+    fetchSessionGroups().then((res) => setConsoleGroups(res.groups)).catch(() => setConsoleGroups([]))
+    // 默认文件夹 = 用户主目录/Worktable；拿不到就留空，由占位提示引导用户选择
+    fetch('/api/worktable/home').then((r) => r.ok ? r.json() : null).then((d) => {
+      if (d && typeof d.home === 'string' && d.home) setConsoleFolder((prev) => prev || joinPath(d.home, 'Worktable'))
+    }).catch(() => {})
+  }
+
+  /** 首次引导：用已有对话（绑定后直接打开控制室）。项目文件夹跟随该对话所在文件夹。 */
   const bindConsoleExisting = (sid: string) => {
-    persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sid } }))
+    const path = bindInfoOf(consoleGroups, sid).path
+    persistProjects((prev) => ({
+      ...prev,
+      bindings: { ...prev.bindings, [CONSOLE_ID]: sid },
+      ...(path ? { folders: { ...prev.folders, [CONSOLE_ID]: path }, folderFollows: { ...prev.folderFollows, [CONSOLE_ID]: true } } : {}),
+    }))
     setConsoleBind(null)
     openConsole(sid)
   }
 
-  /** 新版空会话需显式分组才能输入；不能替用户改组或自动发送激活消息。 */
+  /** 新建专属对话：用户选定的文件夹即分组（新宿主经 createHostSession 注册/复用该目录的工作区，
+   *  旧宿主按 cwd 建会话）。不创建未分组空会话、不替用户改组、不发激活消息。
+   *  每一步失败都给出具体原因，不再只提示「创建失败」。 */
   const bindConsoleNew = async () => {
     const b = sessionBridge
-    if (!b || typeof b.sessions?.create !== 'function') { setConsoleErr(true); return }
-    if (blankSessionNeedsWorkspace(b.sessions, consoleMode === 'none' ? 'none' : 'auto')) return
-    if (consoleMode === 'existing' && !consoleWsId) { setConsoleErr(true); return }
-    if (consoleMode === 'new' && (!consoleParent.trim() || !consoleName.trim())) { setConsoleErr(true); return }
-    setConsoleBusy(true); setConsoleErr(false)
+    if (!b || typeof b.sessions?.create !== 'function') { setConsoleErr(t('console.errHost')); return }
+    const folder = consoleFolder.trim()
+    if (!folder) { setConsoleErr(t('console.errFolderEmpty')); return }
+    if (!isAbs(folder)) { setConsoleErr(t('console.errFolderRelative')); return }
+    setConsoleBusy(true); setConsoleErr('')
+    let stage: 'folder' | 'session' = 'folder'
     try {
-      let workspaceId: string | null = null
-      if (consoleMode === 'existing' && consoleWsId) workspaceId = consoleWsId
-      else if (consoleMode === 'new') {
-        const ws = b.workspaces as any
-        const parent = consoleParent.replace(/[\\/]+$/, '')
-        const name = consoleName.replace(/^[\\/]+/, '').replace(/[\\/]+$/, '')
-        const full = joinPath(parent, name)
-        try { await ws?.createDirectory?.(parent, name) } catch {}
-        try {
-          const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: full }) })
-          const d = await r.json()
-          if (!r.ok || !d?.ok) throw new Error(d?.error ?? 'mkdir failed')
-        } catch { /* 目录建不出的错误最终由 workspace.create 暴露 */ }
-        const view = await ws.create({ path: full })
-        workspaceId = view?.workspaceId ?? view?.id ?? null
-        if (!workspaceId) throw new Error('workspace create failed')
+      // 宿主 workspace.create 要求目录已存在：先建（已存在视为成功）
+      const r = await fetch('/api/worktable/mkdir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ path: folder }) })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d?.ok) {
+        if (d?.error === 'parent not found') throw new Error(t('console.errParentMissing'))
+        throw new Error(t('console.errFolder', { msg: String(d?.error ?? 'HTTP ' + r.status) }))
       }
-      const folder = projectsRef.current.projects.folders[CONSOLE_ID] ?? null
-      let createOpts: any = {}
-      if (workspaceId) createOpts = { workspaceId }
-      else if (folder) createOpts = { cwd: folder }
-      const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts, consoleMode === 'none' ? 'none' : 'auto')
+      stage = 'session'
+      const dir = typeof d.path === 'string' && d.path ? d.path : folder
+      const sessionId = await createHostSession(b.sessions, b.workspaces, { cwd: dir }, 'auto')
       await ensureSessionPreset(sessionId) // 管理对话同样应用部署默认预设
       await ensureSessionModel(sessionId) // 管理对话同样修复失效 provider
       markPluginSessionOpen(sessionId)
-      persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId } }))
+      // 引导一次写齐两项：绑定对话 + 项目文件夹（文件夹跟随该对话），之后「修改设置」弹窗两项都有值
+      persistProjects((prev) => ({
+        ...prev,
+        bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId },
+        folders: { ...prev.folders, [CONSOLE_ID]: dir },
+        folderFollows: { ...prev.folderFollows, [CONSOLE_ID]: true },
+      }))
       setConsoleBind(null)
       openConsole(sessionId)
-    } catch { setConsoleErr(true) } finally { setConsoleBusy(false) }
+    } catch (e: any) {
+      const msg = typeof e?.message === 'string' && e.message ? e.message : String(e ?? 'unknown')
+      setConsoleErr(stage === 'folder' ? msg : t('console.errSession', { msg }))
+    } finally { setConsoleBusy(false) }
+  }
+
+  /** 引导弹窗主按钮：按当前选项分派 */
+  const confirmConsoleSetup = () => {
+    if (consoleBusy) return
+    if (consoleChoice === 'new') { void bindConsoleNew(); return }
+    if (!consolePick) { setConsoleErr(t('console.errPickSession')); return }
+    bindConsoleExisting(consolePick)
   }
 
   actionsRef.current = { openSplit, openConsole }
@@ -1710,8 +1775,10 @@ function buildCustomLayoutPrompt(req: string): string {
     invalidatePickState() // 切换目标：失效在途选择请求、清空旧错误与手工输入
     const r = anchor.getBoundingClientRect()
     const x = clamp(Math.round(r.right + 8), 8, window.innerWidth - 300)
-    const y = clamp(Math.round(r.top), 8, window.innerHeight - 420)
-    setBindPick({ id, x, y })
+    const y = clamp(Math.round(r.top), 8, window.innerHeight - 8)
+    // 弹窗最高约 360px（展开手工输入时）；锚点下方放不下就向上展开
+    const opensUp = window.innerHeight - r.top < 368
+    setBindPick(opensUp ? { id, x, y, bottom: Math.max(8, Math.round(window.innerHeight - r.bottom)) } : { id, x, y })
     setBindListOpen(false)
     setBindGroups([])
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]))
@@ -1725,7 +1792,7 @@ function buildCustomLayoutPrompt(req: string): string {
    *      ① 0.1.1-rc.2：ctx.workspaces.pickDirectory() → string | null
    *      ② 0.1.2-rc.1：ctx remote.directoryPicker.pick() → { ok, value, error }（value 即路径或 null）
    *      ③ 0.1.2 新能力不可用 → 提示改用「手动输入」 */
-  const pickFolder = async (target: 'add' | 'bind', apply: (p: string) => void) => {
+  const pickFolder = async (target: 'add' | 'bind' | 'console' | 'custom', apply: (p: string) => void, onError?: (msg: string) => void) => {
     if (pickBusyRef.current) return
     // 解析本次选择器调用路径
     const ws = sessionBridge?.workspaces as any
@@ -1745,6 +1812,7 @@ function buildCustomLayoutPrompt(req: string): string {
     }
     if (!legacy && !remotePicker) {
       setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickerUnavailable') }))
+      onError?.(t('add.folderPickerUnavailable'))
       return
     }
     pickBusyRef.current = true
@@ -1774,6 +1842,7 @@ function buildCustomLayoutPrompt(req: string): string {
       if (!mountedRef.current) return // 组件已卸载：不再更新状态
       const msg = (e && typeof e === 'object' && typeof e.message === 'string') ? e.message : String(e ?? '')
       setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickFail', { msg: msg || 'unknown' }) }))
+      onError?.(t('add.folderPickFail', { msg: msg || 'unknown' }))
     } finally {
       if (seq === pickSeqRef.current && mountedRef.current) {
         pickBusyRef.current = false
@@ -1801,10 +1870,7 @@ function buildCustomLayoutPrompt(req: string): string {
     pickBusyRef.current = false
     setPickBusy(false)
     if (target === 'add') { setWsFolderParent(p); setWsFolderError(false) }
-    else if (bindPick) {
-      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id)
-      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
-    }
+    else if (bindPick) setProjectFolder(bindPick.id, p, false)
     setManualPathFor(null)
     setManualPathText('')
     setPickErr((prev) => ({ ...prev, [target]: '' }))
@@ -1813,22 +1879,38 @@ function buildCustomLayoutPrompt(req: string): string {
   /** 绑定弹窗「更改」：弹窗选择文件夹，直接作为项目文件夹 */
   const changeBindFolder = () => {
     if (!bindPick || pickBusyRef.current) return
-    pickFolder('bind', (p) => {
-      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id)
-      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }))
+    pickFolder('bind', (p) => setProjectFolder(bindPick.id, p, false))
+  }
+
+  /** 设置项目文件夹。follows=false 表示用户手动指定：之后换绑对话不再自动改文件夹，只提示。 */
+  const setProjectFolder = (id: string, p: string, follows: boolean) => {
+    if (projectsRef.current.projects.folders[id] !== p) invalidateWidgetProject(id)
+    persistProjects((prev) => {
+      const nextFollows = { ...prev.folderFollows }
+      if (follows) nextFollows[id] = true
+      else delete nextFollows[id]
+      return { ...prev, folders: { ...prev.folders, [id]: p }, folderFollows: nextFollows }
     })
   }
 
-  /** 绑定 / 解绑会话（弹窗保持打开，绑定结果即时显示在「绑定对话」框里） */
+  /** 绑定 / 解绑会话（弹窗保持打开，绑定结果即时显示在「绑定对话」框里）。
+   *  绑定时：项目文件夹为空或「跟随对话」→ 同步为对话所在文件夹；用户手动设过 → 不动，由弹窗提示。
+   *  控制室解绑 = 回到未设置状态：关闭设置弹窗，下次点击走首次引导。 */
   const setProjectBinding = (id: string, sessionId: string | null) => {
     if ((projectsRef.current.projects.bindings[id] ?? null) !== sessionId) invalidateWidgetProject(id)
+    const path = sessionId ? bindInfoOf(bindGroups, sessionId).path : ''
+    const cur = projectsRef.current.projects
+    const follow = !!path && (!cur.folders[id] || cur.folderFollows[id] === true)
+    if (follow && cur.folders[id] !== path) invalidateWidgetProject(id)
     persistProjects((prev) => {
       const next = { ...prev.bindings }
       if (sessionId) next[id] = sessionId
       else delete next[id]
-      return { ...prev, bindings: next }
+      if (!follow) return { ...prev, bindings: next }
+      return { ...prev, bindings: next, folders: { ...prev.folders, [id]: path }, folderFollows: { ...prev.folderFollows, [id]: true } }
     })
     setBindListOpen(false)
+    if (!sessionId && id === CONSOLE_ID) { invalidatePickState(); setBindPick(null) }
   }
 
   /** 复制自定义布局提示词到剪贴板（失败则全选输入框手动复制） */
@@ -2729,7 +2811,7 @@ function buildCustomLayoutPrompt(req: string): string {
 
       {bindPick && <div className="dsh-wt_popBackdrop" style={{ zIndex: 83 }} onClick={() => { invalidatePickState(); setBindPick(null); setBindListOpen(false) }} />}
       {bindPick && (
-        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }}>
+        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindPop" style={{ position: 'fixed', left: bindPick.x, ...(bindPick.bottom != null ? { bottom: bindPick.bottom } : { top: bindPick.y }), width: 280, zIndex: 84 }}>
           {/* 项目文件夹框（格式基准）：第一行 emoji+标题，第二行路径；可随时更改 */}
           <div className="dsh-wt_bindFolderBox">
             <div className="dsh-wt_bindFolderRow">
@@ -2764,21 +2846,34 @@ function buildCustomLayoutPrompt(req: string): string {
             </div>
             {(() => {
               const sid = projects.bindings[bindPick.id]
-              if (!sid) {
+              let snap: any = null
+              try { snap = sessionBridge?.list?.getSnapshot?.() } catch {}
+              const stale = isStaleBinding(snap, sid)
+              if (!sid || stale) {
                 return (
                   <button type="button" className="dsh-wt_bindConvRow dsh-wt_bindConvRowNone" title={t('bind.tipUnbound')} onClick={() => setBindListOpen((v) => !v)}>
-                    <span className="dsh-wt_bindNoneText">{t('bind.unbound')} · {t('bind.clickPick')}</span>
+                    <span className="dsh-wt_bindNoneText">{stale ? t('bind.staleConv') : t('bind.unbound')} · {t('bind.clickPick')}</span>
                   </button>
                 )
               }
               const info = bindInfoOf(bindGroups, sid)
+              const folder = projects.folders[bindPick.id]
+              const mismatch = !!info.path && !!folder && !samePath(info.path, folder) && projects.folderFollows[bindPick.id] !== true
               return (
-                <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen((v) => !v)}>
-                  <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
-                  <span className="dsh-wt_bindSep" aria-hidden>|</span>
-                  <span className="dsh-wt_bindConvName" title={info.title}>{info.title}</span>
-                  <span className="dsh-wt_bindConvChevron" aria-hidden>▾</span>
-                </button>
+                <>
+                  <button type="button" className="dsh-wt_bindConvRow" title={t('bind.tipBound', { name: info.title })} onClick={() => setBindListOpen((v) => !v)}>
+                    <span className="dsh-wt_bindFolder" title={info.folder}>📂 {info.folder}</span>
+                    <span className="dsh-wt_bindSep" aria-hidden>|</span>
+                    <span className="dsh-wt_bindConvName" title={info.title}>{info.title}</span>
+                    <span className="dsh-wt_bindConvChevron" aria-hidden>▾</span>
+                  </button>
+                  {mismatch && (
+                    <div className="dsh-wt_bindMismatch">
+                      <span className="dsh-wt_bindMismatchText" title={info.path}>{t('bind.folderMismatch')}</span>
+                      <button type="button" className="dsh-wt_bindFolderChange" onClick={() => setProjectFolder(bindPick.id, info.path, true)}>{t('bind.folderSync')}</button>
+                    </div>
+                  )}
+                </>
               )
             })()}
             <p className="dsh-wt_bindHint">{t('bind.hint')}</p>
@@ -2791,7 +2886,7 @@ function buildCustomLayoutPrompt(req: string): string {
         const rightFits = bindPick.x + 300 + 260 <= window.innerWidth - 8
         const listLeft = rightFits ? bindPick.x + 300 : Math.max(8, bindPick.x - 268)
         return (
-        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop" style={{ position: 'fixed', left: listLeft, top: clamp(bindPick.y, 8, window.innerHeight - 348), width: 260, zIndex: 86 }}>
+        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop" style={{ position: 'fixed', left: listLeft, ...(bindPick.bottom != null ? { bottom: bindPick.bottom } : { top: clamp(bindPick.y, 8, window.innerHeight - 348) }), width: 260, zIndex: 86 }}>
           <div className="dsh-wt_selectList dsh-wt_bindList">
             {bindGroups.map((g, gi) => (
               <Fragment key={g.title || 'g' + gi}>
@@ -2819,61 +2914,101 @@ function buildCustomLayoutPrompt(req: string): string {
         )
       })()}
 
-      {/* 控制室强制绑定弹窗：左「加入现有对话」+ 右「新建对话」，选定/建成后自动打开控制室 */}
-      {consoleBind && <div className="dsh-wt_popBackdrop" style={{ zIndex: 85 }} onClick={() => setConsoleBind(null)} />}
+      {/* 控制室首次引导：说明用途 + 二选一单选卡片（新建专属对话 / 用已有对话），确认后自动打开控制室 */}
+      {consoleBind && <div className="dsh-wt_popBackdrop dsh-wt_setupBackdrop" style={{ zIndex: 85 }} onClick={() => setConsoleBind(null)} />}
       {consoleBind && (
-        <div className="dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop" style={{ position: 'fixed', left: consoleBind.x, top: consoleBind.y, width: 560, zIndex: 86 }}>
-          <div className="dsh-wt_consoleBindCols">
-            <div className="dsh-wt_consoleBindCol">
-              <span className="dsh-wt_consoleBindLabel">➕ {t('console.joinExisting')}</span>
-              <div className="dsh-wt_selectList dsh-wt_consoleBindList">
-                {consoleGroups.map((g, gi) => (
-                  <Fragment key={g.title || 'g' + gi}>
-                    {g.title && (
-                      <>
-                        <div className="dsh-wt_selectDivider" />
-                        <div className="dsh-wt_selectGroup">📁 {g.title}</div>
-                      </>
-                    )}
-                    {g.sessions.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={'dsh-wt_selectItem' + (projects.bindings[CONSOLE_ID] === s.id ? ' dsh-wt_selectItemOn' : '')}
-                        onClick={() => bindConsoleExisting(s.id)}
-                      >
-                        <span className="dsh-wt_selectItemTitle">{s.title}</span>
-                        {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+        <div className="dsh-wt_setupWrap" style={{ zIndex: 86 }}>
+          <div className="dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop dsh-wt_setup" role="dialog" aria-modal="true" aria-labelledby="dsh-wt_setupTitle">
+            <div className="dsh-wt_setupHead">
+              <div>
+                <h2 id="dsh-wt_setupTitle" className="dsh-wt_setupTitle">{t('console.setupTitle')}</h2>
+                <p className="dsh-wt_setupDesc">{t('console.setupDesc')}</p>
+              </div>
+              <button type="button" className="dsh-wt_setupClose" aria-label={t('console.setupClose')} onClick={() => setConsoleBind(null)}>✕</button>
+            </div>
+            <div className="dsh-wt_setupAsk" id="dsh-wt_setupAsk">{t('console.setupAsk')}</div>
+            <div className="dsh-wt_setupOpts" role="radiogroup" aria-labelledby="dsh-wt_setupAsk">
+              <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={consoleChoice === 'new'}
+                className={'dsh-wt_setupOpt' + (consoleChoice === 'new' ? ' dsh-wt_setupOptOn' : '')}
+                onClick={() => { setConsoleChoice('new'); setConsoleErr('') }}
+                onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setConsoleChoice('new'); setConsoleErr('') } }}
+              >
+                <div className="dsh-wt_setupOptRow">
+                  <span className="dsh-wt_setupRadio" aria-hidden="true" />
+                  <span className="dsh-wt_setupOptTitle">{t('console.optNew')}</span>
+                  <span className="dsh-wt_setupBadge">{t('console.recommended')}</span>
+                </div>
+                <p className="dsh-wt_setupOptDesc">{t('console.optNewDesc')}</p>
+                {consoleChoice === 'new' && (
+                  <div className="dsh-wt_setupBody" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <div className="dsh-wt_setupFolderRow">
+                      <input
+                        className="dsh-wt_consoleInput dsh-wt_setupFolder"
+                        aria-label={t('console.optNewDesc')}
+                        placeholder={t('console.folderPh')}
+                        value={consoleFolder}
+                        onChange={(e) => { setConsoleFolder(e.target.value); setConsoleErr('') }}
+                      />
+                      <button type="button" className="dsh-wt_setupPick" disabled={pickBusy} onClick={() => pickFolder('console', (p) => { setConsoleFolder(p); setConsoleErr('') })}>
+                        {pickBusy ? t('add.folderPicking') : t('add.folderPick')}
                       </button>
-                    ))}
-                  </Fragment>
-                ))}
-                {consoleGroups.length === 0 && <div className="dsh-wt_consoleBindEmpty">{t('console.noSessions')}</div>}
+                    </div>
+                    {pickErr.console && <p className="dsh-wt_consoleErr">{pickErr.console}</p>}
+                    {!pickErr.console && pickBusy && <p className="dsh-wt_setupHint">{t('add.folderPickerHint')}</p>}
+                  </div>
+                )}
+              </div>
+              <div
+                role="radio"
+                tabIndex={0}
+                aria-checked={consoleChoice === 'existing'}
+                className={'dsh-wt_setupOpt' + (consoleChoice === 'existing' ? ' dsh-wt_setupOptOn' : '')}
+                onClick={() => { setConsoleChoice('existing'); setConsoleErr('') }}
+                onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setConsoleChoice('existing'); setConsoleErr('') } }}
+              >
+                <div className="dsh-wt_setupOptRow">
+                  <span className="dsh-wt_setupRadio" aria-hidden="true" />
+                  <span className="dsh-wt_setupOptTitle">{t('console.optExisting')}</span>
+                </div>
+                <p className="dsh-wt_setupOptDesc">{t('console.optExistingDesc')}</p>
+                {consoleChoice === 'existing' && (
+                  <div className="dsh-wt_setupBody" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <div className="dsh-wt_selectList dsh-wt_consoleBindList">
+                      {consoleGroups.map((g, gi) => (
+                        <Fragment key={g.title || 'g' + gi}>
+                          {g.title && (
+                            <>
+                              <div className="dsh-wt_selectDivider" />
+                              <div className="dsh-wt_selectGroup">📁 {g.title}</div>
+                            </>
+                          )}
+                          {g.sessions.map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              aria-pressed={consolePick === s.id}
+                              className={'dsh-wt_selectItem' + (consolePick === s.id ? ' dsh-wt_selectItemOn' : '')}
+                              onClick={() => { setConsolePick(s.id); setConsoleErr('') }}
+                            >
+                              <span className="dsh-wt_selectItemTitle">{s.title}</span>
+                              {s.isCurrent && <span className="dsh-wt_selectCurrent">{t('custom.sessionCurrent')}</span>}
+                            </button>
+                          ))}
+                        </Fragment>
+                      ))}
+                      {consoleGroups.length === 0 && <div className="dsh-wt_consoleBindEmpty">{t('console.noSessions')}</div>}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="dsh-wt_consoleBindCol dsh-wt_consoleBindColNew">
-              <span className="dsh-wt_consoleBindLabel">✨ {t('console.newConv')}</span>
-              <select className="dsh-wt_consoleSelect" value={consoleMode} onChange={(e) => setConsoleMode(e.target.value as 'none' | 'existing' | 'new')}>
-                <option value="none">{t('console.groupNone')}</option>
-                <option value="existing">{t('console.groupExisting')}</option>
-                <option value="new">{t('console.groupNew')}</option>
-              </select>
-              {consoleMode === 'existing' && (
-                <select className="dsh-wt_consoleSelect" value={consoleWsId} onChange={(e) => setConsoleWsId(e.target.value)}>
-                  <option value="">{t('console.chooseGroup')}</option>
-                  {listWorkspaces().map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
-                </select>
-              )}
-              {consoleMode === 'new' && (
-                <>
-                  <input className="dsh-wt_consoleInput" placeholder={t('console.newParentPh')} value={consoleParent} onChange={(e) => setConsoleParent(e.target.value)} />
-                  <input className="dsh-wt_consoleInput" placeholder={t('console.newNamePh')} value={consoleName} onChange={(e) => setConsoleName(e.target.value)} />
-                </>
-              )}
-              {consoleNeedsWorkspace && <p className="dsh-wt_consoleHint">{t('console.blankNeedsGroup')}</p>}
-              {consoleErr && !consoleNeedsWorkspace && <p className="dsh-wt_consoleErr">{t('console.bindFail')}</p>}
-              <button type="button" className="dsh-wt_consoleCreateBtn" disabled={consoleBusy || consoleNeedsWorkspace || (consoleMode === 'existing' && !consoleWsId)} onClick={bindConsoleNew}>
-                {consoleBusy ? '…' : t('console.createBind')}
+            {consoleErr && <p className="dsh-wt_consoleErr dsh-wt_setupErr" role="alert">{consoleErr}</p>}
+            <div className="dsh-wt_setupFoot">
+              <button type="button" className="dsh-wt_consoleCreateBtn dsh-wt_setupGo" disabled={consoleBusy} onClick={confirmConsoleSetup}>
+                {consoleBusy ? '…' : t(consoleChoice === 'new' ? 'console.startNew' : 'console.startExisting')}
               </button>
             </div>
           </div>
@@ -3073,7 +3208,7 @@ function buildCustomLayoutPrompt(req: string): string {
             aria-label={projects.bindings[CONSOLE_ID]
               ? t('bind.tipBound', { name: boundSessionTitle(projects.bindings[CONSOLE_ID]) })
               : t('bind.tipUnbound')}
-            onClick={(e) => { e.stopPropagation(); openBindPick(CONSOLE_ID, e.currentTarget as HTMLElement) }}
+            onClick={(e) => { e.stopPropagation(); clickConsoleDots(e.currentTarget as HTMLElement) }}
           ><span className="dsh-wt_bindCircles" aria-hidden /></span>
           <span className="dsh-wt_layoutArrow" aria-hidden>›</span>
         </button>

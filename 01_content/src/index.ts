@@ -338,6 +338,15 @@ export function apply(ctx: Context) {
     },
   })
 
+  // 用户主目录（控制室首次引导的默认文件夹 = home/Worktable；客户端拿不到 os.homedir）
+  register({
+    kind: 'exact',
+    path: '/api/worktable/home',
+    handler: (_req: any, res: any) => {
+      json(res, 200, { home: homedir(), sep })
+    },
+  })
+
   // 本地文件读取（资源管理器点击 .html 后浏览器标签内打开）
   register({
     kind: 'exact',
@@ -460,13 +469,15 @@ export function apply(ctx: Context) {
         if (registry && typeof registry.list === 'function') {
           const list = registry.list() ?? []
           const workspaceIds: string[] = []
-          const tables: Record<string, { title?: string; sessionIds?: string[] }> = {}
+          const tables: Record<string, { title?: string; path?: string; sessionIds?: string[] }> = {}
           for (const ws of list) {
             const id = String(ws?.id ?? '')
             if (!id) continue
             workspaceIds.push(id)
             tables[id] = {
               title: typeof ws?.title === 'string' ? ws.title : undefined,
+              // 工作区目录：绑定对话时让项目文件夹跟随对话所在文件夹
+              path: typeof ws?.path === 'string' ? ws.path : undefined,
               sessionIds: Array.isArray(ws?.sessionIds) ? ws.sessionIds.map(String) : [],
             }
           }

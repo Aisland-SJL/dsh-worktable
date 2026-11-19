@@ -7948,26 +7948,27 @@ var css = xterm_default + "\n" + [
   // 项目卡片上的对话绑定按钮（○○ 空心 = 未绑定 / ●● 实心 = 已绑定；CSS 双圆绘制，黑白单色克制：
   // 未绑定次级灰空心、已绑定主色实心，不用强调色；hover 区域 = 22×22 圆角矩形按钮底，
   // 气泡为 body 级元素向右伸出（跨层显示），垂直居中于按钮）
-  ".dsh-wt_bindBtn{position:absolute;right:26px;top:50%;transform:translateY(-50%);width:22px;height:22px;margin:0;display:block;border-radius:6px;color:var(--dsw-alias-label-secondary,#9aa4b2);cursor:pointer;user-select:none}",
-  ".dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(255,255,255,.09));color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  ".dsh-wt_bindBtn[data-bound=true]{color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  // 本轮结束提醒：中性发光 / 待决提醒：黄色发光（点击项目即 ack 恢复常态实心）；
-  // 工作中：蓝色发光 + 两圆交替亮灭（对应 DSH 对话的转圈标记，无需 ack，running 变 false 自动停）
-  ".dsh-wt_bindBtn[data-bound=done]{color:#94a3b8}",
-  ".dsh-wt_bindBtn[data-bound=need]{color:#d29922}",
-  ".dsh-wt_bindBtn[data-bound=busy]{color:#4f8ef7}",
-  "@keyframes dsh-wt-busyA{0%,44%{opacity:1}50%,94%{opacity:.12}100%{opacity:1}}",
-  "@keyframes dsh-wt-busyB{0%,44%{opacity:.12}50%,94%{opacity:1}100%{opacity:.12}}",
-  ".dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::before{animation:dsh-wt-busyA 1s ease-in-out infinite}",
-  ".dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::after{animation:dsh-wt-busyB 1s ease-in-out infinite}",
-  ".dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles{filter:drop-shadow(0 0 3px currentColor)}",
+  // 状态小灯：两个小圆圈。空心 = 未绑定对话；实心 = 已绑定。颜色：平时灰 / 运行中蓝色呼吸 / 完成绿 / 需要你判断黄。
+  // 颜色走 --wt-dot 变量（不用 currentColor，hover 只换底色不改灯色）；四色取中间明度，深浅两种界面都清楚。
+  ".dsh-wt_bindBtn{--wt-dot:var(--dsw-alias-label-tertiary,#8b94a3);--wt-dot-glow:transparent;position:absolute;right:26px;top:50%;transform:translateY(-50%);width:24px;height:22px;margin:0;display:block;border-radius:6px;cursor:pointer;user-select:none}",
+  ".dsh-wt_bindBtn:hover{background:var(--dsw-alias-fill-l2,rgba(127,127,127,.14))}",
+  ".dsh-wt_bindBtn[data-bound=busy]{--wt-dot:#3b82f6;--wt-dot-glow:rgba(59,130,246,.55)}",
+  ".dsh-wt_bindBtn[data-bound=done]{--wt-dot:#22a35a;--wt-dot-glow:rgba(34,163,90,.40)}",
+  ".dsh-wt_bindBtn[data-bound=need]{--wt-dot:#e0a100;--wt-dot-glow:rgba(224,161,0,.45)}",
+  "@keyframes dsh-wt-breathe{0%,100%{opacity:.45;box-shadow:0 0 0 0 var(--wt-dot-glow)}50%{opacity:1;box-shadow:0 0 6px 1px var(--wt-dot-glow)}}",
+  ".dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::after{animation:dsh-wt-breathe 1.8s ease-in-out infinite}",
+  ".dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::after{box-shadow:0 0 5px 0 var(--wt-dot-glow)}",
+  "@media (prefers-reduced-motion:reduce){.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::after{animation:none;box-shadow:0 0 5px 0 var(--wt-dot-glow)}}",
   // 气泡为 body 级独立元素（.dsh-wt_bindTip），此处只保留按钮本体样式
-  ".dsh-wt_bindTip{position:fixed;transform:translateY(-50%);padding:5px 9px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-fill-l2,#171b22);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;pointer-events:none;z-index:1200;box-shadow:0 4px 12px rgba(0,0,0,.35);display:none}",
-  ".dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:17px;height:7px;transform:translate(-50%,-50%)}",
-  ".dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:'';position:absolute;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;box-sizing:border-box;border:1.2px solid currentColor;background:transparent}",
+  ".dsh-wt_bindTip{position:fixed;transform:translateY(-50%);padding:5px 9px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:var(--dsw-alias-bg-base,#0b0e14);color:var(--dsw-alias-label-primary,#e6e8eb);font-size:11px;line-height:15px;white-space:nowrap;pointer-events:none;z-index:1200;box-shadow:var(--dsw-shadow-lv2,0 4px 12px rgba(0,0,0,.35));display:none}",
+  ".dsh-wt_bindCircles{position:absolute;left:50%;top:50%;width:19px;height:8px;transform:translate(-50%,-50%)}",
+  ".dsh-wt_bindCircles::before,.dsh-wt_bindCircles::after{content:'';position:absolute;top:0;width:8px;height:8px;border-radius:9999px;corner-shape:round;box-sizing:border-box;border:1.5px solid var(--wt-dot);background:transparent}",
   ".dsh-wt_bindCircles::before{left:0}",
-  ".dsh-wt_bindCircles::after{left:10px}",
-  ".dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::after{background:currentColor}",
+  ".dsh-wt_bindCircles::after{left:11px}",
+  ".dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=true] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=done] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=need] .dsh-wt_bindCircles::after,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::before,.dsh-wt_bindBtn[data-bound=busy] .dsh-wt_bindCircles::after{background:var(--wt-dot)}",
+  // 设置弹窗：对话与项目文件夹不一致时的提示行
+  ".dsh-wt_bindMismatch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:6px 8px;border-radius:6px;background:rgba(224,161,0,.10)}",
+  ".dsh-wt_bindMismatchText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary,#aab6cd)}",
   // 布局条目卡片
   ".dsh-wt_layout{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.02));color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;line-height:18px;cursor:pointer;text-align:left}",
   ".dsh-wt_layout:hover{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}",
@@ -8012,7 +8013,10 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_panePicker-grid{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;gap:10px;place-content:center}",
   ".dsh-wt_panePicker-col{flex-direction:column}",
   // 自定义窗口对话框（居中卡片）
-  ".dsh-wt_customBox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}",
+  // safe center：放得下居中，放不下从顶部开始（普通 center 会把溢出的顶部推到滚动区外，小窗口里够不着顶部的切换按钮）
+  ".dsh-wt_customBox{flex:1;min-height:0;display:flex;align-items:safe center;justify-content:safe center;padding:14px;overflow:auto}",
+  // 模式切换吸顶：窗口再小、滚到哪里都能切回另一种模式
+  ".dsh-wt_customCard .dsh-wt_customModes{position:sticky;top:0;z-index:2;padding:4px 0 6px;background:var(--dsw-alias-bg-base,#0b0e14)}",
   ".dsh-wt_customCard{display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;padding:14px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:10px;background:var(--dsw-alias-bg-base,#0b0e14);box-shadow:var(--dsw-shadow-lv2,0 8px 24px rgba(0,0,0,.4))}",
   ".dsh-wt_customTitle{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}",
   ".dsh-wt_customHint{font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-secondary,#9aa4b2);margin:0}",
@@ -8090,6 +8094,16 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_selectGroup{display:flex;align-items:center;gap:6px;margin:2px 0 2px;padding:6px 8px;border-left:2px solid var(--dsw-alias-state-accent-primary,#4f8ef7);border-radius:4px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.04));font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--dsw-alias-label-secondary,#9aa4b2);user-select:none}",
   ".dsh-wt_customSend{align-self:flex-end;padding:6px 14px;border:none;border-radius:6px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);color:#fff;font:inherit;font-size:12px;cursor:pointer}",
   ".dsh-wt_customSend:disabled{opacity:.55;cursor:default}",
+  // 选择的对话已属于其他项目：按钮改为琥珀描边「仍然发送」，提示框说明后果
+  ".dsh-wt_customSendWarn{background:transparent;border:1px solid #e0a100;color:#b77f00}",
+  ".dsh-wt_customWarn{display:flex;gap:6px;align-items:flex-start;padding:8px 10px;border-radius:8px;background:rgba(224,161,0,.12);border:1px solid rgba(224,161,0,.35);font-size:11.5px;line-height:17px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  // 对话归属标签：本项目 = 蓝，已绑定其他项目 = 琥珀
+  ".dsh-wt_selectTag{flex:none;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-left:6px;padding:0 6px;border-radius:999px;corner-shape:round;font-size:10px;line-height:16px}",
+  ".dsh-wt_selectTag-mine{background:rgba(59,130,246,.14);color:#3b82f6}",
+  ".dsh-wt_selectTag-other{background:rgba(224,161,0,.16);color:#b77f00}",
+  ".dsh-wt_customFolderRow{flex:1;min-width:0;display:flex;gap:6px}",
+  ".dsh-wt_customPick{flex:none;padding:5px 10px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;cursor:pointer}",
+  ".dsh-wt_customPick:disabled{opacity:.6;cursor:default}",
   ".dsh-wt_customFail{font-size:11px;color:var(--dsw-alias-state-danger,#e5484d);margin:0}",
   ".dsh-wt_customDone{font-size:26px;line-height:32px}",
   ".dsh-wt_customDoneText{font-size:13px;font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb);margin:4px 0 0}",
@@ -8173,7 +8187,7 @@ var css = xterm_default + "\n" + [
   // 流光玻璃背景：30px 网格不变；网格下层是缓慢漂移的模糊彩光光晕
   ".dsh-wt_consoleBg{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}",
   '.dsh-wt_consoleBg::after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--wt-grid) 1px,transparent 1px),linear-gradient(90deg,var(--wt-grid) 1px,transparent 1px);background-size:30px 30px}',
-  ".dsh-wt_blob{position:absolute;width:56vmax;height:56vmax;border-radius:50%;filter:blur(64px);opacity:.45;mix-blend-mode:screen}",
+  ".dsh-wt_blob{position:absolute;width:56vmax;height:56vmax;border-radius:50%;corner-shape:round;filter:blur(64px);opacity:.45;mix-blend-mode:screen}",
   ".dsh-wt_blob1{background:radial-gradient(circle,#ff5f9e,transparent 66%);top:-18%;left:-14%;animation:wtBlob1 calc(13s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
   ".dsh-wt_blob2{background:radial-gradient(circle,#7a5cff,transparent 66%);top:4%;right:-20%;animation:wtBlob2 calc(17s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
   ".dsh-wt_blob3{background:radial-gradient(circle,#00c2ff,transparent 66%);bottom:-22%;left:14%;animation:wtBlob3 calc(11s * var(--wt-glowScale,1)) ease-in-out infinite alternate}",
@@ -8206,13 +8220,17 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_announceSkip.dsh-wt_announceSkipGo:hover{background:rgba(79,142,247,.16);color:#7eb3ff}",
   ".dsh-wt_announceSkip{flex:none;padding:3px 10px;border:none;border-radius:6px;background:transparent;color:var(--wt-text3);font:inherit;font-size:11px;line-height:16px;cursor:pointer}",
   ".dsh-wt_announceSkip:hover{background:rgba(244,63,94,.14);color:#f87171}",
+  // 公告面板右上角关闭：与标题行垂直居中，和开关之间留出一点间隔；圆形按钮（声明 corner-shape:round 防宿主超椭圆）
+  ".dsh-wt_announceClose{flex:none;display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-left:8px;padding:0;border:none;border-radius:50%;corner-shape:round;background:transparent;color:var(--wt-text3);cursor:pointer;transition:background .15s ease,color .15s ease}",
+  ".dsh-wt_announceClose:hover{background:var(--wt-chip);color:var(--wt-text)}",
+  ".dsh-wt_announceClose:focus-visible{outline:2px solid rgba(59,130,246,.55);outline-offset:1px}",
   ".dsh-wt_announceStatus{font-size:11px;line-height:16px;color:var(--wt-text3)}",
   ".dsh-wt_announceBody{white-space:pre-wrap;font-size:13px;line-height:1.75;color:var(--wt-text2);user-select:text}",
   ".dsh-wt_consoleDockWrap{position:relative;z-index:12;flex:none;display:flex;justify-content:center;padding-top:12px}",
   ".dsh-wt_consoleDock{display:flex;align-items:center;gap:4px;padding:5px;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 24px rgba(0,0,0,.35);backdrop-filter:blur(14px) saturate(1.3)}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleDock{background:rgba(255,255,255,.62);border-color:rgba(27,31,36,.12);box-shadow:0 8px 24px rgba(31,41,55,.12)}",
   ".dsh-wt_dockBtn{position:relative;width:32px;height:32px;padding:0;border:none;border-radius:9px;background:transparent;color:var(--wt-text);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease}",
-  ".dsh-wt_dockBadge{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.95);animation:wtAnnPulse 1.6s ease-in-out infinite}",
+  ".dsh-wt_dockBadge{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;corner-shape:round;background:#f5a623;box-shadow:0 0 6px rgba(245,166,35,.95);animation:wtAnnPulse 1.6s ease-in-out infinite}",
   "@keyframes wtAnnPulse{0%,100%{opacity:1}50%{opacity:.3}}",
   "@keyframes wtAnnounceIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}",
   ".dsh-wt_dockBtn svg{transition:transform .15s ease}",
@@ -8238,11 +8256,13 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_dropTrash:hover{background:rgba(244,63,94,.16);color:#f87171}",
   ".dsh-wt_gridLabel{flex:none;white-space:nowrap;font-size:12px;line-height:17px;color:var(--wt-text2);padding:2px 2px 2px 4px}",
   ".dsh-wt_gridHalf .dsh-wt_switch{margin-right:2px}",
-  ".dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}",
+  ".dsh-wt_switch{flex:none;position:relative;width:30px;height:17px;margin-right:4px;padding:0;border:none;border-radius:999px;corner-shape:round;background:rgba(255,255,255,.14);cursor:pointer;transition:background .15s ease}",
   ".dsh-wt_switchOn{background:#4f8ef7}",
-  ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
+  ".dsh-wt_switchKnob{position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;corner-shape:round;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .18s cubic-bezier(.22,.61,.36,1)}",
   ".dsh-wt_switchOn .dsh-wt_switchKnob{left:15px}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_switch{background:rgba(27,31,36,.15)}",
+  // 打开态必须压过浅色主题的灰底（原规则选择器更具体，导致浅色下打开仍是灰色）
+  ".dsh-wt_switch.dsh-wt_switchOn,.dsh-wt_console[data-wt-theme=light] .dsh-wt_switch.dsh-wt_switchOn{background:#3b82f6}",
   ".dsh-wt_console[data-wt-bg=plain][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPlain,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=glow][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridGlow,rgba(255,255,255,.045)) 1px,transparent 1px);background-size:30px 30px}",
   ".dsh-wt_console[data-wt-bg=photo][data-wt-grid=on] .dsh-wt_consoleBg::after{background-image:linear-gradient(var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px),linear-gradient(90deg,var(--wt-gridPhoto,rgba(255,255,255,.08)) 1px,transparent 1px);background-size:30px 30px}",
@@ -8274,15 +8294,15 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_gridHalf{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:0 2px;box-sizing:border-box}",
   ".dsh-wt_thumbWrap{position:relative;flex:none;width:30px;height:30px}",
   ".dsh-wt_thumbWrap .dsh-wt_photoThumb{position:absolute;inset:0}",
-  ".dsh-wt_thumbBadge{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;background:rgba(10,13,19,.88);border:1px solid rgba(255,255,255,.4);color:#e6e8eb;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2}",
+  ".dsh-wt_thumbBadge{position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;border-radius:50%;corner-shape:round;background:rgba(10,13,19,.88);border:1px solid rgba(255,255,255,.4);color:#e6e8eb;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:2}",
   ".dsh-wt_photoThumb video,.dsh-wt_photoThumb{display:block}",
   ".dsh-wt_dropItemOn{background:var(--wt-chip);color:var(--wt-text);font-weight:600}",
-  ".dsh-wt_hbar{position:relative;width:130px;height:26px;margin:4px auto;border-radius:999px;background:rgba(255,255,255,.08)}",
-  ".dsh-wt_hbarFill{position:absolute;top:3px;bottom:3px;left:0;border-radius:999px;background:linear-gradient(90deg,#4f8ef7,#3b82f6);pointer-events:none;transition:width .25s cubic-bezier(.22,.61,.36,1)}",
+  ".dsh-wt_hbar{position:relative;width:130px;height:26px;margin:4px auto;border-radius:999px;corner-shape:round;background:rgba(255,255,255,.08)}",
+  ".dsh-wt_hbarFill{position:absolute;top:3px;bottom:3px;left:0;border-radius:999px;corner-shape:round;background:linear-gradient(90deg,#4f8ef7,#3b82f6);pointer-events:none;transition:width .25s cubic-bezier(.22,.61,.36,1)}",
   ".dsh-wt_hbarLine{position:absolute;top:0;bottom:0;transform:translateX(-50%);width:20%;padding:0;border:none;background:transparent;cursor:pointer;z-index:2}",
   '.dsh-wt_hbarLine::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:2px;height:9px;border-radius:2px;background:rgba(255,255,255,.9);transition:height .12s ease,background .12s ease}',
   ".dsh-wt_hbarLine:hover::before{height:14px;background:#fff}",
-  ".dsh-wt_hbarKnob{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none;transition:left .25s cubic-bezier(.22,.61,.36,1)}",
+  ".dsh-wt_hbarKnob{position:absolute;top:50%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50%;corner-shape:round;background:#fff;border:2px solid rgba(79,142,247,.8);box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:3;pointer-events:none;transition:left .25s cubic-bezier(.22,.61,.36,1)}",
   // 工作中的卡片流光：光带加长羽化 + 光层超出卡片（移动时不露整齐边缘），每 ~3.2s 从左上斜扫到右下
   ".dsh-wt_consoleSweep{position:absolute;inset:-30%;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.01) 0%,rgba(255,255,255,.045) 30%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.045) 70%,rgba(255,255,255,.01) 100%);opacity:0;animation:consoleSweep 3.2s ease-in-out infinite}",
   ".dsh-wt_console[data-wt-theme=light] .dsh-wt_consoleSweep{background:linear-gradient(115deg,rgba(255,255,255,.1) 0%,rgba(255,255,255,.3) 30%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.3) 70%,rgba(255,255,255,.1) 100%)}",
@@ -8290,20 +8310,20 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-theme=light]{--wt-bg:#eef1f5;--wt-card:#ffffff;--wt-cardHover:#f7f9fb;--wt-border:#d8dee6;--wt-borderHover:#b9c4d2;--wt-grid:rgba(27,31,36,.07);--wt-text:#1c2128;--wt-text2:#57606a;--wt-text3:#8b949e;--wt-chip:rgba(27,31,36,.07);--wt-shadow:0 6px 20px rgba(31,41,55,.10)}",
   ".dsh-wt_consoleHead{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:12px}",
   ".dsh-wt_consoleTitle{font-size:14px;font-weight:700;line-height:20px;color:var(--wt-text)}",
-  ".dsh-wt_consoleTheme{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}",
-  ".dsh-wt_consoleThemeBtn{flex:none;padding:3px 9px;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);font:inherit;font-size:12px;line-height:18px;cursor:pointer;opacity:.85}",
+  ".dsh-wt_consoleTheme{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;corner-shape:round;background:var(--wt-card)}",
+  ".dsh-wt_consoleThemeBtn{flex:none;padding:3px 9px;border:none;border-radius:999px;corner-shape:round;background:transparent;color:var(--wt-text3);font:inherit;font-size:12px;line-height:18px;cursor:pointer;opacity:.85}",
   ".dsh-wt_consoleThemeBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleThemeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
-  ".dsh-wt_consoleShape{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}",
-  ".dsh-wt_consoleShapeBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
+  ".dsh-wt_consoleShape{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;corner-shape:round;background:var(--wt-card)}",
+  ".dsh-wt_consoleShapeBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;corner-shape:round;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
   ".dsh-wt_consoleShapeBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleShapeBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
-  ".dsh-wt_consoleBgBtns{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card)}",
-  ".dsh-wt_consoleBgBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
+  ".dsh-wt_consoleBgBtns{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--wt-border);border-radius:999px;corner-shape:round;background:var(--wt-card)}",
+  ".dsh-wt_consoleBgBtn{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:999px;corner-shape:round;background:transparent;color:var(--wt-text3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;opacity:.85}",
   ".dsh-wt_consoleBgBtn:hover{opacity:1;background:var(--wt-chip)}",
   ".dsh-wt_consoleBgBtnOn{background:var(--wt-chip);color:var(--wt-text);opacity:1}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleGrid{max-width:calc(var(--wt-cols,3)*268px + (var(--wt-cols,3) - 1)*64px)}",
-  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard{border-radius:50%;justify-content:center;align-items:center;padding:24px 24px 38px;gap:9px}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard{border-radius:50%;corner-shape:round;justify-content:center;align-items:center;padding:24px 24px 38px;gap:9px}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCardHead{width:100%;flex-direction:column;justify-content:center;gap:5px;text-align:center}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleIcon{font-size:27px;line-height:1}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleName{flex:none;max-width:88%;font-size:19px;font-weight:700;line-height:26px;text-align:center}",
@@ -8312,9 +8332,9 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleStatus{font-size:17px;line-height:24px}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleRuntime{font-size:15px;line-height:21px}",
   ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consolePreview{text-align:center;max-width:82%;margin:0 auto;-webkit-line-clamp:2;font-size:9px;line-height:13px}",
-  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard-busy::before{border-radius:50%}",
+  ".dsh-wt_console[data-wt-shape=circle] .dsh-wt_consoleCard-busy::before{border-radius:50%;corner-shape:round}",
   ".dsh-wt_consoleGrid{display:flex;flex-wrap:wrap;justify-content:center;gap:64px;align-content:start;margin-top:clamp(32px,9vh,110px);width:100%;max-width:calc(var(--wt-cols,3)*242px + (var(--wt-cols,3) - 1)*64px);margin-left:auto;margin-right:auto}",
-  ".dsh-wt_consoleCols{display:inline-flex;align-items:center;gap:8px;padding:2px 8px;border:1px solid var(--wt-border);border-radius:999px;background:var(--wt-card);color:var(--wt-text3);font-size:11px}",
+  ".dsh-wt_consoleCols{display:inline-flex;align-items:center;gap:8px;padding:2px 8px;border:1px solid var(--wt-border);border-radius:999px;corner-shape:round;background:var(--wt-card);color:var(--wt-text3);font-size:11px}",
   ".dsh-wt_consoleCard{position:relative;box-sizing:border-box;flex:none;width:calc((100% - (var(--wt-cols,3) - 1)*64px)/var(--wt-cols,3));display:flex;flex-direction:column;gap:14px;aspect-ratio:1/1;min-height:192px;padding:21px;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,.07) 30%,rgba(255,255,255,.01) 60%,rgba(0,0,0,.07) 100%),rgba(18,23,32,.24);border:1px solid transparent;border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.13);cursor:pointer;transition:transform .14s ease,box-shadow .14s ease;overflow:hidden;backdrop-filter:blur(var(--wt-cardBlur,0px)) saturate(1.15)}",
   // 玻璃边缘：四角黑白渐变描边（左上/右下=白，右上/左下=黑），1px 环挖空实现
   '.dsh-wt_consoleCard::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:conic-gradient(from 45deg,rgba(0,0,0,.4) 0deg,rgba(255,255,255,.55) 90deg,rgba(0,0,0,.4) 180deg,rgba(255,255,255,.55) 270deg,rgba(0,0,0,.4) 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;pointer-events:none;opacity:.5}',
@@ -8362,12 +8382,40 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_projects .dsh-wt_consoleEntry[data-on=true]{background:linear-gradient(135deg,rgba(109,164,255,.38),rgba(167,130,255,.28));box-shadow:0 0 18px rgba(96,150,255,.34)}",
   ".dsh-wt_projects .dsh-wt_consoleEntry .dsh-wt_layoutIcon{font-size:15px}",
   ".dsh-wt_projects .dsh-wt_consoleEntry .dsh-wt_layoutName{font-weight:600;color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  // 控制室强制绑定弹窗：左加入现有 / 右新建对话
-  ".dsh-wt_consoleBindCols{display:flex;gap:12px}",
-  ".dsh-wt_consoleBindCol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}",
-  ".dsh-wt_consoleBindColNew{border-left:1px solid var(--dsw-alias-border-l1,#262b36);padding-left:12px}",
-  ".dsh-wt_consoleBindLabel{font-size:12px;font-weight:600;line-height:18px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
-  ".dsh-wt_consoleBindList{max-height:300px;overflow:auto;position:static}",
+  // 控制室首次引导弹窗：居中 + 用途说明 + 二选一单选卡片
+  ".dsh-wt_setupBackdrop{background:rgba(0,0,0,.32)}",
+  ".dsh-wt_setupWrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;pointer-events:none}",
+  ".dsh-wt_setup{pointer-events:auto;width:min(520px,100%);box-sizing:border-box;padding:20px;gap:0;border-radius:14px}",
+  ".dsh-wt_setupHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}",
+  ".dsh-wt_setupTitle{margin:0;font-size:17px;font-weight:600;line-height:24px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_setupDesc{margin:6px 0 0;font-size:12.5px;line-height:20px;color:var(--dsw-alias-label-secondary,#aab6cd)}",
+  ".dsh-wt_setupClose{flex:none;width:26px;height:26px;padding:0;border:none;border-radius:6px;background:transparent;color:var(--dsw-alias-label-tertiary,#6e7683);font-size:13px;cursor:pointer}",
+  ".dsh-wt_setupClose:hover{background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06));color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_setupAsk{margin:16px 0 8px;font-size:11.5px;font-weight:600;line-height:16px;color:var(--dsw-alias-label-tertiary,#6e7683)}",
+  ".dsh-wt_setupOpts{display:flex;flex-direction:column;gap:8px}",
+  ".dsh-wt_setupOpt{padding:12px 14px;border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:10px;cursor:pointer;outline:none;transition:border-color .15s,background .15s}",
+  ".dsh-wt_setupOpt:hover{border-color:var(--dsw-alias-border-l2,#3a4150)}",
+  ".dsh-wt_setupOpt:focus-visible{box-shadow:0 0 0 2px rgba(79,142,247,.35)}",
+  ".dsh-wt_setupOptOn,.dsh-wt_setupOptOn:hover{border:1.5px solid var(--dsw-alias-state-accent-primary,#4f8ef7);padding:11.5px 13.5px;background:rgba(79,142,247,.06)}",
+  ".dsh-wt_setupOptRow{display:flex;align-items:center;gap:10px}",
+  ".dsh-wt_setupRadio{flex:none;width:16px;height:16px;box-sizing:border-box;border:1.5px solid var(--dsw-alias-border-l2,#5a6272);border-radius:50%;corner-shape:round;position:relative}",
+  ".dsh-wt_setupOptOn .dsh-wt_setupRadio{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}",
+  '.dsh-wt_setupOptOn .dsh-wt_setupRadio::after{content:"";position:absolute;inset:3px;border-radius:50%;corner-shape:round;background:var(--dsw-alias-state-accent-primary,#4f8ef7)}',
+  ".dsh-wt_setupOptTitle{font-size:13.5px;font-weight:600;line-height:20px;color:var(--dsw-alias-label-primary,#e6e8eb)}",
+  ".dsh-wt_setupBadge{padding:1px 8px;border-radius:999px;corner-shape:round;background:rgba(79,142,247,.14);color:var(--dsw-alias-state-accent-primary,#4f8ef7);font-size:11px;line-height:18px}",
+  ".dsh-wt_setupOptDesc{margin:4px 0 0 26px;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary,#aab6cd)}",
+  ".dsh-wt_setupBody{margin:10px 0 0 26px;display:flex;flex-direction:column;gap:6px;cursor:default}",
+  ".dsh-wt_setupFolderRow{display:flex;gap:6px}",
+  ".dsh-wt_setupFolder{flex:1;min-width:0;padding:7px 9px;font-size:12px}",
+  ".dsh-wt_setupPick{flex:none;padding:6px 12px;border:1px solid var(--dsw-alias-border-l2,#3a4150);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:12px;cursor:pointer}",
+  ".dsh-wt_setupPick:hover:not(:disabled){background:var(--dsw-alias-fill-l1,rgba(255,255,255,.06))}",
+  ".dsh-wt_setupPick:disabled{opacity:.6;cursor:default}",
+  ".dsh-wt_setupHint{margin:0;font-size:11.5px;line-height:16px;color:var(--dsw-alias-label-tertiary,#6e7683)}",
+  ".dsh-wt_setupErr{margin:10px 0 0}",
+  ".dsh-wt_setupFoot{display:flex;justify-content:flex-end;margin-top:16px}",
+  ".dsh-wt_setupGo{margin:0;padding:8px 18px;border-color:var(--dsw-alias-state-accent-primary,#4f8ef7);background:var(--dsw-alias-state-accent-primary,#4f8ef7);color:#fff;font-weight:600}",
+  ".dsh-wt_setupGo:hover:not(:disabled){background:var(--dsw-alias-state-accent-primary,#4f8ef7);filter:brightness(1.08)}",
+  ".dsh-wt_consoleBindList{max-height:220px;overflow:auto;position:static}",
   ".dsh-wt_consoleBindEmpty{padding:20px 0;text-align:center;font-size:11px;color:var(--dsw-alias-label-tertiary,#6e7683)}",
   ".dsh-wt_consoleSelect,.dsh-wt_consoleInput{width:100%;box-sizing:border-box;padding:6px 8px;background:var(--dsw-alias-fill-l1,rgba(255,255,255,.03));border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;color:var(--dsw-alias-label-primary,#e6e8eb);font:inherit;font-size:11.5px;line-height:16px;outline:none}",
   ".dsh-wt_consoleSelect:focus,.dsh-wt_consoleInput:focus{border-color:var(--dsw-alias-state-accent-primary,#4f8ef7)}",
@@ -8377,12 +8425,12 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_consoleCreateBtn:hover:not(:disabled){background:var(--dsw-alias-fill-l1,rgba(255,255,255,.05))}",
   ".dsh-wt_consoleCreateBtn:disabled{opacity:.55;cursor:default}",
   // ── 更新提示：侧栏标题旁徽标（仅图标 + 琥珀呼吸光）与设置面板更新卡 / 版本行 ──
-  ".dsh-wt_updateBadge{flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:3px;padding:0;border:none;border-radius:50%;background:rgba(245,185,66,.16);color:#f7d488;font-size:11px;line-height:1;cursor:pointer;position:relative}",
-  '.dsh-wt_updateBadge::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid rgba(245,185,66,.55);animation:dsh-wt_updatePulse 1.8s ease-out infinite}',
+  ".dsh-wt_updateBadge{flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;margin-left:3px;padding:0;border:none;border-radius:50%;corner-shape:round;background:rgba(245,185,66,.16);color:#f7d488;font-size:11px;line-height:1;cursor:pointer;position:relative}",
+  '.dsh-wt_updateBadge::after{content:"";position:absolute;inset:-1px;border-radius:50%;corner-shape:round;border:1px solid rgba(245,185,66,.55);animation:dsh-wt_updatePulse 1.8s ease-out infinite}',
   "@keyframes dsh-wt_updatePulse{0%{opacity:.9;box-shadow:0 0 0 0 rgba(245,185,66,.5)}70%{opacity:.35;box-shadow:0 0 0 6px rgba(245,185,66,0)}100%{opacity:.9;box-shadow:0 0 0 0 rgba(245,185,66,0)}}",
   ".dsh-wt_updateCard{margin:0 0 10px;padding:10px;border:1px solid rgba(245,185,66,.45);border-radius:10px;background:rgba(245,185,66,.08);display:flex;flex-direction:column;gap:6px}",
   ".dsh-wt_updateHead{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#f7d488}",
-  ".dsh-wt_updateDot{width:7px;height:7px;border-radius:50%;background:#f5b942;animation:dsh-wt_updatePulse 1.8s ease-out infinite}",
+  ".dsh-wt_updateDot{width:7px;height:7px;border-radius:50%;corner-shape:round;background:#f5b942;animation:dsh-wt_updatePulse 1.8s ease-out infinite}",
   ".dsh-wt_updateVers{font-size:11.5px;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
   ".dsh-wt_updateNotes{max-height:96px;overflow:auto;font-size:11px;line-height:1.6;color:var(--dsw-alias-label-tertiary,#7d8aa5);white-space:pre-wrap;word-break:break-all}",
   ".dsh-wt_updateCmd{margin:2px 0;padding:7px 8px;background:var(--dsw-alias-bg-base,#0b0e14);border:1px solid var(--dsw-alias-border-l1,#262b36);border-radius:8px;font-family:Consolas,monospace;font-size:10.5px;line-height:1.5;color:#9cc6ff;word-break:break-all}",
@@ -8396,8 +8444,8 @@ var css = xterm_default + "\n" + [
   ".dsh-wt_versionRow{margin-top:8px;padding-top:8px;border-top:1px solid var(--dsw-alias-border-l1,#262b36);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--dsw-alias-label-tertiary,#7d8aa5)}",
   ".dsh-wt_updateToggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}",
   ".dsh-wt_versionActions{display:flex;align-items:center;gap:8px}",
-  ".dsh-wt_updateSwitch{position:relative;width:26px;height:14px;border-radius:999px;background:var(--dsw-alias-state-accent-primary,#4f8ef7);cursor:pointer}",
-  '.dsh-wt_updateSwitch::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:right .15s}',
+  ".dsh-wt_updateSwitch{position:relative;width:26px;height:14px;border-radius:999px;corner-shape:round;background:var(--dsw-alias-state-accent-primary,#4f8ef7);cursor:pointer}",
+  '.dsh-wt_updateSwitch::after{content:"";position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;corner-shape:round;background:#fff;transition:right .15s}',
   ".dsh-wt_updateSwitch[data-off=true]{background:var(--dsw-alias-border-l1,#333a48)}",
   ".dsh-wt_updateSwitch[data-off=true]::after{right:14px}"
 ].join("\n");
@@ -8479,10 +8527,23 @@ var zh = {
   "custom.placeholder": "\u544A\u8BC9 AI \u4F60\u60F3\u8BA9\u8FD9\u4E2A\u7A97\u53E3\u505A\u4EC0\u4E48\uFF0C\u4F8B\u5982\uFF1A\u505A\u4E00\u4E2A\u5C55\u793A\u6211\u65C5\u884C\u8DB3\u8FF9\u7684\u65F6\u95F4\u7EBF\u9875\u9762\u2026",
   "custom.project": "\u6240\u5C5E\u9879\u76EE",
   "custom.modeNew": "\u65B0\u5EFA\u5BF9\u8BDD",
-  "custom.modeSend": "\u53D1\u9001\u5230\u4F1A\u8BDD",
+  "custom.modeSend": "\u53D1\u9001\u5230\u5DF2\u6709\u5BF9\u8BDD",
   "custom.session": "\u9009\u62E9\u4F1A\u8BDD",
+  "custom.sessionPick": "\u9009\u62E9\u4E00\u4E2A\u5BF9\u8BDD",
   "custom.sessionCurrent": "\uFF08\u5F53\u524D\uFF09",
-  "custom.hintSend": "\u5185\u5BB9\u5C06\u76F4\u63A5\u53D1\u9001\u5230\u4F60\u9009\u62E9\u7684\u4F1A\u8BDD\uFF08\u9ED8\u8BA4\u5F53\u524D\u4F1A\u8BDD\uFF09\uFF0C\u7528\u4E8E\u8BA8\u8BBA\u8FD9\u4E2A\u7A97\u53E3\u7684\u81EA\u5B9A\u4E49\u8BBE\u8BA1\u3002",
+  "custom.hintSend": "\u5185\u5BB9\u5C06\u76F4\u63A5\u53D1\u9001\u5230\u4F60\u9009\u62E9\u7684\u5BF9\u8BDD\uFF0C\u7528\u4E8E\u8BA8\u8BBA\u8FD9\u4E2A\u7A97\u53E3\u7684\u81EA\u5B9A\u4E49\u8BBE\u8BA1\u3002",
+  "custom.tagMine": "\u672C\u9879\u76EE",
+  "custom.tagOther": "\u5DF2\u7ED1\u5B9A\uFF1A{name}",
+  "custom.warnShared": "\u8FD9\u4E2A\u5BF9\u8BDD\u5DF2\u7ECF\u7ED1\u5B9A\u4E86\u300C{name}\u300D\u3002\u53D1\u9001\u540E\u4E24\u4E2A\u9879\u76EE\u4F1A\u5171\u7528\u540C\u4E00\u4E2A\u5BF9\u8BDD\uFF0C\u5BB9\u6613\u6DF7\u6DC6\uFF0C\u5EFA\u8BAE\u6539\u7528\u300C\u65B0\u5EFA\u5BF9\u8BDD\u300D\u3002",
+  "custom.warnAlreadyShared": "\u8FD9\u4E2A\u5BF9\u8BDD\u540C\u65F6\u8FD8\u7ED1\u5B9A\u4E86\u300C{name}\u300D\uFF0C\u4E24\u4E2A\u9879\u76EE\u5DF2\u7ECF\u5728\u5171\u7528\u5B83\u3002\u5982\u679C\u60F3\u5206\u5F00\uFF0C\u53EF\u4EE5\u5728\u9879\u76EE\u7684\u4E24\u4E2A\u5C0F\u70B9\u91CC\u6362\u7ED1\u3002",
+  "custom.sendAnyway": "\u4ECD\u7136\u53D1\u9001",
+  "custom.sharedNoBind": "\u5185\u5BB9\u5DF2\u53D1\u9001\u3002\u8FD9\u4E2A\u5BF9\u8BDD\u5C5E\u4E8E\u300C{name}\u300D\uFF0C\u6240\u4EE5\u6CA1\u6709\u7ED1\u5B9A\u5230\u5F53\u524D\u9879\u76EE\u3002",
+  "custom.groupFolder": "\u5206\u7EC4\u6587\u4EF6\u5939",
+  "custom.groupFolderPh": "\u5B8C\u6574\u8DEF\u5F84\uFF0C\u4F8B\u5982 C:\\Projects\\MyProject",
+  "custom.errFolderEmpty": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6587\u4EF6\u5939",
+  "custom.errFolderRelative": "\u9700\u8981\u5B8C\u6574\u8DEF\u5F84\uFF0C\u4F8B\u5982 C:\\Projects\\MyProject",
+  "custom.errParentMissing": "\u4E0A\u4E00\u7EA7\u6587\u4EF6\u5939\u4E0D\u5B58\u5728\uFF0C\u6362\u4E00\u4E2A\u4F4D\u7F6E\u8BD5\u8BD5",
+  "custom.errFolderCreate": "\u6587\u4EF6\u5939\u521B\u5EFA\u5931\u8D25\uFF1A{msg}",
   "custom.send": "\u53D1\u9001\u5E76\u65B0\u5EFA\u5BF9\u8BDD",
   "custom.sendToSession": "\u53D1\u9001\u5230\u8BE5\u4F1A\u8BDD",
   "custom.sent": "\u5DF2\u53D1\u9001\u5230\u4F1A\u8BDD",
@@ -8512,6 +8573,9 @@ var zh = {
   "bind.tipBound": "\u5DF2\u7ED1\u5B9A\u5BF9\u8BDD\uFF1A{name}",
   "bind.clickPick": "\u70B9\u51FB\u9009\u62E9\u5BF9\u8BDD",
   "bind.hint": "\u6253\u5F00\u9879\u76EE\u65F6\uFF0C\u53F3\u4FA7\u5BF9\u8BDD\u7A97\u4F1A\u81EA\u52A8\u5207\u6362\u5230\u8FD9\u4E2A\u5BF9\u8BDD\u3002",
+  "bind.staleConv": "\u539F\u6765\u7ED1\u5B9A\u7684\u5BF9\u8BDD\u5DF2\u4E0D\u5B58\u5728",
+  "bind.folderMismatch": "\u8FD9\u4E2A\u5BF9\u8BDD\u5728\u53E6\u4E00\u4E2A\u6587\u4EF6\u5939\u91CC",
+  "bind.folderSync": "\u6539\u6210\u5BF9\u8BDD\u7684\u6587\u4EF6\u5939",
   "customLayout.add": "\u81EA\u5B9A\u4E49",
   "customLayout.addTitle": "\u81EA\u5B9A\u4E49\u4E00\u4E2A\u5E03\u5C40\uFF08\u751F\u6210\u63D0\u793A\u8BCD\uFF09",
   "customLayout.title": "\u81EA\u5B9A\u4E49\u5E03\u5C40",
@@ -8577,6 +8641,25 @@ var zh = {
   "console.createBind": "\u65B0\u5EFA\u5E76\u7ED1\u5B9A",
   "console.bindFail": "\u521B\u5EFA\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5",
   "console.noSessions": "\u6CA1\u6709\u53EF\u7528\u5BF9\u8BDD",
+  "console.setupTitle": "\u6B22\u8FCE\u6765\u5230\u63A7\u5236\u5BA4",
+  "console.setupDesc": "\u5728\u8FD9\u91CC\u4E00\u773C\u770B\u5230\u6240\u6709\u9879\u76EE\u7684\u8FDB\u5EA6\u3002\u5148\u7ED9\u5B83\u914D\u4E00\u4E2A\u4E13\u5C5E\u5BF9\u8BDD\uFF0C\u4E4B\u540E\u4F60\u53EF\u4EE5\u5728\u8FD9\u4E2A\u5BF9\u8BDD\u91CC\u7EDF\u7B79\u5B89\u6392\u5404\u4E2A\u9879\u76EE\u3002",
+  "console.setupAsk": "\u9009\u62E9\u4E00\u79CD\u65B9\u5F0F",
+  "console.setupClose": "\u5173\u95ED",
+  "console.optNew": "\u65B0\u5EFA\u4E00\u4E2A\u4E13\u5C5E\u5BF9\u8BDD",
+  "console.optNewDesc": "\u9009\u4E00\u4E2A\u6587\u4EF6\u5939\uFF0C\u5BF9\u8BDD\u7684\u6587\u4EF6\u4F1A\u4FDD\u5B58\u5728\u8FD9\u91CC",
+  "console.optExisting": "\u7528\u5DF2\u6709\u7684\u5BF9\u8BDD",
+  "console.optExistingDesc": "\u4ECE\u4F60\u73B0\u6709\u7684\u5BF9\u8BDD\u91CC\u6311\u4E00\u4E2A",
+  "console.recommended": "\u63A8\u8350",
+  "console.folderPh": "\u6587\u4EF6\u5939\u7684\u5B8C\u6574\u8DEF\u5F84\uFF0C\u4F8B\u5982 C:\\Users\\\u4F60\\Worktable",
+  "console.startNew": "\u521B\u5EFA\u5E76\u5F00\u59CB",
+  "console.startExisting": "\u4F7F\u7528\u8FD9\u4E2A\u5BF9\u8BDD",
+  "console.errHost": "\u5F53\u524D DSH \u4E0D\u652F\u6301\u521B\u5EFA\u5BF9\u8BDD\uFF0C\u8BF7\u6539\u7528\u5DF2\u6709\u7684\u5BF9\u8BDD",
+  "console.errFolderEmpty": "\u8BF7\u5148\u9009\u62E9\u4E00\u4E2A\u6587\u4EF6\u5939",
+  "console.errFolderRelative": "\u9700\u8981\u5B8C\u6574\u8DEF\u5F84\uFF0C\u4F8B\u5982 C:\\Users\\\u4F60\\Worktable",
+  "console.errParentMissing": "\u4E0A\u4E00\u7EA7\u6587\u4EF6\u5939\u4E0D\u5B58\u5728\uFF0C\u6362\u4E00\u4E2A\u4F4D\u7F6E\u8BD5\u8BD5",
+  "console.errFolder": "\u6587\u4EF6\u5939\u521B\u5EFA\u5931\u8D25\uFF1A{msg}",
+  "console.errSession": "\u5BF9\u8BDD\u521B\u5EFA\u5931\u8D25\uFF1A{msg}",
+  "console.errPickSession": "\u8BF7\u5148\u4ECE\u5217\u8868\u91CC\u9009\u4E00\u4E2A\u5BF9\u8BDD",
   "console.addProject": "\u6DFB\u52A0\u9879\u76EE",
   "pane.wip": "\u5F00\u53D1\u4E2D\uFF08\u540E\u7EED\u7248\u672C\u63A5\u5165\uFF09",
   "pane.explorerNoCwd": "\u5F53\u524D\u4F1A\u8BDD\u6CA1\u6709\u5DE5\u4F5C\u76EE\u5F55",
@@ -8603,6 +8686,7 @@ var zh = {
   "annot.checkNow": "\u68C0\u67E5\u66F4\u65B0",
   "annot.checking": "\u68C0\u67E5\u4E2D\u2026",
   "annot.autoCheck": "\u81EA\u52A8\u68C0\u67E5\u66F4\u65B0",
+  "annot.close": "\u5173\u95ED\u66F4\u65B0\u516C\u544A",
   "annot.newVer": "\u53D1\u73B0\u65B0\u7248\u672C",
   "annot.gotoRelease": "\u67E5\u770B\u53D1\u5E03\u9875",
   "annot.skipVer": "\u5FFD\u7565\u6B64\u7248\u672C",
@@ -8712,10 +8796,23 @@ var en = {
   "custom.placeholder": "Tell the AI what you want this pane to do, e.g. a timeline page of my travels\u2026",
   "custom.project": "Project",
   "custom.modeNew": "New conversation",
-  "custom.modeSend": "Send to a conversation",
+  "custom.modeSend": "Send to an existing conversation",
   "custom.session": "Conversation",
+  "custom.sessionPick": "Pick a conversation",
   "custom.sessionCurrent": " (current)",
-  "custom.hintSend": "The content will be sent directly to the conversation you pick (current by default).",
+  "custom.hintSend": "The content will be sent directly to the conversation you pick.",
+  "custom.tagMine": "This project",
+  "custom.tagOther": "Bound: {name}",
+  "custom.warnShared": "This conversation is already bound to \u201C{name}\u201D. Both projects would share one conversation, which gets confusing. Consider a new conversation instead.",
+  "custom.warnAlreadyShared": "This conversation is also bound to \u201C{name}\u201D, so both projects already share it. To separate them, rebind one from its project dots.",
+  "custom.sendAnyway": "Send anyway",
+  "custom.sharedNoBind": "Sent. This conversation belongs to \u201C{name}\u201D, so it wasn\u2019t bound to this project.",
+  "custom.groupFolder": "Group folder",
+  "custom.groupFolderPh": "Full path, e.g. C:\\Projects\\MyProject",
+  "custom.errFolderEmpty": "Choose a folder first",
+  "custom.errFolderRelative": "Use a full path, like C:\\Projects\\MyProject",
+  "custom.errParentMissing": "The parent folder doesn\u2019t exist. Try another location.",
+  "custom.errFolderCreate": "Couldn\u2019t create the folder: {msg}",
   "custom.send": "Send & create conversation",
   "custom.sendToSession": "Send to this conversation",
   "custom.sent": "Sent to the conversation",
@@ -8745,6 +8842,9 @@ var en = {
   "bind.tipBound": "Bound to: {name}",
   "bind.clickPick": "click to pick",
   "bind.hint": "Opening the project switches the right chat pane to this conversation.",
+  "bind.staleConv": "The bound conversation no longer exists",
+  "bind.folderMismatch": "This conversation lives in another folder",
+  "bind.folderSync": "Use its folder",
   "customLayout.add": "Custom",
   "customLayout.addTitle": "Customize a layout (generate a prompt)",
   "customLayout.title": "Custom layout",
@@ -8810,6 +8910,25 @@ var en = {
   "console.createBind": "Create & bind",
   "console.bindFail": "Creation failed, try again",
   "console.noSessions": "No sessions available",
+  "console.setupTitle": "Welcome to the console",
+  "console.setupDesc": "See every project\u2019s progress at a glance. Give it a dedicated conversation first, then use that conversation to coordinate your projects.",
+  "console.setupAsk": "Choose one",
+  "console.setupClose": "Close",
+  "console.optNew": "Create a dedicated conversation",
+  "console.optNewDesc": "Pick a folder. The conversation\u2019s files are saved there.",
+  "console.optExisting": "Use an existing conversation",
+  "console.optExistingDesc": "Pick one of your conversations",
+  "console.recommended": "Recommended",
+  "console.folderPh": "Full folder path, e.g. C:\\Users\\you\\Worktable",
+  "console.startNew": "Create and start",
+  "console.startExisting": "Use this conversation",
+  "console.errHost": "This DSH can\u2019t create conversations here. Use an existing one instead.",
+  "console.errFolderEmpty": "Choose a folder first",
+  "console.errFolderRelative": "Use a full path, like C:\\Users\\you\\Worktable",
+  "console.errParentMissing": "The parent folder doesn\u2019t exist. Try another location.",
+  "console.errFolder": "Couldn\u2019t create the folder: {msg}",
+  "console.errSession": "Couldn\u2019t create the conversation: {msg}",
+  "console.errPickSession": "Pick a conversation from the list first",
   "console.addProject": "Add project",
   "pane.wip": "Coming in a later version",
   "pane.explorerNoCwd": "No working directory for the current session",
@@ -8836,6 +8955,7 @@ var en = {
   "annot.checkNow": "Check now",
   "annot.checking": "Checking\u2026",
   "annot.autoCheck": "Auto check",
+  "annot.close": "Close release notes",
   "annot.newVer": "New version",
   "annot.gotoRelease": "View release",
   "annot.skipVer": "Ignore this version",
@@ -9020,7 +9140,31 @@ function SandboxedFrame(props) {
 }
 
 // src/client/changelog.ts
-var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.5.1
+var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.6.0
+
+\u2728 \u63A7\u5236\u5BA4\u9996\u6B21\u5F15\u5BFC\u3001\u72B6\u6001\u5C0F\u706F\u91CD\u505A\u4E0E DSH 0.2.2 \u517C\u5BB9
+
+\u3010DSH 0.2.2 \u517C\u5BB9\u3011\u7CBE\u786E\u52A0\u5165 DSH 0.2.2-rc.1 \u4E0E 0.2.2-rc.5 \u7684\u517C\u5BB9\u58F0\u660E\uFF0C\u4FEE\u590D\u65B0\u7248\u5BBF\u4E3B\u56E0\u7248\u672C\u58F0\u660E\u4E0D\u5339\u914D\u800C\u62D2\u7EDD\u52A0\u8F7D\u5DE5\u4F5C\u53F0\u7684\u95EE\u9898\uFF08\u611F\u8C22\u793E\u533A PR #18\uFF09\uFF1B\u4ECD\u4E0D\u901A\u914D\u653E\u5F00\u672A\u6D4B\u7248\u672C\u3002
+
+\u3010\u63A7\u5236\u5BA4\u9996\u6B21\u5F15\u5BFC\u3011\u7B2C\u4E00\u6B21\u6253\u5F00\u63A7\u5236\u5BA4\u65F6\uFF0C\u4F1A\u5148\u8BF4\u660E\u5B83\u7684\u7528\u9014\uFF0C\u518D\u8BF7\u4F60\u4E8C\u9009\u4E00\uFF1A\u65B0\u5EFA\u4E00\u4E2A\u4E13\u5C5E\u5BF9\u8BDD\uFF08\u63A8\u8350\uFF09\uFF0C\u6216\u7528\u5DF2\u6709\u7684\u5BF9\u8BDD\u3002\u65B0\u5EFA\u65F6\u9ED8\u8BA4\u653E\u5728\u7528\u6237\u76EE\u5F55\u4E0B\u7684 Worktable \u6587\u4EF6\u5939\uFF0C\u4E5F\u53EF\u4EE5\u70B9\u300C\u9009\u62E9\u4F4D\u7F6E\u2026\u300D\u6362\u4E00\u4E2A\uFF0C\u6587\u4EF6\u5939\u4E0D\u5B58\u5728\u4F1A\u81EA\u52A8\u521B\u5EFA\u3002\u51FA\u9519\u65F6\u5199\u660E\u539F\u56E0\uFF0C\u4F8B\u5982\u9700\u8981\u5B8C\u6574\u8DEF\u5F84\u3001\u4E0A\u4E00\u7EA7\u6587\u4EF6\u5939\u4E0D\u5B58\u5728\uFF0C\u4E0D\u518D\u53EA\u663E\u793A\u300C\u521B\u5EFA\u5931\u8D25\u300D\u3002
+
+\u3010\u5165\u53E3\u7EDF\u4E00\u3011\u63A7\u5236\u5BA4\u8FD8\u6CA1\u8BBE\u7F6E\u597D\u65F6\uFF0C\u70B9\u5361\u7247\u548C\u70B9\u53F3\u4FA7\u4E24\u4E2A\u5C0F\u70B9\u6253\u5F00\u7684\u90FD\u662F\u540C\u4E00\u4E2A\u5F15\u5BFC\uFF1B\u8BBE\u7F6E\u597D\u4E4B\u540E\uFF0C\u70B9\u5361\u7247\u8FDB\u5165\u63A7\u5236\u5BA4\uFF0C\u70B9\u5C0F\u70B9\u4FEE\u6539\u8BBE\u7F6E\u3002\u5F15\u5BFC\u4F1A\u540C\u65F6\u4FDD\u5B58\u9879\u76EE\u6587\u4EF6\u5939\u548C\u7ED1\u5B9A\u7684\u5BF9\u8BDD\u3002
+
+\u3010\u6587\u4EF6\u5939\u8DDF\u968F\u5BF9\u8BDD\u3011\u7ED1\u5B9A\u5BF9\u8BDD\u65F6\uFF0C\u5982\u679C\u9879\u76EE\u6587\u4EF6\u5939\u4E3A\u7A7A\u6216\u4E4B\u524D\u662F\u81EA\u52A8\u8BBE\u7F6E\u7684\uFF0C\u4F1A\u81EA\u52A8\u6539\u6210\u8FD9\u4E2A\u5BF9\u8BDD\u6240\u5728\u7684\u6587\u4EF6\u5939\uFF1B\u5982\u679C\u4F60\u624B\u52A8\u6539\u8FC7\u6587\u4EF6\u5939\uFF0C\u5C31\u4FDD\u6301\u4E0D\u53D8\uFF0C\u5E76\u5728\u8BBE\u7F6E\u91CC\u63D0\u793A\u300C\u8FD9\u4E2A\u5BF9\u8BDD\u5728\u53E6\u4E00\u4E2A\u6587\u4EF6\u5939\u91CC\u300D\uFF0C\u53EF\u4EE5\u4E00\u952E\u540C\u6B65\u3002\u7ED1\u5B9A\u7684\u5BF9\u8BDD\u88AB\u5220\u9664\u540E\u4F1A\u63D0\u793A\u5DF2\u5931\u6548\uFF0C\u63A7\u5236\u5BA4\u4F1A\u56DE\u5230\u672A\u8BBE\u7F6E\u72B6\u6001\u5E76\u91CD\u65B0\u5F15\u5BFC\u3002
+
+\u3010\u81EA\u5B9A\u4E49\u7A97\u53E3\u3011\u9ED8\u8BA4\u6539\u4E3A\u300C\u65B0\u5EFA\u5BF9\u8BDD\u300D\uFF0C\u53E6\u4E00\u9879\u6539\u540D\u4E3A\u300C\u53D1\u9001\u5230\u5DF2\u6709\u5BF9\u8BDD\u300D\u3002\u5BF9\u8BDD\u5217\u8868\u4F1A\u6807\u51FA\u5F52\u5C5E\uFF1A\u300C\u672C\u9879\u76EE\u300D\u4E3A\u84DD\u8272\uFF0C\u5DF2\u88AB\u5176\u4ED6\u9879\u76EE\u7ED1\u5B9A\u7684\u663E\u793A\u4E3A\u9EC4\u8272\u300C\u5DF2\u7ED1\u5B9A\uFF1A\u9879\u76EE\u540D\u300D\u3002\u9009\u4E2D\u522B\u7684\u9879\u76EE\u7684\u5BF9\u8BDD\u65F6\u4F1A\u51FA\u73B0\u63D0\u9192\uFF0C\u6309\u94AE\u53D8\u4E3A\u300C\u4ECD\u7136\u53D1\u9001\u300D\uFF1B\u8FD9\u79CD\u60C5\u51B5\u4E0B\u53EA\u53D1\u9001\u5185\u5BB9\uFF0C\u4E0D\u4F1A\u628A\u5F53\u524D\u9879\u76EE\u7ED1\u5B9A\u4E0A\u53BB\uFF0C\u907F\u514D\u4E24\u4E2A\u9879\u76EE\u5171\u7528\u4E00\u4E2A\u5BF9\u8BDD\u3002\u65B0\u5EFA\u5206\u7EC4\u6539\u4E3A\u4E00\u4E2A\u6587\u4EF6\u5939\u6846\u52A0\u300C\u9009\u62E9\u4F4D\u7F6E\u2026\u300D\u6309\u94AE\u3002
+
+\u3010\u72B6\u6001\u5C0F\u706F\u3011\u4FA7\u680F\u4E24\u4E2A\u5C0F\u70B9\u6539\u4E3A\u5706\u5708\uFF1A\u7A7A\u5FC3\u8868\u793A\u672A\u7ED1\u5B9A\uFF0C\u5B9E\u5FC3\u8868\u793A\u5DF2\u7ED1\u5B9A\u3002\u5E73\u65F6\u662F\u7070\u8272\uFF0C\u8FD0\u884C\u4E2D\u84DD\u8272\u547C\u5438\uFF0C\u672C\u8F6E\u7ED3\u675F\u7EFF\u8272\uFF0C\u9700\u8981\u4F60\u5224\u65AD\u9EC4\u8272\u3002\u6D45\u8272\u4E0E\u6DF1\u8272\u754C\u9762\u90FD\u5DF2\u9002\u914D\uFF1B\u7CFB\u7EDF\u5F00\u542F\u300C\u51CF\u5C11\u52A8\u6001\u6548\u679C\u300D\u65F6\uFF0C\u547C\u5438\u706F\u6539\u4E3A\u5E38\u4EAE\u3002\u7EFF\u8272\u53EA\u8868\u793A\u672C\u8F6E\u5DF2\u7ED3\u675F\uFF0C\u4E0D\u4EE3\u8868\u4EFB\u52A1\u4E00\u5B9A\u6210\u529F\u3002
+
+\u3010\u754C\u9762\u7EC6\u8282\u3011\u4FEE\u590D\u5706\u5F62\u5143\u7D20\u5728\u65B0\u7248 DSH \u4E2D\u663E\u793A\u6210\u5706\u89D2\u65B9\u5F62\u7684\u95EE\u9898\uFF1B\u300C\u81EA\u52A8\u68C0\u67E5\u66F4\u65B0\u300D\u7B49\u5F00\u5173\u5728\u6D45\u8272\u4E3B\u9898\u4E0B\u6253\u5F00\u540E\u6B63\u786E\u663E\u793A\u4E3A\u84DD\u8272\uFF1B\u9F20\u6807\u505C\u5728\u5C0F\u70B9\u4E0A\u65F6\u7684\u63D0\u793A\u6C14\u6CE1\u5728\u6D45\u8272\u4E3B\u9898\u4E0B\u6E05\u6670\u53EF\u8BFB\uFF1B\u8BBE\u7F6E\u5F39\u7A97\u7D27\u8D34\u6309\u94AE\u5F39\u51FA\uFF0C\u4F4D\u4E8E\u4FA7\u680F\u5E95\u90E8\u65F6\u5411\u4E0A\u5C55\u5F00\u3002
+
+\u3010\u517C\u5BB9\u4E0E\u9A8C\u6536\u3011\u517C\u5BB9\u58F0\u660E\u5217 DSH 0.2.0-rc.2 / 0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.1 / 0.2.2-rc.5\u30020.2.2-rc.5 \u5DF2\u5728\u5B98\u65B9 Windows Desktop \u4E0A\u7531\u7528\u6237\u786E\u8BA4\u5DE5\u4F5C\u53F0\u52A0\u8F7D\u3001\u9996\u6B21\u5F15\u5BFC\u3001\u72B6\u6001\u5C0F\u706F\u4E0E\u5F00\u5173\u663E\u793A\u6B63\u5E38\uFF1B0.2.2-rc.1 \u53EA\u505A\u4E86\u9694\u79BB\u7F51\u9875\u7AEF\u7684\u5B89\u88C5\u4E0E\u542F\u52A8\u68C0\u67E5\u3002\u7F51\u9875\u7AEF\u3001macOS \u53CA\u6A21\u578B\u4EFB\u52A1\u5168\u94FE\u8DEF\u672A\u5728\u672C\u7248\u91CD\u65B0\u9A8C\u6536\uFF1B\u65E7 0.1.x \u4E0D\u5728\u652F\u6301\u8303\u56F4\u3002
+
+\u3010\u5347\u7EA7\u63D0\u9192\u3011\u516C\u5F00\u53D1\u5E03\u4EE5 GitHub Release \u4E3A\u51C6\u3002\u5B89\u88C5\u524D\u5907\u4EFD\u91CD\u8981\u6570\u636E\u3001\u6838\u5BF9\u5176\u4ED6\u63D2\u4EF6\u517C\u5BB9\u6027\uFF1B\u7F51\u9875\u7AEF\u91CD\u542F\u540E\u5237\u65B0\uFF0C\u684C\u9762\u7AEF\u5B8C\u6574\u9000\u51FA\u540E\u901A\u8FC7\u81EA\u5E26 CLI \u5B89\u88C5\u3001\u518D\u624B\u52A8\u6253\u5F00\u3002\u5DF2\u6709\u7684\u9879\u76EE\u3001\u5E03\u5C40\u4E0E\u7ED1\u5B9A\u4E0D\u8FC1\u79FB\u3001\u4E0D\u6E05\u7A7A\u3002\u82E5\u4ECD\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u4FDD\u7559\u7B2C\u4E00\u6761\u5B8C\u6574\u9519\u8BEF\u3002
+
+\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+\u6B64\u524D\u7248\u672C\u8BF4\u660E\uFF08v0.5.1\uFF09
 
 \u{1F527} DSH 0.2.1-rc.5 \u517C\u5BB9\u4E0E\u66F4\u65B0\u63D0\u9192\u4FEE\u590D
 
@@ -9160,7 +9304,7 @@ var CHANGELOG_V030 = `\u66F4\u65B0\u516C\u544A \xB7 v0.5.1
 \u30103.1 \u6587\u5B57\u4E0E\u7EC6\u8282\u6253\u78E8\u3011\u5168\u5C40\u5B57\u4F53\u4E0E\u5B57\u53F7\u7EDF\u4E00\u4F18\u5316\u3001\u4E0B\u62C9\u9762\u677F\u73BB\u7483\u5316\u4E0E\u5BF9\u9F50\u3001\u83DC\u5355\u70B9\u9009\u540E\u4FDD\u6301\u6253\u5F00\u4FBF\u4E8E\u8FDE\u7EED\u9884\u89C8\u3001\u6309\u94AE\u63CF\u8FB9\u4E0E\u60AC\u505C\u53CD\u9988\u7B49\u4EA4\u4E92\u7EC6\u8282\uFF1B\u540C\u65F6\u4FEE\u590D\u4E86\u591A\u9879\u4F53\u9A8C\u95EE\u9898\uFF08\u7167\u7247\u4E0A\u4F20\u6E05\u6670\u5EA6\u3001\u80CC\u666F\u7F51\u683C\u7EBF\u5728\u7167\u7247\u6A21\u5F0F\u4E0B\u4E0D\u751F\u6548\u3001\u6D45\u8272\u4E3B\u9898\u4E0B\u5DE5\u4F5C\u72B6\u6001\u5149\u6548\u4E0D\u53EF\u89C1\u7B49\uFF09\u3002`;
 
 // src/client/updateCheck.ts
-var LOCAL_VERSION = false ? "dev" : "0.5.1";
+var LOCAL_VERSION = false ? "dev" : "0.6.0";
 var UPDATE_REPO = "Aisland-SJL/dsh-worktable";
 var K_UPDATE_CHECK = "dsh.worktable.updateCheck.v1";
 var K_LAST_CHECK = "dsh.worktable.lastUpdateCheck.v1";
@@ -18928,7 +19072,8 @@ function ConsolePane() {
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_announceBtn", disabled: updStatus === "checking", onClick: () => runUpdateCheck(true), children: updStatus === "checking" ? T("annot.checking") : T("annot.checkNow") }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_announceAuto", children: T("annot.autoCheck") }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_switch" + (autoCheckOn ? " dsh-wt_switchOn" : ""), "aria-pressed": autoCheckOn, "aria-label": T("annot.autoCheck"), onClick: onAutoCheckToggle, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_switchKnob" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_switch" + (autoCheckOn ? " dsh-wt_switchOn" : ""), "aria-pressed": autoCheckOn, "aria-label": T("annot.autoCheck"), onClick: onAutoCheckToggle, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_switchKnob" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_announceClose", "aria-label": T("annot.close"), title: T("annot.close"), onClick: () => setAnnOpen(false), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("svg", { width: "12", height: "12", viewBox: "0 0 12 12", "aria-hidden": "true", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M2 2l8 8M10 2l-8 8", stroke: "currentColor", strokeWidth: "1.6", strokeLinecap: "round" }) }) })
       ] }),
       updInfo && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_announceUpdate", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "dsh-wt_announceNewVer", children: [
@@ -19556,6 +19701,7 @@ function SelectPop(props) {
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_select", children: [
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "dsh-wt_selectBtn", onClick: () => setOpen((v) => !v), children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectVal" + (selected ? "" : " dsh-wt_selectPh"), children: selected?.label ?? props.placeholder ?? "" }),
+      selected?.tag && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectTag dsh-wt_selectTag-" + selected.tag.tone, children: selected.tag.text }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectCaret", "aria-hidden": true, children: "\u25BE" })
     ] }),
     open && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_selectList", children: props.groups.map((g, gi) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_react2.Fragment, { children: [
@@ -19577,7 +19723,8 @@ function SelectPop(props) {
           },
           children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectItemTitle", children: it.label }),
-            it.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectCurrent", children: T("custom.sessionCurrent") })
+            it.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectCurrent", children: T("custom.sessionCurrent") }),
+            it.tag && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_selectTag dsh-wt_selectTag-" + it.tag.tone, children: it.tag.text })
           ]
         },
         it.id
@@ -19595,29 +19742,45 @@ function CustomPane(props) {
   const [requirement, setRequirement] = (0, import_react2.useState)("");
   const [projectId, setProjectId] = (0, import_react2.useState)(null);
   const [projects, setProjects] = (0, import_react2.useState)(() => custom?.getProjects?.() ?? []);
-  const [mode, setMode] = (0, import_react2.useState)("existing");
+  const [mode, setMode] = (0, import_react2.useState)("new");
   const [sessionGroups, setSessionGroups] = (0, import_react2.useState)([]);
-  const [sessionId, setSessionId] = (0, import_react2.useState)(null);
+  const [sessionId, setSessionIdRaw] = (0, import_react2.useState)(null);
+  const sessionTouchedRef = (0, import_react2.useRef)(false);
+  const setSessionId = (id) => {
+    sessionTouchedRef.current = true;
+    setSessionIdRaw(id);
+  };
+  const [bindings, setBindings] = (0, import_react2.useState)(() => custom?.getBindings?.() ?? []);
   const [wsGroups, setWsGroups] = (0, import_react2.useState)([]);
   const [groupMode, setGroupMode] = (0, import_react2.useState)("none");
   const [groupId, setGroupId] = (0, import_react2.useState)(null);
   const groupTouchedRef = (0, import_react2.useRef)(false);
-  const [newGroupParent, setNewGroupParent] = (0, import_react2.useState)("");
-  const [newGroupName, setNewGroupName] = (0, import_react2.useState)("");
+  const [newGroupPath, setNewGroupPath] = (0, import_react2.useState)("");
+  const [picking, setPicking] = (0, import_react2.useState)(false);
   const [busy, setBusy] = (0, import_react2.useState)(false);
   const [done, setDone] = (0, import_react2.useState)(false);
   const [fail, setFail] = (0, import_react2.useState)("");
   const [bindNote, setBindNote] = (0, import_react2.useState)("none");
+  const [sharedWith, setSharedWith] = (0, import_react2.useState)("");
+  const othersOf = (sid) => sid ? bindings.filter((b) => b.sessionId === sid && b.projectId !== projectId).map((b) => b.name) : [];
+  const mineOf = (sid) => !!sid && bindings.some((b) => b.sessionId === sid && b.projectId === projectId);
+  (0, import_react2.useEffect)(() => {
+    if (sessionTouchedRef.current) return;
+    const flat = sessionGroups.flatMap((g) => g.sessions);
+    const mine = bindings.find((b) => b.projectId === projectId && flat.some((s) => s.id === b.sessionId))?.sessionId;
+    const cur = flat.find((s) => s.isCurrent)?.id;
+    setSessionIdRaw(mine ?? (cur && othersOf(cur).length === 0 ? cur : null));
+  }, [sessionGroups, bindings, projectId]);
   (0, import_react2.useEffect)(() => {
     const list2 = custom?.getProjects?.() ?? [];
     setProjects(list2);
     const cur = custom?.currentProjectId?.() ?? null;
     setProjectId(cur && list2.some((p) => p.id === cur) ? cur : list2[0]?.id ?? null);
     setWsGroups((custom?.getWorkspaces?.() ?? []).map((w) => ({ id: w.id, title: w.title, path: w.path })));
+    setBindings(custom?.getBindings?.() ?? []);
     custom?.getSessions?.().then((res) => {
       setSessionGroups(res.groups);
       const flat = res.groups.flatMap((g) => g.sessions);
-      setSessionId(flat.find((s) => s.isCurrent)?.id ?? flat[0]?.id ?? null);
       const curId = flat.find((s) => s.isCurrent)?.id;
       const home = curId ? (custom?.getWorkspaces?.() ?? []).find((w) => (w.sessionIds ?? []).includes(curId)) : null;
       if (home && !groupTouchedRef.current) {
@@ -19640,22 +19803,36 @@ function CustomPane(props) {
         let group = { kind: "none" };
         if (groupMode === "existing" && groupId) group = { kind: "existing", workspaceId: groupId };
         else if (groupMode === "new") {
-          if (!newGroupParent.trim() || !newGroupName.trim()) {
-            setFail(T("custom.groupNeedPath"));
+          const p = newGroupPath.trim();
+          if (!p) {
+            setFail(T("custom.errFolderEmpty"));
             return;
           }
-          group = { kind: "new", parent: newGroupParent.trim(), name: newGroupName.trim() };
+          if (!isAbs(p)) {
+            setFail(T("custom.errFolderRelative"));
+            return;
+          }
+          group = { kind: "new", path: p };
         }
         const sid = await custom.submit(projectId, pname, text2, group, paneTitle);
         setBindNote(custom.autoBind?.(sid) ?? "none");
       } else {
         if (!sessionId) return;
+        const others = othersOf(sessionId);
         await custom.sendToSession(sessionId, projectId, pname, text2, paneTitle);
-        setBindNote(custom.autoBind?.(sessionId) ?? "none");
+        if (others.length > 0 && !mineOf(sessionId)) {
+          setSharedWith(others.join("\u3001"));
+          setBindNote("shared");
+        } else setBindNote(custom.autoBind?.(sessionId) ?? "none");
       }
       setDone(true);
     } catch (e) {
-      setFail(String(e));
+      const raw = typeof e?.message === "string" ? e.message : String(e);
+      if (raw === "wt:folderEmpty") setFail(T("custom.errFolderEmpty"));
+      else if (raw === "wt:folderRelative") setFail(T("custom.errFolderRelative"));
+      else if (raw === "wt:parentMissing") setFail(T("custom.errParentMissing"));
+      else if (raw.startsWith("wt:folderCreate:")) setFail(T("custom.errFolderCreate", { msg: raw.slice("wt:folderCreate:".length) }));
+      else setFail(T("custom.fail") + "\uFF1A" + raw);
     } finally {
       setBusy(false);
     }
@@ -19668,7 +19845,7 @@ function CustomPane(props) {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customDone", "aria-hidden": true, children: "\u2705" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customDoneText", children: mode === "new" ? T("custom.done") : T("custom.sent") }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customDoneHint", children: T("custom.doneHint") }),
-      bindNote !== "none" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customDoneBind", children: bindNote === "auto" ? T("custom.autoBound") : T("custom.keptBinding") })
+      bindNote !== "none" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customDoneBind", children: bindNote === "auto" ? T("custom.autoBound") : bindNote === "shared" ? T("custom.sharedNoBind", { name: sharedWith }) : T("custom.keptBinding") })
     ] });
   }
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "dsh-wt_customBox", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customCard", children: [
@@ -19677,8 +19854,8 @@ function CustomPane(props) {
       T("custom.title")
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customModes", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "existing" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("existing"), children: T("custom.modeSend") }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "new" ? " dsh-wt_customModeBtnOn" : ""), onClick: () => setMode("new"), children: T("custom.modeNew") })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "new" ? " dsh-wt_customModeBtnOn" : ""), "aria-pressed": mode === "new", onClick: () => setMode("new"), children: T("custom.modeNew") }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "dsh-wt_customModeBtn" + (mode === "existing" ? " dsh-wt_customModeBtnOn" : ""), "aria-pressed": mode === "existing", onClick: () => setMode("existing"), children: T("custom.modeSend") })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customHint", children: mode === "new" ? T("custom.hint") : T("custom.hintSend") }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
@@ -19699,12 +19876,20 @@ function CustomPane(props) {
           value: sessionId,
           groups: sessionGroups.map((g) => ({
             title: g.title,
-            items: g.sessions.map((s) => ({ id: s.id, label: s.title, isCurrent: s.isCurrent }))
+            items: g.sessions.map((s) => {
+              const others = othersOf(s.id);
+              const tag = mineOf(s.id) ? { text: T("custom.tagMine"), tone: "mine" } : others.length > 0 ? { text: T("custom.tagOther", { name: others.join("\u3001") }), tone: "other" } : void 0;
+              return { id: s.id, label: s.title, isCurrent: s.isCurrent, tag };
+            })
           })),
-          placeholder: T("custom.session"),
+          placeholder: T("custom.sessionPick"),
           onChange: setSessionId
         }
       )
+    ] }),
+    mode === "existing" && othersOf(sessionId).length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customWarn", role: "alert", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": true, children: "\u26A0\uFE0F" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: T(mineOf(sessionId) ? "custom.warnAlreadyShared" : "custom.warnShared", { name: othersOf(sessionId).join("\u3001") }) })
     ] }),
     /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customRow", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.project") }),
@@ -19745,28 +19930,37 @@ function CustomPane(props) {
         }
       )
     ] }),
-    mode === "new" && groupMode === "new" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customRow", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.groupNewParent") }),
+    mode === "new" && groupMode === "new" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customRow", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.groupFolder") }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customFolderRow", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
           "input",
           {
             className: "dsh-wt_customPathInput",
-            placeholder: T("custom.groupNewParentPh"),
-            value: newGroupParent,
-            onChange: (e) => setNewGroupParent(e.target.value)
+            placeholder: T("custom.groupFolderPh"),
+            value: newGroupPath,
+            onChange: (e) => {
+              setNewGroupPath(e.target.value);
+              setFail("");
+            }
           }
-        )
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "dsh-wt_customRow", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dsh-wt_customLabel", children: T("custom.groupNewName") }),
+        ),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-          "input",
+          "button",
           {
-            className: "dsh-wt_customPathInput",
-            placeholder: T("custom.groupNewNamePh"),
-            value: newGroupName,
-            onChange: (e) => setNewGroupName(e.target.value)
+            type: "button",
+            className: "dsh-wt_customPick",
+            disabled: picking || !custom.pickFolder,
+            onClick: async () => {
+              setPicking(true);
+              setFail("");
+              try {
+                await custom.pickFolder?.((p) => setNewGroupPath(p), (msg) => setFail(msg));
+              } finally {
+                setPicking(false);
+              }
+            },
+            children: picking ? T("add.folderPicking") : T("add.folderPick")
           }
         )
       ] })
@@ -19775,17 +19969,13 @@ function CustomPane(props) {
       "button",
       {
         type: "button",
-        className: "dsh-wt_customSend",
-        disabled: busy || !requirement.trim() || !projectId || mode === "existing" && !sessionId || mode === "new" && groupMode === "new" && (!newGroupParent.trim() || !newGroupName.trim()),
+        className: "dsh-wt_customSend" + (mode === "existing" && othersOf(sessionId).length > 0 && !mineOf(sessionId) ? " dsh-wt_customSendWarn" : ""),
+        disabled: busy || !requirement.trim() || !projectId || mode === "existing" && !sessionId,
         onClick: submit,
-        children: busy ? "\u2026" : mode === "new" ? T("custom.send") : T("custom.sendToSession")
+        children: busy ? "\u2026" : mode === "new" ? T("custom.send") : othersOf(sessionId).length > 0 && !mineOf(sessionId) ? T("custom.sendAnyway") : T("custom.sendToSession")
       }
     ),
-    fail && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { className: "dsh-wt_customFail", children: [
-      T("custom.fail"),
-      "\uFF1A",
-      fail
-    ] })
+    fail && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "dsh-wt_customFail", children: fail })
   ] }) });
 }
 function PaneTabBody(props) {
@@ -20556,9 +20746,6 @@ function modelApiOf(ctx, sessions, legacy) {
     selectModel: async ({ sessionId, ...selection }) => withDirectory(sessionId, async (directory) => ({ result: await directory.select(selection) }))
   };
 }
-function blankSessionNeedsWorkspace(sessions, grouping) {
-  return grouping === "none" && typeof sessions?.using === "function";
-}
 async function createHostSession(sessions, workspaces, options = {}, grouping = "auto") {
   if (grouping === "none") {
     if (options.workspaceId) throw new Error("ungrouped session cannot specify a workspace");
@@ -20919,7 +21106,8 @@ var DEFAULT_PROJECTS = {
   shortcuts: [],
   layouts: [],
   bindings: {},
-  folders: {}
+  folders: {},
+  folderFollows: {}
 };
 function normHsl(v) {
   if (!v || typeof v.h !== "number" || typeof v.s !== "number" || typeof v.l !== "number") return void 0;
@@ -20988,7 +21176,8 @@ function loadProjects() {
       shortcuts: Array.isArray(p.shortcuts) ? p.shortcuts.filter((s) => s && typeof s.id === "string" && typeof s.name === "string" && typeof s.href === "string") : [],
       layouts: Array.isArray(p.layouts) ? p.layouts.filter((l) => l && typeof l.id === "string" && typeof l.title === "string" && Array.isArray(l.main)) : [],
       bindings: p.bindings && typeof p.bindings === "object" ? p.bindings : {},
-      folders: p.folders && typeof p.folders === "object" ? p.folders : {}
+      folders: p.folders && typeof p.folders === "object" ? p.folders : {},
+      folderFollows: p.folderFollows && typeof p.folderFollows === "object" ? p.folderFollows : {}
     };
   } catch {
     return { ...DEFAULT_PROJECTS };
@@ -21157,19 +21346,6 @@ var notifyConsole = () => consoleListeners.forEach((l) => {
   } catch {
   }
 });
-function listWorkspaces() {
-  try {
-    const snap = sessionBridge?.workspaces?.list?.getSnapshot?.();
-    const items = snap?.items ?? [];
-    return items.map((w) => ({
-      id: w.workspaceId ?? w.id,
-      title: w.title ?? "",
-      path: w.path ?? ""
-    }));
-  } catch {
-    return [];
-  }
-}
 var previewCache = /* @__PURE__ */ new Map();
 var previewFetching = /* @__PURE__ */ new Set();
 var previewSweepBusy = false;
@@ -21244,6 +21420,7 @@ async function fetchSessionGroups() {
         sessIds.forEach((sid) => accounted.add(sid));
         return {
           title: table2[wid]?.title ?? wid,
+          path: typeof table2[wid]?.path === "string" ? table2[wid].path : "",
           sessions: sessIds.filter((sid) => !archived.includes(sid) && !subKids.has(sid)).map(mk)
         };
       }).filter((g) => g.sessions.length > 0);
@@ -21333,21 +21510,13 @@ async function createCustomSession(projectId, projectName, requirement, group, w
   } else if (g.kind === "new") {
     const ws = b.workspaces;
     if (!ws || typeof ws.create !== "function") throw new Error("workspaces unavailable");
-    const parent = g.parent.replace(/[\\/]+$/, "");
-    const name = g.name.replace(/^[\\/]+/, "").replace(/[\\/]+$/, "");
-    if (!parent || !name) throw new Error("invalid group path");
-    const full = joinPath(parent, name);
-    try {
-      await ws.createDirectory?.(parent, name);
-    } catch {
-    }
-    try {
-      const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
-      const d = await r.json();
-      if (!r.ok || !d?.ok) throw new Error(d?.error ?? "mkdir failed");
-    } catch {
-    }
-    const view = await ws.create({ path: full });
+    const full = g.path.trim();
+    if (!full) throw new Error("wt:folderEmpty");
+    if (!isAbs(full)) throw new Error("wt:folderRelative");
+    const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d?.ok) throw new Error(d?.error === "parent not found" ? "wt:parentMissing" : "wt:folderCreate:" + String(d?.error ?? "HTTP " + r.status));
+    const view = await ws.create({ path: typeof d.path === "string" && d.path ? d.path : full });
     workspaceId = view?.workspaceId ?? view?.id ?? null;
     if (!workspaceId) throw new Error("workspace create failed");
   }
@@ -21710,13 +21879,11 @@ function WorktableSection(props) {
   const [bindListOpen, setBindListOpen] = (0, import_react3.useState)(false);
   const [consoleBind, setConsoleBind] = (0, import_react3.useState)(null);
   const [consoleGroups, setConsoleGroups] = (0, import_react3.useState)([]);
-  const [consoleMode, setConsoleMode] = (0, import_react3.useState)("none");
-  const [consoleWsId, setConsoleWsId] = (0, import_react3.useState)("");
-  const [consoleParent, setConsoleParent] = (0, import_react3.useState)("");
-  const [consoleName, setConsoleName] = (0, import_react3.useState)("");
-  const [consoleErr, setConsoleErr] = (0, import_react3.useState)(false);
+  const [consoleChoice, setConsoleChoice] = (0, import_react3.useState)("new");
+  const [consoleFolder, setConsoleFolder] = (0, import_react3.useState)("");
+  const [consolePick, setConsolePick] = (0, import_react3.useState)("");
+  const [consoleErr, setConsoleErr] = (0, import_react3.useState)("");
   const [consoleBusy, setConsoleBusy] = (0, import_react3.useState)(false);
-  const consoleNeedsWorkspace = blankSessionNeedsWorkspace(sessionBridge?.sessions, consoleMode === "none" ? "none" : "auto");
   const [customOpen, setCustomOpen] = (0, import_react3.useState)(false);
   const [customLayoutText, setCustomLayoutText] = (0, import_react3.useState)("");
   const [copiedToast, setCopiedToast] = (0, import_react3.useState)(null);
@@ -21847,6 +22014,14 @@ function WorktableSection(props) {
         },
         createWorkspace: (path) => sessionBridge?.workspaces?.create?.({ path }),
         createWorkspaceDir: (parent, name) => sessionBridge?.workspaces?.createDirectory?.(parent, name),
+        // 绑定关系（项目 → 对话），含控制室；供自定义窗口标出「本项目 / 已被其他项目绑定」的对话
+        getBindings: () => {
+          const p = projectsRef.current;
+          const nameOf = (id) => id === CONSOLE_ID ? t("console.name") : p.projects.nameOverrides[id] ?? p.metas[id]?.name ?? p.projects.layouts.find((l) => l.id === id)?.title ?? id;
+          return Object.entries(p.projects.bindings).filter(([, sid]) => typeof sid === "string" && !!sid).map(([projectId, sessionId]) => ({ projectId, sessionId, name: nameOf(projectId) }));
+        },
+        // 系统文件夹选择（与「添加项目」/控制室引导同一套探测与降级）；错误经 onError 回传到窗口内显示
+        pickFolder: (apply2, onError) => pickFolder("custom", apply2, onError),
         // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
         autoBind: (sessionId) => {
           const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null;
@@ -22157,9 +22332,18 @@ function WorktableSection(props) {
   function bindInfoOf(groups, sid) {
     for (const g of groups) {
       const s = g.sessions.find((x) => x.id === sid);
-      if (s) return { folder: g.title || "\u672A\u5206\u7EC4", title: s.title };
+      if (s) return { folder: g.title || "\u672A\u5206\u7EC4", title: s.title, path: g.path ?? "" };
     }
-    return { folder: "", title: sid };
+    return { folder: "", title: sid, path: "" };
+  }
+  function samePath(a, b) {
+    const norm = (p) => p.trim().replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+    return norm(a) === norm(b);
+  }
+  function isStaleBinding(snapshot, sid) {
+    if (!sid) return false;
+    if (!snapshot || snapshot.phase !== "ready" || !snapshot.byId) return false;
+    return !Object.prototype.hasOwnProperty.call(snapshot.byId, sid);
   }
   function buildCustomLayoutPrompt(req) {
     return [
@@ -22244,92 +22428,128 @@ function WorktableSection(props) {
       }
     }
   }, [projects.views, t]);
+  const consoleReady = () => {
+    const sid = projectsRef.current.projects.bindings[CONSOLE_ID];
+    if (!sid) return false;
+    let snap = null;
+    try {
+      snap = sessionBridge?.list?.getSnapshot?.();
+    } catch {
+    }
+    if (isStaleBinding(snap, sid)) {
+      setProjectBinding(CONSOLE_ID, null);
+      return false;
+    }
+    return true;
+  };
   const clickConsoleCard = (anchor) => {
-    if (projectsRef.current.projects.bindings[CONSOLE_ID]) {
+    void anchor;
+    if (consoleReady()) {
       openConsole();
       return;
     }
-    const r = anchor.getBoundingClientRect();
-    setConsoleBind({
-      x: clamp2(Math.round(r.right + 8), 8, window.innerWidth - 640),
-      y: clamp2(Math.round(r.top), 8, window.innerHeight - 460)
-    });
+    openConsoleSetup();
+  };
+  const clickConsoleDots = (anchor) => {
+    if (consoleReady()) {
+      openBindPick(CONSOLE_ID, anchor);
+      return;
+    }
+    openConsoleSetup();
+  };
+  const openConsoleSetup = () => {
+    setConsoleBind({ x: 0, y: 0 });
+    setConsoleChoice("new");
+    setConsolePick("");
+    setConsoleErr("");
     setConsoleGroups([]);
     fetchSessionGroups().then((res) => setConsoleGroups(res.groups)).catch(() => setConsoleGroups([]));
+    fetch("/api/worktable/home").then((r) => r.ok ? r.json() : null).then((d) => {
+      if (d && typeof d.home === "string" && d.home) setConsoleFolder((prev) => prev || joinPath(d.home, "Worktable"));
+    }).catch(() => {
+    });
   };
   const bindConsoleExisting = (sid) => {
-    persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sid } }));
+    const path = bindInfoOf(consoleGroups, sid).path;
+    persistProjects((prev) => ({
+      ...prev,
+      bindings: { ...prev.bindings, [CONSOLE_ID]: sid },
+      ...path ? { folders: { ...prev.folders, [CONSOLE_ID]: path }, folderFollows: { ...prev.folderFollows, [CONSOLE_ID]: true } } : {}
+    }));
     setConsoleBind(null);
     openConsole(sid);
   };
   const bindConsoleNew = async () => {
     const b = sessionBridge;
     if (!b || typeof b.sessions?.create !== "function") {
-      setConsoleErr(true);
+      setConsoleErr(t("console.errHost"));
       return;
     }
-    if (blankSessionNeedsWorkspace(b.sessions, consoleMode === "none" ? "none" : "auto")) return;
-    if (consoleMode === "existing" && !consoleWsId) {
-      setConsoleErr(true);
+    const folder = consoleFolder.trim();
+    if (!folder) {
+      setConsoleErr(t("console.errFolderEmpty"));
       return;
     }
-    if (consoleMode === "new" && (!consoleParent.trim() || !consoleName.trim())) {
-      setConsoleErr(true);
+    if (!isAbs(folder)) {
+      setConsoleErr(t("console.errFolderRelative"));
       return;
     }
     setConsoleBusy(true);
-    setConsoleErr(false);
+    setConsoleErr("");
+    let stage = "folder";
     try {
-      let workspaceId = null;
-      if (consoleMode === "existing" && consoleWsId) workspaceId = consoleWsId;
-      else if (consoleMode === "new") {
-        const ws = b.workspaces;
-        const parent = consoleParent.replace(/[\\/]+$/, "");
-        const name = consoleName.replace(/^[\\/]+/, "").replace(/[\\/]+$/, "");
-        const full = joinPath(parent, name);
-        try {
-          await ws?.createDirectory?.(parent, name);
-        } catch {
-        }
-        try {
-          const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: full }) });
-          const d = await r.json();
-          if (!r.ok || !d?.ok) throw new Error(d?.error ?? "mkdir failed");
-        } catch {
-        }
-        const view2 = await ws.create({ path: full });
-        workspaceId = view2?.workspaceId ?? view2?.id ?? null;
-        if (!workspaceId) throw new Error("workspace create failed");
+      const r = await fetch("/api/worktable/mkdir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ path: folder }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d?.ok) {
+        if (d?.error === "parent not found") throw new Error(t("console.errParentMissing"));
+        throw new Error(t("console.errFolder", { msg: String(d?.error ?? "HTTP " + r.status) }));
       }
-      const folder = projectsRef.current.projects.folders[CONSOLE_ID] ?? null;
-      let createOpts = {};
-      if (workspaceId) createOpts = { workspaceId };
-      else if (folder) createOpts = { cwd: folder };
-      const sessionId = await createHostSession(b.sessions, b.workspaces, createOpts, consoleMode === "none" ? "none" : "auto");
+      stage = "session";
+      const dir = typeof d.path === "string" && d.path ? d.path : folder;
+      const sessionId = await createHostSession(b.sessions, b.workspaces, { cwd: dir }, "auto");
       await ensureSessionPreset(sessionId);
       await ensureSessionModel(sessionId);
       markPluginSessionOpen(sessionId);
-      persistProjects((prev) => ({ ...prev, bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId } }));
+      persistProjects((prev) => ({
+        ...prev,
+        bindings: { ...prev.bindings, [CONSOLE_ID]: sessionId },
+        folders: { ...prev.folders, [CONSOLE_ID]: dir },
+        folderFollows: { ...prev.folderFollows, [CONSOLE_ID]: true }
+      }));
       setConsoleBind(null);
       openConsole(sessionId);
-    } catch {
-      setConsoleErr(true);
+    } catch (e) {
+      const msg = typeof e?.message === "string" && e.message ? e.message : String(e ?? "unknown");
+      setConsoleErr(stage === "folder" ? msg : t("console.errSession", { msg }));
     } finally {
       setConsoleBusy(false);
     }
+  };
+  const confirmConsoleSetup = () => {
+    if (consoleBusy) return;
+    if (consoleChoice === "new") {
+      void bindConsoleNew();
+      return;
+    }
+    if (!consolePick) {
+      setConsoleErr(t("console.errPickSession"));
+      return;
+    }
+    bindConsoleExisting(consolePick);
   };
   actionsRef.current = { openSplit, openConsole };
   const openBindPick = (0, import_react3.useCallback)((id, anchor) => {
     invalidatePickState();
     const r = anchor.getBoundingClientRect();
     const x = clamp2(Math.round(r.right + 8), 8, window.innerWidth - 300);
-    const y = clamp2(Math.round(r.top), 8, window.innerHeight - 420);
-    setBindPick({ id, x, y });
+    const y = clamp2(Math.round(r.top), 8, window.innerHeight - 8);
+    const opensUp = window.innerHeight - r.top < 368;
+    setBindPick(opensUp ? { id, x, y, bottom: Math.max(8, Math.round(window.innerHeight - r.bottom)) } : { id, x, y });
     setBindListOpen(false);
     setBindGroups([]);
     fetchSessionGroups().then((res) => setBindGroups(res.groups)).catch(() => setBindGroups([]));
   }, []);
-  const pickFolder = async (target, apply2) => {
+  const pickFolder = async (target, apply2, onError) => {
     if (pickBusyRef.current) return;
     const ws = sessionBridge?.workspaces;
     const legacy = ws && typeof ws.pickDirectory === "function" ? () => ws.pickDirectory() : null;
@@ -22348,6 +22568,7 @@ function WorktableSection(props) {
     }
     if (!legacy && !remotePicker) {
       setPickErr((prev) => ({ ...prev, [target]: t("add.folderPickerUnavailable") }));
+      onError?.(t("add.folderPickerUnavailable"));
       return;
     }
     pickBusyRef.current = true;
@@ -22376,6 +22597,7 @@ function WorktableSection(props) {
       if (!mountedRef.current) return;
       const msg = e && typeof e === "object" && typeof e.message === "string" ? e.message : String(e ?? "");
       setPickErr((prev) => ({ ...prev, [target]: t("add.folderPickFail", { msg: msg || "unknown" }) }));
+      onError?.(t("add.folderPickFail", { msg: msg || "unknown" }));
     } finally {
       if (seq === pickSeqRef.current && mountedRef.current) {
         pickBusyRef.current = false;
@@ -22407,30 +22629,42 @@ function WorktableSection(props) {
     if (target === "add") {
       setWsFolderParent(p);
       setWsFolderError(false);
-    } else if (bindPick) {
-      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id);
-      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }));
-    }
+    } else if (bindPick) setProjectFolder(bindPick.id, p, false);
     setManualPathFor(null);
     setManualPathText("");
     setPickErr((prev) => ({ ...prev, [target]: "" }));
   };
   const changeBindFolder = () => {
     if (!bindPick || pickBusyRef.current) return;
-    pickFolder("bind", (p) => {
-      if (projectsRef.current.projects.folders[bindPick.id] !== p) invalidateWidgetProject(bindPick.id);
-      persistProjects((prev) => ({ ...prev, folders: { ...prev.folders, [bindPick.id]: p } }));
+    pickFolder("bind", (p) => setProjectFolder(bindPick.id, p, false));
+  };
+  const setProjectFolder = (id, p, follows) => {
+    if (projectsRef.current.projects.folders[id] !== p) invalidateWidgetProject(id);
+    persistProjects((prev) => {
+      const nextFollows = { ...prev.folderFollows };
+      if (follows) nextFollows[id] = true;
+      else delete nextFollows[id];
+      return { ...prev, folders: { ...prev.folders, [id]: p }, folderFollows: nextFollows };
     });
   };
   const setProjectBinding = (id, sessionId) => {
     if ((projectsRef.current.projects.bindings[id] ?? null) !== sessionId) invalidateWidgetProject(id);
+    const path = sessionId ? bindInfoOf(bindGroups, sessionId).path : "";
+    const cur = projectsRef.current.projects;
+    const follow = !!path && (!cur.folders[id] || cur.folderFollows[id] === true);
+    if (follow && cur.folders[id] !== path) invalidateWidgetProject(id);
     persistProjects((prev) => {
       const next = { ...prev.bindings };
       if (sessionId) next[id] = sessionId;
       else delete next[id];
-      return { ...prev, bindings: next };
+      if (!follow) return { ...prev, bindings: next };
+      return { ...prev, bindings: next, folders: { ...prev.folders, [id]: path }, folderFollows: { ...prev.folderFollows, [id]: true } };
     });
     setBindListOpen(false);
+    if (!sessionId && id === CONSOLE_ID) {
+      invalidatePickState();
+      setBindPick(null);
+    }
   };
   const copyCustomLayout = async () => {
     const text2 = customLayoutText.trim();
@@ -23406,7 +23640,7 @@ function WorktableSection(props) {
       setBindPick(null);
       setBindListOpen(false);
     } }),
-    bindPick && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_bindPop", style: { position: "fixed", left: bindPick.x, top: bindPick.y, width: 280, zIndex: 84 }, children: [
+    bindPick && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_bindPop", style: { position: "fixed", left: bindPick.x, ...bindPick.bottom != null ? { bottom: bindPick.bottom } : { top: bindPick.y }, width: 280, zIndex: 84 }, children: [
       /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_bindFolderBox", children: [
         /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_bindFolderRow", children: [
           /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_bindFolderLabel", children: [
@@ -23461,22 +23695,36 @@ function WorktableSection(props) {
         ] }),
         (() => {
           const sid = projects.bindings[bindPick.id];
-          if (!sid) {
+          let snap = null;
+          try {
+            snap = sessionBridge?.list?.getSnapshot?.();
+          } catch {
+          }
+          const stale = isStaleBinding(snap, sid);
+          if (!sid || stale) {
             return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_bindConvRow dsh-wt_bindConvRowNone", title: t("bind.tipUnbound"), onClick: () => setBindListOpen((v) => !v), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_bindNoneText", children: [
-              t("bind.unbound"),
+              stale ? t("bind.staleConv") : t("bind.unbound"),
               " \xB7 ",
               t("bind.clickPick")
             ] }) });
           }
           const info = bindInfoOf(bindGroups, sid);
-          return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { type: "button", className: "dsh-wt_bindConvRow", title: t("bind.tipBound", { name: info.title }), onClick: () => setBindListOpen((v) => !v), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_bindFolder", title: info.folder, children: [
-              "\u{1F4C2} ",
-              info.folder
+          const folder = projects.folders[bindPick.id];
+          const mismatch = !!info.path && !!folder && !samePath(info.path, folder) && projects.folderFollows[bindPick.id] !== true;
+          return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { type: "button", className: "dsh-wt_bindConvRow", title: t("bind.tipBound", { name: info.title }), onClick: () => setBindListOpen((v) => !v), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_bindFolder", title: info.folder, children: [
+                "\u{1F4C2} ",
+                info.folder
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindSep", "aria-hidden": true, children: "|" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindConvName", title: info.title, children: info.title }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindConvChevron", "aria-hidden": true, children: "\u25BE" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindSep", "aria-hidden": true, children: "|" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindConvName", title: info.title, children: info.title }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindConvChevron", "aria-hidden": true, children: "\u25BE" })
+            mismatch && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_bindMismatch", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindMismatchText", title: info.path, children: t("bind.folderMismatch") }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_bindFolderChange", onClick: () => setProjectFolder(bindPick.id, info.path, true), children: t("bind.folderSync") })
+            ] })
           ] });
         })(),
         /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_bindHint", children: t("bind.hint") })
@@ -23485,7 +23733,7 @@ function WorktableSection(props) {
     bindPick && bindListOpen && (() => {
       const rightFits = bindPick.x + 300 + 260 <= window.innerWidth - 8;
       const listLeft = rightFits ? bindPick.x + 300 : Math.max(8, bindPick.x - 268);
-      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop", style: { position: "fixed", left: listLeft, top: clamp2(bindPick.y, 8, window.innerHeight - 348), width: 260, zIndex: 86 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_selectList dsh-wt_bindList", children: bindGroups.map((g, gi) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_react3.Fragment, { children: [
+      return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_bindListPop", style: { position: "fixed", left: listLeft, ...bindPick.bottom != null ? { bottom: bindPick.bottom } : { top: clamp2(bindPick.y, 8, window.innerHeight - 348) }, width: 260, zIndex: 86 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_selectList dsh-wt_bindList", children: bindGroups.map((g, gi) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_react3.Fragment, { children: [
         g.title && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
           /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_selectDivider" }),
           /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_selectGroup", children: [
@@ -23511,61 +23759,127 @@ function WorktableSection(props) {
         ))
       ] }, g.title || "g" + gi)) }) });
     })(),
-    consoleBind && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_popBackdrop", style: { zIndex: 85 }, onClick: () => setConsoleBind(null) }),
-    consoleBind && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop", style: { position: "fixed", left: consoleBind.x, top: consoleBind.y, width: 560, zIndex: 86 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_consoleBindCols", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_consoleBindCol", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_consoleBindLabel", children: [
-          "\u2795 ",
-          t("console.joinExisting")
+    consoleBind && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_popBackdrop dsh-wt_setupBackdrop", style: { zIndex: 85 }, onClick: () => setConsoleBind(null) }),
+    consoleBind && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_setupWrap", style: { zIndex: 86 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_menu dsh-wt_pop dsh-wt_consoleBindPop dsh-wt_setup", role: "dialog", "aria-modal": "true", "aria-labelledby": "dsh-wt_setupTitle", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupHead", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { id: "dsh-wt_setupTitle", className: "dsh-wt_setupTitle", children: t("console.setupTitle") }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_setupDesc", children: t("console.setupDesc") })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_selectList dsh-wt_consoleBindList", children: [
-          consoleGroups.map((g, gi) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_react3.Fragment, { children: [
-            g.title && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_selectDivider" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_selectGroup", children: [
-                "\u{1F4C1} ",
-                g.title
-              ] })
-            ] }),
-            g.sessions.map((s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
-              "button",
-              {
-                type: "button",
-                className: "dsh-wt_selectItem" + (projects.bindings[CONSOLE_ID] === s.id ? " dsh-wt_selectItemOn" : ""),
-                onClick: () => bindConsoleExisting(s.id),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_selectItemTitle", children: s.title }),
-                  s.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_selectCurrent", children: t("custom.sessionCurrent") })
-                ]
-              },
-              s.id
-            ))
-          ] }, g.title || "g" + gi)),
-          consoleGroups.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_consoleBindEmpty", children: t("console.noSessions") })
-        ] })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_setupClose", "aria-label": t("console.setupClose"), onClick: () => setConsoleBind(null), children: "\u2715" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_consoleBindCol dsh-wt_consoleBindColNew", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "dsh-wt_consoleBindLabel", children: [
-          "\u2728 ",
-          t("console.newConv")
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { className: "dsh-wt_consoleSelect", value: consoleMode, onChange: (e) => setConsoleMode(e.target.value), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "none", children: t("console.groupNone") }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "existing", children: t("console.groupExisting") }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "new", children: t("console.groupNew") })
-        ] }),
-        consoleMode === "existing" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { className: "dsh-wt_consoleSelect", value: consoleWsId, onChange: (e) => setConsoleWsId(e.target.value), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "", children: t("console.chooseGroup") }),
-          listWorkspaces().map((w) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: w.id, children: w.title }, w.id))
-        ] }),
-        consoleMode === "new" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { className: "dsh-wt_consoleInput", placeholder: t("console.newParentPh"), value: consoleParent, onChange: (e) => setConsoleParent(e.target.value) }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { className: "dsh-wt_consoleInput", placeholder: t("console.newNamePh"), value: consoleName, onChange: (e) => setConsoleName(e.target.value) })
-        ] }),
-        consoleNeedsWorkspace && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_consoleHint", children: t("console.blankNeedsGroup") }),
-        consoleErr && !consoleNeedsWorkspace && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_consoleErr", children: t("console.bindFail") }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_consoleCreateBtn", disabled: consoleBusy || consoleNeedsWorkspace || consoleMode === "existing" && !consoleWsId, onClick: bindConsoleNew, children: consoleBusy ? "\u2026" : t("console.createBind") })
-      ] })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_setupAsk", id: "dsh-wt_setupAsk", children: t("console.setupAsk") }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupOpts", role: "radiogroup", "aria-labelledby": "dsh-wt_setupAsk", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+          "div",
+          {
+            role: "radio",
+            tabIndex: 0,
+            "aria-checked": consoleChoice === "new",
+            className: "dsh-wt_setupOpt" + (consoleChoice === "new" ? " dsh-wt_setupOptOn" : ""),
+            onClick: () => {
+              setConsoleChoice("new");
+              setConsoleErr("");
+            },
+            onKeyDown: (e) => {
+              if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                setConsoleChoice("new");
+                setConsoleErr("");
+              }
+            },
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupOptRow", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_setupRadio", "aria-hidden": "true" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_setupOptTitle", children: t("console.optNew") }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_setupBadge", children: t("console.recommended") })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_setupOptDesc", children: t("console.optNewDesc") }),
+              consoleChoice === "new" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupBody", onClick: (e) => e.stopPropagation(), onKeyDown: (e) => e.stopPropagation(), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupFolderRow", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+                    "input",
+                    {
+                      className: "dsh-wt_consoleInput dsh-wt_setupFolder",
+                      "aria-label": t("console.optNewDesc"),
+                      placeholder: t("console.folderPh"),
+                      value: consoleFolder,
+                      onChange: (e) => {
+                        setConsoleFolder(e.target.value);
+                        setConsoleErr("");
+                      }
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_setupPick", disabled: pickBusy, onClick: () => pickFolder("console", (p) => {
+                    setConsoleFolder(p);
+                    setConsoleErr("");
+                  }), children: pickBusy ? t("add.folderPicking") : t("add.folderPick") })
+                ] }),
+                pickErr.console && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_consoleErr", children: pickErr.console }),
+                !pickErr.console && pickBusy && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_setupHint", children: t("add.folderPickerHint") })
+              ] })
+            ]
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+          "div",
+          {
+            role: "radio",
+            tabIndex: 0,
+            "aria-checked": consoleChoice === "existing",
+            className: "dsh-wt_setupOpt" + (consoleChoice === "existing" ? " dsh-wt_setupOptOn" : ""),
+            onClick: () => {
+              setConsoleChoice("existing");
+              setConsoleErr("");
+            },
+            onKeyDown: (e) => {
+              if (e.key === " " || e.key === "Enter") {
+                e.preventDefault();
+                setConsoleChoice("existing");
+                setConsoleErr("");
+              }
+            },
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_setupOptRow", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_setupRadio", "aria-hidden": "true" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_setupOptTitle", children: t("console.optExisting") })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_setupOptDesc", children: t("console.optExistingDesc") }),
+              consoleChoice === "existing" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_setupBody", onClick: (e) => e.stopPropagation(), onKeyDown: (e) => e.stopPropagation(), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_selectList dsh-wt_consoleBindList", children: [
+                consoleGroups.map((g, gi) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_react3.Fragment, { children: [
+                  g.title && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_selectDivider" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_selectGroup", children: [
+                      "\u{1F4C1} ",
+                      g.title
+                    ] })
+                  ] }),
+                  g.sessions.map((s) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+                    "button",
+                    {
+                      type: "button",
+                      "aria-pressed": consolePick === s.id,
+                      className: "dsh-wt_selectItem" + (consolePick === s.id ? " dsh-wt_selectItemOn" : ""),
+                      onClick: () => {
+                        setConsolePick(s.id);
+                        setConsoleErr("");
+                      },
+                      children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_selectItemTitle", children: s.title }),
+                        s.isCurrent && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_selectCurrent", children: t("custom.sessionCurrent") })
+                      ]
+                    },
+                    s.id
+                  ))
+                ] }, g.title || "g" + gi)),
+                consoleGroups.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_consoleBindEmpty", children: t("console.noSessions") })
+              ] }) })
+            ]
+          }
+        )
+      ] }),
+      consoleErr && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "dsh-wt_consoleErr dsh-wt_setupErr", role: "alert", children: consoleErr }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_setupFoot", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "dsh-wt_consoleCreateBtn dsh-wt_setupGo", disabled: consoleBusy, onClick: confirmConsoleSetup, children: consoleBusy ? "\u2026" : t(consoleChoice === "new" ? "console.startNew" : "console.startExisting") }) })
     ] }) }),
     customOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "dsh-wt_popBackdrop", style: { zIndex: 83 }, onClick: () => setCustomOpen(false) }),
     customOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "dsh-wt_menu dsh-wt_pop", style: { position: "fixed", left: popLeft, top: popTop, width: 340, zIndex: 84 }, children: [
@@ -23772,7 +24086,7 @@ function WorktableSection(props) {
                 "aria-label": projects.bindings[CONSOLE_ID] ? t("bind.tipBound", { name: boundSessionTitle(projects.bindings[CONSOLE_ID]) }) : t("bind.tipUnbound"),
                 onClick: (e) => {
                   e.stopPropagation();
-                  openBindPick(CONSOLE_ID, e.currentTarget);
+                  clickConsoleDots(e.currentTarget);
                 },
                 children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dsh-wt_bindCircles", "aria-hidden": true })
               }

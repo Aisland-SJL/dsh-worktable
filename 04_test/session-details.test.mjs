@@ -237,85 +237,211 @@ test('blank-session restriction only applies to explicit Ungrouped on the retain
   assert.equal(blankSessionNeedsWorkspace(null, 'none'), false)
 })
 
-function controlRoomFixture({ modern = true, mode = 'none', workspaceId = '' } = {}) {
-  const calls = [], effects = [], errors = []
-  const sessions = { async create(options) { calls.push({ ...options }); return 'synthetic' } }
+const isAbsFixture = (p) => /^[A-Za-z]:[\\/]/.test(p) || p.startsWith('\\\\') || p.startsWith('/')
+const tFixture = (key, vars) => key + (vars?.msg ? ':' + vars.msg : '')
+
+function controlRoomFixture({ modern = true, folder = 'C:\\Users\\fixture\\Worktable', mkdir = { status: 200, body: { ok: true, path: 'C:\\Users\\fixture\\Worktable' } }, hostCreate = true } = {}) {
+  const calls = [], registered = [], mkdirs = [], effects = [], errors = []
+  const sessions = hostCreate ? { async create(options) { calls.push({ ...options }); return 'synthetic' } } : {}
   if (modern) sessions.using = () => {}
-  const create = sourceFunction(indexSource, '  const bindConsoleNew = async () => {', '\n  actionsRef.current', 'bindConsoleNew', {
-    sessionBridge: { sessions, workspaces: new Proxy({}, { get() { assert.fail('must not silently register a workspace') } }) },
-    createHostSession, blankSessionNeedsWorkspace, consoleMode: mode, consoleWsId: workspaceId, consoleParent: '', consoleName: '', CONSOLE_ID: 'wt-console',
-    projectsRef: { current: { projects: { folders: {} } } }, setConsoleBusy: (value) => effects.push(['busy', value]), setConsoleErr: (value) => errors.push(value),
+  const workspaces = { async create(options) { registered.push({ ...options }); return { workspaceId: 'ws-for-folder' } } }
+  const fetch = async (url, init) => {
+    assert.equal(url, '/api/worktable/mkdir')
+    mkdirs.push(JSON.parse(init.body))
+    return { ok: mkdir.status < 300, status: mkdir.status, json: async () => mkdir.body }
+  }
+  const create = sourceFunction(indexSource, '  const bindConsoleNew = async () => {', '\n\n  /** 引导弹窗主按钮', 'bindConsoleNew', {
+    sessionBridge: { sessions, workspaces }, fetch, isAbs: isAbsFixture, t: tFixture,
+    createHostSession, consoleFolder: folder, CONSOLE_ID: 'wt-console',
+    setConsoleBusy: (value) => effects.push(['busy', value]), setConsoleErr: (value) => errors.push(value),
     ensureSessionPreset: async () => effects.push('preset'), ensureSessionModel: async () => effects.push('model'), markPluginSessionOpen: () => effects.push('mark'),
     persistProjects: () => effects.push('bind'), setConsoleBind: () => effects.push('close'), openConsole: () => effects.push('open'),
   })
-  return { create, calls, effects, errors }
+  return { create, calls, registered, mkdirs, effects, errors }
 }
 
-test('actual control-room handler rejects a modern blank Ungrouped session before any side effects', async () => {
-  const f = controlRoomFixture()
-  await f.create()
-  assert.deepEqual(f.calls, [])
-  assert.deepEqual(f.effects, [])
-  assert.deepEqual(f.errors, [])
-})
-
-test('actual control-room handler preserves legacy Ungrouped creation', async () => {
-  const f = controlRoomFixture({ modern: false })
-  await f.create()
-  assert.deepEqual(f.calls, [{}])
-  assert.ok(f.effects.includes('open'))
-  assert.deepEqual(f.errors, [false])
-})
-
-test('actual control-room handler preserves the explicitly chosen modern workspace', async () => {
-  const f = controlRoomFixture({ mode: 'existing', workspaceId: 'chosen-workspace' })
-  await f.create()
-  assert.deepEqual(f.calls, [{ workspaceId: 'chosen-workspace' }])
-  assert.ok(f.effects.includes('bind'))
-  assert.ok(f.effects.includes('open'))
-  assert.deepEqual(f.errors, [false])
-})
-
-test('actual control-room handler rejects an empty existing-group selection rather than defaulting', async () => {
-  for (const modern of [true, false]) {
-    const f = controlRoomFixture({ modern, mode: 'existing' })
+test('control-room setup rejects an empty or relative folder before any side effects, with a specific reason', async () => {
+  for (const [folder, reason] of [['', 'console.errFolderEmpty'], ['   ', 'console.errFolderEmpty'], ['Test', 'console.errFolderRelative'], ['Test\\Test', 'console.errFolderRelative']]) {
+    const f = controlRoomFixture({ folder })
     await f.create()
+    assert.deepEqual(f.mkdirs, [])
     assert.deepEqual(f.calls, [])
+    assert.deepEqual(f.registered, [])
     assert.deepEqual(f.effects, [])
-    assert.deepEqual(f.errors, [true])
+    assert.deepEqual(f.errors, [reason])
   }
 })
 
-test('actual control-room JSX exposes the restriction, disables creation and includes an empty group option', () => {
+test('control-room setup on a modern host creates the folder, registers it as the group and binds the new session', async () => {
+  const f = controlRoomFixture()
+  await f.create()
+  assert.deepEqual(f.mkdirs, [{ path: 'C:\\Users\\fixture\\Worktable' }])
+  assert.deepEqual(f.registered, [{ path: 'C:\\Users\\fixture\\Worktable' }])
+  assert.deepEqual(f.calls, [{ workspaceId: 'ws-for-folder' }])
+  assert.ok(f.effects.includes('bind') && f.effects.includes('open'))
+  assert.deepEqual(f.errors, [''])
+})
+
+test('control-room setup treats an existing folder as success and keeps the legacy cwd creation path', async () => {
+  const f = controlRoomFixture({ modern: false, mkdir: { status: 200, body: { ok: true, exists: true } } })
+  await f.create()
+  assert.deepEqual(f.registered, [])
+  assert.deepEqual(f.calls, [{ cwd: 'C:\\Users\\fixture\\Worktable' }])
+  assert.ok(f.effects.includes('open'))
+})
+
+test('control-room setup stops at a folder failure and names the cause instead of a generic error', async () => {
+  const missing = controlRoomFixture({ mkdir: { status: 400, body: { error: 'parent not found' } } })
+  await missing.create()
+  assert.deepEqual(missing.calls, [])
+  assert.deepEqual(missing.registered, [])
+  assert.ok(!missing.effects.includes('bind'))
+  assert.deepEqual(missing.errors, ['', 'console.errParentMissing'])
+  const denied = controlRoomFixture({ mkdir: { status: 403, body: { error: 'forbidden' } } })
+  await denied.create()
+  assert.deepEqual(denied.calls, [])
+  assert.deepEqual(denied.errors, ['', 'console.errFolder:forbidden'])
+})
+
+test('control-room setup reports an unsupported host without touching the filesystem', async () => {
+  const f = controlRoomFixture({ hostCreate: false })
+  await f.create()
+  assert.deepEqual(f.mkdirs, [])
+  assert.deepEqual(f.errors, ['console.errHost'])
+})
+
+test('a binding is stale only when the host session catalog is ready and no longer has it', () => {
+  const isStale = sourceFunction(indexSource, 'function isStaleBinding(', '\n}\n', 'isStaleBinding', {})
+  assert.equal(isStale({ phase: 'ready', byId: { a: {} } }, 'a'), false)
+  assert.equal(isStale({ phase: 'ready', byId: { a: {} } }, 'gone'), true)
+  assert.equal(isStale({ phase: 'loading', byId: {} }, 'gone'), false)
+  assert.equal(isStale(null, 'gone'), false)
+  assert.equal(isStale({ phase: 'ready', byId: {} }, undefined), false)
+})
+
+test('folder comparison ignores case, separator style and trailing separators', () => {
+  const same = sourceFunction(indexSource, 'function samePath(', '\n}\n', 'samePath', {})
+  assert.equal(same('C:\\Users\\A\\Worktable\\', 'c:/users/a/worktable'), true)
+  assert.equal(same('C:\\Users\\A\\Worktable', 'C:\\Users\\A\\Other'), false)
+})
+
+function bindingFixture({ folder, follows, groups }) {
+  let state = { bindings: {}, folders: folder ? { p: folder } : {}, folderFollows: follows ? { p: true } : {} }
+  const bindInfoOf = sourceFunction(indexSource, 'function bindInfoOf(', '\n}\n', 'bindInfoOf', {})
+  const set = sourceFunction(indexSource, '  const setProjectBinding = (id: string, sessionId: string | null) => {', '\n\n  /** 复制自定义布局', 'setProjectBinding', {
+    projectsRef: { get current() { return { projects: state } } }, bindGroups: groups, bindInfoOf, CONSOLE_ID: 'wt-console',
+    invalidateWidgetProject() {}, persistProjects: (fn) => { state = fn(state) }, setBindListOpen() {}, invalidatePickState() {}, setBindPick() {},
+  })
+  return { set, get state() { return state } }
+}
+
+test('binding a conversation fills an empty folder from it and keeps following it', () => {
+  const groups = [{ title: 'A', path: 'C:\\A', sessions: [{ id: 's1', title: 'one' }] }, { title: 'B', path: 'C:\\B', sessions: [{ id: 's2', title: 'two' }] }]
+  const f = bindingFixture({ groups })
+  f.set('p', 's1')
+  assert.equal(f.state.folders.p, 'C:\\A')
+  assert.equal(f.state.folderFollows.p, true)
+  f.set('p', 's2')
+  assert.equal(f.state.folders.p, 'C:\\B')
+})
+
+test('binding never overwrites a folder the user chose by hand', () => {
+  const groups = [{ title: 'B', path: 'C:\\B', sessions: [{ id: 's2', title: 'two' }] }]
+  const f = bindingFixture({ folder: 'D:\\Mine', follows: false, groups })
+  f.set('p', 's2')
+  assert.equal(f.state.bindings.p, 's2')
+  assert.equal(f.state.folders.p, 'D:\\Mine')
+  f.set('p', null)
+  assert.equal(f.state.bindings.p, undefined)
+  assert.equal(f.state.folders.p, 'D:\\Mine')
+})
+
+test('actual control-room setup JSX is a two-option radio group with a folder picker and per-choice action', () => {
   const source = indexSource.replace(/\r\n/g, '\n')
-  const start = source.indexOf('<div className="dsh-wt_consoleBindCol dsh-wt_consoleBindColNew">')
-  const end = source.indexOf('\n          </div>\n        </div>\n      )}', start)
+  const start = source.indexOf('<div className="dsh-wt_setupWrap" style={{ zIndex: 86 }}>')
+  const end = source.indexOf('\n      )}', start)
   assert.ok(start >= 0 && end > start)
   const code = transformSync('export const render = () => (' + source.slice(start, end) + ')', { loader: 'tsx', format: 'cjs', jsxFactory: 'h', jsxFragment: 'Fragment' }).code
   const h = (type, props, ...children) => ({ type, props: { ...props, children } })
-  const find = (node, match) => {
-    if (!node || typeof node !== 'object') return null
-    if (match(node)) return node
-    for (const child of Array.isArray(node) ? node : node.props?.children ?? []) {
-      const found = find(child, match)
-      if (found) return found
-    }
-    return null
+  const findAll = (node, match, out = []) => {
+    if (!node || typeof node !== 'object') return out
+    if (!Array.isArray(node) && match(node)) out.push(node)
+    for (const child of Array.isArray(node) ? node : node.props?.children ?? []) findAll(child, match, out)
+    return out
   }
-  for (const [modern, mode, workspaceId, blocked] of [[true, 'none', '', true], [false, 'none', '', false], [true, 'existing', '', true], [true, 'existing', 'chosen', false]]) {
-    const sessions = modern ? { using() {} } : {}
-    const consoleNeedsWorkspace = sourceFunction(source, '  const consoleNeedsWorkspace =', '\n\n', 'consoleNeedsWorkspace', { sessionBridge: { sessions }, consoleMode: mode, blankSessionNeedsWorkspace })
+  for (const choice of ['new', 'existing']) {
     const module = { exports: {} }
     runInNewContext(code, { module, exports: module.exports, h, Fragment: Symbol('fragment'), t: key => key,
-      consoleMode: mode, consoleWsId: workspaceId, consoleNeedsWorkspace, consoleBusy: false, consoleErr: false,
-      consoleParent: '', consoleName: '', listWorkspaces: () => [{ id: 'chosen', title: 'fixture' }], bindConsoleNew: () => {},
-      setConsoleMode: () => {}, setConsoleWsId: () => {}, setConsoleParent: () => {}, setConsoleName: () => {},
+      consoleChoice: choice, consoleFolder: 'C:\\Users\\fixture\\Worktable', consolePick: '', consoleErr: '', consoleBusy: false,
+      consoleGroups: [{ title: 'g', sessions: [{ id: 's1', title: 'one', isCurrent: false }] }], pickBusy: false, pickErr: { add: '', bind: '' },
+      setConsoleBind() {}, setConsoleChoice() {}, setConsoleErr() {}, setConsoleFolder() {}, setConsolePick() {}, pickFolder() {}, confirmConsoleSetup() {},
     })
     const tree = module.exports.render()
-    assert.equal(find(tree, node => node.props?.className === 'dsh-wt_consoleCreateBtn').props.disabled, blocked)
-    assert.equal(Boolean(find(tree, node => node.props?.className === 'dsh-wt_consoleHint')), modern && mode === 'none')
-    if (mode === 'existing') assert.ok(find(tree, node => node.type === 'option' && node.props.value === '' && node.props.children.includes('console.chooseGroup')))
+    assert.equal(findAll(tree, n => n.props?.role === 'radiogroup').length, 1)
+    const radios = findAll(tree, n => n.props?.role === 'radio')
+    assert.equal(radios.length, 2)
+    assert.deepEqual(radios.map(r => r.props['aria-checked']), [choice === 'new', choice === 'existing'])
+    assert.equal(findAll(tree, n => n.props?.className === 'dsh-wt_setupPick').length, choice === 'new' ? 1 : 0)
+    assert.equal(findAll(tree, n => n.props?.className?.includes?.('dsh-wt_consoleBindList')).length, choice === 'existing' ? 1 : 0)
+    const go = findAll(tree, n => n.props?.className?.includes?.('dsh-wt_setupGo'))[0]
+    assert.ok(go.props.children.includes(choice === 'new' ? 'console.startNew' : 'console.startExisting'))
+    assert.equal(go.props.disabled, false)
   }
+})
+
+test('actual custom pane defaults to a new conversation, tags owned conversations and never auto-binds a shared one', async () => {
+  const source = readFileSync(new URL('../01_content/src/client/split.tsx', import.meta.url), 'utf8')
+  const states = [], refs = []
+  let stateIndex = 0, refIndex = 0, effects = []
+  const SelectPop = () => {}
+  const h = (type, props, ...children) => ({ type, props: { ...props, children } })
+  const sent = [], autoBound = []
+  const groups = [{ title: 'Projects', sessions: [{ id: 'taken', title: 'taken', isCurrent: true }, { id: 'free', title: 'free', isCurrent: false }] }]
+  const custom = {
+    getProjects: () => [{ id: 'p', name: 'project' }], currentProjectId: () => 'p', getWorkspaces: () => [],
+    getSessions: async () => ({ groups, current: 'taken' }),
+    getBindings: () => [{ projectId: 'other', sessionId: 'taken', name: 'Other' }],
+    sendToSession: async (sid) => { sent.push(sid) }, autoBind: (sid) => { autoBound.push(sid); return 'auto' },
+  }
+  const pane = sourceFunction(source, 'function CustomPane(', '\n}\n', 'CustomPane', {
+    window: {}, splitEnv: { custom }, SelectPop, h, Fragment: Symbol('fragment'), isAbs: () => true,
+    T: (key, params) => key + (params?.name ? ':' + params.name : ''),
+    useState(value) {
+      const index = stateIndex++
+      if (!(index in states)) states[index] = typeof value === 'function' ? value() : value
+      return [states[index], (next) => { states[index] = typeof next === 'function' ? next(states[index]) : next }]
+    },
+    useRef(value) { const index = refIndex++; return refs[index] ??= { current: value } },
+    useEffect(fn) { effects.push(fn) },
+  })
+  const render = () => { stateIndex = 0; refIndex = 0; effects = []; const tree = pane({}); effects.forEach((fn) => fn()); return tree }
+  const findAll = (node, match, out = []) => {
+    if (!node || typeof node !== 'object') return out
+    if (!Array.isArray(node) && match(node)) out.push(node)
+    for (const child of Array.isArray(node) ? node : node.props?.children ?? []) findAll(child, match, out)
+    return out
+  }
+  let tree = render()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  tree = render()
+  const modes = findAll(tree, (n) => n.props?.className?.startsWith?.('dsh-wt_customModeBtn'))
+  assert.deepEqual(modes[0].props.children, ['custom.modeNew'])
+  assert.equal(modes[0].props['aria-pressed'], true)
+  modes[1].props.onClick()
+  tree = render()
+  const picker = findAll(tree, (n) => n.type === SelectPop && n.props.placeholder === 'custom.sessionPick')[0]
+  assert.equal(picker.props.value, null, 'a current conversation owned by another project must not be preselected')
+  assert.deepEqual(picker.props.groups[0].items.map((i) => i.tag?.tone ?? null), ['other', null])
+  picker.props.onChange('taken')
+  tree = render()
+  assert.equal(findAll(tree, (n) => n.props?.className === 'dsh-wt_customWarn').length, 1)
+  const send = findAll(tree, (n) => n.props?.className?.includes?.('dsh-wt_customSend'))[0]
+  assert.deepEqual(send.props.children, ['custom.sendAnyway'])
+  findAll(tree, (n) => n.type === 'textarea')[0].props.onChange({ target: { value: 'make a timeline' } })
+  tree = render()
+  await findAll(tree, (n) => n.props?.className?.includes?.('dsh-wt_customSend'))[0].props.onClick()
+  assert.deepEqual(sent, ['taken'])
+  assert.deepEqual(autoBound, [], 'a conversation owned by another project must not be auto-bound')
 })
 
 test('actual group picker ignores a delayed default after the user explicitly selects Ungrouped', async () => {

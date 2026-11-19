@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { parentPathOf } from './pathutil'
+import { parentPathOf, isAbs } from './pathutil'
 import { hostWebSocketUrl, worktableUpgrade } from './hostTransport'
 import { SandboxedFrame } from './SandboxedFrame'
 import { CHANGELOG_V030 } from './changelog'
@@ -235,6 +235,10 @@ type SplitEnv = {
     getSessions: () => Promise<{ groups: { title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]; current: string }>
     submit: (projectId: string, projectName: string, requirement: string) => Promise<void>
     sendToSession: (sessionId: string, projectName: string, requirement: string) => Promise<void>
+    /** 项目 → 对话 绑定关系（含控制室），用于标出对话归属 */
+    getBindings?: () => { projectId: string; sessionId: string; name: string }[]
+    /** 系统文件夹选择；错误经 onError 回传 */
+    pickFolder?: (apply: (p: string) => void, onError?: (msg: string) => void) => Promise<void>
   }
   /** 控制室：卡片数据订阅 + 打开项目 / 跳绑定对话 + 主题 */
   console?: {
@@ -2031,6 +2035,9 @@ function ConsolePane() {
               <button type="button" className="dsh-wt_announceBtn" disabled={updStatus === 'checking'} onClick={() => runUpdateCheck(true)}>{updStatus === 'checking' ? T('annot.checking') : T('annot.checkNow')}</button>
               <span className="dsh-wt_announceAuto">{T('annot.autoCheck')}</span>
               <button type="button" className={'dsh-wt_switch' + (autoCheckOn ? ' dsh-wt_switchOn' : '')} aria-pressed={autoCheckOn} aria-label={T('annot.autoCheck')} onClick={onAutoCheckToggle}><span className="dsh-wt_switchKnob" /></button>
+              <button type="button" className="dsh-wt_announceClose" aria-label={T('annot.close')} title={T('annot.close')} onClick={() => setAnnOpen(false)}>
+                <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+              </button>
             </div>
             {updInfo && (
               <div className="dsh-wt_announceUpdate">
@@ -2597,7 +2604,7 @@ function TextViewer(props: { path: string; fileUrl: string; isMd: boolean }) {
 /** 自制下拉列表（原生 select 无法美化）：文件夹分组标题 + 1px 细分隔线 + 选项列表 */
 function SelectPop(props: {
   value: string | null
-  groups: { title: string; items: { id: string; label: string; isCurrent?: boolean }[] }[]
+  groups: { title: string; items: { id: string; label: string; isCurrent?: boolean; tag?: { text: string; tone: 'mine' | 'other' } }[] }[]
   placeholder?: string
   onChange: (id: string) => void
 }) {
@@ -2608,6 +2615,7 @@ function SelectPop(props: {
     <div className="dsh-wt_select">
       <button type="button" className="dsh-wt_selectBtn" onClick={() => setOpen((v) => !v)}>
         <span className={'dsh-wt_selectVal' + (selected ? '' : ' dsh-wt_selectPh')}>{selected?.label ?? props.placeholder ?? ''}</span>
+        {selected?.tag && <span className={'dsh-wt_selectTag dsh-wt_selectTag-' + selected.tag.tone}>{selected.tag.text}</span>}
         <span className="dsh-wt_selectCaret" aria-hidden>▾</span>
       </button>
       {open && (
@@ -2629,6 +2637,7 @@ function SelectPop(props: {
                 >
                   <span className="dsh-wt_selectItemTitle">{it.label}</span>
                   {it.isCurrent && <span className="dsh-wt_selectCurrent">{T('custom.sessionCurrent')}</span>}
+                  {it.tag && <span className={'dsh-wt_selectTag dsh-wt_selectTag-' + it.tag.tone}>{it.tag.text}</span>}
                 </button>
               ))}
             </Fragment>
@@ -2648,20 +2657,37 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
   const [requirement, setRequirement] = useState('')
   const [projectId, setProjectId] = useState<string | null>(null)
   const [projects, setProjects] = useState<{ id: string; name: string }[]>(() => custom?.getProjects?.() ?? [])
-  const [mode, setMode] = useState<'new' | 'existing'>('existing')
+  // 默认新建对话：发送到已有对话容易误选一个已绑定其他项目的对话，造成两个项目共用一个对话
+  const [mode, setMode] = useState<'new' | 'existing'>('new')
   const [sessionGroups, setSessionGroups] = useState<{ title: string; sessions: { id: string; title: string; isCurrent: boolean }[] }[]>([])
-  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionId, setSessionIdRaw] = useState<string | null>(null)
+  const sessionTouchedRef = useRef(false)
+  const setSessionId = (id: string | null) => { sessionTouchedRef.current = true; setSessionIdRaw(id) }
+  // 项目 → 对话 绑定关系（含控制室），用于标签与占用提示
+  const [bindings, setBindings] = useState<{ projectId: string; sessionId: string; name: string }[]>(() => custom?.getBindings?.() ?? [])
   // 分组（宿主工作区）三态：未分组 / 现有组 / 新建组
   const [wsGroups, setWsGroups] = useState<{ id: string; title: string; path: string }[]>([])
   const [groupMode, setGroupMode] = useState<'none' | 'existing' | 'new'>('none')
   const [groupId, setGroupId] = useState<string | null>(null)
   const groupTouchedRef = useRef(false)
-  const [newGroupParent, setNewGroupParent] = useState('')
-  const [newGroupName, setNewGroupName] = useState('')
+  const [newGroupPath, setNewGroupPath] = useState('')
+  const [picking, setPicking] = useState(false)
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [fail, setFail] = useState('')
-  const [bindNote, setBindNote] = useState<'auto' | 'kept' | 'none'>('none')
+  const [bindNote, setBindNote] = useState<'auto' | 'kept' | 'shared' | 'none'>('none')
+  const [sharedWith, setSharedWith] = useState('')
+  /** 某对话被「其他」项目绑定时返回这些项目名（不含当前所选项目） */
+  const othersOf = (sid: string | null): string[] => sid ? bindings.filter((b) => b.sessionId === sid && b.projectId !== projectId).map((b) => b.name) : []
+  const mineOf = (sid: string | null): boolean => !!sid && bindings.some((b) => b.sessionId === sid && b.projectId === projectId)
+  // 默认对话（用户未手动选过时）：本项目已绑定的对话 > 未被其他项目占用的当前对话 > 不预选
+  useEffect(() => {
+    if (sessionTouchedRef.current) return
+    const flat = sessionGroups.flatMap((g) => g.sessions)
+    const mine = bindings.find((b) => b.projectId === projectId && flat.some((s) => s.id === b.sessionId))?.sessionId
+    const cur = flat.find((s) => s.isCurrent)?.id
+    setSessionIdRaw(mine ?? (cur && othersOf(cur).length === 0 ? cur : null))
+  }, [sessionGroups, bindings, projectId])
   // 默认项目 = 当前工作区所属项目；默认会话 = 当前会话；默认分组 = 当前会话所在工作区
   useEffect(() => {
     const list = custom?.getProjects?.() ?? []
@@ -2669,10 +2695,10 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
     const cur = custom?.currentProjectId?.() ?? null
     setProjectId(cur && list.some((p) => p.id === cur) ? cur : (list[0]?.id ?? null))
     setWsGroups((custom?.getWorkspaces?.() ?? []).map((w) => ({ id: w.id, title: w.title, path: w.path })))
+    setBindings(custom?.getBindings?.() ?? [])
     custom?.getSessions?.().then((res) => {
       setSessionGroups(res.groups)
       const flat = res.groups.flatMap((g) => g.sessions)
-      setSessionId(flat.find((s) => s.isCurrent)?.id ?? flat[0]?.id ?? null)
       const curId = flat.find((s) => s.isCurrent)?.id
       const home = curId ? (custom?.getWorkspaces?.() ?? []).find((w) => (w.sessionIds ?? []).includes(curId)) : null
       // A delayed default lookup must not overwrite the user's explicit choice.
@@ -2691,19 +2717,29 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
         let group: any = { kind: 'none' }
         if (groupMode === 'existing' && groupId) group = { kind: 'existing', workspaceId: groupId }
         else if (groupMode === 'new') {
-          if (!newGroupParent.trim() || !newGroupName.trim()) { setFail(T('custom.groupNeedPath')); return }
-          group = { kind: 'new', parent: newGroupParent.trim(), name: newGroupName.trim() }
+          const p = newGroupPath.trim()
+          if (!p) { setFail(T('custom.errFolderEmpty')); return }
+          if (!isAbs(p)) { setFail(T('custom.errFolderRelative')); return }
+          group = { kind: 'new', path: p }
         }
         const sid = await custom.submit(projectId, pname, text, group, paneTitle)
         setBindNote((custom.autoBind?.(sid) ?? 'none') as any)
       } else {
         if (!sessionId) return
+        const others = othersOf(sessionId)
         await custom.sendToSession(sessionId, projectId, pname, text, paneTitle)
-        setBindNote((custom.autoBind?.(sessionId) ?? 'none') as any)
+        // 对话已属于其他项目：只发送，不自动绑定，避免两个项目共用一个对话
+        if (others.length > 0 && !mineOf(sessionId)) { setSharedWith(others.join('、')); setBindNote('shared') }
+        else setBindNote((custom.autoBind?.(sessionId) ?? 'none') as any)
       }
       setDone(true)
-    } catch (e) {
-      setFail(String(e))
+    } catch (e: any) {
+      const raw = typeof e?.message === 'string' ? e.message : String(e)
+      if (raw === 'wt:folderEmpty') setFail(T('custom.errFolderEmpty'))
+      else if (raw === 'wt:folderRelative') setFail(T('custom.errFolderRelative'))
+      else if (raw === 'wt:parentMissing') setFail(T('custom.errParentMissing'))
+      else if (raw.startsWith('wt:folderCreate:')) setFail(T('custom.errFolderCreate', { msg: raw.slice('wt:folderCreate:'.length) }))
+      else setFail(T('custom.fail') + '：' + raw)
     } finally {
       setBusy(false)
     }
@@ -2718,7 +2754,7 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
         <p className="dsh-wt_customDoneText">{mode === 'new' ? T('custom.done') : T('custom.sent')}</p>
         <p className="dsh-wt_customDoneHint">{T('custom.doneHint')}</p>
         {bindNote !== 'none' && (
-          <p className="dsh-wt_customDoneBind">{bindNote === 'auto' ? T('custom.autoBound') : T('custom.keptBinding')}</p>
+          <p className="dsh-wt_customDoneBind">{bindNote === 'auto' ? T('custom.autoBound') : bindNote === 'shared' ? T('custom.sharedNoBind', { name: sharedWith }) : T('custom.keptBinding')}</p>
         )}
       </div>
     )
@@ -2728,8 +2764,8 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
       <div className="dsh-wt_customCard">
         <span className="dsh-wt_customTitle">✨ {T('custom.title')}</span>
         <div className="dsh-wt_customModes">
-          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'existing' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('existing')}>{T('custom.modeSend')}</button>
-          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'new' ? ' dsh-wt_customModeBtnOn' : '')} onClick={() => setMode('new')}>{T('custom.modeNew')}</button>
+          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'new' ? ' dsh-wt_customModeBtnOn' : '')} aria-pressed={mode === 'new'} onClick={() => setMode('new')}>{T('custom.modeNew')}</button>
+          <button type="button" className={'dsh-wt_customModeBtn' + (mode === 'existing' ? ' dsh-wt_customModeBtnOn' : '')} aria-pressed={mode === 'existing'} onClick={() => setMode('existing')}>{T('custom.modeSend')}</button>
         </div>
         <p className="dsh-wt_customHint">{mode === 'new' ? T('custom.hint') : T('custom.hintSend')}</p>
         <textarea
@@ -2746,11 +2782,23 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
               value={sessionId}
               groups={sessionGroups.map((g) => ({
                 title: g.title,
-                items: g.sessions.map((s) => ({ id: s.id, label: s.title, isCurrent: s.isCurrent })),
+                items: g.sessions.map((s) => {
+                  const others = othersOf(s.id)
+                  const tag = mineOf(s.id) ? { text: T('custom.tagMine'), tone: 'mine' as const }
+                    : others.length > 0 ? { text: T('custom.tagOther', { name: others.join('、') }), tone: 'other' as const }
+                    : undefined
+                  return { id: s.id, label: s.title, isCurrent: s.isCurrent, tag }
+                }),
               }))}
-              placeholder={T('custom.session')}
+              placeholder={T('custom.sessionPick')}
               onChange={setSessionId}
             />
+          </div>
+        )}
+        {mode === 'existing' && othersOf(sessionId).length > 0 && (
+          <div className="dsh-wt_customWarn" role="alert">
+            <span aria-hidden>⚠️</span>
+            <span>{T(mineOf(sessionId) ? 'custom.warnAlreadyShared' : 'custom.warnShared', { name: othersOf(sessionId).join('、') })}</span>
           </div>
         )}
         <div className="dsh-wt_customRow">
@@ -2786,34 +2834,34 @@ function CustomPane(props: { paneTitle?: string; row?: PaneRow; index?: number }
           </div>
         )}
         {mode === 'new' && groupMode === 'new' && (
-          <>
-            <div className="dsh-wt_customRow">
-              <span className="dsh-wt_customLabel">{T('custom.groupNewParent')}</span>
+          <div className="dsh-wt_customRow">
+            <span className="dsh-wt_customLabel">{T('custom.groupFolder')}</span>
+            <div className="dsh-wt_customFolderRow">
               <input
                 className="dsh-wt_customPathInput"
-                placeholder={T('custom.groupNewParentPh')}
-                value={newGroupParent}
-                onChange={(e) => setNewGroupParent(e.target.value)}
+                placeholder={T('custom.groupFolderPh')}
+                value={newGroupPath}
+                onChange={(e) => { setNewGroupPath(e.target.value); setFail('') }}
               />
+              <button
+                type="button"
+                className="dsh-wt_customPick"
+                disabled={picking || !custom.pickFolder}
+                onClick={async () => {
+                  setPicking(true); setFail('')
+                  try { await custom.pickFolder?.((p: string) => setNewGroupPath(p), (msg: string) => setFail(msg)) } finally { setPicking(false) }
+                }}
+              >{picking ? T('add.folderPicking') : T('add.folderPick')}</button>
             </div>
-            <div className="dsh-wt_customRow">
-              <span className="dsh-wt_customLabel">{T('custom.groupNewName')}</span>
-              <input
-                className="dsh-wt_customPathInput"
-                placeholder={T('custom.groupNewNamePh')}
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-              />
-            </div>
-          </>
+          </div>
         )}
         <button
           type="button"
-          className="dsh-wt_customSend"
-          disabled={busy || !requirement.trim() || !projectId || (mode === 'existing' && !sessionId) || (mode === 'new' && groupMode === 'new' && (!newGroupParent.trim() || !newGroupName.trim()))}
+          className={'dsh-wt_customSend' + (mode === 'existing' && othersOf(sessionId).length > 0 && !mineOf(sessionId) ? ' dsh-wt_customSendWarn' : '')}
+          disabled={busy || !requirement.trim() || !projectId || (mode === 'existing' && !sessionId)}
           onClick={submit}
-        >{busy ? '…' : (mode === 'new' ? T('custom.send') : T('custom.sendToSession'))}</button>
-        {fail && <p className="dsh-wt_customFail">{T('custom.fail')}：{fail}</p>}
+        >{busy ? '…' : (mode === 'new' ? T('custom.send') : othersOf(sessionId).length > 0 && !mineOf(sessionId) ? T('custom.sendAnyway') : T('custom.sendToSession'))}</button>
+        {fail && <p className="dsh-wt_customFail">{fail}</p>}
       </div>
     </div>
   )

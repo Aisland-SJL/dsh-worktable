@@ -48,6 +48,19 @@ if (manifest.version !== pkg.version) {
 const VERSION = pkg.version
 console.log('[release-prep] version = ' + VERSION)
 
+// ---------- 1a. 产品内更新公告必须是本版（测试版 x.y.z-dev.N 对应公告 vx.y.z） ----------
+{
+  const baseVersion = VERSION.split('-')[0]
+  const changelog = readFileSync(join(HERE, 'src', 'client', 'changelog.ts'), 'utf8')
+  const declared = changelog.match(/CHANGELOG_VERSION\s*=\s*'v([^']+)'/)?.[1]
+  const heading = changelog.match(/`更新公告 · v([^\s`]+)/)?.[1]
+  if (declared !== baseVersion || heading !== baseVersion) {
+    console.error('[release-prep] FAIL: 更新公告版本(CHANGELOG_VERSION=' + declared + ', 标题=' + heading + ') != ' + baseVersion + '；发版前先写好 src/client/changelog.ts')
+    process.exit(1)
+  }
+  console.log('[release-prep] changelog version = v' + baseVersion)
+}
+
 // ---------- 1b. 身份断言（package/manifest/patch 统一为 dsh-worktable） ----------
 const IDENTITY = 'dsh-worktable'
 if (pkg.name !== IDENTITY) { console.error('[release-prep] FAIL: package.json name = ' + pkg.name); process.exit(1) }
