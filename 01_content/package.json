@@ -9,7 +9,7 @@
   },
   "engines": {
     "node": ">=22",
-    "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5"
+    "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.1"
   },
   "license": "MIT",
   "type": "module",
@@ -40,11 +40,12 @@
       ]
     },
     "compatibility": {
-      "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5",
+      "dsh": "0.2.0-rc.2 || 0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.1",
       "dshReleases": {
         "0.2.0-rc.2": "compatible",
         "0.2.1-rc.3": "compatible",
-        "0.2.1-rc.5": "compatible"
+        "0.2.1-rc.5": "compatible",
+        "0.2.2-rc.1": "compatible"
       }
     }
   },
