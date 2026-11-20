@@ -12,6 +12,8 @@ import { previewFromEvents, previewFromNodes, readSessionPreview, presetApiOf, m
 import { photoStore, kindOf } from './photoStore'
 import { DEFAULT_BG_SVG, b64ToBlob } from './defaultBg'
 import { WAVE_BG_B64 } from './waveBg'
+import { directoryErrorText, pickDirectoryWithFallback, type DirectoryBrowseFace } from './directoryPicker'
+import { FolderBrowserModal } from './FolderBrowserModal'
 
 /**
  * dsh-worktable 客户端（v2）：侧边栏底部「工作台」区块。
@@ -1110,6 +1112,8 @@ function WorktableSection(props: any) {
   const [pickErr, setPickErr] = useState<{ add: string; bind: string; console?: string; custom?: string }>({ add: '', bind: '' })
   const [manualPathFor, setManualPathFor] = useState<'add' | 'bind' | null>(null)
   const [manualPathText, setManualPathText] = useState('')
+  const [dirBrowse, setDirBrowse] = useState<{ initialPath?: string; face: DirectoryBrowseFace; seq: number; resolve: (p: string | null) => void } | null>(null)
+  const dirBrowseRef = useRef<{ resolve: (p: string | null) => void } | null>(null)
   /** 文件夹选择在途锁 + 请求序号（useRef：跨渲染稳定；弹窗关闭/切换目标/手工确认时自增使旧请求失效） */
   const pickSeqRef = useRef(0)
   const pickBusyRef = useRef(false)
@@ -1286,7 +1290,11 @@ function WorktableSection(props: any) {
             .map(([projectId, sessionId]) => ({ projectId, sessionId: sessionId as string, name: nameOf(projectId) }))
         },
         // 系统文件夹选择（与「添加项目」/控制室引导同一套探测与降级）；错误经 onError 回传到窗口内显示
-        pickFolder: (apply: (p: string) => void, onError?: (msg: string) => void) => pickFolder('custom', apply, onError),
+        pickFolder: (apply: (p: string) => void, onError?: (msg: string) => void) => {
+          const curId = splitStore.active && splitStore.spec ? splitStore.spec.id : ''
+          const curFolder = (curId && projectsRef.current.projects.folders[curId]) || sessionScopeStore.snapshot?.cwd || undefined
+          return pickFolder('custom', apply, onError, curFolder)
+        },
         // 自动绑定规则：当前项目未绑定 → 绑定到刚新建/发送的会话；已绑定 → 不改（返回 'kept'）
         autoBind: (sessionId: string): 'auto' | 'kept' | 'none' => {
           const pid = splitStore.active && splitStore.spec ? splitStore.spec.id : null
@@ -1630,22 +1638,36 @@ function buildCustomLayoutPrompt(req: string): string {
    * 若项目绑定了会话，打开后右侧对话窗自动切换过去。 */
   const openSplit = useCallback((spec: LayoutSpec) => {
     engineIdsRef.current.add(spec.id)
-    splitStore.open(projects.views[spec.id] ?? spec)
-    if (splitStore.active && splitStore.spec?.id === spec.id) {
-      // 记录打开前会话（关项目时回切）与该项目「归属会话」（切到别的会话 = 自动关项目）
-      let prev: string | null = null
-      try { prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null } catch {}
-      projectAttachRef.sessionId = prev
-      projectAttachRef.attached = projectsRef.current.projects.bindings[spec.id] ?? prev
-      const bound = projectsRef.current.projects.bindings[spec.id]
-      if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
-      ackProjectNotify(spec.id)
-      // 读取失败保留 pending 供下次打开重试；成功挂载后才由 loader 清除。
-      for (const pending of Object.values(pendingMountRef.current)) {
-        if (pending?.binding?.projectId !== spec.id) continue
-        void applyWidgetManifest(pending.binding, null, true)
+    const target = projects.views[spec.id] ?? spec
+    const finishOpen = () => {
+      if (splitStore.active && splitStore.spec?.id === spec.id) {
+        // 记录打开前会话（关项目时回切）与该项目「归属会话」（切到别的会话 = 自动关项目）
+        let prev: string | null = null
+        try { prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null } catch {}
+        projectAttachRef.sessionId = prev
+        projectAttachRef.attached = projectsRef.current.projects.bindings[spec.id] ?? prev
+        const bound = projectsRef.current.projects.bindings[spec.id]
+        if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
+        ackProjectNotify(spec.id)
+        // 读取失败保留 pending 供下次打开重试；成功挂载后才由 loader 清除。
+        for (const pending of Object.values(pendingMountRef.current)) {
+          if (pending?.binding?.projectId !== spec.id) continue
+          void applyWidgetManifest(pending.binding, null, true)
+        }
       }
     }
+    if (splitStore.open(target) !== false) { finishOpen(); return }
+    // 全局面板（如插件/业务面板）会卸载 [data-phase]：先切回会话再等待挂载
+    try { clientCtx?.get?.('layout')?.selectPanel?.(null) } catch {}
+    const bound = projectsRef.current.projects.bindings[spec.id]
+    if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
+    let attempts = 0
+    const tryAttach = () => {
+      if (!mountedRef.current) return
+      if (splitStore.open(target) !== false) { finishOpen(); return }
+      if (++attempts < 20 && typeof requestAnimationFrame === 'function') requestAnimationFrame(tryAttach)
+    }
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tryAttach)
   }, [projects.views])
 
   /** 打开「工作台」控制室：已绑定 → 打开并切换绑定对话；explicitBound 供强制绑定流程传入刚绑定的会话 */
@@ -1656,19 +1678,31 @@ function buildCustomLayoutPrompt(req: string): string {
     const spec = broken ? buildConsoleSpec((k) => t(k as WorktableKey)) : (saved as LayoutSpec)
     if (broken) persistProjects((prev) => ({ ...prev, views: { ...prev.views, [CONSOLE_ID]: spec } }))
     engineIdsRef.current.add(CONSOLE_ID)
-    splitStore.open(spec)
-    if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {
-      let prev: string | null = null
-      try { prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null } catch {}
-      projectAttachRef.sessionId = prev
-      const bound = explicitBound !== undefined ? explicitBound : projectsRef.current.projects.bindings[CONSOLE_ID]
-      projectAttachRef.attached = bound ?? prev
-      if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
-      ackProjectNotify(CONSOLE_ID)
-      try { notifyConsole() } catch {}
-      // 打开即预热所有绑定会话的最近消息（新宿主临时持有，旧宿主 history）
-      try { sweepPreviews() } catch {}
+    const finishConsole = () => {
+      if (splitStore.active && splitStore.spec?.id === CONSOLE_ID) {
+        let prev: string | null = null
+        try { prev = currentSessionOf(sessionBridge?.list?.getSnapshot?.()) || null } catch {}
+        projectAttachRef.sessionId = prev
+        const bound = explicitBound !== undefined ? explicitBound : projectsRef.current.projects.bindings[CONSOLE_ID]
+        projectAttachRef.attached = bound ?? prev
+        if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
+        ackProjectNotify(CONSOLE_ID)
+        try { notifyConsole() } catch {}
+        // 打开即预热所有绑定会话的最近消息（新宿主临时持有，旧宿主 history）
+        try { sweepPreviews() } catch {}
+      }
     }
+    if (splitStore.open(spec) !== false) { finishConsole(); return }
+    try { clientCtx?.get?.('layout')?.selectPanel?.(null) } catch {}
+    const bound = explicitBound !== undefined ? explicitBound : projectsRef.current.projects.bindings[CONSOLE_ID]
+    if (bound) { try { openHostSession(clientCtx, sessionBridge?.sessions, bound) } catch {} }
+    let attempts = 0
+    const tryAttach = () => {
+      if (!mountedRef.current) return
+      if (splitStore.open(spec) !== false) { finishConsole(); return }
+      if (++attempts < 20 && typeof requestAnimationFrame === 'function') requestAnimationFrame(tryAttach)
+    }
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(tryAttach)
   }, [projects.views, t])
 
   /** 控制室是否已设置好：有绑定且绑定的对话仍存在。对话已被删除 → 清掉失效绑定，回到「未设置」。 */
@@ -1792,55 +1826,48 @@ function buildCustomLayoutPrompt(req: string): string {
    *      ① 0.1.1-rc.2：ctx.workspaces.pickDirectory() → string | null
    *      ② 0.1.2-rc.1：ctx remote.directoryPicker.pick() → { ok, value, error }（value 即路径或 null）
    *      ③ 0.1.2 新能力不可用 → 提示改用「手动输入」 */
-  const pickFolder = async (target: 'add' | 'bind' | 'console' | 'custom', apply: (p: string) => void, onError?: (msg: string) => void) => {
+  const pickFolder = async (target: 'add' | 'bind' | 'console' | 'custom', apply: (p: string) => void, onError?: (msg: string) => void, initialPath?: string) => {
     if (pickBusyRef.current) return
-    // 解析本次选择器调用路径
-    const ws = sessionBridge?.workspaces as any
-    const legacy = ws && typeof ws.pickDirectory === 'function'
-      ? () => ws.pickDirectory()
-      : null
-    let remotePicker: (() => Promise<any>) | null = null
-    try {
-      const rp = clientCtx?.get?.('remote.directoryPicker')
-      if (rp && typeof rp.pick === 'function') remotePicker = () => rp.pick()
-    } catch {}
-    if (!remotePicker) {
-      try {
-        const dp = (clientCtx as any)?.directoryPicker
-        if (dp && typeof dp.pick === 'function') remotePicker = () => dp.pick()
-      } catch {}
-    }
-    if (!legacy && !remotePicker) {
-      setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickerUnavailable') }))
-      onError?.(t('add.folderPickerUnavailable'))
-      return
-    }
     pickBusyRef.current = true
     setPickBusy(true)
     setPickErr((prev) => ({ ...prev, [target]: '' }))
     const seq = ++pickSeqRef.current
-    try {
-      let p: string | null = null
-      if (legacy) {
-        p = await legacy()
-      } else {
-        const r = await remotePicker!()
-        if (r && typeof r === 'object' && 'ok' in r) {
-          if (!r.ok) throw new Error(r?.error?.message ?? 'directory picker failed')
-          const v = r.value
-          p = typeof v === 'string' ? v : (v && typeof v === 'object' && typeof v.path === 'string' ? v.path : null)
-        } else {
-          p = typeof r === 'string' ? r : null
-        }
+    const closeBrowse = () => {
+      if (dirBrowseRef.current) {
+        const pending = dirBrowseRef.current
+        dirBrowseRef.current = null
+        pending.resolve(null)
       }
+      setDirBrowse(null)
+    }
+    try {
+      const result = await pickDirectoryWithFallback({
+        ctx: clientCtx,
+        workspaces: sessionBridge?.workspaces,
+        openBrowse: (face) => new Promise<string | null>((resolve) => {
+          closeBrowse()
+          const finish = (p: string | null) => {
+            if (dirBrowseRef.current?.resolve === finish) dirBrowseRef.current = null
+            setDirBrowse((cur) => (cur?.seq === seq ? null : cur))
+            resolve(p)
+          }
+          dirBrowseRef.current = { resolve: finish }
+          setDirBrowse({ initialPath, face, seq, resolve: finish })
+        }),
+      })
       if (seq !== pickSeqRef.current) return // 已被手工确认/新请求/弹窗关闭失效：丢弃旧弹窗结果
       if (!mountedRef.current) return // 组件已卸载：不再应用
-      if (p && typeof p === 'string') apply(p)
-      // p 为 null：用户取消，静默
+      if (result.status === 'unavailable') {
+        setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickerUnavailable') }))
+        onError?.(t('add.folderPickerUnavailable'))
+        return
+      }
+      if (result.status === 'picked') apply(result.path)
+      // cancelled：用户取消，静默
     } catch (e: any) {
       if (seq !== pickSeqRef.current) return
       if (!mountedRef.current) return // 组件已卸载：不再更新状态
-      const msg = (e && typeof e === 'object' && typeof e.message === 'string') ? e.message : String(e ?? '')
+      const msg = directoryErrorText(e)
       setPickErr((prev) => ({ ...prev, [target]: t('add.folderPickFail', { msg: msg || 'unknown' }) }))
       onError?.(t('add.folderPickFail', { msg: msg || 'unknown' }))
     } finally {
@@ -1856,6 +1883,12 @@ function buildCustomLayoutPrompt(req: string): string {
     pickSeqRef.current++
     pickBusyRef.current = false
     setPickBusy(false)
+    if (dirBrowseRef.current) {
+      const pending = dirBrowseRef.current
+      dirBrowseRef.current = null
+      pending.resolve(null)
+    }
+    setDirBrowse(null)
     setManualPathFor(null)
     setManualPathText('')
     setPickErr({ add: '', bind: '' })
@@ -1879,7 +1912,7 @@ function buildCustomLayoutPrompt(req: string): string {
   /** 绑定弹窗「更改」：弹窗选择文件夹，直接作为项目文件夹 */
   const changeBindFolder = () => {
     if (!bindPick || pickBusyRef.current) return
-    pickFolder('bind', (p) => setProjectFolder(bindPick.id, p, false))
+    pickFolder('bind', (p) => setProjectFolder(bindPick.id, p, false), undefined, projects.folders[bindPick.id] || undefined)
   }
 
   /** 设置项目文件夹。follows=false 表示用户手动指定：之后换绑对话不再自动改文件夹，只提示。 */
@@ -2606,7 +2639,7 @@ function buildCustomLayoutPrompt(req: string): string {
                 {wsFolderParent || t('add.folderNone')}
               </span>
               <button type="button" className="dsh-wt_bindFolderChange" disabled={pickBusy}
-                onClick={() => { pickFolder('add', (p) => { setWsFolderParent(p); setWsFolderError(false) }); setWsError(false) }}>
+                onClick={() => { pickFolder('add', (p) => { setWsFolderParent(p); setWsFolderError(false) }, undefined, wsFolderParent || sessionScopeStore.snapshot?.cwd || undefined); setWsError(false) }}>
                 {pickBusy ? t('add.folderPicking') : t('add.folderPick')}
               </button>
               <button type="button" className="dsh-wt_bindFolderChange" title={t('add.folderManual')}
@@ -2952,7 +2985,7 @@ function buildCustomLayoutPrompt(req: string): string {
                         value={consoleFolder}
                         onChange={(e) => { setConsoleFolder(e.target.value); setConsoleErr('') }}
                       />
-                      <button type="button" className="dsh-wt_setupPick" disabled={pickBusy} onClick={() => pickFolder('console', (p) => { setConsoleFolder(p); setConsoleErr('') })}>
+                      <button type="button" className="dsh-wt_setupPick" disabled={pickBusy} onClick={() => pickFolder('console', (p) => { setConsoleFolder(p); setConsoleErr('') }, undefined, consoleFolder || undefined)}>
                         {pickBusy ? t('add.folderPicking') : t('add.folderPick')}
                       </button>
                     </div>
@@ -3053,6 +3086,15 @@ function buildCustomLayoutPrompt(req: string): string {
           </div>
         </div>
       )}
+
+      <FolderBrowserModal
+        open={!!dirBrowse}
+        initialPath={dirBrowse?.initialPath}
+        face={dirBrowse?.face ?? null}
+        t={t}
+        onConfirm={(p) => dirBrowse?.resolve(p)}
+        onCancel={() => dirBrowse?.resolve(null)}
+      />
 
     </>
   )
